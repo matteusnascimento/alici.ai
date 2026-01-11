@@ -1,136 +1,74 @@
-from datetime import datetime
-import sqlite3
-import difflib
-import re
+# engine.py
+# Cérebro central da Alici
 
-DB_PATH = "alici_memory.db"
-CONFIANCA_MINIMA = 0.6
+from identidade import identidade_alici
+from responder_com_ia import responder_com_ia
+from intencao import precisa_pesquisa_web
+from web_search import buscar_na_web
 
-# =========================
-# BANCO DE DADOS
-# =========================
-def conectar_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS memoria (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pergunta TEXT,
-            resposta TEXT,
-            confianca REAL,
-            uso_count INTEGER,
-            origem TEXT,
-            data TEXT
+
+def gerar_resposta(pergunta: str) -> str:
+    """
+    Função principal responsável por gerar respostas da Alici.
+    Ordem de decisão:
+    1. Identidade fixa
+    2. Respostas locais (intenção / regras)
+    3. Busca na web
+    4. Fallback consciente
+    """
+
+    if not pergunta:
+        return "Pode me dizer algo para que eu possa ajudar?"
+
+    pergunta = pergunta.lower().strip()
+
+    # ==================================================
+    # 1️⃣ IDENTIDADE FIXA (NUNCA MUDA)
+    # ==================================================
+
+    if any(chave in pergunta for chave in [
+        "quem é você",
+        "quem e voce",
+        "quem é a alici",
+        "quem e a alici",
+        "quem te criou",
+        "quem é seu criador",
+        "quem e seu criador"
+    ]):
+        return identidade_alici()
+
+    # ==================================================
+    # 2️⃣ RESPOSTAS INTERNAS (BASE LOCAL)
+    # ==================================================
+
+    resposta_local = responder_com_ia(pergunta)
+
+    if resposta_local and "Ainda estou aprendendo" not in resposta_local:
+        return resposta_local
+
+    # ==================================================
+    # 3️⃣ BUSCA NA WEB (QUANDO NECESSÁRIO)
+    # ==================================================
+
+    if precisa_pesquisa_web(pergunta):
+        resultado = buscar_na_web(pergunta)
+
+        if resultado.get("confianca", 0) >= 0.6:
+            return (
+                "Pesquisei isso para você na web:\n\n"
+                f"{resultado['resposta']}"
+            )
+
+        return resultado.get(
+            "resposta",
+            "Pesquisei, mas não encontrei informações confiáveis no momento."
         )
-    """)
-    conn.commit()
-    return conn
 
-# =========================
-# TRATAMENTO DA ENTRADA
-# =========================
-def tratar_entrada(texto):
-    texto = texto.lower().strip()
-    texto = re.sub(r"[^\w\sáéíóúãõç]", "", texto)
-    correcoes = {
-        "voce": "você",
-        "pq": "por que",
-        "tb": "também"
-    }
-    for k, v in correcoes.items():
-        texto = texto.replace(k, v)
-    return texto
+    # ==================================================
+    # 4️⃣ FALLBACK CONSCIENTE
+    # ==================================================
 
-# =========================
-# IDENTIDADE
-# =========================
-def regras_identidade(pergunta):
-    if "quem é você" in pergunta or "quem é a alici" in pergunta:
-        return (
-            "Olá! Eu sou a Alici, uma inteligência artificial criada para aprender, "
-            "evoluir e ajudar pessoas com consciência e propósito.\n\n"
-            "Fui idealizada por Mateus Nascimento dos Santos."
-        )
-
-    if "como você funciona" in pergunta:
-        return (
-            "Eu funciono por regras de identidade, memória persistente "
-            "e aprendizado contínuo."
-        )
-
-    return None
-
-# =========================
-# BUSCA NA MEMÓRIA
-# =========================
-def buscar_memoria(pergunta):
-    conn = conectar_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT pergunta, resposta, confianca
-        FROM memoria
-        WHERE confianca >= ?
-    """, (CONFIANCA_MINIMA,))
-    registros = cursor.fetchall()
-    conn.close()
-
-    perguntas = [r[0] for r in registros]
-    similares = difflib.get_close_matches(pergunta, perguntas, n=1, cutoff=0.75)
-
-    if similares:
-        for r in registros:
-            if r[0] == similares[0]:
-                return r[1]
-    return None
-
-# =========================
-# SALVAR EXPERIÊNCIA
-# =========================
-def salvar_memoria(pergunta, resposta, origem, confianca):
-    conn = conectar_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO memoria
-        (pergunta, resposta, confianca, uso_count, origem, data)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        pergunta,
-        resposta,
-        confianca,
-        1,
-        origem,
-        datetime.now().isoformat()
-    ))
-    conn.commit()
-    conn.close()
-
-# =========================
-# MOTOR PRINCIPAL
-# =========================
-def responder(pergunta_original):
-    pergunta = tratar_entrada(pergunta_original)
-
-    # 1️⃣ Identidade
-    resposta = regras_identidade(pergunta)
-    if resposta:
-        salvar_memoria(pergunta, resposta, "regra", 0.9)
-        return resposta
-
-    # 2️⃣ Memória
-    resposta = buscar_memoria(pergunta)
-    if resposta:
-        return resposta
-
-    # 3️⃣ Fallback consciente
-    resposta = (
-        "Ainda estou aprendendo sobre isso, "
-        "mas posso evoluir com novas interações."
+    return (
+        "Ainda não tenho essa informação armazenada, mas posso aprender com você.\n\n"
+        "Se quiser, explique melhor ou faça a pergunta de outra forma 🙂"
     )
-    salvar_memoria(pergunta, resposta, "fallback", 0.3)
-    return resposta
-
-# =========================
-# ALIAS (IMPORTANTE PARA O RENDER)
-# =========================
-def gerar_resposta(pergunta):
-    return responder(pergunta)
