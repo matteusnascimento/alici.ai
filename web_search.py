@@ -1,45 +1,60 @@
 import requests
-import os
 from urllib.parse import quote
 
-def buscar_na_web(pergunta):
-    # Simulação de busca na web
-    # Em implementações futuras, pode-se integrar com APIs reais como Google Custom Search
-    
-    return (
-        f"Pesquisei sobre '{pergunta}' e estou aprendendo com novas informações. "
-        "Em breve terei respostas ainda melhores. Você poderia me ensinar mais sobre isso?"
-    )
 
-# Função expandida para busca real (exemplo com DuckDuckGo)
-def buscar_na_web_real(pergunta):
+def buscar_na_web(pergunta: str) -> dict:
+    """
+    Realiza busca na web usando DuckDuckGo.
+    Retorna um dicionário padronizado para a Alici.
+    """
+
     try:
-        # Usando DuckDuckGo API (gratuita e sem chave)
-        url = f"https://api.duckduckgo.com/?q={quote(pergunta)}&format=json&pretty=1"
-        response = requests.get(url, timeout=5)
-        
-        if response.status_code == 200:
-            data = response.json()
-            abstract = data.get('Abstract', '')
-            if abstract:
-                return f"Encontrei isso sobre '{pergunta}': {abstract}"
-            else:
-                related_topics = data.get('RelatedTopics', [])
-                if related_topics:
-                    first_result = related_topics[0].get('Text', '') if related_topics else ''
-                    if first_result:
-                        return f"Sobre '{pergunta}': {first_result}"
-        
-        # Se não encontrar resultados específicos, retorna resposta genérica
-        return (
-            f"Pesquisei sobre '{pergunta}' na web. "
-            "Encontrei algumas informações, mas ainda estou aprendendo a entender melhor certos temas. "
-            "Você gostaria de me explicar mais sobre isso?"
+        url = f"https://api.duckduckgo.com/?q={quote(pergunta)}&format=json&no_html=1"
+        response = requests.get(url, timeout=6)
+
+        if response.status_code != 200:
+            return _resposta_falha(pergunta)
+
+        data = response.json()
+
+        # 1️⃣ Resultado direto
+        if data.get("AbstractText"):
+            return {
+                "origem": "web",
+                "confianca": 0.85,
+                "resposta": data["AbstractText"]
+            }
+
+        # 2️⃣ Resultados relacionados
+        related = data.get("RelatedTopics", [])
+        for item in related:
+            if isinstance(item, dict) and item.get("Text"):
+                return {
+                    "origem": "web",
+                    "confianca": 0.65,
+                    "resposta": item["Text"]
+                }
+
+        # 3️⃣ Nada encontrado
+        return {
+            "origem": "web",
+            "confianca": 0.2,
+            "resposta": (
+                f"Pesquisei sobre '{pergunta}', mas encontrei poucas informações claras. "
+                "Se quiser, você pode me explicar melhor para que eu aprenda."
+            )
+        }
+
+    except Exception:
+        return _resposta_falha(pergunta)
+
+
+def _resposta_falha(pergunta: str) -> dict:
+    return {
+        "origem": "web",
+        "confianca": 0.0,
+        "resposta": (
+            f"Tentei pesquisar sobre '{pergunta}', mas tive um problema técnico no momento. "
+            "Podemos tentar novamente ou você pode me explicar?"
         )
-    except Exception as e:
-        # Em caso de erro, retorna resposta padrão
-        return (
-            f"Tentei buscar informações sobre '{pergunta}' na web, "
-            "mas encontrei algumas dificuldades técnicas. "
-            "Você poderia me ajudar com mais detalhes sobre o que deseja saber?"
-        )
+    }
