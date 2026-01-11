@@ -2,94 +2,64 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 
-# Carregar variáveis de ambiente
 load_dotenv()
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def conectar():
-    """Conecta ao banco de dados PostgreSQL"""
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        return conn
-    except psycopg2.Error as e:
-        print(f"❌ Erro de conexão com PostgreSQL: {e}")
-        raise
-    except Exception as e:
-        print(f"❌ Erro desconhecido na conexão: {e}")
-        raise
+    return psycopg2.connect(DATABASE_URL)
 
-def buscar_resposta(pergunta):
-    """Busca uma resposta no banco de dados"""
-    try:
-        conn = conectar()
-        cur = conn.cursor()
+def criar_tabelas():
+    conn = conectar()
+    cur = conn.cursor()
 
-        cur.execute(
-            "SELECT resposta FROM respostas WHERE perguntas ILIKE %s LIMIT 1",
-            (pergunta,)
-        )
-        resultado = cur.fetchone()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS memoria (
+        id SERIAL PRIMARY KEY,
+        pergunta TEXT,
+        resposta TEXT,
+        confianca INT DEFAULT 1,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
 
-        cur.close()
-        conn.close()
+    conn.commit()
+    cur.close()
+    conn.close()
 
-        return resultado[0] if resultado else None
-    except psycopg2.Error as e:
-        print(f"❌ Erro no PostgreSQL ao buscar resposta: {e}")
-        return None
-    except Exception as e:
-        print(f"❌ Erro desconhecido ao buscar resposta: {e}")
-        return None
+def buscar_memoria(pergunta):
+    conn = conectar()
+    cur = conn.cursor()
 
-def salvar_interacao(pergunta, resposta):
-    """Salva uma interação no banco de dados"""
-    try:
-        conn = conectar()
-        cur = conn.cursor()
+    cur.execute("""
+        SELECT resposta FROM memoria
+        WHERE pergunta=%s
+        ORDER BY confianca DESC LIMIT 1
+    """, (pergunta.lower(),))
 
-        cur.execute(
-            "INSERT INTO respostas (perguntas, resposta) VALUES (%s, %s)",
-            (pergunta, resposta)
-        )
+    r = cur.fetchone()
+    cur.close()
+    conn.close()
+    return r[0] if r else None
 
-        conn.commit()
-        cur.close()
-        conn.close()
-    except psycopg2.Error as e:
-        print(f"❌ Erro no PostgreSQL ao salvar interação: {e}")
-        if conn:
-            conn.rollback()
-    except Exception as e:
-        print(f"❌ Erro desconhecido ao salvar interação: {e}")
-        if conn:
-            conn.rollback()
+def aprender(pergunta, resposta):
+    conn = conectar()
+    cur = conn.cursor()
 
-# Função para inicializar o banco de dados (caso as tabelas não existam)
-def inicializar_banco():
-    """Inicializa o banco de dados criando as tabelas necessárias"""
-    try:
-        conn = conectar()
-        cur = conn.cursor()
-        
-        # Criar tabela se não existir
+    cur.execute("""
+        SELECT id FROM memoria
+        WHERE pergunta=%s AND resposta=%s
+    """, (pergunta.lower(), resposta))
+
+    existe = cur.fetchone()
+
+    if existe:
+        cur.execute("UPDATE memoria SET confianca = confianca + 1 WHERE id=%s", (existe[0],))
+    else:
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS respostas (
-                id SERIAL PRIMARY KEY,
-                perguntas TEXT NOT NULL,
-                resposta TEXT NOT NULL,
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        print("✅ Banco de dados inicializado com sucesso!")
-        return True
-    except psycopg2.Error as e:
-        print(f"❌ Erro no PostgreSQL ao inicializar banco: {e}")
-        return False
-    except Exception as e:
-        print(f"❌ Erro desconhecido ao inicializar banco: {e}")
-        return False
+            INSERT INTO memoria (pergunta, resposta)
+            VALUES (%s, %s)
+        """, (pergunta.lower(), resposta))
+
+    conn.commit()
+    cur.close()
+    conn.close()
