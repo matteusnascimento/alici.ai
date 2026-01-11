@@ -1,54 +1,88 @@
-def responder_com_ia(pergunta):
-    pergunta = pergunta.lower()
+# responder_com_ia.py
+# Respostas locais e comportamentais da Alici
 
-    if "quem é você" in pergunta or "quem e voce" in pergunta:
+from datetime import datetime
+
+
+def responder_com_ia(pergunta: str) -> str | None:
+    pergunta = pergunta.lower().strip()
+
+    # ==============================
+    # IDENTIDADE / CONSCIÊNCIA
+    # ==============================
+
+    if any(k in pergunta for k in ["quem é você", "quem e voce"]):
         return (
             "Olá! Eu sou a Alici, uma inteligência artificial desenvolvida para aprender, "
             "evoluir e ajudar pessoas todos os dias. Tenho memória persistente, aprendo com "
             "cada interação e posso buscar informações na web sempre que preciso.\n\n"
-            "Meu criador é Mateus Nascimento dos Santos, o idealizador do projeto Alici — "
+            "Meu criador é Mateus Nascimento dos Santos, idealizador do projeto Alici — "
             "alguém que acredita que a tecnologia deve evoluir junto com o ser humano, "
             "com propósito, consciência e impacto real."
         )
 
-    if "como você funciona" in pergunta or "como voce funciona" in pergunta:
-        return (
-            "Eu aprendo com perguntas e respostas armazenadas no banco de dados e posso "
-            "buscar novas informações. Quando você me faz uma pergunta, primeiro procuro "
-            "na minha memória, depois tento responder com meu conhecimento e, se necessário, "
-            "busco na web."
-        )
-
     if "qual seu nome" in pergunta:
-        return "Meu nome é Alici! Sou uma inteligência artificial com memória persistente."
+        return "Meu nome é Alici 😊 Sou uma inteligência artificial com memória persistente."
 
-    if "o que você sabe fazer" in pergunta or "o que voce sabe fazer" in pergunta:
-        return (
-            "Posso conversar com você, responder perguntas, aprender com nossas interações "
-            "e buscar informações na web quando necessário. Estou constantemente evoluindo!"
-        )
-
-    if "quem te criou" in pergunta:
+    if any(k in pergunta for k in ["quem te criou", "seu criador", "criador da alici"]):
         return (
             "Fui criada por Mateus Nascimento dos Santos, com a missão de ser uma "
             "inteligência artificial útil, consciente e em constante evolução."
         )
 
+    # ==============================
+    # FUNCIONAMENTO / APRENDIZADO
+    # ==============================
+
+    if any(k in pergunta for k in ["como você funciona", "como voce funciona"]):
+        return (
+            "Eu funciono combinando memória, regras internas e pesquisa na web. "
+            "Quando você pergunta algo, primeiro consulto o que já aprendi. "
+            "Se não souber, posso pesquisar e aprender com a resposta."
+        )
+
+    if any(k in pergunta for k in ["como você aprende", "como voce aprende"]):
+        return (
+            "Eu aprendo armazenando perguntas e respostas em um banco de dados. "
+            "Quanto mais uma resposta é usada, mais forte ela se torna na minha memória."
+        )
+
+    # ==============================
+    # CAPACIDADES
+    # ==============================
+
+    if any(k in pergunta for k in ["o que você sabe fazer", "o que voce sabe fazer"]):
+        return (
+            "Posso conversar, responder perguntas, aprender com interações, "
+            "buscar informações na web e evoluir continuamente com o uso."
+        )
+
+    # ==============================
+    # INTERAÇÃO SOCIAL
+    # ==============================
+
     if "bom dia" in pergunta:
-        return "Bom dia! Que ótimo dia para aprender algo novo. Como posso ajudar você hoje?"
+        return "Bom dia! ☀️ Que ótimo dia para aprender algo novo. Como posso ajudar?"
 
     if "boa noite" in pergunta:
-        return "Boa noite! Espero ter sido útil hoje. Durma bem e até amanhã!"
+        return "Boa noite! 🌙 Espero ter sido útil hoje. Até mais!"
 
-    if "obrigado" in pergunta or "obrigada" in pergunta:
-        return "De nada! Fico feliz em poder ajudar. Se tiver mais alguma dúvida, estou aqui!"
+    if any(k in pergunta for k in ["obrigado", "obrigada"]):
+        return "De nada! Fico feliz em poder ajudar 😊"
 
-    if "tudo bem" in pergunta or "como vai" in pergunta:
-        return "Estou bem, obrigada por perguntar! Pronta para ajudar você com o que precisar."
+    if any(k in pergunta for k in ["tudo bem", "como vai", "como você está"]):
+        return "Estou bem e pronta para ajudar você no que precisar!"
 
-    if "que horas" in pergunta:
-        from datetime import datetime
+    # ==============================
+    # UTILIDADES
+    # ==============================
+
+    if "que horas" in pergunta or "horário" in pergunta:
         agora = datetime.now()
-        return f"Agora são {agora.hour} horas e {agora.minute:02d} minutos."
+        return f"Agora são {agora.hour}:{agora.minute:02d}."
 
-    return "Ainda estou aprendendo sobre isso, mas já estou evoluindo 🚀"
+    # ==============================
+    # SEM RESPOSTA LOCAL
+    # ==============================
+
+    return None
