@@ -1,28 +1,30 @@
 """
-Alici Engine v1.0
+Alici Engine v2.0
 Criado por Mateus Nascimento dos Santos
 
-Este arquivo é o núcleo cognitivo da IA Alici.
-Responsável por:
-- Tratamento da entrada
-- Decisão de resposta
-- Memória
-- Identidade
-- Evolução futura
+Sistema cognitivo avançado com:
+- Memória persistente
+- Confiança dinâmica
+- Avaliação do usuário
+- Detecção de intenção
+- Proteção contra aprendizado tóxico
+- Diagnóstico interno
 """
 
 from datetime import datetime
 import sqlite3
 import difflib
+import re
 
 # =========================
 # CONFIGURAÇÕES
 # =========================
 DB_PATH = "alici_memory.db"
 CONFIANCA_MINIMA = 0.6
+CONTEXTO_MAX = 5
 
 # =========================
-# BANCO DE DADOS (MEMÓRIA)
+# BANCO DE DADOS
 # =========================
 def conectar_db():
     conn = sqlite3.connect(DB_PATH)
@@ -34,6 +36,7 @@ def conectar_db():
             resposta TEXT,
             confianca REAL,
             uso_count INTEGER,
+            avaliacao INTEGER,
             origem TEXT,
             data TEXT
         )
@@ -46,14 +49,46 @@ def conectar_db():
 # =========================
 def tratar_entrada(texto):
     texto = texto.lower().strip()
-    substituicoes = {
+    texto = re.sub(r"[^\w\sáéíóúãõç]", "", texto)
+
+    correcoes = {
         "voce": "você",
         "pq": "por que",
         "tb": "também"
     }
-    for k, v in substituicoes.items():
+    for k, v in correcoes.items():
         texto = texto.replace(k, v)
+
     return texto
+
+# =========================
+# DETECÇÃO DE INTENÇÃO
+# =========================
+def detectar_intencao(texto):
+    if any(p in texto for p in ["como", "por que", "o que", "qual"]):
+        return "pergunta"
+    if any(p in texto for p in ["triste", "cansado", "mal", "desanimado"]):
+        return "emocional"
+    if texto.startswith(("faça", "crie", "execute")):
+        return "comando"
+    return "conversa"
+
+# =========================
+# FILTRO DE APRENDIZADO TÓXICO
+# =========================
+def conteudo_permitido(texto):
+    bloqueios = ["ódio", "matar", "crime", "racismo"]
+    return not any(p in texto for p in bloqueios)
+
+# =========================
+# MEMÓRIA DE CURTO PRAZO
+# =========================
+contexto_usuario = []
+
+def atualizar_contexto(pergunta):
+    contexto_usuario.append(pergunta)
+    if len(contexto_usuario) > CONTEXTO_MAX:
+        contexto_usuario.pop(0)
 
 # =========================
 # BUSCA NA MEMÓRIA
@@ -61,107 +96,137 @@ def tratar_entrada(texto):
 def buscar_memoria(pergunta):
     conn = conectar_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT pergunta, resposta, confianca, uso_count FROM memoria")
+    cursor.execute("""
+        SELECT pergunta, resposta, confianca FROM memoria
+        WHERE confianca >= ?
+    """, (CONFIANCA_MINIMA,))
     registros = cursor.fetchall()
     conn.close()
 
-    perguntas_salvas = [r[0] for r in registros]
-    similares = difflib.get_close_matches(pergunta, perguntas_salvas, n=1, cutoff=0.7)
+    perguntas = [r[0] for r in registros]
+    similares = difflib.get_close_matches(pergunta, perguntas, n=1, cutoff=0.75)
 
     if similares:
         for r in registros:
-            if r[0] == similares[0] and r[2] >= CONFIANCA_MINIMA:
+            if r[0] == similares[0]:
                 return r[1]
     return None
 
 # =========================
 # SALVAR EXPERIÊNCIA
 # =========================
-def salvar_memoria(pergunta, resposta, origem="regra", confianca=0.5):
+def salvar_memoria(pergunta, resposta, origem, confianca=0.5, avaliacao=0):
+    if not conteudo_permitido(pergunta):
+        return
+
     conn = conectar_db()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO memoria (pergunta, resposta, confianca, uso_count, origem, data)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (pergunta, resposta, confianca, 1, origem, datetime.now().isoformat()))
+        INSERT INTO memoria
+        (pergunta, resposta, confianca, uso_count, avaliacao, origem, data)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        pergunta,
+        resposta,
+        confianca,
+        1,
+        avaliacao,
+        origem,
+        datetime.now().isoformat()
+    ))
     conn.commit()
     conn.close()
 
 # =========================
-# IDENTIDADE (REGRAS FIXAS)
+# IDENTIDADE
 # =========================
 def regras_identidade(pergunta):
     if "quem é você" in pergunta or "quem é a alici" in pergunta:
         return (
-            "Olá! Eu sou a Alici, uma inteligência artificial criada para aprender, "
-            "evoluir e ajudar pessoas todos os dias.\n\n"
-            "Meu criador é Mateus Nascimento dos Santos, idealizador do projeto Alici, "
-            "que acredita que a tecnologia deve evoluir junto com o ser humano, "
-            "com propósito, consciência e impacto real."
+            "Eu sou a Alici, uma inteligência artificial criada para aprender, evoluir "
+            "e ajudar pessoas com consciência e propósito.\n\n"
+            "Fui idealizada por Mateus Nascimento dos Santos."
         )
 
     if "como você funciona" in pergunta:
         return (
-            "Eu funciono através de três pilares: regras de identidade, memória persistente "
-            "e aprendizado contínuo. Aprendo com cada interação e evoluo com o tempo."
+            "Eu funciono por regras de identidade, memória persistente e aprendizado contínuo. "
+            "Cada interação contribui para minha evolução."
         )
-
-    if "qual seu nome" in pergunta:
-        return "Meu nome é Alici. Sou uma inteligência artificial com memória persistente."
-
-    if "bom dia" in pergunta:
-        return "Bom dia ☀️ Que seja um dia produtivo e consciente. Como posso ajudar?"
-
-    if "boa noite" in pergunta:
-        return "Boa noite 🌙 Que você tenha descanso e clareza. Estarei aqui quando precisar."
-
-    if "que horas" in pergunta:
-        agora = datetime.now()
-        return f"Agora são {agora.hour:02d}:{agora.minute:02d}."
 
     return None
 
 # =========================
-# RESPOSTA CONSCIENTE (FALLBACK)
+# RESPOSTA EMOCIONAL
 # =========================
-def resposta_consciente():
+def resposta_emocional():
     return (
-        "Ainda não tenho conhecimento suficiente sobre isso, "
-        "mas posso aprender com o tempo e com novas informações."
+        "Sinto muito que você esteja se sentindo assim. "
+        "Se quiser conversar, estou aqui para te ouvir."
     )
+
+# =========================
+# DIAGNÓSTICO
+# =========================
+def diagnostico():
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM memoria")
+    total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM memoria WHERE confianca >= 0.8")
+    boas = cursor.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "total_memorias": total,
+        "memorias_confiaveis": boas,
+        "nivel": "iniciante" if total < 500 else "intermediário"
+    }
 
 # =========================
 # MOTOR PRINCIPAL
 # =========================
 def responder(pergunta_original):
     pergunta = tratar_entrada(pergunta_original)
+    atualizar_contexto(pergunta)
 
-    # 1️⃣ Regras de identidade
+    intencao = detectar_intencao(pergunta)
+
+    # Identidade
     resposta = regras_identidade(pergunta)
     if resposta:
-        salvar_memoria(pergunta, resposta, origem="regra", confianca=0.9)
+        salvar_memoria(pergunta, resposta, "regra", 0.9)
         return resposta
 
-    # 2️⃣ Memória
+    # Emocional
+    if intencao == "emocional":
+        resposta = resposta_emocional()
+        salvar_memoria(pergunta, resposta, "emocional", 0.7)
+        return resposta
+
+    # Memória
     resposta = buscar_memoria(pergunta)
     if resposta:
         return resposta
 
-    # 3️⃣ (Futuro) Modelo de IA
-    # Aqui você poderá integrar: model.predict()
-
-    # 4️⃣ Fallback consciente
-    resposta = resposta_consciente()
-    salvar_memoria(pergunta, resposta, origem="fallback", confianca=0.3)
+    # Fallback consciente
+    resposta = (
+        "Ainda não tenho conhecimento suficiente sobre isso, "
+        "mas posso aprender com novas interações."
+    )
+    salvar_memoria(pergunta, resposta, "fallback", 0.3)
     return resposta
 
 # =========================
 # TESTE LOCAL
 # =========================
 if __name__ == "__main__":
-    print("Alici Engine iniciado. Digite 'sair' para encerrar.\n")
+    print("Alici Engine v2.0 ativa. Digite 'sair' para encerrar.\n")
     while True:
         user = input("Você: ")
         if user.lower() == "sair":
+            print("Diagnóstico:", diagnostico())
             break
         print("Alici:", responder(user))
