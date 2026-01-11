@@ -1,60 +1,18 @@
 import requests
 from urllib.parse import quote
 
-
-def buscar_na_web(pergunta: str) -> dict:
-    """
-    Realiza busca na web usando DuckDuckGo.
-    Retorna um dicionário padronizado para a Alici.
-    """
-
+def buscar_na_web(pergunta):
     try:
-        url = f"https://api.duckduckgo.com/?q={quote(pergunta)}&format=json&no_html=1"
-        response = requests.get(url, timeout=6)
+        url = f"https://api.duckduckgo.com/?q={quote(pergunta)}&format=json"
+        r = requests.get(url, timeout=5)
+        data = r.json()
 
-        if response.status_code != 200:
-            return _resposta_falha(pergunta)
-
-        data = response.json()
-
-        # 1️⃣ Resultado direto
         if data.get("AbstractText"):
-            return {
-                "origem": "web",
-                "confianca": 0.85,
-                "resposta": data["AbstractText"]
-            }
+            return data["AbstractText"]
 
-        # 2️⃣ Resultados relacionados
-        related = data.get("RelatedTopics", [])
-        for item in related:
-            if isinstance(item, dict) and item.get("Text"):
-                return {
-                    "origem": "web",
-                    "confianca": 0.65,
-                    "resposta": item["Text"]
-                }
+        if data.get("RelatedTopics"):
+            return data["RelatedTopics"][0].get("Text", "")
 
-        # 3️⃣ Nada encontrado
-        return {
-            "origem": "web",
-            "confianca": 0.2,
-            "resposta": (
-                f"Pesquisei sobre '{pergunta}', mas encontrei poucas informações claras. "
-                "Se quiser, você pode me explicar melhor para que eu aprenda."
-            )
-        }
-
-    except Exception:
-        return _resposta_falha(pergunta)
-
-
-def _resposta_falha(pergunta: str) -> dict:
-    return {
-        "origem": "web",
-        "confianca": 0.0,
-        "resposta": (
-            f"Tentei pesquisar sobre '{pergunta}', mas tive um problema técnico no momento. "
-            "Podemos tentar novamente ou você pode me explicar?"
-        )
-    }
+        return None
+    except:
+        return None
