@@ -1,97 +1,76 @@
 # engine.py
 # Cérebro central da Alici
 
-from identidade import identidade_alici
-from responder_com_ia import responder_com_ia
-from intencao import precisa_pesquisa_web
-from web_search import buscar_na_web
-from database import buscar_memoria, aprender
+from resposta import responder
+from database import buscar_memoria, salvar_interacao
+from learning import aprender
+from web_search import pesquisar_web
+
+
+CRIADOR = "Mateus Nascimento dos Santos"
+
+
+def identidade_alici():
+    return (
+        "Eu sou a Alici 🤖\n\n"
+        "Uma inteligência artificial criada por "
+        f"{CRIADOR}.\n"
+        "Aprendo com conversas, memória e pesquisas na web."
+    )
 
 
 def gerar_resposta(pergunta: str) -> str:
-    """
-    Função central de decisão da Alici.
-
-    Ordem de prioridade:
-    1️⃣ Identidade fixa (imutável)
-    2️⃣ Memória aprendida (banco de dados)
-    3️⃣ Respostas locais (regras / intents)
-    4️⃣ Busca na web (quando necessário)
-    5️⃣ Fallback consciente (aprendizado futuro)
-    """
-
     if not pergunta or not pergunta.strip():
         return "Pode me dizer algo para que eu possa ajudar?"
 
     pergunta = pergunta.lower().strip()
 
     # ==================================================
-    # 1️⃣ IDENTIDADE FIXA (NUNCA MUDA)
+    # 1️⃣ IDENTIDADE FIXA
     # ==================================================
-
-    if any(chave in pergunta for chave in [
+    if any(p in pergunta for p in [
         "quem é você",
-        "quem e voce",
         "quem é a alici",
-        "quem e a alici",
         "quem te criou",
         "quem é seu criador",
-        "quem e seu criador",
         "criador da alici"
     ]):
         return identidade_alici()
 
     # ==================================================
-    # 2️⃣ MEMÓRIA (APRENDIZADO AUTOMÁTICO)
+    # 2️⃣ MEMÓRIA (BANCO DE DADOS)
     # ==================================================
-
     resposta_memoria = buscar_memoria(pergunta)
     if resposta_memoria:
         return resposta_memoria
 
     # ==================================================
-    # 3️⃣ RESPOSTAS INTERNAS (REGRAS LOCAIS)
+    # 3️⃣ RESPOSTA LOCAL
     # ==================================================
-
-    resposta_local = responder_com_ia(pergunta)
-
-    if resposta_local and "Ainda estou aprendendo" not in resposta_local:
-        # Reforça aprendizado
+    resposta_local = responder(pergunta)
+    if resposta_local:
+        salvar_interacao(pergunta, resposta_local)
         aprender(pergunta, resposta_local)
         return resposta_local
 
     # ==================================================
-    # 4️⃣ BUSCA NA WEB (QUANDO NECESSÁRIO)
+    # 4️⃣ WEB (AUTOAPRENDIZADO)
     # ==================================================
-
-    if precisa_pesquisa_web(pergunta):
-        resultado = buscar_na_web(pergunta)
-
-        if resultado and resultado.get("confianca", 0) >= 0.6:
-            resposta = resultado["resposta"]
-
-            # Aprende com a web
-            aprender(pergunta, resposta)
-
-            return (
-                "Pesquisei isso para você na web:\n\n"
-                f"{resposta}"
-            )
-
+    resposta_web = pesquisar_web(pergunta)
+    if resposta_web:
+        salvar_interacao(pergunta, resposta_web)
+        aprender(pergunta, resposta_web)
         return (
-            resultado.get(
-                "resposta",
-                "Pesquisei, mas não encontrei informações confiáveis no momento."
-            )
-            if resultado else
-            "Tentei pesquisar, mas algo deu errado no acesso à web."
+            "Pesquisei isso para você na web:\n\n"
+            f"{resposta_web}"
         )
 
     # ==================================================
-    # 5️⃣ FALLBACK CONSCIENTE (AUTOAPRENDIZADO FUTURO)
+    # 5️⃣ FALLBACK INTELIGENTE
     # ==================================================
-
-    return (
-        "Ainda não tenho essa informação armazenada, mas posso aprender com você.\n\n"
-        "Se quiser, explique melhor ou faça a pergunta de outra forma 🙂"
+    resposta = (
+        "Ainda não sei responder isso, mas posso aprender.\n"
+        "Se quiser, explique melhor 🙂"
     )
+    salvar_interacao(pergunta, resposta)
+    return resposta
