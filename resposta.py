@@ -1,21 +1,21 @@
-# responder_com_ia.py
-# Respostas locais e comportamentais da Alici
+# resposta.py
+# Respostas locais, comportamentais e identidade da Alici
 
 from datetime import datetime
 
 
-def responder_com_ia(pergunta: str) -> str | None:
+def responder_local(pergunta: str) -> str | None:
     pergunta = pergunta.lower().strip()
 
     # ==============================
     # IDENTIDADE / CONSCIÊNCIA
     # ==============================
 
-    if any(k in pergunta for k in ["quem é você", "quem e voce"]):
+    if any(k in pergunta for k in ["quem é você", "quem e voce", "quem é a alici"]):
         return (
             "Olá! Eu sou a Alici, uma inteligência artificial desenvolvida para aprender, "
-            "evoluir e ajudar pessoas todos os dias. Tenho memória persistente, aprendo com "
-            "cada interação e posso buscar informações na web sempre que preciso.\n\n"
+            "evoluir e ajudar pessoas todos os dias. Tenho memória persistente e posso "
+            "buscar informações na web quando necessário.\n\n"
             "Meu criador é Mateus Nascimento dos Santos, idealizador do projeto Alici — "
             "alguém que acredita que a tecnologia deve evoluir junto com o ser humano, "
             "com propósito, consciência e impacto real."
@@ -37,14 +37,14 @@ def responder_com_ia(pergunta: str) -> str | None:
     if any(k in pergunta for k in ["como você funciona", "como voce funciona"]):
         return (
             "Eu funciono combinando memória, regras internas e pesquisa na web. "
-            "Quando você pergunta algo, primeiro consulto o que já aprendi. "
-            "Se não souber, posso pesquisar e aprender com a resposta."
+            "Primeiro consulto o que já aprendi, depois uso regras locais e, "
+            "se necessário, pesquiso para aprender algo novo."
         )
 
     if any(k in pergunta for k in ["como você aprende", "como voce aprende"]):
         return (
-            "Eu aprendo armazenando perguntas e respostas em um banco de dados. "
-            "Quanto mais uma resposta é usada, mais forte ela se torna na minha memória."
+            "Eu aprendo armazenando perguntas e respostas no banco de dados. "
+            "Quanto mais uma resposta é utilizada, mais forte ela se torna na minha memória."
         )
 
     # ==============================
@@ -62,16 +62,19 @@ def responder_com_ia(pergunta: str) -> str | None:
     # ==============================
 
     if "bom dia" in pergunta:
-        return "Bom dia! ☀️ Que ótimo dia para aprender algo novo. Como posso ajudar?"
+        return "Bom dia! ☀️ Como posso ajudar você hoje?"
+
+    if "boa tarde" in pergunta:
+        return "Boa tarde! Como posso te ajudar?"
 
     if "boa noite" in pergunta:
-        return "Boa noite! 🌙 Espero ter sido útil hoje. Até mais!"
+        return "Boa noite! 🌙 Espero ter sido útil hoje."
 
     if any(k in pergunta for k in ["obrigado", "obrigada"]):
-        return "De nada! Fico feliz em poder ajudar 😊"
+        return "De nada! Fico feliz em ajudar 😊"
 
     if any(k in pergunta for k in ["tudo bem", "como vai", "como você está"]):
-        return "Estou bem e pronta para ajudar você no que precisar!"
+        return "Estou bem e pronta para ajudar você!"
 
     # ==============================
     # UTILIDADES
