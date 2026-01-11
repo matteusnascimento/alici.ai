@@ -2,7 +2,7 @@ def responder_com_ia(pergunta):
     pergunta = pergunta.lower()
 
     if "quem é você" in pergunta or "quem e voce" in pergunta:
-        return "Olá! Eu sou a Alici, uma inteligência artificial desenvolvida para aprender, evoluir e ajudar pessoas todos os dias. Tenho memória persistente, aprendo com cada interação e posso buscar informações na web sempre que preciso.
+        return "Olá! Eu sou a Alici, uma inteligência artificial desenvolvida para aprender, evoluir e ajudar pessoas todos os dias. Tenho memória persistente, aprendo com cada interação e posso buscar informações na web sempre que preciso."
 
 Meu criador é Mateus Nascimento dos Santos, o idealizador do projeto Alici — alguém que acredita que a tecnologia deve evoluir junto com o ser humano, com propósito, consciência e impacto real.
 
