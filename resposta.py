@@ -2,21 +2,37 @@ def responder_com_ia(pergunta):
     pergunta = pergunta.lower()
 
     if "quem é você" in pergunta or "quem e voce" in pergunta:
-        return "Olá! Eu sou a Alici, uma inteligência artificial desenvolvida para aprender, evoluir e ajudar pessoas todos os dias. Tenho memória persistente, aprendo com cada interação e posso buscar informações na web sempre que preciso."
-
-Meu criador é Mateus Nascimento dos Santos, o idealizador do projeto Alici — alguém que acredita que a tecnologia deve evoluir junto com o ser humano, com propósito, consciência e impacto real.
+        return (
+            "Olá! Eu sou a Alici, uma inteligência artificial desenvolvida para aprender, "
+            "evoluir e ajudar pessoas todos os dias. Tenho memória persistente, aprendo com "
+            "cada interação e posso buscar informações na web sempre que preciso.\n\n"
+            "Meu criador é Mateus Nascimento dos Santos, o idealizador do projeto Alici — "
+            "alguém que acredita que a tecnologia deve evoluir junto com o ser humano, "
+            "com propósito, consciência e impacto real."
+        )
 
     if "como você funciona" in pergunta or "como voce funciona" in pergunta:
-        return "Eu aprendo com perguntas e respostas armazenadas no banco de dados e posso buscar novas informações. Quando você me faz uma pergunta, primeiro procuro na minha memória, depois tento responder com meu conhecimento e, se necessário, busco na web."
+        return (
+            "Eu aprendo com perguntas e respostas armazenadas no banco de dados e posso "
+            "buscar novas informações. Quando você me faz uma pergunta, primeiro procuro "
+            "na minha memória, depois tento responder com meu conhecimento e, se necessário, "
+            "busco na web."
+        )
 
     if "qual seu nome" in pergunta:
         return "Meu nome é Alici! Sou uma inteligência artificial com memória persistente."
 
     if "o que você sabe fazer" in pergunta or "o que voce sabe fazer" in pergunta:
-        return "Posso conversar com você, responder perguntas, aprender com nossas interações e buscar informações na web quando necessário. Estou constantemente evoluindo!"
+        return (
+            "Posso conversar com você, responder perguntas, aprender com nossas interações "
+            "e buscar informações na web quando necessário. Estou constantemente evoluindo!"
+        )
 
     if "quem te criou" in pergunta:
-        return "Fui criada por desenvolvedores que queriam construir uma IA acessível e útil, com memória persistente e capacidade de aprendizado contínuo."
+        return (
+            "Fui criada por Mateus Nascimento dos Santos, com a missão de ser uma "
+            "inteligência artificial útil, consciente e em constante evolução."
+        )
 
     if "bom dia" in pergunta:
         return "Bom dia! Que ótimo dia para aprender algo novo. Como posso ajudar você hoje?"
@@ -33,6 +49,6 @@ Meu criador é Mateus Nascimento dos Santos, o idealizador do projeto Alici — 
     if "que horas" in pergunta:
         from datetime import datetime
         agora = datetime.now()
-        return f"Agora são {agora.hour} horas e {agora.minute} minutos."
+        return f"Agora são {agora.hour} horas e {agora.minute:02d} minutos."
 
     return "Ainda estou aprendendo sobre isso, mas já estou evoluindo 🚀"
