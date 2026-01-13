@@ -706,25 +706,25 @@ def home():
                     <div class="hologram-display">
                         <div class="alici-avatar" id="aliciAvatar">
                             <!-- Avatar principal - estado idle -->
-                            <img src="/static/images/avatar/alici_idle.jpg" 
+                            <img src="/Static/imagens/avatar/alici_idle.jpg" 
                                  alt="Alici Avatar Idle" 
                                  class="avatar-image avatar-breathing" 
                                  id="avatarIdle">
                             
                             <!-- Avatar falando - com movimento da boca -->
-                            <img src="/static/images/avatar/alici_speaking.jpg" 
+                            <img src="/Static/imagens/avatar/alici_speaking.jpg" 
                                  alt="Alici Avatar Speaking" 
                                  class="avatar-image avatar-speaking hidden" 
                                  id="avatarSpeaking">
                             
                             <!-- Avatar ouvindo -->
-                            <img src="/static/images/avatar/alici_listening.jpg" 
+                            <img src="/Static/imagens/avatar/alici_listening.jpg" 
                                  alt="Alici Avatar Listening" 
                                  class="avatar-image hidden" 
                                  id="avatarListening">
                             
                             <!-- Avatar pensando -->
-                            <img src="/static/images/avatar/alici_thinking.jpg" 
+                            <img src="/Static/imagens/avatar/alici_thinking.jpg" 
                                  alt="Alici Avatar Thinking" 
                                  class="avatar-image hidden" 
                                  id="avatarThinking">
