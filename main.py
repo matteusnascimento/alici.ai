@@ -706,25 +706,25 @@ def home():
                     <div class="hologram-display">
                         <div class="alici-avatar" id="aliciAvatar">
                             <!-- Avatar principal - estado idle -->
-                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010863530756530176_f8987f49506aafd4b7bcbb25d6126a2b.jpg" 
+                            <img src="/static/images/avatar/alici_idle.jpg" 
                                  alt="Alici Avatar Idle" 
                                  class="avatar-image avatar-breathing" 
                                  id="avatarIdle">
                             
                             <!-- Avatar falando - com movimento da boca -->
-                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010826893896966144_9ab19eaf914ff4a0bf4d584cf3022105.jpg" 
+                            <img src="/static/images/avatar/alici_speaking.jpg" 
                                  alt="Alici Avatar Speaking" 
                                  class="avatar-image avatar-speaking hidden" 
                                  id="avatarSpeaking">
                             
                             <!-- Avatar ouvindo -->
-                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010863530756530176_f8987f49506aafd4b7bcbb25d6126a2b.jpg" 
+                            <img src="/static/images/avatar/alici_listening.jpg" 
                                  alt="Alici Avatar Listening" 
                                  class="avatar-image hidden" 
                                  id="avatarListening">
                             
                             <!-- Avatar pensando -->
-                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010826893896966144_9ab19eaf914ff4a0bf4d584cf3022105.jpg" 
+                            <img src="/static/images/avatar/alici_thinking.jpg" 
                                  alt="Alici Avatar Thinking" 
                                  class="avatar-image hidden" 
                                  id="avatarThinking">
@@ -981,7 +981,7 @@ def chat():
     resposta = gerar_resposta(pergunta)
     return jsonify({"resposta": resposta})
 
-# Ponto de entrada da aplicação 
+# Ponto de entrada da aplicação
 if __name__ == "__main__":
     # Obter a porta do ambiente (para o Render) ou usar 5000 como padrão
     port = int(os.environ.get("PORT", 5000))
