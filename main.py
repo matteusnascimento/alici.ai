@@ -706,7 +706,7 @@ def home():
                     <div class="hologram-display">
                         <div class="alici-avatar" id="aliciAvatar">
                             <!-- Avatar principal - estado idle -->
-                            <img src="/Static/imagens/avatar/alici_idle.jpg" 
+                            <img src="/Static/Imagens/Avatar/alici_idle.jpg" 
                                  alt="Alici Avatar Idle" 
                                  class="avatar-image avatar-breathing" 
                                  id="avatarIdle">
