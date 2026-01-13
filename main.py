@@ -5,7 +5,7 @@ from engine import gerar_resposta
 # Inicializar a aplicação Flask
 app = Flask(__name__)
 
-# Rota principal para servir a interface web da Alici com design holográfico
+# Rota principal para servir a interface web da Alici com design holográfico e avatar animado
 @app.route("/")
 def home():
     html_content = '''
@@ -14,7 +14,7 @@ def home():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alici - IA Holográfica com Memória</title>
+    <title>Alici - IA Holográfica com Avatar Animado</title>
     <style>
         :root {
             --hologram-primary: #00ffff;
@@ -342,7 +342,7 @@ def home():
             transform: translateY(0);
         }
         
-        /* Seção holográfica */
+        /* Seção holográfica com avatar animado */
         .hologram-container {
             background: rgba(0, 17, 34, 0.8);
             backdrop-filter: blur(15px);
@@ -377,21 +377,32 @@ def home():
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
         }
         
-        .hologram-avatar {
+        .alici-avatar {
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 30% 40%, rgba(0, 255, 255, 0.1) 0%, transparent 30%),
-                radial-gradient(circle at 70% 60%, rgba(0, 255, 170, 0.1) 0%, transparent 30%);
-            border-radius: 18px;
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
+            border-radius: 18px;
+            overflow: hidden;
         }
         
-        .hologram-avatar::before {
+        .avatar-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 18px;
+            transition: all 0.3s ease;
+            opacity: 1;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .avatar-image.hidden {
+            opacity: 0;
+        }
+        
+        /* Efeitos holográficos sobre o avatar */
+        .alici-avatar::before {
             content: "";
             position: absolute;
             top: 0;
@@ -401,29 +412,58 @@ def home():
             background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
             animation: scan-line 3s infinite;
             border-radius: 18px;
-        }
-        
-        .hologram-avatar-content {
-            text-align: center;
             z-index: 2;
         }
         
-        .hologram-avatar-content .icon {
-            font-size: 8rem;
-            margin-bottom: 20px;
-            color: var(--hologram-primary);
-            text-shadow: 0 0 30px var(--hologram-primary);
-        }
-        
-        .hologram-avatar-content .name {
-            font-size: 1.5rem;
-            color: var(--hologram-secondary);
-            text-shadow: 0 0 10px var(--hologram-secondary);
+        .alici-avatar::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 30% 40%, rgba(0, 255, 255, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 70% 60%, rgba(0, 255, 170, 0.1) 0%, transparent 30%);
+            border-radius: 18px;
+            z-index: 1;
         }
         
         @keyframes scan-line {
             0% { transform: translateY(-100%); }
             100% { transform: translateY(100%); }
+        }
+        
+        /* Animação de movimento da boca */
+        @keyframes mouth-movement {
+            0%, 100% { transform: scaleY(1); }
+            25% { transform: scaleY(1.1); }
+            50% { transform: scaleY(0.9); }
+            75% { transform: scaleY(1.05); }
+        }
+        
+        .avatar-speaking {
+            animation: mouth-movement 0.5s ease-in-out infinite;
+        }
+        
+        /* Animação de piscada */
+        @keyframes blink {
+            0%, 90%, 100% { transform: scaleY(1); }
+            95% { transform: scaleY(0.1); }
+        }
+        
+        .avatar-blinking {
+            animation: blink 3s ease-in-out infinite;
+        }
+        
+        /* Animação de respiração */
+        @keyframes breathing {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        .avatar-breathing {
+            animation: breathing 4s ease-in-out infinite;
         }
         
         .hologram-status {
@@ -619,7 +659,7 @@ def home():
                 <div class="logo">A</div>
             </div>
             <h1>Alici 🤖</h1>
-            <p class="subtitle">Inteligência Artificial Holográfica com Memória Persistente</p>
+            <p class="subtitle">Inteligência Artificial Holográfica com Avatar Animado</p>
         </header>
         
         <div class="main-content">
@@ -627,7 +667,7 @@ def home():
                 <div class="chat-container">
                     <div class="chat-history" id="chatHistory">
                         <div class="message ai-message">
-                            Olá! Eu sou a Alici, sua assistente de IA holográfica com memória persistente. Como posso ajudar você hoje?
+                            Olá! Eu sou a Alici, sua assistente de IA holográfica com avatar animado. Como posso ajudar você hoje?
                         </div>
                     </div>
                     <div class="input-area">
@@ -643,9 +683,9 @@ def home():
                         <p class="feature-desc">Aprendo com cada interação e guardo conhecimento no banco de dados PostgreSQL</p>
                     </div>
                     <div class="feature-card">
-                        <div class="feature-icon">プロジェクター</div>
-                        <h3 class="feature-title">Interface Holográfica</h3>
-                        <p class="feature-desc">Design futurista com efeitos holográficos e avatar interativo</p>
+                        <div class="feature-icon">🎭</div>
+                        <h3 class="feature-title">Avatar Animado</h3>
+                        <p class="feature-desc">Avatar cyberpunk com animações faciais, movimentos da boca e expressões realistas</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">🌐</div>
@@ -662,13 +702,32 @@ def home():
             
             <div class="hologram-section">
                 <div class="hologram-container">
-                    <h3 class="hologram-title">Alici Holográfica</h3>
+                    <h3 class="hologram-title">Alici Avatar</h3>
                     <div class="hologram-display">
-                        <div class="hologram-avatar" id="hologramAvatar">
-                            <div class="hologram-avatar-content">
-                                <div class="icon">🤖</div>
-                                <div class="name">Alici AI</div>
-                            </div>
+                        <div class="alici-avatar" id="aliciAvatar">
+                            <!-- Avatar principal - estado idle -->
+                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010863530756530176_f8987f49506aafd4b7bcbb25d6126a2b.jpg" 
+                                 alt="Alici Avatar Idle" 
+                                 class="avatar-image avatar-breathing" 
+                                 id="avatarIdle">
+                            
+                            <!-- Avatar falando - com movimento da boca -->
+                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010826893896966144_9ab19eaf914ff4a0bf4d584cf3022105.jpg" 
+                                 alt="Alici Avatar Speaking" 
+                                 class="avatar-image avatar-speaking hidden" 
+                                 id="avatarSpeaking">
+                            
+                            <!-- Avatar ouvindo -->
+                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010863530756530176_f8987f49506aafd4b7bcbb25d6126a2b.jpg" 
+                                 alt="Alici Avatar Listening" 
+                                 class="avatar-image hidden" 
+                                 id="avatarListening">
+                            
+                            <!-- Avatar pensando -->
+                            <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-12/3193088764620888317/2010826893896966144_9ab19eaf914ff4a0bf4d584cf3022105.jpg" 
+                                 alt="Alici Avatar Thinking" 
+                                 class="avatar-image hidden" 
+                                 id="avatarThinking">
                         </div>
                     </div>
                     <div class="hologram-status">
@@ -676,21 +735,26 @@ def home():
                         <div class="status-text" id="statusText">Online e pronta para ajudar</div>
                     </div>
                     <div class="hologram-controls">
-                        <button class="hologram-btn" onclick="simulateHologramAction('listen')">👂 Ouvir</button>
-                        <button class="hologram-btn" onclick="simulateHologramAction('think')">🧠 Pensar</button>
-                        <button class="hologram-btn" onclick="simulateHologramAction('speak')">💬 Falar</button>
-                        <button class="hologram-btn" onclick="simulateHologramAction('greet')">👋 Saudar</button>
+                        <button class="hologram-btn" onclick="changeAvatarState('listen')">👂 Ouvir</button>
+                        <button class="hologram-btn" onclick="changeAvatarState('think')">🧠 Pensar</button>
+                        <button class="hologram-btn" onclick="changeAvatarState('speak')">💬 Falar</button>
+                        <button class="hologram-btn" onclick="changeAvatarState('greet')">👋 Saudar</button>
                     </div>
                 </div>
             </div>
         </div>
         
         <footer>
-            <p>Alici AI v2.0 | IA Holográfica com Memória | © 2026</p>
+            <p>Alici AI v2.0 | IA Holográfica com Avatar Animado | © 2026</p>
         </footer>
     </div>
     
     <script>
+        // Variáveis globais para controle do avatar
+        let currentAvatarState = 'idle';
+        let speakingInterval = null;
+        let blinkInterval = null;
+        
         // Criar partículas holográficas
         function createHologramParticles() {
             const particlesContainer = document.getElementById('particles');
@@ -710,6 +774,103 @@ def home():
         // Inicializar partículas
         createHologramParticles();
         
+        // Função para trocar estado do avatar
+        function changeAvatarState(state) {
+            const avatarImages = document.querySelectorAll('.avatar-image');
+            const statusText = document.getElementById('statusText');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const buttons = document.querySelectorAll('.hologram-btn');
+            
+            // Limpar intervalos anteriores
+            if (speakingInterval) {
+                clearInterval(speakingInterval);
+                speakingInterval = null;
+            }
+            
+            // Esconder todas as imagens
+            avatarImages.forEach(img => {
+                img.classList.add('hidden');
+                img.classList.remove('avatar-speaking', 'avatar-breathing', 'avatar-blinking');
+            });
+            
+            // Remover classe active de todos os botões
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            currentAvatarState = state;
+            
+            switch(state) {
+                case 'listen':
+                    document.getElementById('avatarListening').classList.remove('hidden');
+                    document.getElementById('avatarListening').classList.add('avatar-blinking');
+                    statusText.textContent = 'Ouvindo sua mensagem...';
+                    statusIndicator.style.background = '#00aaff';
+                    statusIndicator.style.boxShadow = '0 0 10px #00aaff';
+                    buttons[0].classList.add('active');
+                    break;
+                    
+                case 'think':
+                    document.getElementById('avatarThinking').classList.remove('hidden');
+                    document.getElementById('avatarThinking').classList.add('avatar-breathing');
+                    statusText.textContent = 'Processando informações...';
+                    statusIndicator.style.background = '#ffaa00';
+                    statusIndicator.style.boxShadow = '0 0 10px #ffaa00';
+                    buttons[1].classList.add('active');
+                    break;
+                    
+                case 'speak':
+                    document.getElementById('avatarSpeaking').classList.remove('hidden');
+                    document.getElementById('avatarSpeaking').classList.add('avatar-speaking');
+                    statusText.textContent = 'Formulando resposta...';
+                    statusIndicator.style.background = '#00ff00';
+                    statusIndicator.style.boxShadow = '0 0 10px #00ff00';
+                    buttons[2].classList.add('active');
+                    
+                    // Simular movimento da boca durante a fala
+                    speakingInterval = setInterval(() => {
+                        const speakingImg = document.getElementById('avatarSpeaking');
+                        speakingImg.style.transform = `scaleY(${0.95 + Math.random() * 0.1})`;
+                        setTimeout(() => {
+                            speakingImg.style.transform = 'scaleY(1)';
+                        }, 100);
+                    }, 200);
+                    break;
+                    
+                case 'greet':
+                    document.getElementById('avatarIdle').classList.remove('hidden');
+                    document.getElementById('avatarIdle').classList.add('avatar-breathing');
+                    statusText.textContent = 'Olá! Como posso ajudar?';
+                    statusIndicator.style.background = '#00ffff';
+                    statusIndicator.style.boxShadow = '0 0 10px #00ffff';
+                    buttons[3].classList.add('active');
+                    break;
+                    
+                case 'idle':
+                default:
+                    document.getElementById('avatarIdle').classList.remove('hidden');
+                    document.getElementById('avatarIdle').classList.add('avatar-breathing');
+                    statusText.textContent = 'Online e pronta para ajudar';
+                    statusIndicator.style.background = '#00ffff';
+                    statusIndicator.style.boxShadow = '0 0 10px #00ffff';
+                    break;
+            }
+        }
+        
+        // Função para simular piscadas aleatórias
+        function startBlinking() {
+            blinkInterval = setInterval(() => {
+                if (currentAvatarState === 'idle' || currentAvatarState === 'listen') {
+                    const currentImg = currentAvatarState === 'idle' ? 
+                        document.getElementById('avatarIdle') : 
+                        document.getElementById('avatarListening');
+                    
+                    currentImg.style.transform = 'scaleY(0.1)';
+                    setTimeout(() => {
+                        currentImg.style.transform = 'scaleY(1)';
+                    }, 150);
+                }
+            }, 3000 + Math.random() * 2000); // Piscar a cada 3-5 segundos
+        }
+        
         function sendMessage() {
             const input = document.getElementById('userInput');
             const message = input.value.trim();
@@ -720,12 +881,12 @@ def home():
             addMessageToChat(message, 'user');
             input.value = '';
             
-            // Simular estados do holograma
-            simulateHologramAction('listen');
+            // Sequência de estados do avatar
+            changeAvatarState('listen');
             
             // Simular delay de processamento
             setTimeout(() => {
-                simulateHologramAction('think');
+                changeAvatarState('think');
                 
                 // Enviar mensagem para a API
                 fetch('/chat', {
@@ -737,21 +898,25 @@ def home():
                 })
                 .then(response => response.json())
                 .then(data => {
-                    simulateHologramAction('speak');
-                    addMessageToChat(data.resposta, 'ai');
+                    changeAvatarState('speak');
                     
-                    // Voltar ao estado normal após resposta
+                    // Simular tempo de fala baseado no tamanho da resposta
+                    const speakingTime = Math.max(2000, data.resposta.length * 50);
+                    
+                    // Adicionar resposta ao chat após um pequeno delay
                     setTimeout(() => {
-                        resetHologramState();
-                    }, 2000);
+                        addMessageToChat(data.resposta, 'ai');
+                    }, 500);
+                    
+                    // Voltar ao estado idle após terminar de "falar"
+                    setTimeout(() => {
+                        changeAvatarState('idle');
+                    }, speakingTime);
                 })
                 .catch(error => {
                     console.error('Erro:', error);
                     addMessageToChat('Desculpe, ocorreu um erro. Tente novamente.', 'ai');
-                    simulateHologramAction('error');
-                    setTimeout(() => {
-                        resetHologramState();
-                    }, 3000);
+                    changeAvatarState('idle');
                 });
             }, 1000);
         }
@@ -771,74 +936,28 @@ def home():
             }
         }
         
-        function simulateHologramAction(action) {
-            const statusText = document.getElementById('statusText');
-            const statusIndicator = document.getElementById('statusIndicator');
-            const hologramAvatar = document.getElementById('hologramAvatar');
-            const buttons = document.querySelectorAll('.hologram-btn');
-            
-            // Remover classe active de todos os botões
-            buttons.forEach(btn => btn.classList.remove('active'));
-            
-            switch(action) {
-                case 'listen':
-                    statusText.textContent = 'Ouvindo sua mensagem...';
-                    statusIndicator.style.background = '#00aaff';
-                    statusIndicator.style.boxShadow = '0 0 10px #00aaff';
-                    hologramAvatar.style.boxShadow = 'inset 0 0 50px rgba(0, 170, 255, 0.3)';
-                    buttons[0].classList.add('active');
-                    break;
-                case 'think':
-                    statusText.textContent = 'Processando informações...';
-                    statusIndicator.style.background = '#ffaa00';
-                    statusIndicator.style.boxShadow = '0 0 10px #ffaa00';
-                    hologramAvatar.style.boxShadow = 'inset 0 0 50px rgba(255, 170, 0, 0.3)';
-                    buttons[1].classList.add('active');
-                    break;
-                case 'speak':
-                    statusText.textContent = 'Formulando resposta...';
-                    statusIndicator.style.background = '#00ff00';
-                    statusIndicator.style.boxShadow = '0 0 10px #00ff00';
-                    hologramAvatar.style.boxShadow = 'inset 0 0 50px rgba(0, 255, 0, 0.3)';
-                    buttons[2].classList.add('active');
-                    break;
-                case 'greet':
-                    statusText.textContent = 'Olá! Como posso ajudar?';
-                    statusIndicator.style.background = '#00ffff';
-                    statusIndicator.style.boxShadow = '0 0 10px #00ffff';
-                    hologramAvatar.style.boxShadow = 'inset 0 0 50px rgba(0, 255, 255, 0.3)';
-                    buttons[3].classList.add('active');
-                    break;
-                case 'error':
-                    statusText.textContent = 'Erro de conexão';
-                    statusIndicator.style.background = '#ff0055';
-                    statusIndicator.style.boxShadow = '0 0 10px #ff0055';
-                    hologramAvatar.style.boxShadow = 'inset 0 0 50px rgba(255, 0, 85, 0.3)';
-                    break;
-            }
-        }
-        
-        function resetHologramState() {
-            const statusText = document.getElementById('statusText');
-            const statusIndicator = document.getElementById('statusIndicator');
-            const hologramAvatar = document.getElementById('hologramAvatar');
-            const buttons = document.querySelectorAll('.hologram-btn');
-            
-            statusText.textContent = 'Online e pronta para ajudar';
-            statusIndicator.style.background = '#00ffff';
-            statusIndicator.style.boxShadow = '0 0 10px #00ffff';
-            hologramAvatar.style.boxShadow = 'none';
-            
-            buttons.forEach(btn => btn.classList.remove('active'));
-        }
-        
-        // Animação inicial do holograma
-        setTimeout(() => {
-            simulateHologramAction('greet');
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animação inicial de boas-vindas
             setTimeout(() => {
-                resetHologramState();
-            }, 3000);
-        }, 1000);
+                changeAvatarState('greet');
+                setTimeout(() => {
+                    changeAvatarState('idle');
+                }, 3000);
+            }, 1000);
+            
+            // Iniciar piscadas aleatórias
+            startBlinking();
+        });
+        
+        // Efeito de hover no avatar
+        document.getElementById('aliciAvatar').addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+        });
+        
+        document.getElementById('aliciAvatar').addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
     </script>
 </body>
 </html>
@@ -848,7 +967,7 @@ def home():
 # Rota para verificar o status da aplicação
 @app.route("/status", methods=["GET"])
 def status():
-    return {"status": "Alici Holográfica online 🚀"}
+    return {"status": "Alici Avatar Holográfico online 🚀"}
 
 # Rota para processar as mensagens do chat
 @app.route("/chat", methods=["POST"])
