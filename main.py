@@ -981,7 +981,7 @@ def chat():
     resposta = gerar_resposta(pergunta)
     return jsonify({"resposta": resposta})
 
-# Ponto de entrada da aplicação
+# Ponto de entrada da aplicação 
 if __name__ == "__main__":
     # Obter a porta do ambiente (para o Render) ou usar 5000 como padrão
     port = int(os.environ.get("PORT", 5000))
