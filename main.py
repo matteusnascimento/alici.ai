@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify, render_template_string
 from engine import gerar_resposta
 
 # Inicializar a aplicação Flask
-app = Flask(__name__)
+app = Flask(__name__, static_folder='Static', static_url_path='/Static')
 
 # Rota principal para servir a interface web da Alici com design holográfico e avatar animado
 @app.route("/")
@@ -395,6 +395,7 @@ def home():
             position: absolute;
             top: 0;
             left: 0;
+            z-index: 0;
         }
         
         .avatar-image.hidden {
@@ -412,7 +413,7 @@ def home():
             background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
             animation: scan-line 3s infinite;
             border-radius: 18px;
-            z-index: 2;
+            z-index: 3;
         }
         
         .alici-avatar::after {
@@ -426,7 +427,7 @@ def home():
                 radial-gradient(circle at 30% 40%, rgba(0, 255, 255, 0.1) 0%, transparent 30%),
                 radial-gradient(circle at 70% 60%, rgba(0, 255, 170, 0.1) 0%, transparent 30%);
             border-radius: 18px;
-            z-index: 1;
+            z-index: 2;
         }
         
         @keyframes scan-line {
@@ -706,25 +707,25 @@ def home():
                     <div class="hologram-display">
                         <div class="alici-avatar" id="aliciAvatar">
                             <!-- Avatar principal - estado idle -->
-                            <img src="/Static/Imagens/Avatar/alici_idle.jpg" 
+                            <img src="/Static/Imagens/Avatar/IMG_1809.jpeg" 
                                  alt="Alici Avatar Idle" 
                                  class="avatar-image avatar-breathing" 
                                  id="avatarIdle">
                             
                             <!-- Avatar falando - com movimento da boca -->
-                            <img src="/Static/imagens/avatar/alici_speaking.jpg" 
+                            <img src="/Static/Imagens/Avatar/IMG_1807.jpeg" 
                                  alt="Alici Avatar Speaking" 
                                  class="avatar-image avatar-speaking hidden" 
                                  id="avatarSpeaking">
                             
                             <!-- Avatar ouvindo -->
-                            <img src="/Static/imagens/avatar/alici_listening.jpg" 
+                            <img src="/Static/Imagens/Avatar/IMG_1806.jpeg" 
                                  alt="Alici Avatar Listening" 
                                  class="avatar-image hidden" 
                                  id="avatarListening">
                             
                             <!-- Avatar pensando -->
-                            <img src="/Static/imagens/avatar/alici_thinking.jpg" 
+                            <img src="/Static/Imagens/Avatar/IMG_1795.jpeg" 
                                  alt="Alici Avatar Thinking" 
                                  class="avatar-image hidden" 
                                  id="avatarThinking">
@@ -745,7 +746,7 @@ def home():
         </div>
         
         <footer>
-            <p>Alici AI v2.0 | IA Holográfica com Avatar Animado | © 2026</p>
+            <p>Alici AI v2.0 | IA Holográfica com Avatar Animado | ©️ 2026</p>
         </footer>
     </div>
     
