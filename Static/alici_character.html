@@ -75,6 +75,7 @@
             height: 100%;
             max-width: 400px;
             max-height: 400px;
+            border-radius: 10px;
         }
 
         .status {
@@ -249,7 +250,7 @@
             <!-- PERSONAGEM -->
             <div class="secao-personagem">
                 <div class="canvas-container">
-                    <canvas id="alici-canvas" width="400" height="400"></canvas>
+                    <canvas id="alici-canvas" width="500" height="600"></canvas>
                 </div>
                 <div class="status" id="status">Esperando...</div>
                 <div class="emocao-info" id="emocao-info"></div>
@@ -276,6 +277,7 @@
         </div>
     </div>
 
-    <script src="/Static/alici_animator.js"></script>
+    <script src="/Static/alici_renderer.js"></script>
+    <script src="/Static/alici_chat_integration.js"></script>
 </body>
 </html>
