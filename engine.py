@@ -6,6 +6,7 @@ from database import buscar_memoria, aprender
 from intencao import precisa_pesquisa_web
 from web_search import buscar_na_web
 from resposta import responder_local
+from sistema_emocoes import adicionar_metadados_resposta
 
 
 def gerar_resposta(pergunta: str) -> str:
@@ -60,3 +61,12 @@ def gerar_resposta(pergunta: str) -> str:
         "Ainda não tenho essa informação armazenada, mas posso aprender com você.\n\n"
         "Explique melhor ou pergunte de outra forma 🙂"
     )
+
+
+def gerar_resposta_com_emocao(pergunta: str) -> dict:
+    """
+    Versão expandida que retorna resposta + metadados emocionais
+    Para integração com personagem animado
+    """
+    resposta = gerar_resposta(pergunta)
+    return adicionar_metadados_resposta(resposta)
