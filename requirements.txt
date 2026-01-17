@@ -13,3 +13,5 @@ psycopg2-binary
 sentence-transformers
 numpy
 python-dotenv
+import tensorflow as tf
+from tensorflow import keras
