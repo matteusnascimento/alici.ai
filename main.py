@@ -982,31 +982,6 @@ def chat():
     resposta = gerar_resposta(pergunta)
     return jsonify({"resposta": resposta})
 
-# Rota para personagem animado com emoções
-@app.route("/personagem")
-def personagem():
-    """Serve a página do personagem animado"""
-    with open(os.path.join('Static', 'alici_character.html'), 'r', encoding='utf-8') as f:
-        return f.read()
-
-@app.route("/api/chat-animado", methods=["POST"])
-def chat_animado():
-    """Endpoint para chat com metadados emocionais"""
-    data = request.json
-    mensagem = data.get("mensagem", "").strip()
-
-    if not mensagem:
-        return jsonify({"erro": "Mensagem vazia"}), 400
-
-    resultado = gerar_resposta_com_emocao(mensagem)
-    return jsonify(resultado)
-
-@app.route("/demo-animacoes")
-def demo_animacoes():
-    """Demonstração interativa das animações"""
-    with open(os.path.join('Static', 'alici_animation_demo.html'), 'r', encoding='utf-8') as f:
-        return f.read()
-
 # Ponto de entrada da aplicação
 if __name__ == "__main__":
     # Obter a porta do ambiente (para o Render) ou usar 5000 como padrão

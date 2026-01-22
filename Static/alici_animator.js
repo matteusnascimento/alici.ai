@@ -1,4 +1,6 @@
-// alici_animator.js
+<Question ID="1" Shortcut="chapter 1" Order="" ElementType="chapter" >
+<LongCaption>// alici_animator.js</LongCaption>
+</Question>
 // State Machine + Animação fluida da Alici
 
 class AliciAnimator {

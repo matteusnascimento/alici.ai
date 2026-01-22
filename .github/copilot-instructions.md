@@ -2,121 +2,170 @@
 
 ## 🎯 Project Overview
 
-**Alici** is a Portuguese-language AI chatbot with persistent memory, web search, and a holographic avatar interface. It's a Flask-based web app deployed on Render with PostgreSQL (Neon) for memory storage.
+**Alici** is a Portuguese-language AI chatbot with persistent memory, web search capabilities, and a holographic avatar interface. It's a Flask-based web application deployed on Render with PostgreSQL (Neon) for persistent memory storage across conversations.
+
+The architecture prioritizes a **5-layer decision pipeline** where each layer can short-circuit to avoid redundant processing: identity checks → memory lookups → behavioral patterns → web search → graceful fallback.
 
 ## 🏗️ Architecture & Data Flow
 
-### Request Pipeline (`engine.py` - Core Logic)
-Requests flow through 5 sequential decision layers:
-1. **Identity Layer**: Hardcoded responses for "quem é você" (who are you) → returns `identidade_alici()`
-2. **Memory Layer**: Query PostgreSQL for exact question match → `buscar_memoria(pergunta)`
-3. **Local Rules**: Pattern matching in `resposta.py` for behavioral responses
-4. **Web Search**: If question triggers keywords (who/what/news/price/how) → `buscar_na_web()`
-5. **Fallback**: "Ainda não tenho essa informação" - never returns blank
+### Request Pipeline (`engine.py` - Core Orchestrator)
 
-**Critical**: Each successful response calls `aprender()` to store the Q&A pair with confidence scoring.
+All user questions flow through `gerar_resposta(pergunta)` with 5 sequential decision layers:
+
+1. **Identity Layer** (Immutable): Detects "quem é você" patterns → returns fixed `identidade_alici()` response
+2. **Memory Layer** (Fast retrieval): Exact match search in PostgreSQL → ranked by confidence score
+3. **Local Rules Layer** (Behavioral): Pattern matching in `resposta.py` → keyword-triggered responses
+4. **Web Search Layer** (External): If `precisa_pesquisa_web()` triggers, calls `buscar_na_web()` with threshold check
+5. **Fallback Layer** (Graceful): "Ainda não tenho essa informação armazenada..." - never returns empty string
+
+**Critical invariant**: Every successful response (except identity) MUST call `aprender(pergunta, resposta)` to store the Q&A pair for future learning.
 
 ### Component Responsibilities
 
 | File | Purpose | Key Functions |
 |------|---------|---|
-| `main.py` | Flask server & holographic UI | Routes: `/` (UI), `/status`, `/chat` (POST) |
-| `engine.py` | Response generation logic | `gerar_resposta(pergunta)` - orchestrates all layers |
-| `database.py` | PostgreSQL integration | `buscar_memoria()`, `aprender()` - Q&A storage |
-| `identidade.py` | AI personality constant | `identidade_alici()` - immutable identity response |
-| `resposta.py` | Behavioral patterns (keyword→response) | `responder_local()` - ~50 hardcoded Q&A rules |
-| `intencao.py` | Intent detection for web search | `precisa_pesquisa_web()` - keyword triggers |
-| `web_search.py` | External information retrieval | `buscar_na_web()` - searches web, returns `{"resposta": str, "confianca": float}` |
+| **engine.py** | Request orchestration | `gerar_resposta(pergunta)` orchestrates 5 layers; `gerar_resposta_com_emocao()` adds emotional metadata |
+| **main.py** | Flask server & UI | Routes: `/` (holographic UI), `/chat` (POST handler), `/status` (health); inline HTML/CSS for avatar |
+| **database.py** | PostgreSQL integration | `conectar()`, `buscar_memoria(pergunta)`, `aprender(pergunta, resposta)`, `criar_tabelas()` |
+| **identidade.py** | AI personality constant | `identidade_alici()` - immutable, fixed response about creator & nature |
+| **resposta.py** | Behavioral Q&A patterns | `responder_local(pergunta)` - ~80 hardcoded keyword→response rules (greetings, capabilities, time) |
+| **intencao.py** | Intent detection | `precisa_pesquisa_web(pergunta)` - returns bool based on keyword matching |
+| **web_search.py** | Web information retrieval | `buscar_na_web(pergunta)` - queries DuckDuckGo API, extracts abstract text |
+| **sistema_emocoes.py** | Emotional metadata | `detectar_emocao(resposta)` analyzes response text for emotion (happy/thinking/serious/mysterious/neutral), returns aura color & animation speed |
 
 ## 🔌 Integration Points & External Dependencies
 
-### PostgreSQL/Neon Setup
-- **Connection**: `DATABASE_URL` environment variable (from `.env`)
-- **Schema**: Single `memoria` table with indexed `pergunta` column for fast matching
-- **Confidence System**: `confianca` INT increments on repeated Q&As; exact matches ranked by `ORDER BY confianca DESC`
+### PostgreSQL/Neon Database
+- **Connection**: `DATABASE_URL` env var (from `.env`) - typically `postgresql://user:password@neon-host/dbname?sslmode=require`
+- **Schema**: Single `memoria` table with columns: `id` (serial PK), `pergunta` (TEXT, indexed), `resposta` (TEXT), `confianca` (INT, default 1), `criado_em` (TIMESTAMP)
+- **Index**: `idx_memoria_pergunta` on `pergunta` column for fast exact-match lookups
+- **Confidence scoring**: First answer = `confianca: 1`; repeated Q&A pairs increment by 1; queries return highest confidence match first
 
-### Web Search Integration
-- `web_search.py` must return dict: `{"resposta": "...", "confianca": 0.6-1.0}`
-- Only accepts confidence ≥ 0.6 to prevent low-quality responses being learned
-- Question lowercase comparison: `pergunta.lower()` stored in DB for case-insensitive matching
+### Web Search Integration (DuckDuckGo)
+- **Endpoint**: `https://api.duckduckgo.com/?q={quote(pergunta)}&format=json`
+- **Response parsing**: Extracts `AbstractText` if present, falls back to `RelatedTopics[0].Text`
+- **Confidence threshold**: Web results accepted ONLY if confidence ≥ 0.6 (prevents low-quality answers being learned)
+- **Error handling**: Catches timeout/network errors gracefully → returns None → engine uses fallback
 
 ### Frontend Communication
-- **Input**: POST `/chat` with JSON `{"mensagem": "user question"}`
-- **Output**: JSON `{"resposta": "ai response"}`
-- **Avatar State Machine**: Frontend changes avatar image (idle→listen→think→speak→idle) based on timing
+- **POST `/chat`**: Expects JSON `{"mensagem": "user question string"}`
+- **Response**: JSON `{"resposta": "response text", "emocao": "...", "cor_aura": "#...", "velocidade_animacao": 1.2}`
+- **Avatar state machine**: JavaScript controls avatar image transitions (idle→listen→think→speak→idle) based on response timing
 
 ## 📋 Patterns & Conventions
 
-### Case Sensitivity
-- **Always normalize**: `pergunta.lower().strip()` before DB queries and pattern matching
-- DB stores lowercased `pergunta` column
-- String matching uses lowercase: `if "quem é" in pergunta`
+### Case Normalization (Critical!)
+```python
+pergunta = pergunta.lower().strip()  # ALWAYS do this first
+```
+- DB stores all `pergunta` values lowercased for consistent matching
+- All pattern checks in `resposta.py` use `pergunta.lower()`
+- Failure to normalize = silent memory misses
 
 ### Response Pattern in `resposta.py`
-All local responses follow this structure:
+All local Q&A rules follow this structure:
 ```python
-if any(k in pergunta for k in ["pattern1", "pattern2", "pattern3"]):
-    return "Response text..."
+if any(k in pergunta for k in ["padrão1", "padrão2", "padrão3"]):
+    return "Resposta aqui..."
 ```
-**Why**: Multiple keywords prevent typos; case-insensitive via `pergunta.lower()`
+**Why this pattern**:
+- Multiple keywords improve robustness (typos, variations)
+- Case-insensitivity via pre-normalized `pergunta`
+- Easy to maintain and debug
 
-### Confidence in Memory
-- First query = `confianca: 1`
-- Repeated Q&As increment `confianca`
-- Highest confidence results ranked first in `buscar_memoria()`
-- Web search requires ≥0.6 confidence before learning
+### Confidence System Mechanics
+```python
+# Exact match query (case-insensitive)
+SELECT resposta FROM memoria 
+WHERE pergunta = %s 
+ORDER BY confianca DESC LIMIT 1
 
-### Error Handling Pattern
-All DB functions wrapped in try/except with resource cleanup:
+# Learning (increment if exists, insert otherwise)
+if already_learned(pergunta, resposta):
+    UPDATE memoria SET confianca = confianca + 1
+else:
+    INSERT INTO memoria (pergunta, resposta) VALUES (...)
+```
+
+### Database Connection Pattern
+ALL database operations must follow this cleanup pattern:
 ```python
 try:
     conn = conectar()
-    # query
+    cur = conn.cursor()
+    # your query
+    conn.commit()
 finally:
     if 'cur' in locals(): cur.close()
     if 'conn' in locals(): conn.close()
 ```
+Missing `finally` blocks **leak connections** → deployment hangs after ~50 queries.
 
 ## 🚀 Development Workflows
 
-### Local Development
+### Local Setup
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
+
+# 2. Configure environment
 cp .env.example .env
-# Edit .env: DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
+# Edit .env with: DATABASE_URL=postgresql://...?sslmode=require
+
+# 3. Run locally
 python main.py
-# Access: http://localhost:5000
+# Access http://localhost:5000
 ```
 
 ### Adding New Q&A Rules
-1. Edit `resposta.py` → add pattern to `responder_local()`
-2. Test locally: `python -c "from resposta import responder_local; print(responder_local('your question'))"`
-3. Function automatically saves to DB via `aprender()` in `engine.py`
+1. Edit `resposta.py` → add pattern to `responder_local()` function
+2. Test locally: `python -c "from resposta import responder_local; print(responder_local('seu pergunta'))"`
+3. Commit → deployed via Render auto-deploy on git push
 
-### Testing Web Search Integration
+### Testing Web Search Workflow
 ```python
+from intencao import precisa_pesquisa_web
 from web_search import buscar_na_web
-result = buscar_na_web("test question")
-# Should return: {"resposta": "...", "confianca": float}
+
+if precisa_pesquisa_web("quem é Elon Musk"):
+    result = buscar_na_web("quem é Elon Musk")
+    if result and result.get("confianca", 0) >= 0.6:
+        print(result["resposta"])
 ```
 
-### Deployment (Render)
-- Build command: `pip install -r requirements.txt`
-- Start command: `gunicorn main:app`
-- **Env vars required**: `DATABASE_URL` (Neon connection string), `PORT` (auto-set by Render)
+### Deployment to Render
+- **Build command**: `pip install -r requirements.txt`
+- **Start command**: `gunicorn main:app`
+- **Environment variables**: Set `DATABASE_URL` in Render dashboard
+- **Port**: Auto-detected from `PORT` env var; Gunicorn binds to 0.0.0.0:$PORT
 
-## ⚠️ Common Pitfalls
+## ⚠️ Common Pitfalls & Fixes
 
-1. **Forgetting `.lower()`**: Database queries fail if not normalized → no memory hits
-2. **Not calling `aprender()`**: Responses aren't stored, learning breaks
-3. **Web search confidence threshold**: Results below 0.6 are ignored (prevents poisoning memory)
-4. **Connection cleanup**: Missing `finally` blocks leak DB connections
-5. **Avatar UI paths**: Case-sensitive on production; use `/Static/Imagens/Avatar/` paths exactly
+| Pitfall | Impact | Prevention |
+|---------|--------|-----------|
+| Forgetting `pergunta.lower()` | Silent memory misses; no exact matches found | Always normalize at function entry |
+| Forgetting `aprender()` call | No learning happens; same questions asked repeatedly | Call in every non-identity branch |
+| Web search without confidence check | Low-quality answers poisoned memory | Check `result.get("confianca", 0) >= 0.6` before storing |
+| Missing DB connection cleanup | Connections exhaust pool after ~50 requests → 504 errors | Always use try/finally with `cur.close()` & `conn.close()` |
+| Hardcoding avatar image paths | Frontend breaks in production | Use `/Static/Imagens/Avatar/` (exact case on Linux servers) |
+| Multiple web search calls per question | Rate limiting, slow responses | Call `precisa_pesquisa_web()` BEFORE attempting `buscar_na_web()` |
 
-## 📂 Key Files Reference
+## 📂 Key Files & Entry Points
 
-- **Response logic entry point**: [engine.py](engine.py#L1)
-- **DB query patterns**: [database.py](database.py#L35) (`buscar_memoria` function)
-- **Frontend HTML/CSS/JS**: [main.py](main.py#L12) (inline in home() route)
-- **Local Q&A rules**: [resposta.py](resposta.py#L1)
-- **Production config**: [Procfile](Procfile), [requirements.txt](requirements.txt)
+- **Response orchestrator**: [engine.py](engine.py) - Read first to understand flow
+- **Database queries**: [database.py](database.py#L42) - `buscar_memoria()` pattern
+- **Q&A rule patterns**: [resposta.py](resposta.py#L8) - `responder_local()` function
+- **Intent keywords**: [intencao.py](intencao.py#L1) - Triggers for web search
+- **Web search wrapper**: [web_search.py](web_search.py#L4) - DuckDuckGo API integration
+- **Emotion detection**: [sistema_emocoes.py](sistema_emocoes.py#L6) - Avatar animation metadata
+- **Flask routes**: [main.py](main.py#L1-L10) - `/` (UI), `/chat` (handler)
+- **Deployment config**: `.env.example`, `requirements.txt`, `runtime.txt` (Python 3.11)
+
+## 🎯 Testing & Validation
+
+Use included test utilities (in workspace root):
+- `teste_engine_completo.py` - End-to-end pipeline test with sample questions
+- `verificar_conexoes_lite.py` - Check imports & basic connectivity (no TensorFlow)
+- `verificar_conexoes.py` - Full diagnostics including TensorFlow & database
+
+Run: `python teste_engine_completo.py` to validate the entire request pipeline.
