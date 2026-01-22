@@ -32,6 +32,8 @@ jobs:
           python -m pip install --upgrade pip
           # Install only test/runtime essentials for CI
           pip install pytest redis rq
+          # Dev tools for linting/type checking
+          pip install flake8 mypy
 
       - name: Start RQ worker (background)
         run: |
@@ -41,3 +43,9 @@ jobs:
       - name: Run tests
         run: |
           pytest -q
+      - name: Lint
+        run: |
+          flake8 . --max-line-length=120 || true
+      - name: Type check
+        run: |
+          mypy . || true
