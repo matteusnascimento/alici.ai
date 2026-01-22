@@ -22,8 +22,10 @@ class Database:
         """Cria as tabelas necessárias"""
         with self.get_connection() as conn:
             with conn.cursor() as cur:
-                # Extensão para UUID
+                # Extensões necessárias: UUIDs, geração de UUIDs e vetor (pgvector)
+                cur.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
                 cur.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+                cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
                 
                 # Tabela de usuários
                 cur.execute("""
@@ -103,6 +105,20 @@ class Database:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_memory_user_id ON user_memory(user_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_documents_user_id ON user_documents(user_id)")
+                # Tabela de jobs de curadoria (pending -> ready -> approved/rejected)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS curation_jobs (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        params JSONB,
+                        status TEXT DEFAULT 'pending',
+                        summary TEXT,
+                        candidate_ids UUID[],
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_curation_user_id ON curation_jobs(user_id)")
                 
                 conn.commit()
                 print("✅ Tabelas criadas com sucesso")

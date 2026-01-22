@@ -173,9 +173,33 @@ async def get_chat_history(
 # ==================== ROTAS DE MEMÓRIA ====================
 
 @app.get("/memory")
-async def get_memory(current_user: str = Depends(get_current_user)):
-    """Retorna toda a memória do usuário"""
-    memories = UserMemory.get_all_memory(current_user)
+async def get_memory(
+    tipo: Optional[str] = None,
+    min_importancia: Optional[int] = None,
+    since_iso: Optional[str] = None,
+    query: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: str = Depends(get_current_user)
+):
+    """Retorna a memória do usuário com filtros e busca semântica.
+
+    Query params:
+    - `tipo`: filtra por tipo
+    - `min_importancia`: filtra por importância mínima
+    - `since_iso`: ISO timestamp, memórias depois desta data
+    - `query`: busca semântica (usa embeddings)
+    - `limit`/`offset`: paginação
+    """
+    memories = UserMemory.get_all_memory(
+        current_user,
+        tipo=tipo,
+        min_importancia=min_importancia,
+        since_iso=since_iso,
+        query=query,
+        limit=limit,
+        offset=offset,
+    )
     return {"memory": memories}
 
 @app.post("/memory")
@@ -194,6 +218,79 @@ async def delete_memory(memory_id: str, current_user: str = Depends(get_current_
     """Deleta um item da memória"""
     UserMemory.delete_memory(current_user, memory_id)
     return {"status": "deletado com sucesso"}
+
+
+@app.post("/memory/curate")
+async def curate_memory(
+    older_than_days: int = 90,
+    similarity_threshold: float = 0.8,
+    keep_top: int = 3,
+    current_user: str = Depends(get_current_user)
+):
+    """Enfileira um job de curadoria em background (RQ). Retorna `job_id`.
+
+    Requer Redis/RQ worker em execução para processar o job.
+    """
+    from rq import Queue
+    from redis import Redis
+    from config import get_settings
+
+    settings = get_settings()
+    redis_url = os.getenv('REDIS_URL', getattr(settings, 'REDIS_URL', 'redis://localhost:6379'))
+    redis_conn = Redis.from_url(redis_url)
+    q = Queue(connection=redis_conn)
+
+    params = {
+        'older_than_days': older_than_days,
+        'similarity_threshold': similarity_threshold,
+        'keep_top': keep_top,
+    }
+
+    # Cria job de curadoria no banco
+    job_id = UserMemory.create_curation_job(current_user, params)
+
+    # Enfileira worker para processar o job
+    q.enqueue('memory.process_curate_job', job_id)
+
+    return {"status": "queued", "job_id": job_id}
+
+
+@app.get('/memory/curation_jobs')
+async def list_curation_jobs(current_user: str = Depends(get_current_user)):
+    db = get_db()
+    with db.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, params, status, summary, candidate_ids, created_at, updated_at FROM curation_jobs WHERE user_id = %s ORDER BY created_at DESC",
+                (current_user,)
+            )
+            jobs = []
+            for row in cur.fetchall():
+                jobs.append({
+                    'id': row[0],
+                    'params': row[1],
+                    'status': row[2],
+                    'summary': row[3],
+                    'candidate_ids': row[4],
+                    'created_at': row[5].isoformat() if row[5] else None,
+                    'updated_at': row[6].isoformat() if row[6] else None,
+                })
+            return {'jobs': jobs}
+
+
+@app.post('/memory/curation_jobs/{job_id}/approve')
+async def approve_curation_job(job_id: str, current_user: str = Depends(get_current_user)):
+    """Aprova a curadoria (insere resumo e remove candidatos)."""
+    # Finaliza job
+    result = UserMemory.finalize_curation_job(job_id, approve=True)
+    return result
+
+
+@app.post('/memory/curation_jobs/{job_id}/reject')
+async def reject_curation_job(job_id: str, current_user: str = Depends(get_current_user)):
+    """Rejeita a curadoria (marca como rejeitado)."""
+    result = UserMemory.finalize_curation_job(job_id, approve=False)
+    return result
 
 # ==================== ROTAS DE PERFIL ====================
 
