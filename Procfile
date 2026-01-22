@@ -1,0 +1,1 @@
+web: gunicorn main_fastapi:app -w 4 --bind 0.0.0.0:$PORT
