@@ -169,3 +169,67 @@ Use included test utilities (in workspace root):
 - `verificar_conexoes.py` - Full diagnostics including TensorFlow & database
 
 Run: `python teste_engine_completo.py` to validate the entire request pipeline.
+
+---
+
+## 🔐 NEW: AUTHENTICATION & MULTI-USER ARCHITECTURE (FastAPI)
+
+### User-Isolated System
+The system now supports **per-user memory, history, and personalization**:
+
+**Key files:**
+- [auth.py](auth.py) - JWT authentication (register/login/logout/refresh)
+- [database_models.py](database_models.py) - PostgreSQL schema with users, sessions, messages, user_memory
+- [memory.py](memory.py) - Per-user memory with vector embeddings (RAG-ready)
+- [embeddings.py](embeddings.py) - SentenceTransformers for semantic search
+- [main_fastapi.py](main_fastapi.py) - FastAPI app (replace Flask main.py eventually)
+
+### Request Flow (with auth):
+```
+Request → /auth/login (JWT token)
+        → /chat (send token in header)
+        → get_current_user() dependency
+        → load user's relevant memories
+        → generate response
+        → save to user_memory with embedding
+```
+
+### Memory System
+- **Types**: persona, preference, conversation, context
+- **Storage**: PostgreSQL + vector embeddings
+- **Retrieval**: Semantic similarity (top-k similar memories)
+- **Personas**: técnico, mentor, espiritual, motivacional
+
+### Database Schema (Neon)
+```sql
+users (id, email, senha_hash, plano)
+sessions (id, user_id, token, expira_em)
+messages (id, user_id, pergunta, resposta, criado_em)
+user_memory (id, user_id, tipo, conteudo, embedding, importancia)
+user_documents (id, user_id, nome, conteudo, embedding)
+```
+
+### Testing Auth Locally
+```bash
+# Register
+curl -X POST "http://localhost:8000/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"User","email":"test@example.com","senha":"pass12345"}'
+
+# Login (returns access_token)
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","senha":"pass12345"}'
+
+# Chat (with token)
+curl -X POST "http://localhost:8000/chat" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"pergunta":"hello","incluir_emocao":true}'
+```
+
+### Deployment Notes
+- Switch `Procfile` start command from `gunicorn main:app` to `gunicorn main_fastapi:app`
+- PostgreSQL needs pgvector extension: `CREATE EXTENSION vector`
+- Add `DATABASE_URL` env var to Render dashboard
+- `requirements_new.txt` has all dependencies (torch, sentence-transformers may take time)
