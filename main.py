@@ -1,9 +1,28 @@
 import os
+import tempfile
 from flask import Flask, request, jsonify, render_template_string
+from werkzeug.utils import secure_filename
 from engine import gerar_resposta, gerar_resposta_com_emocao
+
+# Importar módulo de inferência do modelo
+try:
+    from model_inference import fazer_predicao, gerar_resposta_predicao, carregar_modelo
+    MODEL_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARNING] Modelo não disponível: {e}")
+    MODEL_AVAILABLE = False
 
 # Inicializar a aplicação Flask
 app = Flask(__name__, static_folder='Static', static_url_path='/Static')
+
+# Configurações de upload
+UPLOAD_FOLDER = tempfile.gettempdir()
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Rota principal para servir a interface web da Alici com design holográfico e avatar animado
 @app.route("/")
@@ -1036,6 +1055,226 @@ def chat_com_audio():
             "resposta": resposta,
             "aviso": "TTS não disponível. Instale: pip install gtts"
         }), 206
+
+# ============================================================================
+# 🤖 NOVOS ENDPOINTS DE RECONHECIMENTO DE IMAGEM COM MODELO CIFAR-100
+# ============================================================================
+
+@app.route("/chat/image", methods=["POST"])
+def chat_com_imagem():
+    """
+    Endpoint para análise de imagem usando o modelo CIFAR-100 treinado.
+    
+    Aceita:
+    - POST /chat/image com multipart/form-data
+    - Chave: "imagem" (arquivo)
+    
+    Retorna:
+    {
+        "classe": "nome_do_objeto",
+        "confianca": 94.5,
+        "resposta": "Detectei um [objeto] com [confiança]% de confiança!",
+        "alternativas": [{"classe": "...", "confianca": ...}],
+        "status": "sucesso"
+    }
+    """
+    
+    if not MODEL_AVAILABLE:
+        return jsonify({
+            "erro": "Modelo não disponível",
+            "status": "erro"
+        }), 503
+    
+    # Verificar se arquivo foi enviado
+    if 'imagem' not in request.files:
+        return jsonify({
+            "erro": "Nenhum arquivo de imagem enviado. Use chave 'imagem'.",
+            "status": "erro"
+        }), 400
+    
+    arquivo = request.files['imagem']
+    
+    if arquivo.filename == '':
+        return jsonify({
+            "erro": "Arquivo sem nome",
+            "status": "erro"
+        }), 400
+    
+    if not allowed_file(arquivo.filename):
+        return jsonify({
+            "erro": f"Tipo de arquivo não permitido. Use: {', '.join(ALLOWED_EXTENSIONS)}",
+            "status": "erro"
+        }), 400
+    
+    try:
+        # Salvar arquivo temporário
+        filename = secure_filename(arquivo.filename)
+        caminho_temp = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        arquivo.save(caminho_temp)
+        
+        # Fazer predição com o modelo
+        resultado_predicao = fazer_predicao(caminho_temp, top_k=3)
+        
+        # Limpar arquivo temporário
+        try:
+            os.remove(caminho_temp)
+        except:
+            pass
+        
+        if resultado_predicao.get('status') == 'erro':
+            return jsonify({
+                "erro": resultado_predicao.get('erro'),
+                "status": "erro"
+            }), 400
+        
+        # Gerar resposta em português natural
+        resposta = gerar_resposta_predicao(resultado_predicao)
+        
+        # Aprender a predição (opcional - persistência)
+        try:
+            from database import aprender
+            aprender(
+                f"Que animal/objeto é isto? [imagem]",
+                f"É um {resultado_predicao.get('classe')} com {resultado_predicao.get('confianca'):.1f}% de confiança"
+            )
+        except:
+            pass
+        
+        return jsonify({
+            "classe": resultado_predicao.get('classe'),
+            "confianca": resultado_predicao.get('confianca'),
+            "resposta": resposta,
+            "alternativas": resultado_predicao.get('top_k', [])[1:],
+            "status": "sucesso"
+        })
+    
+    except Exception as e:
+        return jsonify({
+            "erro": f"Erro ao processar imagem: {str(e)}",
+            "status": "erro"
+        }), 500
+
+
+@app.route("/chat/image-base64", methods=["POST"])
+def chat_com_imagem_base64():
+    """
+    Endpoint alternativo para análise de imagem via Base64.
+    Útil para requisições JavaScript (canvas, input file preview).
+    
+    Body JSON:
+    {
+        "imagem_base64": "data:image/png;base64,iVBORw0KGgo...",
+        "nome": "foto.png" (opcional)
+    }
+    
+    Retorna: Mesmo formato que /chat/image
+    """
+    
+    if not MODEL_AVAILABLE:
+        return jsonify({
+            "erro": "Modelo não disponível",
+            "status": "erro"
+        }), 503
+    
+    data = request.json
+    imagem_base64 = data.get("imagem_base64")
+    
+    if not imagem_base64:
+        return jsonify({
+            "erro": "Campo 'imagem_base64' não fornecido",
+            "status": "erro"
+        }), 400
+    
+    try:
+        import base64
+        from PIL import Image
+        import io
+        
+        # Decodificar Base64
+        if ',' in imagem_base64:
+            # Remover prefixo "data:image/...;base64,"
+            imagem_base64 = imagem_base64.split(',')[1]
+        
+        imagem_bytes = base64.b64decode(imagem_base64)
+        imagem = Image.open(io.BytesIO(imagem_bytes))
+        
+        # Salvar temporariamente
+        caminho_temp = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_image.png')
+        imagem.save(caminho_temp, 'PNG')
+        
+        # Fazer predição
+        resultado_predicao = fazer_predicao(caminho_temp, top_k=3)
+        
+        # Limpar
+        try:
+            os.remove(caminho_temp)
+        except:
+            pass
+        
+        if resultado_predicao.get('status') == 'erro':
+            return jsonify({
+                "erro": resultado_predicao.get('erro'),
+                "status": "erro"
+            }), 400
+        
+        resposta = gerar_resposta_predicao(resultado_predicao)
+        
+        return jsonify({
+            "classe": resultado_predicao.get('classe'),
+            "confianca": resultado_predicao.get('confianca'),
+            "resposta": resposta,
+            "alternativas": resultado_predicao.get('top_k', [])[1:],
+            "status": "sucesso"
+        })
+    
+    except Exception as e:
+        return jsonify({
+            "erro": f"Erro ao processar imagem Base64: {str(e)}",
+            "status": "erro"
+        }), 500
+
+
+@app.route("/model/status", methods=["GET"])
+def model_status():
+    """
+    Endpoint de status do modelo.
+    Útil para verificar se o modelo está carregado e disponível.
+    """
+    
+    if not MODEL_AVAILABLE:
+        return jsonify({
+            "modelo_disponivel": False,
+            "mensagem": "Modelo não carregado (dependências faltando)"
+        }), 503
+    
+    try:
+        modelo = carregar_modelo()
+        return jsonify({
+            "modelo_disponivel": True,
+            "modelo_carregado": modelo is not None,
+            "resumo": {
+                "tipo": "CNN CIFAR-100 (Animais/Objetos)",
+                "parametros": int(modelo.count_params()),
+                "input_shape": list(modelo.input_shape),
+                "output_shape": list(modelo.output_shape),
+                "classes_suportadas": 100
+            },
+            "endpoints": {
+                "/chat/image": "Análise de imagem via multipart upload",
+                "/chat/image-base64": "Análise de imagem via Base64",
+                "/model/status": "Status do modelo (este endpoint)"
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "modelo_disponivel": False,
+            "erro": str(e)
+        }), 500
+
+
+# ============================================================================
+# FIM DOS ENDPOINTS DE RECONHECIMENTO DE IMAGEM
+# ============================================================================
 
 # Ponto de entrada da aplicação
 if __name__ == "__main__":
