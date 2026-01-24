@@ -982,6 +982,61 @@ def chat():
     resposta = gerar_resposta(pergunta)
     return jsonify({"resposta": resposta})
 
+@app.route("/chat/audio", methods=["POST"])
+def chat_com_audio():
+    """
+    Chat com resposta em áudio (TTS)
+    Body: {"mensagem": "sua pergunta", "idioma": "pt"}
+    """
+    data = request.json
+    pergunta = data.get("mensagem")
+    idioma = data.get("idioma", "pt")
+
+    if not pergunta:
+        return jsonify({"erro": "Mensagem vazia"}), 400
+
+    try:
+        from alici_tts import converter_resposta_audio
+        
+        # Gerar resposta
+        resposta = gerar_resposta(pergunta)
+        
+        # Converter para áudio
+        arquivo_audio = converter_resposta_audio(resposta, idioma=idioma)
+        
+        if arquivo_audio and os.path.exists(arquivo_audio):
+            # Ler arquivo e retornar como base64
+            import base64
+            with open(arquivo_audio, "rb") as f:
+                audio_bytes = f.read()
+                audio_b64 = base64.b64encode(audio_bytes).decode()
+            
+            # Limpar arquivo temporário
+            try:
+                os.remove(arquivo_audio)
+            except:
+                pass
+            
+            return jsonify({
+                "resposta": resposta,
+                "audio_base64": audio_b64,
+                "tipo": "audio/mpeg"
+            })
+        else:
+            # Sem áudio, retornar apenas texto
+            return jsonify({
+                "resposta": resposta,
+                "aviso": "TTS não disponível"
+            })
+    
+    except ImportError:
+        # gTTS não instalado
+        resposta = gerar_resposta(pergunta)
+        return jsonify({
+            "resposta": resposta,
+            "aviso": "TTS não disponível. Instale: pip install gtts"
+        }), 206
+
 # Ponto de entrada da aplicação
 if __name__ == "__main__":
     # Obter a porta do ambiente (para o Render) ou usar 5000 como padrão
