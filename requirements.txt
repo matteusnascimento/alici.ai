@@ -46,3 +46,10 @@ rq==1.1.0
 # Optional LLM Support
 # ==============================
 openai==0.27.6
+
+# ==============================
+# Optional Heavy Dependencies
+# ==============================
+# torch==2.1.2
+# scikit-learn==1.3.2
+# psycopg2-binary==2.9.9
