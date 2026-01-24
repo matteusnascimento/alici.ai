@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALICI™ | Chat</title>
+    <link rel="stylesheet" href="/static/chat.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-sidebar">
+                <span>◆</span>
+                <h1>ALICI™</h1>
+            </div>
+
+            <div class="user-section">
+                <div class="user-avatar">👤</div>
+                <div class="user-info">
+                    <p class="user-name" id="userName">Usuário</p>
+                    <p class="user-plan" id="userPlan">Plano Free</p>
+                </div>
+            </div>
+
+            <button class="new-chat-btn" onclick="novoChat()">+ Novo Chat</button>
+
+            <div class="history-section">
+                <h3>Histórico</h3>
+                <div class="history-list" id="historyList">
+                    <p class="empty">Nenhum chat anterior</p>
+                </div>
+            </div>
+
+            <button class="logout-btn" onclick="logout()">Sair</button>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-chat">
+            <!-- Header -->
+            <header class="chat-header">
+                <h2>ALICI™ - Seu Assistente de IA</h2>
+                <p id="statusText">Pronta para ajudar</p>
+            </header>
+
+            <!-- Messages Area -->
+            <div class="messages-container" id="messagesContainer">
+                <div class="message ai-message">
+                    <div class="message-content">
+                        <p>Olá! Eu sou a ALICI™, sua assistente de inteligência artificial avançada. Como posso ajudá-lo hoje?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <form id="chatForm" onsubmit="enviarMensagem(event)">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Digite sua mensagem..." 
+                            autocomplete="off"
+                        >
+                        <button type="button" class="image-btn" onclick="uploadImagem()">📷</button>
+                        <button type="submit" class="send-btn">➤</button>
+                    </div>
+                </form>
+                <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="processarImagem(event)">
+                <p class="help-text">Dica: Use "imagem:" para análise de imagens com IA</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/chat.js"></script>
+</body>
+</html>

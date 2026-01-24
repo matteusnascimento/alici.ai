@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALICI™ | Login</title>
+    <link rel="stylesheet" href="/static/login.css">
+</head>
+<body>
+    <!-- Fundo com efeito de grid -->
+    <div class="background-grid"></div>
+    
+    <div class="login-container">
+        <!-- Logo e Título -->
+        <div class="header">
+            <div class="logo">◆</div>
+            <h1>ALICI™</h1>
+            <p class="subtitle">Inteligência Artificial Avançada</p>
+        </div>
+
+        <!-- Abas (Login / Cadastro) -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="login">Entrar</button>
+            <button class="tab-btn" data-tab="register">Cadastrar</button>
+        </div>
+
+        <!-- FORMULÁRIO DE LOGIN -->
+        <form id="loginForm" class="tab-content active" data-tab="login">
+            <div class="input-group">
+                <label for="login-email">Email</label>
+                <input 
+                    type="email" 
+                    id="login-email" 
+                    placeholder="seu@email.com" 
+                    required
+                >
+            </div>
+
+            <div class="input-group">
+                <label for="login-password">Senha</label>
+                <input 
+                    type="password" 
+                    id="login-password" 
+                    placeholder="••••••••" 
+                    required
+                >
+            </div>
+
+            <div class="remember-forgot">
+                <label>
+                    <input type="checkbox"> Lembrar-me
+                </label>
+                <a href="#">Esqueceu a senha?</a>
+            </div>
+
+            <button type="submit" class="submit-btn">Entrar</button>
+
+            <div id="login-msg" class="message"></div>
+        </form>
+
+        <!-- FORMULÁRIO DE CADASTRO -->
+        <form id="registerForm" class="tab-content" data-tab="register">
+            <div class="input-group">
+                <label for="register-name">Nome Completo</label>
+                <input 
+                    type="text" 
+                    id="register-name" 
+                    placeholder="Seu Nome" 
+                    required
+                >
+            </div>
+
+            <div class="input-group">
+                <label for="register-email">Email</label>
+                <input 
+                    type="email" 
+                    id="register-email" 
+                    placeholder="seu@email.com" 
+                    required
+                >
+            </div>
+
+            <div class="input-group">
+                <label for="register-password">Senha</label>
+                <input 
+                    type="password" 
+                    id="register-password" 
+                    placeholder="••••••••" 
+                    required
+                >
+            </div>
+
+            <div class="input-group">
+                <label for="register-confirm">Confirmar Senha</label>
+                <input 
+                    type="password" 
+                    id="register-confirm" 
+                    placeholder="••••••••" 
+                    required
+                >
+            </div>
+
+            <div class="terms">
+                <label>
+                    <input type="checkbox" required> 
+                    Concordo com os <a href="#">termos de serviço</a>
+                </label>
+            </div>
+
+            <button type="submit" class="submit-btn">Criar Conta</button>
+
+            <div id="register-msg" class="message"></div>
+        </form>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>ALICI™ v2.0 | © 2026 - Inteligência Artificial Holográfica</p>
+        </div>
+    </div>
+
+    <script src="/static/login.js"></script>
+</body>
+</html>
