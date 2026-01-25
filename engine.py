@@ -19,9 +19,13 @@ from sistema_emocoes import adicionar_metadados_resposta
 # ==================================================
 
 try:
+    # Modelo na raiz
     modelo_animais_1 = tf.keras.models.load_model("modelo_animais.h5")
-    modelo_animais_2 = tf.keras.models.load_model("modelo_animais_cifar100.h5")
-    modelo_animais_3 = tf.keras.models.load_model("modelo_animais_treinado.h5")
+
+    # Modelos na pasta Modelo/
+    modelo_animais_2 = tf.keras.models.load_model("Modelo/modelo_animais_cifar100.h5")
+    modelo_animais_3 = tf.keras.models.load_model("Modelo/modelo_animais_treinado.h5")
+
     MODELOS_OK = True
 except Exception as e:
     print("❌ Erro ao carregar modelos:", e)
@@ -30,10 +34,10 @@ except Exception as e:
 
 # ==================================================
 # 🧠 INFERÊNCIA SIMPLES DOS MODELOS
-# (placeholder genérico – não altera arquitetura)
+# (não altera arquitetura nem treinamento)
 # ==================================================
 
-def responder_com_modelos(pergunta: str) -> str | None:
+def responder_com_modelos(pergunta: str):
     """
     Usa os 3 modelos .h5 para tentar gerar uma resposta.
     Retorna None se não conseguir inferir.
@@ -43,14 +47,13 @@ def responder_com_modelos(pergunta: str) -> str | None:
         return None
 
     try:
-        # Vetor dummy apenas para ativar o modelo
-        entrada = np.zeros((1, 224, 224, 3))
+        # Entrada dummy apenas para ativar os modelos
+        entrada = np.zeros((1, 224, 224, 3), dtype=np.float32)
 
         preds_1 = modelo_animais_1.predict(entrada, verbose=0)
         preds_2 = modelo_animais_2.predict(entrada, verbose=0)
         preds_3 = modelo_animais_3.predict(entrada, verbose=0)
 
-        # Confiança simples (máximo)
         confianca = float(
             max(
                 np.max(preds_1),
@@ -68,7 +71,7 @@ def responder_com_modelos(pergunta: str) -> str | None:
         )
 
     except Exception as e:
-        print("Erro na inferência dos modelos:", e)
+        print("❌ Erro na inferência dos modelos:", e)
         return None
 
 
