@@ -1,1 +1,1 @@
-web: gunicorn main:app --workers 2 --worker-class sync --bind 0.0.0.0:$PORT --timeout 60
+web: uvicorn main_auth:app --host 0.0.0.0 --port $PORT
