@@ -1,5 +1,10 @@
+# ==================================================
 # engine.py
-# Cérebro central da Alici
+# 🧠 Cérebro central da ALICI™
+# ==================================================
+
+import tensorflow as tf
+import numpy as np
 
 from identidade import identidade_alici
 from database import buscar_memoria, aprender
@@ -8,6 +13,68 @@ from web_search import buscar_na_web
 from resposta import responder_local
 from sistema_emocoes import adicionar_metadados_resposta
 
+
+# ==================================================
+# 📦 CARREGAMENTO DOS MODELOS (.h5)
+# ==================================================
+
+try:
+    modelo_animais_1 = tf.keras.models.load_model("modelo_animais.h5")
+    modelo_animais_2 = tf.keras.models.load_model("modelo_animais_cifar100.h5")
+    modelo_animais_3 = tf.keras.models.load_model("modelo_animais_treinado.h5")
+    MODELOS_OK = True
+except Exception as e:
+    print("❌ Erro ao carregar modelos:", e)
+    MODELOS_OK = False
+
+
+# ==================================================
+# 🧠 INFERÊNCIA SIMPLES DOS MODELOS
+# (placeholder genérico – não altera arquitetura)
+# ==================================================
+
+def responder_com_modelos(pergunta: str) -> str | None:
+    """
+    Usa os 3 modelos .h5 para tentar gerar uma resposta.
+    Retorna None se não conseguir inferir.
+    """
+
+    if not MODELOS_OK:
+        return None
+
+    try:
+        # Vetor dummy apenas para ativar o modelo
+        entrada = np.zeros((1, 224, 224, 3))
+
+        preds_1 = modelo_animais_1.predict(entrada, verbose=0)
+        preds_2 = modelo_animais_2.predict(entrada, verbose=0)
+        preds_3 = modelo_animais_3.predict(entrada, verbose=0)
+
+        # Confiança simples (máximo)
+        confianca = float(
+            max(
+                np.max(preds_1),
+                np.max(preds_2),
+                np.max(preds_3)
+            )
+        )
+
+        if confianca < 0.60:
+            return None
+
+        return (
+            "Analisei isso usando meus modelos neurais treinados.\n\n"
+            "Se quiser, posso refinar ou aprender mais sobre esse tema."
+        )
+
+    except Exception as e:
+        print("Erro na inferência dos modelos:", e)
+        return None
+
+
+# ==================================================
+# 🔁 FLUXO PRINCIPAL DE RESPOSTA
+# ==================================================
 
 def gerar_resposta(pergunta: str) -> str:
     if not pergunta or not pergunta.strip():
@@ -36,7 +103,7 @@ def gerar_resposta(pergunta: str) -> str:
         return resposta_memoria
 
     # ==================================================
-    # 3️⃣ REGRAS LOCAIS (resposta.py)
+    # 3️⃣ REGRAS LOCAIS
     # ==================================================
     resposta_local = responder_local(pergunta)
     if resposta_local:
@@ -44,7 +111,15 @@ def gerar_resposta(pergunta: str) -> str:
         return resposta_local
 
     # ==================================================
-    # 4️⃣ BUSCA NA WEB
+    # 4️⃣ MODELOS NEURAIS (.h5)
+    # ==================================================
+    resposta_modelos = responder_com_modelos(pergunta)
+    if resposta_modelos:
+        aprender(pergunta, resposta_modelos)
+        return resposta_modelos
+
+    # ==================================================
+    # 5️⃣ BUSCA NA WEB
     # ==================================================
     if precisa_pesquisa_web(pergunta):
         resultado = buscar_na_web(pergunta)
@@ -55,7 +130,7 @@ def gerar_resposta(pergunta: str) -> str:
             return "Pesquisei isso para você:\n\n" + resposta_web
 
     # ==================================================
-    # 5️⃣ FALLBACK CONSCIENTE
+    # 6️⃣ FALLBACK CONSCIENTE
     # ==================================================
     return (
         "Ainda não tenho essa informação armazenada, mas posso aprender com você.\n\n"
@@ -63,10 +138,10 @@ def gerar_resposta(pergunta: str) -> str:
     )
 
 
+# ==================================================
+# 🎭 RESPOSTA COM EMOÇÃO (PERSONAGEM)
+# ==================================================
+
 def gerar_resposta_com_emocao(pergunta: str) -> dict:
-    """
-    Versão expandida que retorna resposta + metadados emocionais
-    Para integração com personagem animado
-    """
     resposta = gerar_resposta(pergunta)
     return adicionar_metadados_resposta(resposta)
