@@ -4,7 +4,8 @@ Conexão com PostgreSQL (Neon) e operações de banco de dados
 """
 
 import os
-import psycopg
+import psycopg2
+import psycopg2.extras
 from contextlib import contextmanager
 from dotenv import load_dotenv
 
@@ -25,9 +26,9 @@ def get_db_connection():
     Context manager para conexão com banco de dados
     
     Yields:
-        Conexão psycopg
+        Conexão psycopg2
     """
-    conn = psycopg.connect(DATABASE_URL, autocommit=False)
+    conn = psycopg2.connect(DATABASE_URL)
     try:
         yield conn
         conn.commit()
@@ -76,7 +77,7 @@ def criar_usuario(nome: str, email: str, senha_hash: str, plano: str = "free") -
                         "plano": resultado[3],
                         "criado_em": resultado[4]
                     }
-            except psycopg.errors.UniqueViolation:
+            except psycopg2.IntegrityError:
                 raise ValueError("Email já está registrado")
             except Exception as e:
                 raise Exception(f"Erro ao criar usuário: {str(e)}")
