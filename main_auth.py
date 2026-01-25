@@ -346,9 +346,18 @@ def home():
 @app.get("/chat", response_class=HTMLResponse)
 def chat_page(user=Depends(get_current_user)):
     """
-    Página de chat (protegida por autenticação)
+    Página de chat com avatar holográfico (protegida por autenticação)
     """
-    with open("templates/chat.html", "r", encoding="utf-8") as f:
+    with open("templates/index.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(user=Depends(get_current_user)):
+    """
+    Dashboard/Chat com avatar (alias para /chat)
+    """
+    with open("templates/index.html", "r", encoding="utf-8") as f:
         return f.read()
 
 
