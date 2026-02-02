@@ -1,7 +1,7 @@
 """
 teste_engine_completo.py
 🧪 Suite completa de testes para o engine ALICI
-Testa todos os 5 níveis de decisão
+Testa todos os 6 níveis de decisão
 """
 
 import sys
@@ -52,7 +52,7 @@ def testar_identidade():
     return True
 
 def testar_regras_locais():
-    """Testa camada 3: Regras locais"""
+    """Testa camada 3: Regras locais (resposta.py patterns)"""
     print("\n📝 Testando Camada 3: Regras Locais...")
     
     from engine import gerar_resposta
@@ -75,8 +75,8 @@ def testar_regras_locais():
     return True
 
 def testar_aprendizado():
-    """Testa camada 2: Memória e aprendizado"""
-    print("\n🧠 Testando Camada 2: Aprendizado...")
+    """Testa camada 2: Memória e aprendizado (database queries)"""
+    print("\n🧠 Testando Camada 2: Memória e Aprendizado...")
     
     from engine import gerar_resposta
     from database import aprender, buscar_memoria
@@ -106,8 +106,8 @@ def testar_aprendizado():
         return False
 
 def testar_intencao_web():
-    """Testa camada 4: Detecção de intenção para web search"""
-    print("\n🔍 Testando Camada 4: Detecção de Intenção Web...")
+    """Testa camada 5: Detecção de intenção para web search"""
+    print("\n🔍 Testando Camada 5: Detecção de Intenção Web...")
     
     from intencao import precisa_pesquisa_web
     
