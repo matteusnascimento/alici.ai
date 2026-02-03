@@ -1,1 +1,0 @@
-[WARNING] Módulos de IA não disponíveis (engine.py, model_inference.py)

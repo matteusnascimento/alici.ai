@@ -3,8 +3,14 @@
 # 🧠 Cérebro central da ALICI™
 # ==================================================
 
-import tensorflow as tf
-import numpy as np
+# Proteção para imports de TensorFlow (pode falhar em algumas configs)
+try:
+    import tensorflow as tf
+    import numpy as np
+    TF_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ TensorFlow não disponível: {e}")
+    TF_AVAILABLE = False
 
 from identidade import identidade_alici
 from database import buscar_memoria, aprender
@@ -18,17 +24,51 @@ from sistema_emocoes import adicionar_metadados_resposta
 # 📦 CARREGAMENTO DOS MODELOS (.h5)
 # ==================================================
 
+import os
+
+MODELOS_OK = False
+modelo_animais_1 = None
+modelo_animais_2 = None
+modelo_animais_3 = None
+
 try:
-    # Modelo na raiz
-    modelo_animais_1 = tf.keras.models.load_model("modelo_animais.h5")
-
-    # Modelos na pasta Modelo/
-    modelo_animais_2 = tf.keras.models.load_model("Modelo/modelo_animais_cifar100.h5")
-    modelo_animais_3 = tf.keras.models.load_model("Modelo/modelo_animais_treinado.h5")
-
-    MODELOS_OK = True
+    # Tentar carregar modelos de localizações conhecidas
+    modelo_paths = [
+        "model/modelo_animais.h5",
+        "model/modelo_animais_cifar100.h5",
+        "model/modelo_animais_treinado.h5",
+        "modelo_animais.h5",
+    ]
+    
+    modelos_carregados = 0
+    
+    for path in modelo_paths:
+        if os.path.exists(path):
+            try:
+                # Proteger contra TensorFlow indisponível
+                if not TF_AVAILABLE:
+                    continue
+                    
+                modelo = tf.keras.models.load_model(path)
+                if modelos_carregados == 0:
+                    modelo_animais_1 = modelo
+                elif modelos_carregados == 1:
+                    modelo_animais_2 = modelo
+                elif modelos_carregados == 2:
+                    modelo_animais_3 = modelo
+                modelos_carregados += 1
+            except Exception as e:
+                print(f"⚠ Erro ao carregar {path}: {e}")
+    
+    if modelos_carregados > 0:
+        MODELOS_OK = True
+        print(f"✓ {modelos_carregados} modelo(s) carregado(s)")
+    else:
+        print("ℹ Nenhum modelo de IA disponível (funcionalidade reduzida)")
+        MODELOS_OK = False
+        
 except Exception as e:
-    print("❌ Erro ao carregar modelos:", e)
+    print(f"⚠ Aviso ao inicializar modelos: {e}")
     MODELOS_OK = False
 
 
@@ -39,28 +79,32 @@ except Exception as e:
 
 def responder_com_modelos(pergunta: str):
     """
-    Usa os 3 modelos .h5 para tentar gerar uma resposta.
-    Retorna None se não conseguir inferir.
+    Usa os modelos .h5 para tentar gerar uma resposta.
+    Retorna None se não conseguir inferir ou modelos não estão carregados.
     """
 
-    if not MODELOS_OK:
+    if not MODELOS_OK or modelo_animais_1 is None:
         return None
 
     try:
         # Entrada dummy apenas para ativar os modelos
         entrada = np.zeros((1, 224, 224, 3), dtype=np.float32)
+        if not TF_AVAILABLE:
+            return None
 
-        preds_1 = modelo_animais_1.predict(entrada, verbose=0)
-        preds_2 = modelo_animais_2.predict(entrada, verbose=0)
-        preds_3 = modelo_animais_3.predict(entrada, verbose=0)
-
-        confianca = float(
-            max(
-                np.max(preds_1),
-                np.max(preds_2),
-                np.max(preds_3)
-            )
-        )
+        confianca = 0.0
+        
+        if modelo_animais_1 is not None:
+            preds_1 = modelo_animais_1.predict(entrada, verbose=0)
+            confianca = max(confianca, float(np.max(preds_1)))
+        
+        if modelo_animais_2 is not None:
+            preds_2 = modelo_animais_2.predict(entrada, verbose=0)
+            confianca = max(confianca, float(np.max(preds_2)))
+        
+        if modelo_animais_3 is not None:
+            preds_3 = modelo_animais_3.predict(entrada, verbose=0)
+            confianca = max(confianca, float(np.max(preds_3)))
 
         if confianca < 0.60:
             return None
@@ -71,7 +115,7 @@ def responder_com_modelos(pergunta: str):
         )
 
     except Exception as e:
-        print("❌ Erro na inferência dos modelos:", e)
+        print(f"⚠ Erro na inferência dos modelos: {e}")
         return None
 
 
@@ -127,7 +171,7 @@ def gerar_resposta(pergunta: str) -> str:
     if precisa_pesquisa_web(pergunta):
         resultado = buscar_na_web(pergunta)
 
-        if resultado and resultado.get("confianca", 0) >= 0.6:
+        if resultado and resultado.get("resposta") and resultado.get("confianca", 0) >= 0.6:
             resposta_web = resultado["resposta"]
             aprender(pergunta, resposta_web)
             return "Pesquisei isso para você:\n\n" + resposta_web

@@ -182,29 +182,6 @@
             animation: text-flicker 4s infinite;
         }
         
-            .logout-btn {
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                padding: 12px 25px;
-                background: rgba(255, 0, 99, 0.2);
-                border: 2px solid var(--neon-pink);
-                border-radius: 10px;
-                color: var(--neon-pink);
-                font-family: 'Orbitron';
-                font-size: 0.9rem;
-                text-transform: uppercase;
-                cursor: pointer;
-                transition: all 0.3s;
-                z-index: 100;
-            }
-        
-            .logout-btn:hover {
-                background: rgba(255, 0, 99, 0.4);
-                box-shadow: 0 0 20px var(--neon-pink);
-                transform: translateY(-2px);
-            }
-        
         @keyframes text-flicker {
             0%, 100% { opacity: 1; text-shadow: 0 0 20px var(--neon-cyan); }
             50% { opacity: 0.8; text-shadow: 0 0 40px var(--neon-cyan), 0 0 60px var(--neon-cyan); }
@@ -635,7 +612,6 @@
     
     <div class="container">
         <header class="futuristic-header">
-                <button class="logout-btn" onclick="logout()">Sair</button>
             <div class="alici-logo-container">
                 <div class="logo-3d">
                     <div class="logo-face">A</div>
@@ -756,15 +732,11 @@
             setTimeout(() => {
                 changeState('process');
                 
-                    const token = localStorage.getItem('alici_token');
-                    fetch('/chat', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ pergunta: msg, incluir_emocao: false })
-                    })
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mensagem: msg })
+                })
                 .then(res => res.ok ? res.json() : Promise.reject('Erro'))
                 .then(data => {
                     changeState('respond');
@@ -801,23 +773,6 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Verificar autenticação
-            const token = localStorage.getItem('alici_token');
-            const user = JSON.parse(localStorage.getItem('alici_user') || '{}');
-            
-            if (!token) {
-                window.location.href = '/';
-                return;
-            }
-            
-            // Adicionar nome do usuário no título
-            if (user.nome) {
-                const subtitle = document.querySelector('.subtitle-futuristic');
-                if (subtitle) {
-                    subtitle.textContent = `Bem-vindo, ${user.nome}`;
-                }
-            }
-            
             createParticles();
             document.getElementById('userInput').focus();
             
@@ -832,24 +787,6 @@
             
             setInterval(createParticles, 40000);
         });
-        
-        // Função de logout
-        function logout() {
-            localStorage.removeItem('alici_token');
-            localStorage.removeItem('alici_user');
-            window.location.href = '/';
-        }
-        
-        // Adicionar token nas requisições
-        const originalFetch = window.fetch;
-        window.fetch = function(...args) {
-            const token = localStorage.getItem('alici_token');
-            if (token && args[1]) {
-                args[1].headers = args[1].headers || {};
-                args[1].headers['Authorization'] = `Bearer ${token}`;
-            }
-            return originalFetch.apply(this, args);
-        };
     </script>
 </body>
 </html>
