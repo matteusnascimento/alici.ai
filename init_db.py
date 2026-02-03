@@ -20,18 +20,12 @@ def init_database():
     
     try:
         # Importar funções de BD
-        from database import criar_tabelas as criar_tabelas_memoria
-        from database_auth import criar_tabelas as criar_tabelas_auth
+        from database import criar_tabelas
         
-        # Criar tabelas de memória
-        print("\n📝 Criando tabela 'memoria'...")
-        criar_tabelas_memoria()
-        print("✓ Tabela 'memoria' pronta")
-        
-        # Criar tabelas de autenticação
-        print("\n👤 Criando tabelas de autenticação...")
-        criar_tabelas_auth()
-        print("✓ Tabelas de autenticação prontas")
+        # Criar tabelas
+        print("\n📝 Criando tabelas 'memoria', 'users', 'history'...")
+        criar_tabelas()
+        print("✓ Tabelas prontas")
         
         print("\n" + "="*60)
         print("✓ BANCO DE DADOS INICIALIZADO COM SUCESSO!")

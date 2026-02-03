@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Importar módulos ALICI
 from engine import gerar_resposta, gerar_resposta_com_emocao
 from auth import create_access_token, verify_password, hash_password
-from database_auth import (
+from database import (
     buscar_usuario_por_email, criar_usuario, buscar_usuario_por_id,
     salvar_historico, buscar_historico, criar_tabelas
 )
