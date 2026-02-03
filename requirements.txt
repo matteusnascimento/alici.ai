@@ -30,6 +30,18 @@ python-dotenv==1.0.0
 requests==2.31.0
 
 # ==============================
+# NLP & Language Models
+# ==============================
+datasets==2.15.0
+huggingface-hub==0.19.4
+transformers==4.35.0
+torch==2.1.0
+tokenizers==0.14.1
+tqdm==4.66.1
+
+
+# ==============================
 # Utilities
 # ==============================
 python-dateutil==2.8.2
+gunicorn==21.2.0
