@@ -21,6 +21,10 @@ from database import (
     buscar_usuario_por_email, criar_usuario, buscar_usuario_por_id,
     salvar_historico, buscar_historico, criar_tabelas
 )
+from logger import get_logger
+
+# Configurar logger
+logger_app = get_logger("api")
 
 load_dotenv()
 
@@ -51,7 +55,7 @@ if os.path.exists("Static"):
 # MODELOS
 # ============================================================================
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 class LoginRequest(BaseModel):
@@ -64,7 +68,7 @@ class RegisterRequest(BaseModel):
     senha: str
 
 class ChatRequest(BaseModel):
-    pergunta: str
+    pergunta: str = Field(..., min_length=1, max_length=1000)
     incluir_emocao: bool = False
 
 class ChatResponse(BaseModel):
@@ -117,20 +121,24 @@ async def login(request: LoginRequest):
     Retorna access_token JWT
     """
     try:
+        logger_app.info(f"Login attempt: {request.email}")
         user = buscar_usuario_por_email(request.email)
         
         if not user:
+            logger_app.warning(f"Login failed: user not found {request.email}")
             raise HTTPException(
                 status_code=401,
                 detail="Email ou senha incorretos"
             )
         
         if not verify_password(request.senha, user.get("senha_hash")):
+            logger_app.warning(f"Login failed: incorrect password {request.email}")
             raise HTTPException(
                 status_code=401,
                 detail="Email ou senha incorretos"
             )
         
+        logger_app.info(f"Login successful: {request.email}")
         access_token = create_access_token(user["id"], user["email"])
         
         return {
@@ -146,7 +154,8 @@ async def login(request: LoginRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger_app.error(f"Login error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro interno do servidor")
 
 @app.post("/auth/register")
 async def register(request: RegisterRequest):
@@ -154,18 +163,22 @@ async def register(request: RegisterRequest):
     Registrar novo usuário
     """
     try:
+        logger_app.info(f"Register attempt: {request.email}")
         # Verificar se email já existe
         existing = buscar_usuario_por_email(request.email)
         if existing:
+            logger_app.warning(f"Register failed: email already exists {request.email}")
             raise HTTPException(
                 status_code=400,
                 detail="Email já cadastrado"
             )
         
         # Criar novo usuário
+        logger_app.info(f"Creating new user: {request.email}")
         senha_hash = hash_password(request.senha)
         user = criar_usuario(request.nome, request.email, senha_hash)
         
+        logger_app.info(f"User registered: {request.email}")
         access_token = create_access_token(user["id"], user["email"])
         
         return {
@@ -181,7 +194,8 @@ async def register(request: RegisterRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger_app.error(f"Register error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro ao registrar usuário")
 
 # ============================================================================
 # ROTAS - CHAT
@@ -194,6 +208,7 @@ async def chat(request: ChatRequest, authorization: Optional[str] = None):
     Processa pergunta e retorna resposta
     """
     try:
+        logger_app.debug(f"Chat request: {request.pergunta[:50]}...")
         # Validar autenticação (opcional por hora)
         user = None
         if authorization:
@@ -216,14 +231,17 @@ async def chat(request: ChatRequest, authorization: Optional[str] = None):
         # Salvar no histórico se autenticado
         if user:
             salvar_historico(user["id"], request.pergunta, resposta)
+            logger_app.info(f"Chat saved for user: {user['email']}")
         
+        logger_app.debug(f"Chat response generated: {resposta[:50]}...")
         return {
             "resposta": resposta,
             "emocao": emocao,
             "intensidade": intensidade
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger_app.error(f"Chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro ao processar pergunta")
 
 @app.get("/history")
 async def get_history(authorization: Optional[str] = None):
@@ -283,7 +301,8 @@ async def status(authorization: Optional[str] = None):
             "usuario": user
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger_app.error(f"Status error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro interno")
 
 @app.get("/")
 async def root():
@@ -321,26 +340,26 @@ async def startup_event():
     """
     Executar ao iniciar a aplicação
     """
-    print("\n" + "="*60)
-    print("🚀 Inicializando ALICI API...")
-    print("="*60)
+    logger_app.info("="*60)
+    logger_app.info("🚀 Inicializando ALICI API...")
+    logger_app.info("="*60)
     
     # Criar tabelas se não existirem
     try:
         criar_tabelas()
-        print("✓ Banco de dados verificado")
+        logger_app.info("✓ Banco de dados verificado")
     except Exception as e:
-        print(f"⚠ Aviso ao verificar BD: {e}")
+        logger_app.warning(f"⚠ Aviso ao verificar BD: {e}")
     
-    print("✓ ALICI pronta para conversar!")
-    print("="*60 + "\n")
+    logger_app.info("✓ ALICI pronta para conversar!")
+    logger_app.info("="*60)
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """
     Executar ao desligar a aplicação
     """
-    print("\n🛑 ALICI desligando...\n")
+    logger_app.info("🛑 ALICI desligando...")
 
 # ============================================================================
 # ERROR HANDLERS

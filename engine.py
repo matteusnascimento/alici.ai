@@ -18,6 +18,10 @@ from intencao import precisa_pesquisa_web
 from web_search import buscar_na_web
 from resposta import responder_local
 from sistema_emocoes import adicionar_metadados_resposta
+from logger import get_logger
+
+# Configurar logger
+logger_engine = get_logger("engine")
 
 
 # ==================================================
@@ -62,13 +66,13 @@ try:
     
     if modelos_carregados > 0:
         MODELOS_OK = True
-        print(f"✓ {modelos_carregados} modelo(s) carregado(s)")
+        logger_engine.info(f"✓ {modelos_carregados} modelo(s) carregado(s)")
     else:
-        print("ℹ Nenhum modelo de IA disponível (funcionalidade reduzida)")
+        logger_engine.info("ℹ Nenhum modelo de IA disponível (funcionalidade reduzida)")
         MODELOS_OK = False
         
 except Exception as e:
-    print(f"⚠ Aviso ao inicializar modelos: {e}")
+    logger_engine.warning(f"⚠ Aviso ao inicializar modelos: {e}")
     MODELOS_OK = False
 
 
@@ -115,7 +119,7 @@ def responder_com_modelos(pergunta: str):
         )
 
     except Exception as e:
-        print(f"⚠ Erro na inferência dos modelos: {e}")
+        logger_engine.error(f"Erro na inferência dos modelos: {e}")
         return None
 
 

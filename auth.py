@@ -15,7 +15,20 @@ load_dotenv()
 # CONFIGURAÇÕES
 # ============================================================================
 
-SECRET_KEY = os.getenv("SECRET_KEY", "ALICI_SUPER_SECRET_KEY_CHANGE_IN_PRODUCTION")
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+# Em produção, SECRET_KEY é obrigatória
+if not SECRET_KEY:
+    env = os.getenv("ENV", "development")
+    if env == "production":
+        raise ValueError(
+            "⚠️ ERRO CRÍTICO: SECRET_KEY não configurada em produção!\n"
+            "Configure a variável de ambiente SECRET_KEY com um valor seguro."
+        )
+    # Em desenvolvimento, usar um valor padrão (com aviso)
+    SECRET_KEY = "ALICI_DEVELOPMENT_KEY_CHANGE_IN_PRODUCTION"
+    print("⚠️ AVISO: Usando SECRET_KEY padrão (apenas para desenvolvimento)")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
 

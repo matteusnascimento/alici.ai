@@ -1,5 +1,8 @@
 import requests
 from urllib.parse import quote
+from logger import get_logger
+
+logger_web = get_logger("web_search")
 
 def buscar_na_web(pergunta):
     """
@@ -8,7 +11,8 @@ def buscar_na_web(pergunta):
     """
     try:
         url = f"https://api.duckduckgo.com/?q={quote(pergunta)}&format=json"
-        r = requests.get(url, timeout=5)
+        # Aumentado de 5 para 30 segundos para melhor confiabilidade
+        r = requests.get(url, timeout=30)
         data = r.json()
 
         resposta = None
@@ -32,7 +36,7 @@ def buscar_na_web(pergunta):
             "confianca": 0.0
         }
     except Exception as e:
-        print(f"Erro ao buscar na web: {e}")
+        logger_web.error(f"Erro ao buscar na web: {e}")
         return {
             "resposta": None,
             "confianca": 0.0

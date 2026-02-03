@@ -7,6 +7,10 @@ import os
 import psycopg2
 from contextlib import contextmanager
 from dotenv import load_dotenv
+from logger import get_logger
+
+# Configurar logger
+logger_db = get_logger("database")
 
 load_dotenv()
 
@@ -93,66 +97,58 @@ def criar_tabelas():
 
 
 def buscar_memoria(pergunta):
+    """
+    Busca resposta na memória usando context manager
+    Garante fechamento correto de conexão mesmo em caso de erro
+    """
     try:
-        conn = conectar()
-        cur = conn.cursor()
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT resposta
+                    FROM memoria
+                    WHERE pergunta = %s
+                    ORDER BY confianca DESC
+                    LIMIT 1
+                """, (pergunta.lower(),))
 
-        cur.execute("""
-            SELECT resposta
-            FROM memoria
-            WHERE pergunta = %s
-            ORDER BY confianca DESC
-            LIMIT 1
-        """, (pergunta.lower(),))
-
-        r = cur.fetchone()
-        return r[0] if r else None
+                r = cur.fetchone()
+                return r[0] if r else None
 
     except Exception as e:
-        print("Erro ao buscar memória:", e)
+        logger_db.error(f"Erro ao buscar memória: {e}")
         return None
-
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
 
 
 def aprender(pergunta, resposta):
+    """
+    Aprende armazenando pergunta/resposta ou incrementando confiança
+    Usa context manager para gerenciar conexão com segurança
+    """
     try:
-        conn = conectar()
-        cur = conn.cursor()
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id FROM memoria
+                    WHERE pergunta = %s AND resposta = %s
+                """, (pergunta.lower(), resposta))
 
-        cur.execute("""
-            SELECT id FROM memoria
-            WHERE pergunta = %s AND resposta = %s
-        """, (pergunta.lower(), resposta))
+                existe = cur.fetchone()
 
-        existe = cur.fetchone()
-
-        if existe:
-            cur.execute("""
-                UPDATE memoria
-                SET confianca = confianca + 1
-                WHERE id = %s
-            """, (existe[0],))
-        else:
-            cur.execute("""
-                INSERT INTO memoria (pergunta, resposta)
-                VALUES (%s, %s)
-            """, (pergunta.lower(), resposta))
-
-        conn.commit()
+                if existe:
+                    cur.execute("""
+                        UPDATE memoria
+                        SET confianca = confianca + 1
+                        WHERE id = %s
+                    """, (existe[0],))
+                else:
+                    cur.execute("""
+                        INSERT INTO memoria (pergunta, resposta)
+                        VALUES (%s, %s)
+                    """, (pergunta.lower(), resposta))
 
     except Exception as e:
-        print("Erro ao aprender:", e)
-
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
+        logger_db.error(f"Erro ao aprender: {e}")
 
 
 def salvar_interacao(pergunta, resposta):
