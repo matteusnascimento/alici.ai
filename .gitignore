@@ -22,6 +22,11 @@ build/
 .env.local
 .env.*.local
 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
 # Logs
 *.log
 logs/

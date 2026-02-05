@@ -1,8 +1,7 @@
 # 🤖 ALICI™ - Inteligência Artificial Proprietária
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.3.3-green.svg)](https://flask.palletsprojects.com/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.13-orange.svg)](https://www.tensorflow.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791.svg)](https://neon.tech/)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#deployment)
 
@@ -19,11 +18,11 @@ USER: "quem é você"
 ┌───────────────────────────┐
 │ 1. IDENTIDADE (fixo)      │ ✅ SIM → Resposta imediata
 ├───────────────────────────┤
-│ 2. MEMÓRIA (PostgreSQL)   │ ✅ Perguntado antes?
+│ 2. MEMÓRIA (Neon)         │ ✅ Perguntado antes?
 ├───────────────────────────┤
-│ 3. REGRAS LOCAIS          │ ✅ 80+ padrões
+│ 3. REGRAS LOCAIS          │ ✅ 260+ padrões
 ├───────────────────────────┤
-│ 4. WEB SEARCH (Intenet)   │ ✅ DuckDuckGo
+│ 4. WEB SEARCH (Internet)  │ ✅ DuckDuckGo
 ├───────────────────────────┤
 │ 5. FALLBACK (honesto)     │ ✅ "Ainda não sei..."
 └───────────────────────────┘
@@ -33,33 +32,34 @@ RESPOSTA + APRENDE (nunca esquece)
 
 ---
 
-## ⚡ Quick Start (60 segundos)
+## ⚡ Quick Start (5 minutos)
 
 ```bash
 # 1. Clone
 git clone https://github.com/matteusnascimento/alici.ai.git
 cd alici.ai
 
-# 2. Env virtual
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-
-# 3. Deps
+# 2. Instalar dependências
 pip install -r requirements.txt
 
-# 4. Config
-cp .env.example .env
-# Edite .env com DATABASE_URL do Neon
+# 3. Configurar Neon (veja NEON_SETUP.md)
+# Crie banco grátis em: https://neon.tech
+# Copie a CONNECTION STRING e cole no .env
 
-# 5. DB
+# Edite .env:
+DATABASE_URL=postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+
+# 4. Criar tabelas
 python init_db.py
 
-# 6. Run
+# 5. Executar
 python main.py
 
-# 7. Acesse
-# http://localhost:5000
+# 6. Acessar
+# http://localhost:8000
 ```
+
+📖 **Guia detalhado:** [NEON_SETUP.md](NEON_SETUP.md)
 
 ---
 
@@ -67,14 +67,16 @@ python main.py
 
 | Feature | Descrição | Status |
 |---------|-----------|--------|
-| 🧠 Memória | PostgreSQL/Neon permanente | ✅ |
+| 🧠 Memória Persistente | PostgreSQL/Neon | ✅ |
+| 🤖 NLP Avançado | Hugging Face Transformers | ✅ |
 | 🔍 Web Search | DuckDuckGo automático | ✅ |
 | 📈 Aprendizado | Confidence score incrementa | ✅ |
-| 🏗️ 5-Camadas | Engine inteligente | ✅ |
-| 🧠 Modelo Neural | LSTM 21.5M parâmetros | ✅ |
-| 📊 Dataset | 100 pares Q&A | ✅ |
-| 🚀 Deploy | Render.com automático | ✅ |
-| 📚 Docs | Completa e detalhada | ✅ |
+| 🏗️ 5 Camadas | Engine inteligente | ✅ |
+| 💬 260+ Regras | Respostas locais | ✅ |
+| 😊 Sistema Emoções | Metadata de resposta | ✅ |
+| 🔐 Autenticação | JWT + bcrypt | ✅ |
+| 📚 Histórico | Save de conversas | ✅ |
+| 🚀 Deploy | Render.com ready | ✅ |
 
 ---
 
@@ -83,14 +85,16 @@ python main.py
 ```
 engine.py (orquestrador)
 ├── identidade.py         → "quem é você?"
-├── database.py          → SELECT memoria
-├── resposta.py          → padrões keyword
+├── database.py          → Neon PostgreSQL (storage)
+├── resposta.py          → 260+ padrões
 ├── web_search.py        → DuckDuckGo
+├── transformers (HF)    → Modelos NLP
 └── sistema_emocoes.py   → metadata
     ↓
-main.py (Flask)
+alici_api/app.py (FastAPI)
     ↓
-PostgreSQL (Neon) - Memória
+    ├─→ Neon PostgreSQL (Memória Persistente)
+    └─→ Hugging Face (Modelos NLP)
 ```
 
 ---
@@ -99,25 +103,34 @@ PostgreSQL (Neon) - Memória
 
 ```
 alici.ai/
-├── main.py                      # Flask app
-├── engine.py                    # 5-layer engine
-├── database.py                  # PostgreSQL/Neon
-├── resposta.py                  # 80+ rules
-├── identidade.py                # Identity (fixed)
-├── web_search.py                # DuckDuckGo
+├── main.py                 # Entrypoint Uvicorn
+├── engine.py               # 5-layer engine
+├── database.py             # PostgreSQL/Neon
+├── resposta.py             # 260+ rules
+├── identidade.py           # Identity (fixed)
+├── web_search.py           # DuckDuckGo
+├── sistema_emocoes.py      # Emotion system
+├── auth.py                 # JWT auth
 │
-├── model/
-│   ├── modelo_animais_cifar100.h5  # 246MB model
-│   ├── tokenizer.json               # Vocab
-│   └── ALICI_LICENSE.txt            # Copyright
+├── alici_api/
+│   └── app.py              # FastAPI routes
 │
-├── dataset_expandido.json           # 100 Q&A pairs
-├── init_db.py                       # DB init
-├── init_alici.py                    # Verificador
-├── teste_modelo.py                  # Model tester
-├── gerar_dataset.py                 # Dataset gen
-├── colab_finetuning.py              # Colab training
+├── templates/
+│   ├── chat.html           # UI principal
+│   └── login.html          # UI login
 │
+├── Static/
+│   ├── chat.js             # Frontend chat
+│   └── chat.css            # Estilos
+│
+├── init_db.py              # DB init
+├── test_db.py              # DB test
+│
+└── Docs/
+    ├── NEON_SETUP.md       # Setup Neon
+    ├── TROUBLESHOOTING.md  # Problemas comuns
+    └── OPTIONAL_ML.md      # ML opcional
+```
 ├── .env.example                     # Config template
 ├── requirements.txt                 # Python deps
 ├── Procfile                         # Render config
