@@ -294,7 +294,7 @@ DEBUG=False
 ## 🔗 Links
 
 - **GitHub**: https://github.com/matteusnascimento/alici.ai
-- **Criador**: https://github.com/mateussantos
+- **Criador**: https://github.com/matteusnascimento
 - **Neon**: https://neon.tech
 - **Render**: https://render.com
 - **Colab**: https://colab.research.google.com
@@ -305,10 +305,10 @@ DEBUG=False
 
 **Mateus Nascimento dos Santos** 🇧🇷
 
-- Instagram: [@mateussantos](https://instagram.com/mateussantos)
-- GitHub: [mateussantos](https://github.com/mateussantos)
-- LinkedIn: [Mateus Nascimento](https://linkedin.com/in/mateussantos)
-- TikTok: [@mateussantos](https://tiktok.com/@mateussantos)
+- Instagram: [@matteus_nascimento_ofc](https://instagram.com/matteus_nascimento_ofc)
+- GitHub: [matteusnascimento](https://github.com/matteusnascimento)
+- LinkedIn: [Mateus Nascimento](https://www.linkedin.com/in/mateus-nascimento-dos-santos-52ba04167)
+- TikTok: [@matteus_nascimento_ofc](https://tiktok.com/@matteus_nascimento_ofc)
 
 ---
 

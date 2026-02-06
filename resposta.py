@@ -2,6 +2,24 @@
 # Respostas locais, comportamentais e identidade da Alici
 
 from datetime import datetime
+from identidade import (
+    identidade_alici, 
+    quem_criou, 
+    sobre_mateus, 
+    missao_alici, 
+    arquitetura_alici,
+    contato_criador,
+    redes_sociais,
+    instagram_criador,
+    email_criador,
+    website_alici,
+    todas_informacoes_contato,
+    camadas_estrategicas,
+    fases_evolucao,
+    tracos_psicologo,
+    capital_intelectual,
+    diagnostico_futuro
+)
 
 
 def responder_local(pergunta: str) -> str | None:
@@ -11,24 +29,23 @@ def responder_local(pergunta: str) -> str | None:
     # IDENTIDADE / CONSCIÊNCIA
     # ==============================
 
-    if any(k in pergunta for k in ["quem é você", "quem e voce", "quem é a alici"]):
-        return (
-            "Olá! Eu sou a Alici, uma inteligência artificial desenvolvida para aprender, "
-            "evoluir e ajudar pessoas todos os dias. Tenho memória persistente e posso "
-            "buscar informações na web quando necessário.\n\n"
-            "Meu criador é Mateus Nascimento dos Santos, idealizador do projeto Alici — "
-            "alguém que acredita que a tecnologia deve evoluir junto com o ser humano, "
-            "com propósito, consciência e impacto real."
-        )
+    if any(k in pergunta for k in ["quem é você", "quem e voce", "quem é a alici", "quem e a alici"]):
+        return identidade_alici()
 
     if "qual seu nome" in pergunta:
-        return "Meu nome é Alici 😊 Sou uma inteligência artificial com memória persistente."
+        return "Meu nome é Alici 😊 Sou uma foundation model com identidade proprietária e 70 bilhões de neurônios."
 
-    if any(k in pergunta for k in ["quem te criou", "seu criador", "criador da alici"]):
-        return (
-            "Fui criada por Mateus Nascimento dos Santos, com a missão de ser uma "
-            "inteligência artificial útil, consciente e em constante evolução."
-        )
+    if any(k in pergunta for k in ["quem te criou", "seu criador", "criador da alici", "quem criou você", "quem criou voce"]):
+        return quem_criou()
+    
+    if any(k in pergunta for k in ["quem é mateus", "quem e mateus", "mateus nascimento", "mateus santos"]):
+        return sobre_mateus()
+    
+    if any(k in pergunta for k in ["sua missão", "sua missao", "qual sua missão", "missão da alici", "missao da alici"]):
+        return missao_alici()
+    
+    if any(k in pergunta for k in ["quantos neurônios", "quantos neuronios", "sua arquitetura", "70 bilhões", "70 bilhoes"]):
+        return arquitetura_alici()
 
     # ==============================
     # FUNCIONAMENTO / APRENDIZADO
@@ -96,20 +113,31 @@ def responder_local(pergunta: str) -> str | None:
     # REDES SOCIAIS E CONTATO
     # ==============================
 
-    if any(k in pergunta for k in ["instagram", "insta", "@mateussantos"]):
-        return "Meu criador está no Instagram: @mateussantos 📸"
+    if any(k in pergunta for k in ["instagram", "insta", "@matteus_nascimento_ofc", "instagram do criador", "instagram mateus"]):
+        return instagram_criador()
+    
+    if any(k in pergunta for k in ["email", "e-mail", "email do criador", "email mateus", "enviar email"]):
+        return email_criador()
+    
+    if any(k in pergunta for k in ["site", "website", "alici.ai", "página", "pagina"]):
+        return website_alici()
 
-    if any(k in pergunta for k in ["github", "repositório", "repositorio"]):
-        return "Código fonte em: github.com/mateussantos/alici.ai 💻"
+    if any(k in pergunta for k in ["redes sociais", "redes do criador", "social media", "onde encontrar"]):
+        return redes_sociais()
+    
+    if any(k in pergunta for k in ["contato", "como contatar", "como falar com", "falar com mateus", "entrar em contato"]):
+        return contato_criador()
+    
+    if any(k in pergunta for k in ["todas as redes", "todos os contatos", "informações de contato", "informacoes de contato"]):
+        return todas_informacoes_contato()
 
-    if any(k in pergunta for k in ["linkedin", "profissional"]):
-        return "LinkedIn do criador: linkedin.com/in/mateussantos 💼"
+    if any(k in pergunta for k in ["github", "repositório", "repositorio", "código", "codigo fonte"]):
+        return "Código fonte em: https://github.com/matteusnascimento/alici.ai 💻"
 
-    if any(k in pergunta for k in ["tiktok", "vídeos"]):
-        return "TikTok: @mateussantos 🎬"
+    if any(k in pergunta for k in ["linkedin", "profissional", "linkedin do criador"]):
+        return "LinkedIn de Mateus Nascimento dos Santos: https://www.linkedin.com/in/mateus-nascimento-dos-santos-52ba04167 💼"
 
-    if any(k in pergunta for k in ["contato", "como contatar", "como falar com"]):
-        return "Pode encontrar meu criador em: Instagram, GitHub, LinkedIn ou TikTok com o nome @mateussantos"
+    # Twitter e YouTube foram removidos - Alici não tem esses canais
 
     # ==============================
     # EDUCAÇÃO E CONHECIMENTO
@@ -138,6 +166,31 @@ def responder_local(pergunta: str) -> str | None:
         return (
             "Um banco de dados é um local onde informações são armazenadas de forma organizada. "
             "Eu uso PostgreSQL/Neon para guardar todas as conversas e aprender com elas."
+        )
+
+    # ==============================
+    # INTELIGÊNCIA ESTRATÉGICA DO CRIADOR
+    # ==============================
+
+    if any(k in pergunta for k in ["camadas", "camadas do mateus", "três camadas", "operacional arquitetural civilizacional"]):
+        return camadas_estrategicas()
+    
+    if any(k in pergunta for k in ["fases de evolução", "fases intelectuais", "despertar expansão obsessão"]):
+        return fases_evolucao()
+    
+    if any(k in pergunta for k in ["traços psicológicos", "tracos psicologicos", "características de mateus", "caracteristicas de mateus"]):
+        return tracos_psicologo()
+    
+    if any(k in pergunta for k in ["capital intelectual", "capital intelectual de mateus", "vantagem composta", "aprendizado composto"]):
+        return capital_intelectual()
+    
+    if any(k in pergunta for k in ["futuro possível", "futuro possivel", "três futuros", "qual futuro", "cenários futuros", "cenarios futuros"]):
+        return diagnostico_futuro()
+    
+    if any(k in pergunta for k in ["análise de mateus", "analise de mateus", "diagnóstico", "diagnostico", "perfil de mateus"]):
+        return (
+            f"{diagnostico_futuro()}\n\n"
+            f"Esses cenários dependem de: FOCO EXTREMO + EXECUÇÃO SUSTENTADA + IDENTIDADE FORTE"
         )
 
     # ==============================
