@@ -124,6 +124,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const passwordBytes = new TextEncoder().encode(password).length;
+        if (passwordBytes > 72) {
+            showMessage(msgDiv, 'Senha muito longa (max 72 bytes)', 'error');
+            return;
+        }
+
         if (password !== confirm) {
             showMessage(msgDiv, 'As senhas não conferem', 'error');
             return;

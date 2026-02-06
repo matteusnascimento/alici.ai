@@ -55,7 +55,7 @@ if os.path.exists("Static"):
 # MODELOS
 # ============================================================================
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 
 class LoginRequest(BaseModel):
@@ -66,6 +66,14 @@ class RegisterRequest(BaseModel):
     nome: str
     email: str
     senha: str
+
+    @field_validator("senha")
+    @classmethod
+    def validate_password_length(cls, value: str) -> str:
+        # bcrypt suporta no maximo 72 bytes
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("Senha muito longa (max 72 bytes)")
+        return value
 
 class ChatRequest(BaseModel):
     pergunta: str = Field(..., min_length=1, max_length=1000)
