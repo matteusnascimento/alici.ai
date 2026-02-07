@@ -5,7 +5,7 @@
 
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==2.8.0
+pydantic==2.4.2
 python-multipart==0.0.6
 
 # ==============================
@@ -14,6 +14,12 @@ python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==3.2.2
+
+# ==============================
+# Machine Learning & Deep Learning
+# ==============================
+tensorflow==2.18.0
+numpy==1.26.2
 
 # ==============================
 # Database (Neon PostgreSQL)
@@ -25,6 +31,16 @@ python-dotenv==1.0.0
 # HTTP & Web Search
 # ==============================
 requests==2.31.0
+
+# ==============================
+# NLP & Language Models
+# ==============================
+datasets==2.14.0
+huggingface-hub==0.17.3
+transformers==4.35.0
+torch==2.1.0
+tokenizers==0.14.1
+tqdm==4.66.1
 
 # ==============================
 # Utilities
