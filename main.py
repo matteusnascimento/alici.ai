@@ -31,6 +31,17 @@ if __name__ == "__main__":
     logger_main.info(f"📍 Acesse: http://localhost:{port}")
     logger_main.info(f"🔧 Ambiente: {env}")
     logger_main.info(f"{'='*60}\n")
+
+
+
+
+
+from database import criar_tabelas
+
+criar_tabelas()
+
+
+
     
     uvicorn.run(
         "main:app",
