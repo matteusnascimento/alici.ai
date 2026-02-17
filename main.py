@@ -1,4 +1,4 @@
-﻿"""
+"""
 🤖 ALICI - PONTO DE ENTRADA PRINCIPAL
 main.py - Entrypoint unificado para a aplicação ALICI™
 """
@@ -19,30 +19,24 @@ load_dotenv()
 
 # Importar app FastAPI
 from alici_api.app import app
+from database import criar_tabelas
+
 
 if __name__ == "__main__":
     import uvicorn
     
     port = int(os.getenv("PORT", 8000))
     env = os.getenv("ENV", "development")
-    
+
     logger_main.info(f"\n{'='*60}")
     logger_main.info(f"🚀 Iniciando ALICI na porta {port}...")
     logger_main.info(f"📍 Acesse: http://localhost:{port}")
     logger_main.info(f"🔧 Ambiente: {env}")
     logger_main.info(f"{'='*60}\n")
 
+    # 🔥 Criar tabelas automaticamente ao iniciar
+    criar_tabelas()
 
-
-
-
-from database import criar_tabelas
-
-criar_tabelas()
-
-
-
-    
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
