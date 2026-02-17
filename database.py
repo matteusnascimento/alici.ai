@@ -15,7 +15,7 @@ logger_db = get_logger("database")
 load_dotenv()
 
 
-DATABASE_URL= postgresql://neondb_owner:npg_IFdaklrUN73D@ep-frosty-shape-a8fhb2m2-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require
+DATABASE_URL= "postgresql://neondb_owner:npg_IFdaklrUN73D@ep-frosty-shape-a8fhb2m2-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 
 DATABASE_URL = os.getenv("DATABASE_URL")
