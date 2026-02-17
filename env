@@ -2,6 +2,9 @@ PGUSER=neondb_owner
 PGPASSWORD=npg_IFdaklrUN73D
 
 
+OPENAI_API_KEY= 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
+
+
 
 # Configuração ALICI
 ENV=development
