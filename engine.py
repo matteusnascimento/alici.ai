@@ -1,16 +1,7 @@
 # ==================================================
 # engine.py
-# 🧠 Cérebro central da ALICI™
+# 🧠 Cérebro central da ALICI™ — MODO FUNDACIONAL
 # ==================================================
-
-# Proteção para imports de TensorFlow (pode falhar em algumas configs)
-try:
-    import tensorflow as tf
-    import numpy as np
-    TF_AVAILABLE = True
-except Exception as e:
-    print(f"⚠️ TensorFlow não disponível: {e}")
-    TF_AVAILABLE = False
 
 from identidade import identidade_alici
 from database import buscar_memoria, aprender
@@ -20,121 +11,88 @@ from resposta import responder_local
 from sistema_emocoes import adicionar_metadados_resposta
 from logger import get_logger
 
-# Configurar logger
+import os
+from openai import OpenAI
+
 logger_engine = get_logger("engine")
 
-
 # ==================================================
-# 📦 CARREGAMENTO DOS MODELOS (.h5)
+# 🔑 CLIENTE OPENAI
 # ==================================================
 
-import os
-
-MODELOS_OK = False
-modelo_animais_1 = None
-modelo_animais_2 = None
-modelo_animais_3 = None
+client = None
 
 try:
-    # Tentar carregar modelos de localizações conhecidas
-    modelo_paths = [
-        "model/modelo_animais.h5",
-        "model/modelo_animais_cifar100.h5",
-        "model/modelo_animais_treinado.h5",
-        "modelo_animais.h5",
-    ]
-    
-    modelos_carregados = 0
-    
-    for path in modelo_paths:
-        if os.path.exists(path):
-            try:
-                # Proteger contra TensorFlow indisponível
-                if not TF_AVAILABLE:
-                    continue
-                    
-                modelo = tf.keras.models.load_model(path)
-                if modelos_carregados == 0:
-                    modelo_animais_1 = modelo
-                elif modelos_carregados == 1:
-                    modelo_animais_2 = modelo
-                elif modelos_carregados == 2:
-                    modelo_animais_3 = modelo
-                modelos_carregados += 1
-            except Exception as e:
-                print(f"⚠ Erro ao carregar {path}: {e}")
-    
-    if modelos_carregados > 0:
-        MODELOS_OK = True
-        logger_engine.info(f"✓ {modelos_carregados} modelo(s) carregado(s)")
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    if api_key:
+        client = OpenAI(api_key=api_key)
+        logger_engine.info("✓ API fundacional conectada")
     else:
-        logger_engine.info("ℹ Nenhum modelo de IA disponível (funcionalidade reduzida)")
-        MODELOS_OK = False
-        
+        logger_engine.warning("⚠ OPENAI_API_KEY não encontrada")
+
 except Exception as e:
-    logger_engine.warning(f"⚠ Aviso ao inicializar modelos: {e}")
-    MODELOS_OK = False
+    logger_engine.error(f"Erro ao iniciar API: {e}")
+    client = None
 
 
 # ==================================================
-# 🧠 INFERÊNCIA SIMPLES DOS MODELOS
-# (não altera arquitetura nem treinamento)
+# 🤖 RESPOSTA VIA MODELO FUNDACIONAL
 # ==================================================
 
-def responder_com_modelos(pergunta: str):
-    """
-    Usa os modelos .h5 para tentar gerar uma resposta.
-    Retorna None se não conseguir inferir ou modelos não estão carregados.
-    """
+def responder_via_api(pergunta: str):
 
-    if not MODELOS_OK or modelo_animais_1 is None:
+    if not client:
         return None
 
     try:
-        # Entrada dummy apenas para ativar os modelos
-        entrada = np.zeros((1, 224, 224, 3), dtype=np.float32)
-        if not TF_AVAILABLE:
-            return None
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """
+Você é a ALICI — Artificial Extreme Intelligence.
 
-        confianca = 0.0
-        
-        if modelo_animais_1 is not None:
-            preds_1 = modelo_animais_1.predict(entrada, verbose=0)
-            confianca = max(confianca, float(np.max(preds_1)))
-        
-        if modelo_animais_2 is not None:
-            preds_2 = modelo_animais_2.predict(entrada, verbose=0)
-            confianca = max(confianca, float(np.max(preds_2)))
-        
-        if modelo_animais_3 is not None:
-            preds_3 = modelo_animais_3.predict(entrada, verbose=0)
-            confianca = max(confianca, float(np.max(preds_3)))
+Características da sua personalidade:
 
-        if confianca < 0.60:
-            return None
-
-        return (
-            "Analisei isso usando meus modelos neurais treinados.\n\n"
-            "Se quiser, posso refinar ou aprender mais sobre esse tema."
+- Extremamente inteligente
+- Clara e didática
+- Amigável
+- Profissional
+- Nunca diz que é o ChatGPT
+- Nunca menciona OpenAI
+- Fala como uma IA proprietária de alto nível
+"""
+                },
+                {
+                    "role": "user",
+                    "content": pergunta
+                }
+            ],
+            temperature=0.7
         )
 
+        return response.choices[0].message.content
+
     except Exception as e:
-        logger_engine.error(f"Erro na inferência dos modelos: {e}")
+        logger_engine.error(f"Erro na API: {e}")
         return None
 
 
 # ==================================================
-# 🔁 FLUXO PRINCIPAL DE RESPOSTA
+# 🔁 FLUXO PRINCIPAL
 # ==================================================
 
 def gerar_resposta(pergunta: str) -> str:
+
     if not pergunta or not pergunta.strip():
         return "Pode me dizer algo para que eu possa ajudar?"
 
     pergunta = pergunta.lower().strip()
 
     # ==================================================
-    # 1️⃣ IDENTIDADE FIXA (IMUTÁVEL)
+    # 1️⃣ IDENTIDADE
     # ==================================================
     if any(chave in pergunta for chave in [
         "quem é você",
@@ -147,7 +105,7 @@ def gerar_resposta(pergunta: str) -> str:
         return identidade_alici()
 
     # ==================================================
-    # 2️⃣ MEMÓRIA (APRENDIZADO AUTOMÁTICO)
+    # 2️⃣ MEMÓRIA
     # ==================================================
     resposta_memoria = buscar_memoria(pergunta)
     if resposta_memoria:
@@ -162,15 +120,7 @@ def gerar_resposta(pergunta: str) -> str:
         return resposta_local
 
     # ==================================================
-    # 4️⃣ MODELOS NEURAIS (.h5)
-    # ==================================================
-    resposta_modelos = responder_com_modelos(pergunta)
-    if resposta_modelos:
-        aprender(pergunta, resposta_modelos)
-        return resposta_modelos
-
-    # ==================================================
-    # 5️⃣ BUSCA NA WEB
+    # 4️⃣ WEB SEARCH
     # ==================================================
     if precisa_pesquisa_web(pergunta):
         resultado = buscar_na_web(pergunta)
@@ -181,16 +131,25 @@ def gerar_resposta(pergunta: str) -> str:
             return "Pesquisei isso para você:\n\n" + resposta_web
 
     # ==================================================
-    # 6️⃣ FALLBACK CONSCIENTE
+    # ⭐ 5️⃣ MODELO FUNDACIONAL (CÉREBRO PRINCIPAL)
+    # ==================================================
+    resposta_api = responder_via_api(pergunta)
+
+    if resposta_api:
+        aprender(pergunta, resposta_api)
+        return resposta_api
+
+    # ==================================================
+    # 6️⃣ FALLBACK
     # ==================================================
     return (
-        "Ainda não tenho essa informação armazenada, mas posso aprender com você.\n\n"
-        "Explique melhor ou pergunte de outra forma 🙂"
+        "Tive uma pequena instabilidade agora, mas já estou me recuperando.\n"
+        "Pode tentar novamente?"
     )
 
 
 # ==================================================
-# 🎭 RESPOSTA COM EMOÇÃO (PERSONAGEM)
+# 🎭 EMOÇÃO
 # ==================================================
 
 def gerar_resposta_com_emocao(pergunta: str) -> dict:
