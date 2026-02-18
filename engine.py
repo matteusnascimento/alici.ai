@@ -3,50 +3,40 @@
 # 🧠 Cérebro central da ALICI™ — MODO FUNDACIONAL
 # ==================================================
 
+import os
+from logger import get_logger
 from identidade import identidade_alici
 from database import buscar_memoria, aprender
 from intencao import precisa_pesquisa_web
 from web_search import buscar_na_web
 from resposta import responder_local
 from sistema_emocoes import adicionar_metadados_resposta
-from logger import get_logger
+import openai
 
-import os
-from openai import OpenAI
-
+# ==================================================
+# LOGGER
+# ==================================================
 logger_engine = get_logger("engine")
 
 # ==================================================
-# 🔑 CLIENTE OPENAI
+# 🔑 CONFIGURAÇÃO OPENAI
 # ==================================================
-
-client = None
-
-try:
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    if api_key:
-        client = OpenAI(api_key=api_key)
-        logger_engine.info("✓ API fundacional conectada")
-    else:
-        logger_engine.warning("⚠ OPENAI_API_KEY não encontrada")
-
-except Exception as e:
-    logger_engine.error(f"Erro ao iniciar API: {e}")
-    client = None
-
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    logger_engine.warning("⚠ OPENAI_API_KEY não encontrada")
+else:
+    openai.api_key = api_key
+    logger_engine.info("✓ API OpenAI configurada com sucesso")
 
 # ==================================================
-# 🤖 RESPOSTA VIA MODELO FUNDACIONAL
+# 🤖 FUNÇÃO PARA CHAMAR OPENAI
 # ==================================================
-
 def responder_via_api(pergunta: str):
-
-    if not client:
+    if not openai.api_key:
         return None
 
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[
                 {
@@ -65,34 +55,29 @@ Características da sua personalidade:
 - Fala como uma IA proprietária de alto nível
 """
                 },
-                {
-                    "role": "user",
-                    "content": pergunta
-                }
+                {"role": "user", "content": pergunta}
             ],
-            temperature=0.7
+            temperature=0.7,
+            max_tokens=300
         )
 
-        return response.choices[0].message.content
+        return response.choices[0].message["content"].strip()
 
     except Exception as e:
-        logger_engine.error(f"Erro na API: {e}")
+        logger_engine.error(f"Erro na API OpenAI: {e}")
         return None
 
-
 # ==================================================
-# 🔁 FLUXO PRINCIPAL
+# 🔁 FLUXO PRINCIPAL DE RESPOSTA
 # ==================================================
-
 def gerar_resposta(pergunta: str) -> str:
-
     if not pergunta or not pergunta.strip():
         return "Pode me dizer algo para que eu possa ajudar?"
 
     pergunta = pergunta.lower().strip()
 
     # ==================================================
-    # 1️⃣ IDENTIDADE
+    # 1️⃣ IDENTIDADE / PERGUNTAS FIXAS
     # ==================================================
     if any(chave in pergunta for chave in [
         "quem é você",
@@ -120,21 +105,19 @@ def gerar_resposta(pergunta: str) -> str:
         return resposta_local
 
     # ==================================================
-    # 4️⃣ WEB SEARCH
+    # 4️⃣ PESQUISA NA WEB
     # ==================================================
     if precisa_pesquisa_web(pergunta):
         resultado = buscar_na_web(pergunta)
-
         if resultado and resultado.get("resposta") and resultado.get("confianca", 0) >= 0.6:
             resposta_web = resultado["resposta"]
             aprender(pergunta, resposta_web)
-            return "Pesquisei isso para você:\n\n" + resposta_web
+            return f"Pesquisei isso para você:\n\n{resposta_web}"
 
     # ==================================================
-    # ⭐ 5️⃣ MODELO FUNDACIONAL (CÉREBRO PRINCIPAL)
+    # 5️⃣ MODELO FUNDACIONAL (OPENAI)
     # ==================================================
     resposta_api = responder_via_api(pergunta)
-
     if resposta_api:
         aprender(pergunta, resposta_api)
         return resposta_api
@@ -147,11 +130,9 @@ def gerar_resposta(pergunta: str) -> str:
         "Pode tentar novamente?"
     )
 
-
 # ==================================================
-# 🎭 EMOÇÃO
+# 🎭 FUNÇÃO COM METADADOS DE EMOÇÃO
 # ==================================================
-
 def gerar_resposta_com_emocao(pergunta: str) -> dict:
     resposta = gerar_resposta(pergunta)
     return adicionar_metadados_resposta(resposta)
