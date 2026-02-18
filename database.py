@@ -1,11 +1,12 @@
 """
 database.py
-Conexão com PostgreSQL (Neon) ou SQLite e operações de banco de dados
-VERSÃO PRODUÇÃO
+Conexão com PostgreSQL (Neon) ou SQLite
+VERSÃO PRODUÇÃO PROFISSIONAL
 """
 
 import os
 import sqlite3
+import time
 from contextlib import contextmanager
 from dotenv import load_dotenv
 from logger import get_logger
@@ -14,50 +15,60 @@ logger_db = get_logger("database")
 
 load_dotenv()
 
-
-DATABASE_URL= "postgresql://neondb_owner:npg_IFdaklrUN73D@ep-frosty-shape-a8fhb2m2-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require"
-
-
 DATABASE_URL = os.getenv("DATABASE_URL")
-DATABASE_ENABLED = bool(DATABASE_URL)
 
 USE_SQLITE = DATABASE_URL and DATABASE_URL.startswith("sqlite")
 USE_POSTGRES = DATABASE_URL and DATABASE_URL.startswith("postgresql")
 
 pool = None
+DATABASE_ENABLED = False
 
 
 # ==========================================
-# DETECÇÃO DO BANCO
+# 🔥 CONEXÃO COM RETRY (ANTI NEON SLEEP)
 # ==========================================
 
-if not DATABASE_ENABLED:
+if not DATABASE_URL:
     logger_db.warning("⚠️ DATABASE_URL não configurado")
-
-elif USE_SQLITE:
-    logger_db.info("🗄️ Usando SQLite")
 
 elif USE_POSTGRES:
     try:
         import psycopg2
         from psycopg2.pool import SimpleConnectionPool
 
-        pool = SimpleConnectionPool(
-            minconn=1,
-            maxconn=10,
-            dsn=DATABASE_URL,
-            sslmode="require",
-        )
+        retries = 5
 
-        logger_db.info("🗄️ Usando PostgreSQL/Neon com pool de conexões")
+        for attempt in range(retries):
+            try:
+                pool = SimpleConnectionPool(
+                    minconn=1,
+                    maxconn=10,
+                    dsn=DATABASE_URL
+                )
+
+                DATABASE_ENABLED = True
+                logger_db.info("✅ PostgreSQL/Neon conectado com pool")
+                break
+
+            except Exception as e:
+                logger_db.warning(
+                    f"Tentativa {attempt+1}/{retries} falhou ao conectar no Neon..."
+                )
+                time.sleep(2)
+
+        if not DATABASE_ENABLED:
+            logger_db.error("❌ Não foi possível conectar ao PostgreSQL")
 
     except Exception as e:
-        logger_db.error(f"❌ Erro ao conectar no PostgreSQL: {e}")
-        DATABASE_ENABLED = False
+        logger_db.error(f"Erro ao importar psycopg2: {e}")
+
+elif USE_SQLITE:
+
+    DATABASE_ENABLED = True
+    logger_db.info("🗄️ Usando SQLite")
 
 else:
     logger_db.error("❌ DATABASE_URL inválido")
-    DATABASE_ENABLED = False
 
 
 # ==========================================
@@ -68,7 +79,7 @@ else:
 def get_db_connection():
 
     if not DATABASE_ENABLED:
-        raise RuntimeError("Banco não configurado")
+        raise RuntimeError("Banco não configurado ou indisponível")
 
     if USE_SQLITE:
 
@@ -86,110 +97,112 @@ def get_db_connection():
             conn.close()
 
     else:
-        conn = pool.getconn()
+        conn = None
 
         try:
+            conn = pool.getconn()
             yield conn
             conn.commit()
+
         except Exception as e:
-            conn.rollback()
-            raise e
+            if conn:
+                conn.rollback()
+            logger_db.error(f"Erro na conexão: {e}")
+            raise
+
         finally:
-            pool.putconn(conn)
+            if conn:
+                pool.putconn(conn)
 
 
 # ==========================================
-# 🚀 CRIAR TABELAS AUTOMATICAMENTE
+# 🚀 CRIAR TABELAS
 # ==========================================
 
 def criar_tabelas():
 
     if not DATABASE_ENABLED:
-        logger_db.warning("Banco não configurado - pulando criação")
+        logger_db.warning("Banco indisponível - pulando criação")
         return
+
+    with get_db_connection() as conn:
+        cur = conn.cursor()
+
+        if USE_SQLITE:
+            id_field = "INTEGER PRIMARY KEY AUTOINCREMENT"
+            timestamp_field = "DATETIME DEFAULT CURRENT_TIMESTAMP"
+        else:
+            id_field = "SERIAL PRIMARY KEY"
+            timestamp_field = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS users (
+            id {id_field},
+            nome TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            senha_hash TEXT NOT NULL,
+            plano TEXT DEFAULT 'free',
+            criado_em {timestamp_field}
+        )
+        """)
+
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS memoria (
+            id {id_field},
+            pergunta TEXT NOT NULL,
+            resposta TEXT NOT NULL,
+            confianca INTEGER DEFAULT 1,
+            criado_em {timestamp_field}
+        )
+        """)
+
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS history (
+            id {id_field},
+            user_id INTEGER,
+            pergunta TEXT NOT NULL,
+            resposta TEXT NOT NULL,
+            criado_em {timestamp_field}
+        )
+        """)
+
+        cur.close()
+        logger_db.info("✅ Tabelas verificadas/criadas")
+
+
+# ==========================================
+# 👤 USERS
+# ==========================================
+
+def buscar_usuario_por_email(email):
+
+    if not DATABASE_ENABLED:
+        return None
 
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
 
-            if USE_SQLITE:
-                id_field = "INTEGER PRIMARY KEY AUTOINCREMENT"
-                timestamp_field = "DATETIME DEFAULT CURRENT_TIMESTAMP"
-            else:
-                id_field = "SERIAL PRIMARY KEY"
-                timestamp_field = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            placeholder = "?" if USE_SQLITE else "%s"
 
-            # ================= USERS (LOGIN / REGISTER) =================
             cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS users (
-                id {id_field},
-                nome TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                senha_hash TEXT NOT NULL,
-                plano TEXT DEFAULT 'free',
-                criado_em {timestamp_field},
-                atualizado_em {timestamp_field}
-            )
-            """)
+                SELECT id, nome, email, senha_hash, plano
+                FROM users
+                WHERE email = {placeholder}
+            """, (email,))
 
-            # ================= MEMÓRIA IA =================
-            cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS memoria (
-                id {id_field},
-                pergunta TEXT NOT NULL,
-                resposta TEXT NOT NULL,
-                confianca INTEGER DEFAULT 1,
-                criado_em {timestamp_field}
-            )
-            """)
-
-            # ================= HISTORY =================
-            cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS history (
-                id {id_field},
-                user_id INTEGER NOT NULL,
-                pergunta TEXT NOT NULL,
-                resposta TEXT NOT NULL,
-                criado_em {timestamp_field},
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-            """)
-
-            # ================= ÍNDICES =================
-
-            if USE_POSTGRES:
-
-                cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_users_email
-                ON users(email);
-                """)
-
-                cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_memoria_pergunta
-                ON memoria(pergunta);
-                """)
-
-                cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_history_user
-                ON history(user_id);
-                """)
-
-            else:
-
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_memoria_pergunta ON memoria(pergunta)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_history_user ON history(user_id)")
-
+            user = cur.fetchone()
             cur.close()
 
-            logger_db.info("✅ Tabelas verificadas/criadas com sucesso")
+            return user
 
     except Exception as e:
-        logger_db.error(f"❌ Erro ao criar tabelas: {e}")
+        logger_db.error(f"Erro ao buscar usuário: {e}")
+        return None
 
 
 # ==========================================
-# MEMÓRIA IA
+# 🧠 MEMÓRIA IA
 # ==========================================
 
 def buscar_memoria(pergunta):
@@ -242,7 +255,6 @@ def aprender(pergunta, resposta):
             existe = cur.fetchone()
 
             if existe:
-
                 cur.execute(f"""
                     UPDATE memoria
                     SET confianca = confianca + 1
@@ -250,7 +262,6 @@ def aprender(pergunta, resposta):
                 """, (existe[0],))
 
             else:
-
                 cur.execute(f"""
                     INSERT INTO memoria (pergunta, resposta)
                     VALUES ({placeholder}, {placeholder})
