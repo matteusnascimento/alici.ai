@@ -1,357 +1,70 @@
 """
-database.py
-Conexão com PostgreSQL (Neon) ou SQLite
-VERSÃO PRODUÇÃO PROFISSIONAL
+🤖 ALICI - PONTO DE ENTRADA PRINCIPAL
+main.py - Entrypoint unificado para a aplicação ALICI™
 """
 
 import os
-import sqlite3
-import time
-from contextlib import contextmanager
+import sys
 from dotenv import load_dotenv
 from logger import get_logger
 
-logger_db = get_logger("database")
+# Configurar logger
+logger_main = get_logger("main")
+
+# Adicionar o diretório atual ao path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Carregar variáveis de ambiente
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# 🔹 Importar app FastAPI com fallback
+try:
+    from alici_api.app import app
+    logger_main.info("✅ App FastAPI importado com sucesso.")
+except ImportError as e:
+    logger_main.error(f"Erro ao importar app: {e}")
+    logger_main.warning("⚠️ Criando app FastAPI de fallback...")
+    from fastapi import FastAPI
+    app = FastAPI(title="ALICI - App Fallback")
 
-USE_SQLITE = DATABASE_URL and DATABASE_URL.startswith("sqlite")
-USE_POSTGRES = DATABASE_URL and DATABASE_URL.startswith("postgresql")
+    @app.get("/")
+    def root():
+        return {"message": "⚠️ App fallback ativado - alici_api.app não encontrado"}
 
-pool = None
-DATABASE_ENABLED = False
+# 🔹 Importar função criar_tabelas com fallback
+try:
+    from database import criar_tabelas
+    logger_main.info("✅ Função criar_tabelas importada.")
+except ImportError as e:
+    logger_main.warning(f"Função criar_tabelas não encontrada: {e}")
+    # Criar função dummy para não travar o app
+    def criar_tabelas():
+        logger_main.warning("⚠️ criar_tabelas não implementada, ignorando...")
 
-# ==========================================
-# 🔥 CONEXÃO COM RETRY (ANTI NEON SLEEP)
-# ==========================================
-if not DATABASE_URL:
-    logger_db.warning("⚠️ DATABASE_URL não configurado")
 
-elif USE_POSTGRES:
+# 🔹 Execução direta (uvicorn) para desenvolvimento local
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.getenv("PORT", 8000))
+    env = os.getenv("ENV", "development")
+
+    logger_main.info(f"\n{'='*60}")
+    logger_main.info(f"🚀 Iniciando ALICI na porta {port}...")
+    logger_main.info(f"📍 Acesse: http://localhost:{port}")
+    logger_main.info(f"🔧 Ambiente: {env}")
+    logger_main.info(f"{'='*60}\n")
+
+    # 🔥 Criar tabelas automaticamente ao iniciar
     try:
-        import psycopg2
-        from psycopg2.pool import SimpleConnectionPool
-
-        retries = 5
-        for attempt in range(retries):
-            try:
-                pool = SimpleConnectionPool(
-                    minconn=1,
-                    maxconn=10,
-                    dsn=DATABASE_URL
-                )
-                DATABASE_ENABLED = True
-                logger_db.info("✅ PostgreSQL/Neon conectado com pool")
-                break
-            except Exception:
-                logger_db.warning(f"Tentativa {attempt+1}/{retries} falhou ao conectar no Neon...")
-                time.sleep(2)
-
-        if not DATABASE_ENABLED:
-            logger_db.error("❌ Não foi possível conectar ao PostgreSQL")
+        criar_tabelas()
+        logger_main.info("✅ Tabelas criadas ou verificadas com sucesso.")
     except Exception as e:
-        logger_db.error(f"Erro ao importar psycopg2: {e}")
+        logger_main.error(f"Erro ao criar tabelas: {e}")
 
-elif USE_SQLITE:
-    DATABASE_ENABLED = True
-    logger_db.info("🗄️ Usando SQLite")
-
-else:
-    logger_db.error("❌ DATABASE_URL inválido")
-
-
-# ==========================================
-# CONTEXT MANAGER
-# ==========================================
-@contextmanager
-def get_db_connection():
-    if not DATABASE_ENABLED:
-        raise RuntimeError("Banco não configurado ou indisponível")
-
-    if USE_SQLITE:
-        db_path = DATABASE_URL.replace("sqlite:///", "") if DATABASE_URL else "database.db"
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
-    else:
-        conn = None
-        try:
-            conn = pool.getconn()
-            yield conn
-            conn.commit()
-        except Exception as e:
-            if conn:
-                conn.rollback()
-            logger_db.error(f"Erro na conexão: {e}")
-            raise
-        finally:
-            if conn:
-                pool.putconn(conn)
-
-
-# ==========================================
-# 🚀 CRIAR TABELAS
-# ==========================================
-def criar_tabelas():
-    if not DATABASE_ENABLED:
-        logger_db.warning("Banco indisponível - pulando criação")
-        return
-
-    with get_db_connection() as conn:
-        cur = conn.cursor()
-
-        if USE_SQLITE:
-            id_field = "INTEGER PRIMARY KEY AUTOINCREMENT"
-            timestamp_field = "DATETIME DEFAULT CURRENT_TIMESTAMP"
-        else:
-            id_field = "SERIAL PRIMARY KEY"
-            timestamp_field = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-
-        # USERS
-        cur.execute(f"""
-        CREATE TABLE IF NOT EXISTS users (
-            id {id_field},
-            nome TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            senha_hash TEXT NOT NULL,
-            plano TEXT DEFAULT 'free',
-            criado_em {timestamp_field}
-        )
-        """)
-
-        # MEMORIA IA
-        cur.execute(f"""
-        CREATE TABLE IF NOT EXISTS memoria (
-            id {id_field},
-            pergunta TEXT NOT NULL,
-            resposta TEXT NOT NULL,
-            confianca INTEGER DEFAULT 1,
-            criado_em {timestamp_field}
-        )
-        """)
-
-        # HISTORY
-        cur.execute(f"""
-        CREATE TABLE IF NOT EXISTS history (
-            id {id_field},
-            user_id INTEGER,
-            pergunta TEXT NOT NULL,
-            resposta TEXT NOT NULL,
-            criado_em {timestamp_field}
-        )
-        """)
-
-        cur.close()
-        logger_db.info("✅ Tabelas verificadas/criadas")
-
-
-# ==========================================
-# 👤 USERS
-# ==========================================
-def criar_usuario(nome, email, senha_hash, plano="free"):
-    """
-    Cria usuário e retorna o dict completo do usuário
-    """
-    if not DATABASE_ENABLED:
-        return None
-
-    try:
-        with get_db_connection() as conn:
-            cur = conn.cursor()
-            placeholder = "?" if USE_SQLITE else "%s"
-            cur.execute(f"""
-                INSERT INTO users (nome, email, senha_hash, plano)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
-                {"RETURNING id, nome, email, senha_hash, plano" if USE_POSTGRES else ""}
-            """, (nome, email, senha_hash, plano))
-
-            if USE_POSTGRES:
-                user = cur.fetchone()
-            else:
-                user_id = cur.lastrowid
-                cur.execute(f"""
-                    SELECT id, nome, email, senha_hash, plano
-                    FROM users
-                    WHERE id = {placeholder}
-                """, (user_id,))
-                user = cur.fetchone()
-
-            cur.close()
-            # Converter tupla SQLite em dict
-            if USE_SQLITE:
-                user = dict(zip(["id", "nome", "email", "senha_hash", "plano"], user))
-            return user
-    except Exception as e:
-        logger_db.error(f"Erro ao criar usuário: {e}")
-        return None
-
-
-def buscar_usuario(identificador):
-    """
-    Retorna o usuário pelo ID (int) ou pelo email (str)
-    """
-    if not DATABASE_ENABLED:
-        return None
-
-    try:
-        with get_db_connection() as conn:
-            cur = conn.cursor()
-            placeholder = "?" if USE_SQLITE else "%s"
-
-            if isinstance(identificador, int):
-                cur.execute(f"""
-                    SELECT id, nome, email, senha_hash, plano
-                    FROM users
-                    WHERE id = {placeholder}
-                """, (identificador,))
-            elif isinstance(identificador, str):
-                cur.execute(f"""
-                    SELECT id, nome, email, senha_hash, plano
-                    FROM users
-                    WHERE email = {placeholder}
-                """, (identificador,))
-            else:
-                logger_db.warning(f"Identificador inválido: {identificador}")
-                cur.close()
-                return None
-
-            user = cur.fetchone()
-            cur.close()
-            if USE_SQLITE and user:
-                user = dict(zip(["id", "nome", "email", "senha_hash", "plano"], user))
-            return user
-    except Exception as e:
-        logger_db.error(f"Erro ao buscar usuário: {e}")
-        return None
-
-
-# 🔹 Aliases
-def buscar_usuario_por_email(email):
-    return buscar_usuario(email)
-
-def buscar_usuario_por_id(user_id):
-    return buscar_usuario(user_id)
-
-
-# ==========================================
-# 🧠 MEMÓRIA IA
-# ==========================================
-def buscar_memoria(pergunta):
-    if not DATABASE_ENABLED:
-        return None
-
-    try:
-        with get_db_connection() as conn:
-            cur = conn.cursor()
-            placeholder = "?" if USE_SQLITE else "%s"
-            cur.execute(f"""
-                SELECT resposta
-                FROM memoria
-                WHERE pergunta = {placeholder}
-                ORDER BY confianca DESC
-                LIMIT 1
-            """, (pergunta.lower(),))
-            r = cur.fetchone()
-            cur.close()
-            return r[0] if r else None
-    except Exception as e:
-        logger_db.error(f"Erro ao buscar memória: {e}")
-        return None
-
-
-def aprender(pergunta, resposta):
-    if not DATABASE_ENABLED:
-        return
-
-    try:
-        with get_db_connection() as conn:
-            cur = conn.cursor()
-            placeholder = "?" if USE_SQLITE else "%s"
-
-            # Verifica se já existe
-            cur.execute(f"""
-                SELECT id
-                FROM memoria
-                WHERE pergunta = {placeholder} AND resposta = {placeholder}
-            """, (pergunta.lower(), resposta))
-
-            existe = cur.fetchone()
-
-            if existe:
-                cur.execute(f"""
-                    UPDATE memoria
-                    SET confianca = confianca + 1
-                    WHERE id = {placeholder}
-                """, (existe[0],))
-            else:
-                cur.execute(f"""
-                    INSERT INTO memoria (pergunta, resposta)
-                    VALUES ({placeholder}, {placeholder})
-                """, (pergunta.lower(), resposta))
-
-            cur.close()
-    except Exception as e:
-        logger_db.error(f"Erro ao aprender: {e}")
-
-
-# ==========================================
-# 📜 HISTÓRICO / SALVAR HISTÓRICO
-# ==========================================
-def salvar_historico(user_id, pergunta, resposta):
-    """
-    Salva a pergunta e resposta no histórico do usuário
-    """
-    if not DATABASE_ENABLED:
-        logger_db.warning("Banco indisponível - não salvando histórico")
-        return
-
-    try:
-        with get_db_connection() as conn:
-            cur = conn.cursor()
-            placeholder = "?" if USE_SQLITE else "%s"
-            cur.execute(f"""
-                INSERT INTO history (user_id, pergunta, resposta)
-                VALUES ({placeholder}, {placeholder}, {placeholder})
-            """, (user_id, pergunta, resposta))
-            cur.close()
-            logger_db.info(f"✅ Histórico salvo para user_id={user_id}")
-    except Exception as e:
-        logger_db.error(f"Erro ao salvar histórico: {e}")
-
-
-def buscar_historico(user_id, limite=50):
-    """
-    Retorna o histórico de perguntas/respostas do usuário
-    """
-    if not DATABASE_ENABLED:
-        return []
-
-    try:
-        with get_db_connection() as conn:
-            cur = conn.cursor()
-            placeholder = "?" if USE_SQLITE else "%s"
-            cur.execute(f"""
-                SELECT pergunta, resposta, criado_em
-                FROM history
-                WHERE user_id = {placeholder}
-                ORDER BY criado_em DESC
-                LIMIT {limite}
-            """, (user_id,))
-            rows = cur.fetchall()
-            cur.close()
-            historico = [
-                {"pergunta": r[0], "resposta": r[1], "criado_em": r[2]}
-                for r in rows
-            ]
-            return historico
-    except Exception as e:
-        logger_db.error(f"Erro ao buscar histórico: {e}")
-        return []
+    uvicorn.run(
+        "main:app",  # Agora o app sempre existe
+        host="0.0.0.0",
+        port=port,
+        reload=(env == "development")
+    )
