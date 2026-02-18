@@ -10,17 +10,18 @@ import time
 from contextlib import contextmanager
 from dotenv import load_dotenv
 from logger import get_logger
+from passlib.context import CryptContext
 
 logger_db = get_logger("database")
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-
 USE_SQLITE = DATABASE_URL and DATABASE_URL.startswith("sqlite")
 USE_POSTGRES = DATABASE_URL and DATABASE_URL.startswith("postgresql")
 
 pool = None
 DATABASE_ENABLED = False
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ==========================================
 # 🔥 CONEXÃO COM RETRY (ANTI NEON SLEEP)
@@ -44,8 +45,8 @@ elif USE_POSTGRES:
                 DATABASE_ENABLED = True
                 logger_db.info("✅ PostgreSQL/Neon conectado com pool")
                 break
-            except Exception:
-                logger_db.warning(f"Tentativa {attempt+1}/{retries} falhou ao conectar no Neon...")
+            except Exception as e:
+                logger_db.warning(f"Tentativa {attempt+1}/{retries} falhou ao conectar no Neon: {e}")
                 time.sleep(2)
 
         if not DATABASE_ENABLED:
@@ -156,26 +157,31 @@ def criar_tabelas():
 # ==========================================
 # 👤 USERS
 # ==========================================
-def criar_usuario(nome, email, senha_hash, plano="free"):
+def criar_usuario(nome, email, senha, plano="free"):
     """
-    Cria usuário e retorna o dict completo do usuário
+    Cria usuário com hash de senha e retorna dict do usuário
     """
     if not DATABASE_ENABLED:
         return None
 
     try:
+        senha_hash = pwd_context.hash(senha)
         with get_db_connection() as conn:
             cur = conn.cursor()
             placeholder = "?" if USE_SQLITE else "%s"
-            cur.execute(f"""
-                INSERT INTO users (nome, email, senha_hash, plano)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
-                {"RETURNING id, nome, email, senha_hash, plano" if USE_POSTGRES else ""}
-            """, (nome, email, senha_hash, plano))
 
             if USE_POSTGRES:
+                cur.execute(f"""
+                    INSERT INTO users (nome, email, senha_hash, plano)
+                    VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
+                    RETURNING id, nome, email, senha_hash, plano
+                """, (nome, email, senha_hash, plano))
                 user = cur.fetchone()
             else:
+                cur.execute(f"""
+                    INSERT INTO users (nome, email, senha_hash, plano)
+                    VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
+                """, (nome, email, senha_hash, plano))
                 user_id = cur.lastrowid
                 cur.execute(f"""
                     SELECT id, nome, email, senha_hash, plano
@@ -185,8 +191,7 @@ def criar_usuario(nome, email, senha_hash, plano="free"):
                 user = cur.fetchone()
 
             cur.close()
-            # Converter tupla SQLite em dict
-            if USE_SQLITE:
+            if user:
                 user = dict(zip(["id", "nome", "email", "senha_hash", "plano"], user))
             return user
     except Exception as e:
@@ -196,7 +201,7 @@ def criar_usuario(nome, email, senha_hash, plano="free"):
 
 def buscar_usuario(identificador):
     """
-    Retorna o usuário pelo ID (int) ou pelo email (str)
+    Retorna dict do usuário pelo ID (int) ou email (str)
     """
     if not DATABASE_ENABLED:
         return None
@@ -225,7 +230,7 @@ def buscar_usuario(identificador):
 
             user = cur.fetchone()
             cur.close()
-            if USE_SQLITE and user:
+            if user:
                 user = dict(zip(["id", "nome", "email", "senha_hash", "plano"], user))
             return user
     except Exception as e:
@@ -247,7 +252,6 @@ def buscar_usuario_por_id(user_id):
 def buscar_memoria(pergunta):
     if not DATABASE_ENABLED:
         return None
-
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
@@ -270,21 +274,16 @@ def buscar_memoria(pergunta):
 def aprender(pergunta, resposta):
     if not DATABASE_ENABLED:
         return
-
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
             placeholder = "?" if USE_SQLITE else "%s"
-
-            # Verifica se já existe
             cur.execute(f"""
                 SELECT id
                 FROM memoria
                 WHERE pergunta = {placeholder} AND resposta = {placeholder}
             """, (pergunta.lower(), resposta))
-
             existe = cur.fetchone()
-
             if existe:
                 cur.execute(f"""
                     UPDATE memoria
@@ -296,23 +295,18 @@ def aprender(pergunta, resposta):
                     INSERT INTO memoria (pergunta, resposta)
                     VALUES ({placeholder}, {placeholder})
                 """, (pergunta.lower(), resposta))
-
             cur.close()
     except Exception as e:
         logger_db.error(f"Erro ao aprender: {e}")
 
 
 # ==========================================
-# 📜 HISTÓRICO / SALVAR HISTÓRICO
+# 📜 HISTÓRICO
 # ==========================================
 def salvar_historico(user_id, pergunta, resposta):
-    """
-    Salva a pergunta e resposta no histórico do usuário
-    """
     if not DATABASE_ENABLED:
         logger_db.warning("Banco indisponível - não salvando histórico")
         return
-
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
@@ -328,12 +322,8 @@ def salvar_historico(user_id, pergunta, resposta):
 
 
 def buscar_historico(user_id, limite=50):
-    """
-    Retorna o histórico de perguntas/respostas do usuário
-    """
     if not DATABASE_ENABLED:
         return []
-
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
@@ -347,10 +337,7 @@ def buscar_historico(user_id, limite=50):
             """, (user_id,))
             rows = cur.fetchall()
             cur.close()
-            historico = [
-                {"pergunta": r[0], "resposta": r[1], "criado_em": r[2]}
-                for r in rows
-            ]
+            historico = [{"pergunta": r[0], "resposta": r[1], "criado_em": r[2]} for r in rows]
             return historico
     except Exception as e:
         logger_db.error(f"Erro ao buscar histórico: {e}")
