@@ -37,7 +37,6 @@ elif USE_POSTGRES:
         from psycopg2.pool import SimpleConnectionPool
 
         retries = 5
-
         for attempt in range(retries):
             try:
                 pool = SimpleConnectionPool(
@@ -45,25 +44,19 @@ elif USE_POSTGRES:
                     maxconn=10,
                     dsn=DATABASE_URL
                 )
-
                 DATABASE_ENABLED = True
                 logger_db.info("✅ PostgreSQL/Neon conectado com pool")
                 break
-
             except Exception as e:
-                logger_db.warning(
-                    f"Tentativa {attempt+1}/{retries} falhou ao conectar no Neon..."
-                )
+                logger_db.warning(f"Tentativa {attempt+1}/{retries} falhou ao conectar no Neon...")
                 time.sleep(2)
 
         if not DATABASE_ENABLED:
             logger_db.error("❌ Não foi possível conectar ao PostgreSQL")
-
     except Exception as e:
         logger_db.error(f"Erro ao importar psycopg2: {e}")
 
 elif USE_SQLITE:
-
     DATABASE_ENABLED = True
     logger_db.info("🗄️ Usando SQLite")
 
@@ -77,39 +70,32 @@ else:
 
 @contextmanager
 def get_db_connection():
-
     if not DATABASE_ENABLED:
         raise RuntimeError("Banco não configurado ou indisponível")
 
     if USE_SQLITE:
-
-        db_path = DATABASE_URL.replace("sqlite:///", "")
+        db_path = DATABASE_URL.replace("sqlite:///", "") if DATABASE_URL else "database.db"
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
-
         try:
             yield conn
             conn.commit()
-        except:
+        except Exception:
             conn.rollback()
             raise
         finally:
             conn.close()
-
     else:
         conn = None
-
         try:
             conn = pool.getconn()
             yield conn
             conn.commit()
-
         except Exception as e:
             if conn:
                 conn.rollback()
             logger_db.error(f"Erro na conexão: {e}")
             raise
-
         finally:
             if conn:
                 pool.putconn(conn)
@@ -120,7 +106,6 @@ def get_db_connection():
 # ==========================================
 
 def criar_tabelas():
-
     if not DATABASE_ENABLED:
         logger_db.warning("Banco indisponível - pulando criação")
         return
@@ -135,6 +120,7 @@ def criar_tabelas():
             id_field = "SERIAL PRIMARY KEY"
             timestamp_field = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
 
+        # USERS
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS users (
             id {id_field},
@@ -146,6 +132,7 @@ def criar_tabelas():
         )
         """)
 
+        # MEMORIA IA
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS memoria (
             id {id_field},
@@ -156,6 +143,7 @@ def criar_tabelas():
         )
         """)
 
+        # HISTORY
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS history (
             id {id_field},
@@ -174,28 +162,43 @@ def criar_tabelas():
 # 👤 USERS
 # ==========================================
 
-def buscar_usuario_por_email(email):
-
+def criar_usuario(nome, email, senha_hash, plano="free"):
     if not DATABASE_ENABLED:
         return None
 
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
-
             placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(f"""
+                INSERT INTO users (nome, email, senha_hash, plano)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
+                RETURNING id
+            """, (nome, email, senha_hash, plano))
+            user_id = cur.fetchone()[0] if not USE_SQLITE else cur.lastrowid
+            cur.close()
+            return user_id
+    except Exception as e:
+        logger_db.error(f"Erro ao criar usuário: {e}")
+        return None
 
+
+def buscar_usuario_por_email(email):
+    if not DATABASE_ENABLED:
+        return None
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
             cur.execute(f"""
                 SELECT id, nome, email, senha_hash, plano
                 FROM users
                 WHERE email = {placeholder}
             """, (email,))
-
             user = cur.fetchone()
             cur.close()
-
             return user
-
     except Exception as e:
         logger_db.error(f"Erro ao buscar usuário: {e}")
         return None
@@ -206,16 +209,13 @@ def buscar_usuario_por_email(email):
 # ==========================================
 
 def buscar_memoria(pergunta):
-
     if not DATABASE_ENABLED:
         return None
 
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
-
             placeholder = "?" if USE_SQLITE else "%s"
-
             cur.execute(f"""
                 SELECT resposta
                 FROM memoria
@@ -223,33 +223,28 @@ def buscar_memoria(pergunta):
                 ORDER BY confianca DESC
                 LIMIT 1
             """, (pergunta.lower(),))
-
             r = cur.fetchone()
             cur.close()
-
             return r[0] if r else None
-
     except Exception as e:
         logger_db.error(f"Erro ao buscar memória: {e}")
         return None
 
 
 def aprender(pergunta, resposta):
-
     if not DATABASE_ENABLED:
         return
 
     try:
         with get_db_connection() as conn:
             cur = conn.cursor()
-
             placeholder = "?" if USE_SQLITE else "%s"
 
+            # Verifica se já existe
             cur.execute(f"""
                 SELECT id
                 FROM memoria
-                WHERE pergunta = {placeholder}
-                AND resposta = {placeholder}
+                WHERE pergunta = {placeholder} AND resposta = {placeholder}
             """, (pergunta.lower(), resposta))
 
             existe = cur.fetchone()
@@ -260,7 +255,6 @@ def aprender(pergunta, resposta):
                     SET confianca = confianca + 1
                     WHERE id = {placeholder}
                 """, (existe[0],))
-
             else:
                 cur.execute(f"""
                     INSERT INTO memoria (pergunta, resposta)
@@ -268,6 +262,5 @@ def aprender(pergunta, resposta):
                 """, (pergunta.lower(), resposta))
 
             cur.close()
-
     except Exception as e:
         logger_db.error(f"Erro ao aprender: {e}")
