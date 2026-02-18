@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 from logger import get_logger
 
 logger_db = get_logger("database")
-
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -22,7 +21,6 @@ USE_POSTGRES = DATABASE_URL and DATABASE_URL.startswith("postgresql")
 
 pool = None
 DATABASE_ENABLED = False
-
 
 # ==========================================
 # 🔥 CONEXÃO COM RETRY (ANTI NEON SLEEP)
@@ -47,7 +45,7 @@ elif USE_POSTGRES:
                 DATABASE_ENABLED = True
                 logger_db.info("✅ PostgreSQL/Neon conectado com pool")
                 break
-            except Exception as e:
+            except Exception:
                 logger_db.warning(f"Tentativa {attempt+1}/{retries} falhou ao conectar no Neon...")
                 time.sleep(2)
 
@@ -173,9 +171,8 @@ def criar_usuario(nome, email, senha_hash, plano="free"):
             cur.execute(f"""
                 INSERT INTO users (nome, email, senha_hash, plano)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
-                RETURNING id
             """, (nome, email, senha_hash, plano))
-            user_id = cur.fetchone()[0] if not USE_SQLITE else cur.lastrowid
+            user_id = cur.lastrowid if USE_SQLITE else cur.fetchone()[0]
             cur.close()
             return user_id
     except Exception as e:
@@ -183,7 +180,10 @@ def criar_usuario(nome, email, senha_hash, plano="free"):
         return None
 
 
-def buscar_usuario_por_email(email):
+def buscar_usuario(identificador):
+    """
+    Retorna o usuário pelo ID (int) ou pelo email (str)
+    """
     if not DATABASE_ENABLED:
         return None
 
@@ -191,11 +191,24 @@ def buscar_usuario_por_email(email):
         with get_db_connection() as conn:
             cur = conn.cursor()
             placeholder = "?" if USE_SQLITE else "%s"
-            cur.execute(f"""
-                SELECT id, nome, email, senha_hash, plano
-                FROM users
-                WHERE email = {placeholder}
-            """, (email,))
+
+            if isinstance(identificador, int):
+                cur.execute(f"""
+                    SELECT id, nome, email, senha_hash, plano
+                    FROM users
+                    WHERE id = {placeholder}
+                """, (identificador,))
+            elif isinstance(identificador, str):
+                cur.execute(f"""
+                    SELECT id, nome, email, senha_hash, plano
+                    FROM users
+                    WHERE email = {placeholder}
+                """, (identificador,))
+            else:
+                logger_db.warning(f"Identificador inválido: {identificador}")
+                cur.close()
+                return None
+
             user = cur.fetchone()
             cur.close()
             return user
