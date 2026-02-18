@@ -157,6 +157,9 @@ def criar_tabelas():
 # 👤 USERS
 # ==========================================
 def criar_usuario(nome, email, senha_hash, plano="free"):
+    """
+    Cria usuário e retorna o dict completo do usuário
+    """
     if not DATABASE_ENABLED:
         return None
 
@@ -167,16 +170,25 @@ def criar_usuario(nome, email, senha_hash, plano="free"):
             cur.execute(f"""
                 INSERT INTO users (nome, email, senha_hash, plano)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
-                {"RETURNING id" if USE_POSTGRES else ""}
+                {"RETURNING id, nome, email, senha_hash, plano" if USE_POSTGRES else ""}
             """, (nome, email, senha_hash, plano))
 
             if USE_POSTGRES:
-                user_id = cur.fetchone()[0]
+                user = cur.fetchone()
             else:
                 user_id = cur.lastrowid
+                cur.execute(f"""
+                    SELECT id, nome, email, senha_hash, plano
+                    FROM users
+                    WHERE id = {placeholder}
+                """, (user_id,))
+                user = cur.fetchone()
 
             cur.close()
-            return user_id
+            # Converter tupla SQLite em dict
+            if USE_SQLITE:
+                user = dict(zip(["id", "nome", "email", "senha_hash", "plano"], user))
+            return user
     except Exception as e:
         logger_db.error(f"Erro ao criar usuário: {e}")
         return None
@@ -213,6 +225,8 @@ def buscar_usuario(identificador):
 
             user = cur.fetchone()
             cur.close()
+            if USE_SQLITE and user:
+                user = dict(zip(["id", "nome", "email", "senha_hash", "plano"], user))
             return user
     except Exception as e:
         logger_db.error(f"Erro ao buscar usuário: {e}")
@@ -311,3 +325,33 @@ def salvar_historico(user_id, pergunta, resposta):
             logger_db.info(f"✅ Histórico salvo para user_id={user_id}")
     except Exception as e:
         logger_db.error(f"Erro ao salvar histórico: {e}")
+
+
+def buscar_historico(user_id, limite=50):
+    """
+    Retorna o histórico de perguntas/respostas do usuário
+    """
+    if not DATABASE_ENABLED:
+        return []
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(f"""
+                SELECT pergunta, resposta, criado_em
+                FROM history
+                WHERE user_id = {placeholder}
+                ORDER BY criado_em DESC
+                LIMIT {limite}
+            """, (user_id,))
+            rows = cur.fetchall()
+            cur.close()
+            historico = [
+                {"pergunta": r[0], "resposta": r[1], "criado_em": r[2]}
+                for r in rows
+            ]
+            return historico
+    except Exception as e:
+        logger_db.error(f"Erro ao buscar histórico: {e}")
+        return []
