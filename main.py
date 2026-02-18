@@ -14,9 +14,10 @@ from logger import get_logger
 logger_main = get_logger("main")
 
 # ==================================================
-# PATHS
+# PATH DO PROJETO
 # ==================================================
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BASE_DIR)
 
 # ==================================================
 # CARREGAR VARIÁVEIS DE AMBIENTE
@@ -24,38 +25,40 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 # ==================================================
-# TENTAR IMPORTAR APP PRINCIPAL
+# IMPORTAR APP PRINCIPAL
 # ==================================================
 try:
-    from alici_api.app import app
+    from alici_api.app import app  # ✅ CORRETO
     logger_main.info("✅ App FastAPI importado com sucesso.")
 except ImportError as e:
-    logger_main.error(f"Erro ao importar app: {e}")
+    logger_main.error(f"❌ Erro ao importar alici_api.app: {e}")
     logger_main.warning("⚠️ Criando app FastAPI de fallback...")
+
     from fastapi import FastAPI
     app = FastAPI(title="ALICI - App Fallback")
 
     @app.get("/")
     def root():
-        return {"message": "⚠️ App fallback ativado - alici_api.app não encontrado"}
+        return {
+            "message": "⚠️ App fallback ativado - alici_api.app não encontrado"
+        }
 
 # ==================================================
-# TENTAR IMPORTAR CRIAR TABELAS
+# IMPORTAR CRIAR TABELAS
 # ==================================================
 try:
     from database import criar_tabelas
-    logger_main.info("✅ Função criar_tabelas importada.")
+    logger_main.info("✅ Função criar_tabelas importada com sucesso.")
 except ImportError as e:
-    logger_main.warning(f"Função criar_tabelas não encontrada: {e}")
-    # Criar função dummy para não travar o app
+    logger_main.warning(f"⚠️ criar_tabelas não encontrada: {e}")
+
     def criar_tabelas():
-        logger_main.warning("⚠️ criar_tabelas não implementada, ignorando...")
+        logger_main.warning("⚠️ criar_tabelas não implementada.")
 
 # ==================================================
 # ENDPOINT /chat
 # ==================================================
 try:
-    from fastapi import FastAPI
     from pydantic import BaseModel
     from engine import gerar_resposta_com_emocao
 
@@ -64,17 +67,30 @@ try:
 
     @app.post("/chat")
     async def chat(payload: Mensagem):
-        pergunta = payload.mensagem
+        pergunta = payload.mensagem.strip()
+
+        if not pergunta:
+            return {"resposta": "⚠️ Você precisa enviar uma mensagem válida."}
+
         resposta = gerar_resposta_com_emocao(pergunta)
         return {"resposta": resposta}
 
     logger_main.info("✅ Endpoint /chat configurado com sucesso.")
 
 except Exception as e:
-    logger_main.error(f"Erro ao configurar endpoint /chat: {e}")
+    logger_main.error(f"❌ Erro ao configurar endpoint /chat: {e}")
 
 # ==================================================
-# EXECUÇÃO DIRETA (UVICORN)
+# INICIALIZAÇÃO (IMPORTANTE PARA RENDER)
+# ==================================================
+try:
+    criar_tabelas()
+    logger_main.info("✅ Tabelas criadas/verificadas ao iniciar aplicação.")
+except Exception as e:
+    logger_main.error(f"❌ Erro ao criar tabelas na inicialização: {e}")
+
+# ==================================================
+# EXECUÇÃO LOCAL (UVICORN)
 # ==================================================
 if __name__ == "__main__":
     import uvicorn
@@ -88,15 +104,8 @@ if __name__ == "__main__":
     logger_main.info(f"🔧 Ambiente: {env}")
     logger_main.info(f"{'='*60}\n")
 
-    # 🔹 Criar tabelas ao iniciar
-    try:
-        criar_tabelas()
-        logger_main.info("✅ Tabelas criadas ou verificadas com sucesso.")
-    except Exception as e:
-        logger_main.error(f"Erro ao criar tabelas: {e}")
-
     uvicorn.run(
-        "main:app",  # Agora o app sempre existe
+        "main:app",
         host="0.0.0.0",
         port=port,
         reload=(env == "development")
