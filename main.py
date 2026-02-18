@@ -27,7 +27,7 @@ load_dotenv()
 # TENTAR IMPORTAR APP PRINCIPAL
 # ==================================================
 try:
-    from alici_api import app
+    from alici_api.app import app
     logger_main.info("✅ App FastAPI importado com sucesso.")
 except ImportError as e:
     logger_main.error(f"Erro ao importar app: {e}")
