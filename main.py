@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Carregar variáveis de ambiente
 load_dotenv()
 
-# Importar app FastAPI e funções do database com fallback
+# Importar app FastAPI e funções do database
 try:
     from alici_api.app import app
 except ImportError as e:
@@ -27,7 +27,7 @@ except ImportError as e:
 try:
     from database import criar_tabelas
 except ImportError as e:
-    logger_main.warning(f"Função criar_tabelas não encontrada: {e}")
+    logger_main.error(f"Erro ao importar criar_tabelas: {e}")
     # Criar função dummy para não travar o app
     def criar_tabelas():
         logger_main.warning("⚠️ criar_tabelas não implementada, ignorando...")
@@ -35,10 +35,12 @@ except ImportError as e:
 
 if __name__ == "__main__":
     import uvicorn
-    
+
+    # Porta e ambiente
     port = int(os.getenv("PORT", 8000))
     env = os.getenv("ENV", "development")
 
+    # Logs de inicialização
     logger_main.info(f"\n{'='*60}")
     logger_main.info(f"🚀 Iniciando ALICI na porta {port}...")
     logger_main.info(f"📍 Acesse: http://localhost:{port}")
@@ -51,8 +53,9 @@ if __name__ == "__main__":
     except Exception as e:
         logger_main.error(f"Erro ao criar tabelas: {e}")
 
+    # Iniciar servidor Uvicorn
     uvicorn.run(
-        "main:app",
+        app,
         host="0.0.0.0",
         port=port,
         reload=(env == "development")
