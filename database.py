@@ -171,8 +171,17 @@ def criar_usuario(nome, email, senha_hash, plano="free"):
             cur.execute(f"""
                 INSERT INTO users (nome, email, senha_hash, plano)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
+                RETURNING id
+            """ if USE_POSTGRES else f"""
+                INSERT INTO users (nome, email, senha_hash, plano)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (nome, email, senha_hash, plano))
-            user_id = cur.lastrowid if USE_SQLITE else cur.fetchone()[0]
+
+            if USE_POSTGRES:
+                user_id = cur.fetchone()[0]
+            else:
+                user_id = cur.lastrowid
+
             cur.close()
             return user_id
     except Exception as e:
@@ -215,6 +224,12 @@ def buscar_usuario(identificador):
     except Exception as e:
         logger_db.error(f"Erro ao buscar usuário: {e}")
         return None
+
+
+# 🔹 Alias para compatibilidade com imports antigos
+def buscar_usuario_por_email(email):
+    """Retorna o usuário pelo email (compatibilidade com código antigo)"""
+    return buscar_usuario(email)
 
 
 # ==========================================
