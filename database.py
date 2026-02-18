@@ -25,7 +25,6 @@ DATABASE_ENABLED = False
 # ==========================================
 # 🔥 CONEXÃO COM RETRY (ANTI NEON SLEEP)
 # ==========================================
-
 if not DATABASE_URL:
     logger_db.warning("⚠️ DATABASE_URL não configurado")
 
@@ -65,7 +64,6 @@ else:
 # ==========================================
 # CONTEXT MANAGER
 # ==========================================
-
 @contextmanager
 def get_db_connection():
     if not DATABASE_ENABLED:
@@ -102,7 +100,6 @@ def get_db_connection():
 # ==========================================
 # 🚀 CRIAR TABELAS
 # ==========================================
-
 def criar_tabelas():
     if not DATABASE_ENABLED:
         logger_db.warning("Banco indisponível - pulando criação")
@@ -159,7 +156,6 @@ def criar_tabelas():
 # ==========================================
 # 👤 USERS
 # ==========================================
-
 def criar_usuario(nome, email, senha_hash, plano="free"):
     if not DATABASE_ENABLED:
         return None
@@ -223,7 +219,7 @@ def buscar_usuario(identificador):
         return None
 
 
-# 🔹 Aliases para compatibilidade com código antigo
+# 🔹 Aliases
 def buscar_usuario_por_email(email):
     return buscar_usuario(email)
 
@@ -234,7 +230,6 @@ def buscar_usuario_por_id(user_id):
 # ==========================================
 # 🧠 MEMÓRIA IA
 # ==========================================
-
 def buscar_memoria(pergunta):
     if not DATABASE_ENABLED:
         return None
@@ -291,3 +286,28 @@ def aprender(pergunta, resposta):
             cur.close()
     except Exception as e:
         logger_db.error(f"Erro ao aprender: {e}")
+
+
+# ==========================================
+# 📜 HISTÓRICO / SALVAR HISTÓRICO
+# ==========================================
+def salvar_historico(user_id, pergunta, resposta):
+    """
+    Salva a pergunta e resposta no histórico do usuário
+    """
+    if not DATABASE_ENABLED:
+        logger_db.warning("Banco indisponível - não salvando histórico")
+        return
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(f"""
+                INSERT INTO history (user_id, pergunta, resposta)
+                VALUES ({placeholder}, {placeholder}, {placeholder})
+            """, (user_id, pergunta, resposta))
+            cur.close()
+            logger_db.info(f"✅ Histórico salvo para user_id={user_id}")
+    except Exception as e:
+        logger_db.error(f"Erro ao salvar histórico: {e}")
