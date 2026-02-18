@@ -171,10 +171,7 @@ def criar_usuario(nome, email, senha_hash, plano="free"):
             cur.execute(f"""
                 INSERT INTO users (nome, email, senha_hash, plano)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
-                RETURNING id
-            """ if USE_POSTGRES else f"""
-                INSERT INTO users (nome, email, senha_hash, plano)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
+                {"RETURNING id" if USE_POSTGRES else ""}
             """, (nome, email, senha_hash, plano))
 
             if USE_POSTGRES:
@@ -226,10 +223,12 @@ def buscar_usuario(identificador):
         return None
 
 
-# 🔹 Alias para compatibilidade com imports antigos
+# 🔹 Aliases para compatibilidade com código antigo
 def buscar_usuario_por_email(email):
-    """Retorna o usuário pelo email (compatibilidade com código antigo)"""
     return buscar_usuario(email)
+
+def buscar_usuario_por_id(user_id):
+    return buscar_usuario(user_id)
 
 
 # ==========================================
