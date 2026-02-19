@@ -4,7 +4,18 @@ Entrypoint principal da aplicação web
 """
 
 import os
+import sys
 from typing import Optional
+
+# ==================================================
+# 🔥 CORREÇÃO PARA ESTRUTURA HÍBRIDA (IMPORTS RAIZ)
+# ==================================================
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+# ==================================================
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Header
@@ -14,17 +25,17 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 # ================================
-# IMPORTS INTERNOS (CORRIGIDO)
+# IMPORTS INTERNOS (RAIZ)
 # ================================
 
-from alici_api.engine import gerar_resposta, gerar_resposta_com_emocao
-from alici_api.auth import (
+from engine import gerar_resposta, gerar_resposta_com_emocao
+from auth import (
     create_access_token,
     verify_password,
     hash_password,
     verify_token
 )
-from alici_api.database import (
+from database import (
     buscar_usuario_por_email,
     criar_usuario,
     buscar_usuario_por_id,
@@ -32,7 +43,7 @@ from alici_api.database import (
     buscar_historico,
     criar_tabelas
 )
-from alici_api.logger import get_logger
+from logger import get_logger
 
 # ================================
 # CONFIGURAÇÃO INICIAL
@@ -313,18 +324,6 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     logger_app.info("🛑 ALICI desligando...")
-
-
-# ================================
-# HANDLER DE ERROS
-# ================================
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail}
-    )
 
 
 # ================================
