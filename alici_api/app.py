@@ -4,7 +4,6 @@ Entrypoint principal da aplicação web
 """
 
 import os
-import sys
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -14,14 +13,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-# Adicionar diretório pai para imports
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, BASE_DIR)
+# ================================
+# IMPORTS INTERNOS (CORRIGIDO)
+# ================================
 
-# Importar módulos ALICI
-from engine import gerar_resposta, gerar_resposta_com_emocao
-from auth import create_access_token, verify_password, hash_password, verify_token
-from database import (
+from alici_api.engine import gerar_resposta, gerar_resposta_com_emocao
+from alici_api.auth import (
+    create_access_token,
+    verify_password,
+    hash_password,
+    verify_token
+)
+from alici_api.database import (
     buscar_usuario_por_email,
     criar_usuario,
     buscar_usuario_por_id,
@@ -29,17 +32,15 @@ from database import (
     buscar_historico,
     criar_tabelas
 )
-from logger import get_logger
+from alici_api.logger import get_logger
 
-# Carregar variáveis de ambiente
+# ================================
+# CONFIGURAÇÃO INICIAL
+# ================================
+
 load_dotenv()
-
-# Logger
 logger_app = get_logger("api")
 
-# ================================
-# APP & CORS
-# ================================
 app = FastAPI(
     title="ALICI™ API",
     description="Inteligência Artificial com Memória Persistente",
@@ -48,7 +49,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção você pode limitar
+    allow_origins=["*"],  # Restrinja em produção
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,6 +58,7 @@ app.add_middleware(
 # ================================
 # ARQUIVOS ESTÁTICOS
 # ================================
+
 STATIC_DIR = "static"
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -213,11 +215,9 @@ async def chat(
 
         if request.incluir_emocao:
             resultado = gerar_resposta_com_emocao(request.pergunta)
-
             resposta = resultado.get("resposta")
             emocao = resultado.get("emocao")
             intensidade = resultado.get("intensidade")
-
         else:
             resposta = gerar_resposta(request.pergunta)
             emocao = None
@@ -251,7 +251,7 @@ async def chat_with_image(authorization: Optional[str] = Header(None)):
 
 
 # ================================
-# ROTAS - STATUS
+# STATUS
 # ================================
 
 @app.get("/api/status")
@@ -272,7 +272,7 @@ async def api_status(authorization: Optional[str] = Header(None)):
 
 
 # ================================
-# PÁGINAS HTML
+# HTML
 # ================================
 
 def serve_html(file_name: str, fallback_msg: str):
@@ -330,6 +330,7 @@ async def http_exception_handler(request, exc):
 # ================================
 # EXECUÇÃO LOCAL
 # ================================
+
 if __name__ == "__main__":
     import uvicorn
 
