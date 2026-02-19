@@ -8,7 +8,7 @@ import sys
 from typing import Optional
 
 # ==================================================
-# 🔥 BASE DIR REAL (FUNCIONA LOCAL E RENDER)
+# BASE DIR (FUNCIONA LOCAL E RENDER)
 # ==================================================
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -59,21 +59,25 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# ================================
+# CORS
+# ================================
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Ajuste em produção
+    allow_origins=["*"],  # Ajustar domínio em produção
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ================================
-# STATIC FILES (CORRIGIDO)
+# STATIC FILES
 # ================================
 
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-if os.path.exists(STATIC_DIR):
+if os.path.isdir(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # ================================
@@ -136,10 +140,10 @@ def get_current_user(authorization: Optional[str]):
 
         return user
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token inválido: {str(e)}"
+            detail="Token inválido"
         )
 
 
@@ -233,27 +237,32 @@ async def api_status():
 
 
 # ================================
-# HTML (CORRIGIDO DEFINITIVO)
+# HTML (LOGIN COMO PRINCIPAL)
 # ================================
 
-def serve_html(file_name: str, fallback_msg: str):
-    path = os.path.join(BASE_DIR, "templates", file_name)
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 
-    if os.path.exists(path):
-        return FileResponse(path)
+def serve_html(file_name: str):
+    file_path = os.path.join(TEMPLATES_DIR, file_name)
 
-    return {"erro": f"{file_name} não encontrado no servidor"}
+    if not os.path.isfile(file_path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"{file_name} não encontrado no servidor"
+        )
+
+    return FileResponse(file_path)
 
 
-@app.get("/")
-@app.get("/login")
-def login_page():
-    return serve_html("login.html", "Login")
+@app.get("/", include_in_schema=False)
+@app.get("/login", include_in_schema=False)
+async def login_page():
+    return serve_html("login.html")
 
 
-@app.get("/chat-page")
-def chat_page():
-    return serve_html("chat.html", "Chat")
+@app.get("/chat-page", include_in_schema=False)
+async def chat_page():
+    return serve_html("chat.html")
 
 
 # ================================
