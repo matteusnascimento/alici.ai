@@ -60,9 +60,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # ============================================================================
 
 def create_access_token(user_id: int, email: str) -> str:
-    """
-    Cria um JWT access token
-    """
 
     now = datetime.now(timezone.utc)
 
@@ -70,17 +67,14 @@ def create_access_token(user_id: int, email: str) -> str:
         "sub": str(user_id),
         "email": email,
         "type": "access",
-        "iat": now,
-        "exp": now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp())
     }
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> dict:
-    """
-    Decodifica token e valida expiração
-    """
 
     try:
         payload = jwt.decode(
@@ -98,14 +92,10 @@ def decode_token(token: str) -> dict:
 
 
 def verify_token(token: str) -> dict:
-    """
-    Verifica token e retorna payload
-    """
 
     if not token:
         raise JWTError("Token não fornecido")
 
-    # Remover prefixo Bearer
     if token.startswith("Bearer "):
         token = token[7:]
 
