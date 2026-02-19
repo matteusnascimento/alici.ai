@@ -20,8 +20,9 @@ from openai import OpenAI
 logger_engine = get_logger("engine")
 
 # ==================================================
-# 🔑 CONFIGURAÇÃO OPENAI (SDK NOVO)
+# 🔑 CONFIGURAÇÃO OPENAI (SDK 1.x CORRETO)
 # ==================================================
+
 api_key = os.getenv("OPENAI_API_KEY")
 
 client = None
@@ -30,7 +31,7 @@ if not api_key:
     logger_engine.warning("⚠ OPENAI_API_KEY não encontrada")
 else:
     try:
-        client = OpenAI(api_key=api_key)
+        client = OpenAI()  # SDK novo já lê da variável de ambiente
         logger_engine.info("✓ Cliente OpenAI inicializado com sucesso")
     except Exception as e:
         logger_engine.error(f"Erro ao inicializar OpenAI: {e}")
@@ -43,6 +44,7 @@ else:
 def responder_via_api(pergunta: str) -> str | None:
 
     if not client:
+        logger_engine.warning("⚠ Cliente OpenAI indisponível")
         return None
 
     try:
@@ -145,6 +147,8 @@ def gerar_resposta(pergunta: str) -> str:
     # ==================================================
     # 6️⃣ FALLBACK
     # ==================================================
+    logger_engine.warning("⚠ Todas as camadas falharam, acionando fallback")
+
     return (
         "Tive uma pequena instabilidade agora, mas já estou me recuperando.\n"
         "Pode tentar novamente?"
