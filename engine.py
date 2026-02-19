@@ -11,7 +11,6 @@ from intencao import precisa_pesquisa_web
 from web_search import buscar_na_web
 from resposta import responder_local
 from sistema_emocoes import adicionar_metadados_resposta
-
 from openai import OpenAI
 
 # ==================================================
@@ -20,7 +19,7 @@ from openai import OpenAI
 logger_engine = get_logger("engine")
 
 # ==================================================
-# 🔑 CONFIGURAÇÃO OPENAI (SDK 1.x CORRETO)
+# 🔑 CONFIGURAÇÃO OPENAI (SDK 1.x)
 # ==================================================
 
 api_key = os.getenv("OPENAI_API_KEY")
@@ -31,7 +30,7 @@ if not api_key:
     logger_engine.warning("⚠ OPENAI_API_KEY não encontrada")
 else:
     try:
-        client = OpenAI()  # SDK novo já lê da variável de ambiente
+        client = OpenAI()  # Lê automaticamente da variável de ambiente
         logger_engine.info("✓ Cliente OpenAI inicializado com sucesso")
     except Exception as e:
         logger_engine.error(f"Erro ao inicializar OpenAI: {e}")
