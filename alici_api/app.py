@@ -8,10 +8,11 @@ import sys
 from typing import Optional
 
 # ==================================================
-# 🔥 CORREÇÃO PARA ESTRUTURA HÍBRIDA (IMPORTS RAIZ)
+# 🔥 BASE DIR REAL (FUNCIONA LOCAL E RENDER)
 # ==================================================
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
@@ -19,13 +20,13 @@ if BASE_DIR not in sys.path:
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Header
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 # ================================
-# IMPORTS INTERNOS (RAIZ)
+# IMPORTS INTERNOS
 # ================================
 
 from engine import gerar_resposta, gerar_resposta_com_emocao
@@ -60,17 +61,18 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrinja em produção
+    allow_origins=["*"],  # Ajuste em produção
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ================================
-# ARQUIVOS ESTÁTICOS
+# STATIC FILES (CORRIGIDO)
 # ================================
 
-STATIC_DIR = "static"
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -147,126 +149,49 @@ def get_current_user(authorization: Optional[str]):
 
 @app.post("/auth/login")
 async def login(request: LoginRequest):
-    try:
-        logger_app.info(f"Login attempt: {request.email}")
+    user = buscar_usuario_por_email(request.email)
 
-        user = buscar_usuario_por_email(request.email)
+    if not user or not verify_password(request.senha, user.get("senha_hash")):
+        raise HTTPException(status_code=401, detail="Email ou senha incorretos")
 
-        if not user or not verify_password(request.senha, user.get("senha_hash")):
-            raise HTTPException(status_code=401, detail="Email ou senha incorretos")
+    access_token = create_access_token(user["id"], user["email"])
 
-        access_token = create_access_token(user["id"], user["email"])
-
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "usuario": {
-                "id": user["id"],
-                "nome": user["nome"],
-                "email": user["email"],
-                "plano": user.get("plano", "free")
-            }
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "usuario": {
+            "id": user["id"],
+            "nome": user["nome"],
+            "email": user["email"],
+            "plano": user.get("plano", "free")
         }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger_app.error(f"Login error: {e}")
-        raise HTTPException(status_code=500, detail="Erro interno do servidor")
+    }
 
 
 @app.post("/auth/register")
 async def register(request: RegisterRequest):
-    try:
-        logger_app.info(f"Register attempt: {request.email}")
+    if buscar_usuario_por_email(request.email):
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
 
-        if buscar_usuario_por_email(request.email):
-            raise HTTPException(status_code=400, detail="Email já cadastrado")
+    senha_hash = hash_password(request.senha)
+    user = criar_usuario(request.nome, request.email, senha_hash)
 
-        senha_hash = hash_password(request.senha)
-        user = criar_usuario(request.nome, request.email, senha_hash)
+    access_token = create_access_token(user["id"], user["email"])
 
-        access_token = create_access_token(user["id"], user["email"])
-
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "usuario": {
-                "id": user["id"],
-                "nome": user["nome"],
-                "email": user["email"],
-                "plano": user.get("plano", "free")
-            }
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger_app.error(f"Register error: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao registrar usuário")
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "usuario": user
+    }
 
 
 # ================================
-# ROTAS - CHAT
+# CHAT
 # ================================
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(
-    request: ChatRequest,
-    authorization: Optional[str] = Header(None)
-):
-    try:
-        user = None
+async def chat(request: ChatRequest, authorization: Optional[str] = Header(None)):
 
-        if authorization:
-            try:
-                user = get_current_user(authorization)
-            except:
-                pass
-
-        if request.incluir_emocao:
-            resultado = gerar_resposta_com_emocao(request.pergunta)
-            resposta = resultado.get("resposta")
-            emocao = resultado.get("emocao")
-            intensidade = resultado.get("intensidade")
-        else:
-            resposta = gerar_resposta(request.pergunta)
-            emocao = None
-            intensidade = None
-
-        if user:
-            salvar_historico(user["id"], request.pergunta, resposta)
-
-        return {
-            "resposta": resposta,
-            "emocao": emocao,
-            "intensidade": intensidade
-        }
-
-    except Exception as e:
-        logger_app.error(f"Chat error: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao processar pergunta")
-
-
-@app.get("/history")
-async def get_history(authorization: Optional[str] = Header(None)):
-    user = get_current_user(authorization)
-    historico = buscar_historico(user["id"], limite=50)
-    return {"usuario": user, "historico": historico}
-
-
-@app.post("/chat/image")
-async def chat_with_image(authorization: Optional[str] = Header(None)):
-    get_current_user(authorization)
-    return {"resposta": "Análise de imagem será disponível em breve"}
-
-
-# ================================
-# STATUS
-# ================================
-
-@app.get("/api/status")
-async def api_status(authorization: Optional[str] = Header(None)):
     user = None
 
     if authorization:
@@ -275,22 +200,49 @@ async def api_status(authorization: Optional[str] = Header(None)):
         except:
             pass
 
+    if request.incluir_emocao:
+        resultado = gerar_resposta_com_emocao(request.pergunta)
+        resposta = resultado.get("resposta")
+        emocao = resultado.get("emocao")
+        intensidade = resultado.get("intensidade")
+    else:
+        resposta = gerar_resposta(request.pergunta)
+        emocao = None
+        intensidade = None
+
+    if user:
+        salvar_historico(user["id"], request.pergunta, resposta)
+
     return {
-        "status": "operacional",
-        "version": "1.0.0",
-        "usuario": user
+        "resposta": resposta,
+        "emocao": emocao,
+        "intensidade": intensidade
     }
 
 
 # ================================
-# HTML
+# STATUS
+# ================================
+
+@app.get("/api/status")
+async def api_status():
+    return {
+        "status": "operacional",
+        "version": "1.0.0"
+    }
+
+
+# ================================
+# HTML (CORRIGIDO DEFINITIVO)
 # ================================
 
 def serve_html(file_name: str, fallback_msg: str):
-    path = os.path.join("templates", file_name)
+    path = os.path.join(BASE_DIR, "templates", file_name)
+
     if os.path.exists(path):
         return FileResponse(path)
-    return {"message": fallback_msg}
+
+    return {"erro": f"{file_name} não encontrado no servidor"}
 
 
 @app.get("/")
@@ -305,20 +257,18 @@ def chat_page():
 
 
 # ================================
-# STARTUP & SHUTDOWN
+# STARTUP
 # ================================
 
 @app.on_event("startup")
 async def startup_event():
-    logger_app.info("=" * 60)
     logger_app.info("🚀 Inicializando ALICI API...")
     try:
         criar_tabelas()
-        logger_app.info("✓ Banco de dados verificado")
+        logger_app.info("✓ Banco verificado")
     except Exception as e:
-        logger_app.warning(f"⚠ Aviso ao verificar BD: {e}")
-    logger_app.info("✓ ALICI pronta para conversar!")
-    logger_app.info("=" * 60)
+        logger_app.warning(f"⚠ Aviso BD: {e}")
+    logger_app.info("✓ ALICI pronta!")
 
 
 @app.on_event("shutdown")
