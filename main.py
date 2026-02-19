@@ -14,16 +14,21 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
 # ==================================================
-# AGORA PODE IMPORTAR LOGGER
-# ==================================================
-from logger import get_logger
-
-logger_main = get_logger("main")
-
-# ==================================================
 # CARREGAR VARIÁVEIS DE AMBIENTE
 # ==================================================
 load_dotenv()
+
+# ==================================================
+# IMPORTAR LOGGER
+# ==================================================
+try:
+    from logger import get_logger
+    logger_main = get_logger("main")
+except Exception:
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger_main = logging.getLogger("main")
+    logger_main.warning("⚠️ Logger customizado não encontrado, usando padrão.")
 
 # ==================================================
 # IMPORTAR APP PRINCIPAL
@@ -57,31 +62,6 @@ except Exception as e:
         logger_main.warning("⚠️ criar_tabelas não implementada.")
 
 # ==================================================
-# ENDPOINT /chat
-# ==================================================
-try:
-    from pydantic import BaseModel
-    from engine import gerar_resposta_com_emocao
-
-    class Mensagem(BaseModel):
-        mensagem: str
-
-    @app.post("/chat")
-    async def chat(payload: Mensagem):
-        pergunta = payload.mensagem.strip()
-
-        if not pergunta:
-            return {"resposta": "⚠️ Você precisa enviar uma mensagem válida."}
-
-        resposta = gerar_resposta_com_emocao(pergunta)
-        return {"resposta": resposta}
-
-    logger_main.info("✅ Endpoint /chat configurado com sucesso.")
-
-except Exception as e:
-    logger_main.error(f"❌ Erro ao configurar endpoint /chat: {e}")
-
-# ==================================================
 # INICIALIZAÇÃO
 # ==================================================
 try:
@@ -91,7 +71,7 @@ except Exception as e:
     logger_main.error(f"❌ Erro ao criar tabelas: {e}")
 
 # ==================================================
-# EXECUÇÃO LOCAL
+# EXECUÇÃO LOCAL (somente desenvolvimento)
 # ==================================================
 if __name__ == "__main__":
     import uvicorn
