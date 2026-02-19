@@ -6,18 +6,19 @@ main.py - Entrypoint unificado para a aplicação ALICI™
 import os
 import sys
 from dotenv import load_dotenv
-from logger import get_logger
 
 # ==================================================
-# LOGGER
-# ==================================================
-logger_main = get_logger("main")
-
-# ==================================================
-# PATH DO PROJETO
+# CONFIGURAR PATH PRIMEIRO (ANTES DE QUALQUER IMPORT)
 # ==================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
+
+# ==================================================
+# AGORA PODE IMPORTAR LOGGER
+# ==================================================
+from logger import get_logger
+
+logger_main = get_logger("main")
 
 # ==================================================
 # CARREGAR VARIÁVEIS DE AMBIENTE
@@ -28,11 +29,11 @@ load_dotenv()
 # IMPORTAR APP PRINCIPAL
 # ==================================================
 try:
-    from alici_api.app import app  # ✅ CORRETO
+    from alici_api.app import app
     logger_main.info("✅ App FastAPI importado com sucesso.")
-except ImportError as e:
+
+except Exception as e:
     logger_main.error(f"❌ Erro ao importar alici_api.app: {e}")
-    logger_main.warning("⚠️ Criando app FastAPI de fallback...")
 
     from fastapi import FastAPI
     app = FastAPI(title="ALICI - App Fallback")
@@ -40,7 +41,7 @@ except ImportError as e:
     @app.get("/")
     def root():
         return {
-            "message": "⚠️ App fallback ativado - alici_api.app não encontrado"
+            "message": "⚠️ App fallback ativado - erro ao carregar alici_api.app"
         }
 
 # ==================================================
@@ -49,7 +50,7 @@ except ImportError as e:
 try:
     from database import criar_tabelas
     logger_main.info("✅ Função criar_tabelas importada com sucesso.")
-except ImportError as e:
+except Exception as e:
     logger_main.warning(f"⚠️ criar_tabelas não encontrada: {e}")
 
     def criar_tabelas():
@@ -81,16 +82,16 @@ except Exception as e:
     logger_main.error(f"❌ Erro ao configurar endpoint /chat: {e}")
 
 # ==================================================
-# INICIALIZAÇÃO (IMPORTANTE PARA RENDER)
+# INICIALIZAÇÃO
 # ==================================================
 try:
     criar_tabelas()
     logger_main.info("✅ Tabelas criadas/verificadas ao iniciar aplicação.")
 except Exception as e:
-    logger_main.error(f"❌ Erro ao criar tabelas na inicialização: {e}")
+    logger_main.error(f"❌ Erro ao criar tabelas: {e}")
 
 # ==================================================
-# EXECUÇÃO LOCAL (UVICORN)
+# EXECUÇÃO LOCAL
 # ==================================================
 if __name__ == "__main__":
     import uvicorn
