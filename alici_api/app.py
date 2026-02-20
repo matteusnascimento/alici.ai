@@ -65,7 +65,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Ajustar domínio em produção
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -190,8 +190,13 @@ async def register(request: RegisterRequest):
 
 
 # ================================
-# CHAT
+# CHAT (CORRIGIDO)
 # ================================
+
+@app.get("/chat", include_in_schema=False)
+async def chat_html():
+    return serve_html("chat.html")
+
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, authorization: Optional[str] = Header(None)):
@@ -237,7 +242,7 @@ async def api_status():
 
 
 # ================================
-# HTML (LOGIN COMO PRINCIPAL)
+# HTML
 # ================================
 
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
