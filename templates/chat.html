@@ -1,9 +1,15 @@
 <script>
+    function safeGet(id) {
+        return document.getElementById(id);
+    }
+
     function createParticles() {
-        const container = document.getElementById('particles');
+        const container = safeGet('particles');
+        if (!container) return;
+
         container.innerHTML = '';
         const colors = ['#00ffff', '#0066ff', '#ff0099', '#9933ff', '#00ff66'];
-        
+
         for (let i = 0; i < 100; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
@@ -17,21 +23,18 @@
         }
     }
 
-    let currentState = 'online';
-
     function changeState(state) {
-        const indicator = document.getElementById('indicator');
-        const label = document.getElementById('statusLabel');
-        const buttons = document.querySelectorAll('.control-btn');
+        const indicator = safeGet('indicator');
+        const label = safeGet('statusLabel');
 
-        buttons.forEach(btn => btn.classList.remove('active'));
+        if (!indicator || !label) return;
 
         const states = {
-            'analyze': { color: '#ff0099', label: 'Analisando', shadow: '0 0 40px #ff0099' },
-            'process': { color: '#00ff66', label: 'Processando', shadow: '0 0 40px #00ff66' },
-            'learn': { color: '#ffcc00', label: 'Aprendendo', shadow: '0 0 40px #ffcc00' },
-            'respond': { color: '#00ffff', label: 'Respondendo', shadow: '0 0 40px #00ffff' },
-            'online': { color: '#00ffff', label: 'Online', shadow: '0 0 20px #00ffff' }
+            analyze: { color: '#ff0099', label: 'Analisando', shadow: '0 0 40px #ff0099' },
+            process: { color: '#00ff66', label: 'Processando', shadow: '0 0 40px #00ff66' },
+            learn: { color: '#ffcc00', label: 'Aprendendo', shadow: '0 0 40px #ffcc00' },
+            respond: { color: '#00ffff', label: 'Respondendo', shadow: '0 0 40px #00ffff' },
+            online: { color: '#00ffff', label: 'Online', shadow: '0 0 20px #00ffff' }
         };
 
         if (states[state]) {
@@ -40,12 +43,23 @@
             label.textContent = states[state].label;
             label.style.textShadow = states[state].shadow;
         }
+    }
 
-        currentState = state;
+    function addMessage(text, sender) {
+        const container = safeGet('messages');
+        if (!container) return;
+
+        const msg = document.createElement('div');
+        msg.className = `message ${sender}-message`;
+        msg.textContent = text;
+        container.appendChild(msg);
+        container.scrollTop = container.scrollHeight;
     }
 
     async function sendMsg() {
-        const input = document.getElementById('userInput');
+        const input = safeGet('userInput');
+        if (!input) return;
+
         const msg = input.value.trim();
         if (!msg) return;
 
@@ -56,7 +70,7 @@
         changeState('analyze');
 
         try {
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 500));
             changeState('process');
 
             const token = localStorage.getItem('alici_token');
@@ -65,7 +79,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : ''
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify({
                     pergunta: msg,
@@ -74,40 +88,29 @@
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                console.error("HTTP Error:", response.status);
+                throw new Error("Erro HTTP");
             }
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch {
+                throw new Error("Resposta inválida do servidor");
+            }
 
             changeState('respond');
 
             setTimeout(() => {
-                if (data && data.resposta) {
-                    addMessage(data.resposta, 'ai');
-                } else {
-                    addMessage('Resposta inválida do servidor.', 'ai');
-                }
-
-                setTimeout(() => {
-                    changeState('online');
-                }, 1500);
-
-            }, 600);
+                addMessage(data?.resposta || "Sem resposta do servidor.", 'ai');
+                setTimeout(() => changeState('online'), 1200);
+            }, 500);
 
         } catch (error) {
             console.error("Erro na requisição:", error);
-            addMessage('Erro de conexão com o servidor.', 'ai');
+            addMessage("Erro ao conectar com o servidor.", 'ai');
             changeState('online');
         }
-    }
-
-    function addMessage(text, sender) {
-        const container = document.getElementById('messages');
-        const msg = document.createElement('div');
-        msg.className = `message ${sender}-message`;
-        msg.textContent = text;
-        container.appendChild(msg);
-        container.scrollTop = container.scrollHeight;
     }
 
     function handleKey(e) {
@@ -117,17 +120,30 @@
         }
     }
 
+    function logout() {
+        localStorage.removeItem('alici_token');
+        localStorage.removeItem('alici_user');
+        window.location.href = '/';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
 
-        const token = localStorage.getItem('alici_token');
-        const user = JSON.parse(localStorage.getItem('alici_user') || '{}');
+        let token = null;
+        let user = {};
+
+        try {
+            token = localStorage.getItem('alici_token');
+            user = JSON.parse(localStorage.getItem('alici_user') || '{}');
+        } catch (e) {
+            console.warn("Erro ao acessar localStorage");
+        }
 
         if (!token) {
             window.location.href = '/';
             return;
         }
 
-        if (user.nome) {
+        if (user?.nome) {
             const subtitle = document.querySelector('.subtitle-futuristic');
             if (subtitle) {
                 subtitle.textContent = `Bem-vindo, ${user.nome}`;
@@ -135,21 +151,15 @@
         }
 
         createParticles();
-        document.getElementById('userInput').focus();
+
+        const input = safeGet('userInput');
+        if (input) input.focus();
 
         setTimeout(() => {
             changeState('learn');
-            setTimeout(() => {
-                changeState('online');
-            }, 3000);
+            setTimeout(() => changeState('online'), 3000);
         }, 1500);
 
         setInterval(createParticles, 40000);
     });
-
-    function logout() {
-        localStorage.removeItem('alici_token');
-        localStorage.removeItem('alici_user');
-        window.location.href = '/';
-    }
 </script>
