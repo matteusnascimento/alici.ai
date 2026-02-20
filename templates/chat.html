@@ -1,165 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALICI™</title>
+
+<style>
+body{
+    margin:0;
+    background:#0a0f1c;
+    color:white;
+    font-family:Arial, sans-serif;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+}
+
+#particles{
+    position:fixed;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+    z-index:0;
+}
+
+.particle{
+    position:absolute;
+    width:4px;
+    height:4px;
+    border-radius:50%;
+    opacity:0.7;
+    animation:float linear infinite;
+}
+
+@keyframes float{
+    from{ transform:translateY(100vh); }
+    to{ transform:translateY(-10vh); }
+}
+
+header{
+    padding:15px;
+    text-align:center;
+    z-index:1;
+}
+
+#indicator{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    display:inline-block;
+    margin-right:6px;
+    background:#00ffff;
+    box-shadow:0 0 20px #00ffff;
+}
+
+#statusLabel{
+    font-size:14px;
+}
+
+#messages{
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+}
+
+.message{
+    margin-bottom:12px;
+    padding:10px 14px;
+    border-radius:8px;
+    max-width:80%;
+}
+
+.user-message{
+    background:#0066ff;
+    align-self:flex-end;
+}
+
+.ai-message{
+    background:#1f2937;
+    align-self:flex-start;
+}
+
+#inputArea{
+    display:flex;
+    padding:10px;
+    background:#111827;
+    z-index:1;
+}
+
+#userInput{
+    flex:1;
+    padding:10px;
+    border:none;
+    outline:none;
+    border-radius:6px;
+}
+
+button{
+    margin-left:10px;
+    padding:10px 16px;
+    border:none;
+    background:#00ffff;
+    cursor:pointer;
+    border-radius:6px;
+}
+
+.logout{
+    position:absolute;
+    top:15px;
+    right:15px;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div id="particles"></div>
+
+<header>
+<span id="indicator"></span>
+<span id="statusLabel">Online</span>
+</header>
+
+<div id="messages"></div>
+
+<div id="inputArea">
+<input id="userInput" type="text" placeholder="Digite sua mensagem..." onkeydown="handleKey(event)">
+<button onclick="sendMsg()">Enviar</button>
+</div>
+
+<div class="logout" onclick="logout()">Sair</div>
+
 <script>
-    function safeGet(id) {
-        return document.getElementById(id);
+function safeGet(id){
+    return document.getElementById(id);
+}
+
+function createParticles(){
+    const container = safeGet('particles');
+    if(!container) return;
+
+    container.innerHTML='';
+    const colors=['#00ffff','#0066ff','#ff0099','#9933ff','#00ff66'];
+
+    for(let i=0;i<60;i++){
+        const p=document.createElement('div');
+        p.className='particle';
+        p.style.left=Math.random()*100+'%';
+        p.style.animationDelay=Math.random()*20+'s';
+        p.style.animationDuration=(Math.random()*15+10)+'s';
+        const color=colors[Math.floor(Math.random()*colors.length)];
+        p.style.background=color;
+        p.style.boxShadow='0 0 10px '+color;
+        container.appendChild(p);
     }
+}
 
-    function createParticles() {
-        const container = safeGet('particles');
-        if (!container) return;
+function changeState(state){
+    const indicator=safeGet('indicator');
+    const label=safeGet('statusLabel');
+    if(!indicator||!label) return;
 
-        container.innerHTML = '';
-        const colors = ['#00ffff', '#0066ff', '#ff0099', '#9933ff', '#00ff66'];
+    const states={
+        analyze:{color:'#ff0099',label:'Analisando',shadow:'0 0 40px #ff0099'},
+        process:{color:'#00ff66',label:'Processando',shadow:'0 0 40px #00ff66'},
+        learn:{color:'#ffcc00',label:'Aprendendo',shadow:'0 0 40px #ffcc00'},
+        respond:{color:'#00ffff',label:'Respondendo',shadow:'0 0 40px #00ffff'},
+        online:{color:'#00ffff',label:'Online',shadow:'0 0 20px #00ffff'}
+    };
 
-        for (let i = 0; i < 100; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.animationDelay = Math.random() * 20 + 's';
-            particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            particle.style.background = color;
-            particle.style.boxShadow = `0 0 10px ${color}`;
-            container.appendChild(particle);
-        }
+    if(states[state]){
+        indicator.style.background=states[state].color;
+        indicator.style.boxShadow=states[state].shadow;
+        label.textContent=states[state].label;
+        label.style.textShadow=states[state].shadow;
     }
+}
 
-    function changeState(state) {
-        const indicator = safeGet('indicator');
-        const label = safeGet('statusLabel');
+function addMessage(text,sender){
+    const container=safeGet('messages');
+    if(!container) return;
 
-        if (!indicator || !label) return;
+    const msg=document.createElement('div');
+    msg.className='message '+sender+'-message';
+    msg.textContent=text;
+    container.appendChild(msg);
+    container.scrollTop=container.scrollHeight;
+}
 
-        const states = {
-            analyze: { color: '#ff0099', label: 'Analisando', shadow: '0 0 40px #ff0099' },
-            process: { color: '#00ff66', label: 'Processando', shadow: '0 0 40px #00ff66' },
-            learn: { color: '#ffcc00', label: 'Aprendendo', shadow: '0 0 40px #ffcc00' },
-            respond: { color: '#00ffff', label: 'Respondendo', shadow: '0 0 40px #00ffff' },
-            online: { color: '#00ffff', label: 'Online', shadow: '0 0 20px #00ffff' }
-        };
+async function sendMsg(){
+    const input=safeGet('userInput');
+    if(!input) return;
 
-        if (states[state]) {
-            indicator.style.background = states[state].color;
-            indicator.style.boxShadow = states[state].shadow;
-            label.textContent = states[state].label;
-            label.style.textShadow = states[state].shadow;
-        }
-    }
+    const msg=input.value.trim();
+    if(!msg) return;
 
-    function addMessage(text, sender) {
-        const container = safeGet('messages');
-        if (!container) return;
+    addMessage(msg,'user');
+    input.value='';
+    input.focus();
 
-        const msg = document.createElement('div');
-        msg.className = `message ${sender}-message`;
-        msg.textContent = text;
-        container.appendChild(msg);
-        container.scrollTop = container.scrollHeight;
-    }
+    changeState('analyze');
 
-    async function sendMsg() {
-        const input = safeGet('userInput');
-        if (!input) return;
+    try{
+        await new Promise(r=>setTimeout(r,400));
+        changeState('process');
 
-        const msg = input.value.trim();
-        if (!msg) return;
+        const token=localStorage.getItem('alici_token');
 
-        addMessage(msg, 'user');
-        input.value = '';
-        input.focus();
-
-        changeState('analyze');
-
-        try {
-            await new Promise(r => setTimeout(r, 500));
-            changeState('process');
-
-            const token = localStorage.getItem('alici_token');
-
-            const response = await fetch(`${window.location.origin}/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify({
-                    pergunta: msg,
-                    incluir_emocao: false
-                })
-            });
-
-            if (!response.ok) {
-                console.error("HTTP Error:", response.status);
-                throw new Error("Erro HTTP");
-            }
-
-            let data;
-            try {
-                data = await response.json();
-            } catch {
-                throw new Error("Resposta inválida do servidor");
-            }
-
-            changeState('respond');
-
-            setTimeout(() => {
-                addMessage(data?.resposta || "Sem resposta do servidor.", 'ai');
-                setTimeout(() => changeState('online'), 1200);
-            }, 500);
-
-        } catch (error) {
-            console.error("Erro na requisição:", error);
-            addMessage("Erro ao conectar com o servidor.", 'ai');
-            changeState('online');
-        }
-    }
-
-    function handleKey(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMsg();
-        }
-    }
-
-    function logout() {
-        localStorage.removeItem('alici_token');
-        localStorage.removeItem('alici_user');
-        window.location.href = '/';
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-
-        let token = null;
-        let user = {};
-
-        try {
-            token = localStorage.getItem('alici_token');
-            user = JSON.parse(localStorage.getItem('alici_user') || '{}');
-        } catch (e) {
-            console.warn("Erro ao acessar localStorage");
+        const headers={'Content-Type':'application/json'};
+        if(token){
+            headers['Authorization']='Bearer '+token;
         }
 
-        if (!token) {
-            window.location.href = '/';
-            return;
+        const response=await fetch(window.location.origin+'/chat',{
+            method:'POST',
+            headers:headers,
+            body:JSON.stringify({
+                pergunta:msg,
+                incluir_emocao:false
+            })
+        });
+
+        if(!response.ok){
+            throw new Error('Erro HTTP');
         }
 
-        if (user?.nome) {
-            const subtitle = document.querySelector('.subtitle-futuristic');
-            if (subtitle) {
-                subtitle.textContent = `Bem-vindo, ${user.nome}`;
-            }
-        }
+        const data=await response.json();
 
-        createParticles();
+        changeState('respond');
 
-        const input = safeGet('userInput');
-        if (input) input.focus();
+        setTimeout(()=>{
+            addMessage(data.resposta || 'Sem resposta do servidor.','ai');
+            setTimeout(()=>changeState('online'),1200);
+        },400);
 
-        setTimeout(() => {
-            changeState('learn');
-            setTimeout(() => changeState('online'), 3000);
-        }, 1500);
+    }catch(error){
+        console.error(error);
+        addMessage('Erro ao conectar com o servidor.','ai');
+        changeState('online');
+    }
+}
 
-        setInterval(createParticles, 40000);
-    });
+function handleKey(e){
+    if(e.key==='Enter'&&!e.shiftKey){
+        e.preventDefault();
+        sendMsg();
+    }
+}
+
+function logout(){
+    localStorage.removeItem('alici_token');
+    localStorage.removeItem('alici_user');
+    window.location.href='/';
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+
+    let token=null;
+    try{
+        token=localStorage.getItem('alici_token');
+    }catch(e){}
+
+    if(!token){
+        window.location.href='/';
+        return;
+    }
+
+    createParticles();
+    changeState('learn');
+
+    setTimeout(()=>{
+        changeState('online');
+    },2000);
+
+    const input=safeGet('userInput');
+    if(input) input.focus();
+
+    setInterval(createParticles,40000);
+});
 </script>
+
+</body>
+</html>
