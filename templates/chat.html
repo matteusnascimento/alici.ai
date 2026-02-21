@@ -4,285 +4,486 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ALICI™</title>
-
 <style>
-body{
-    margin:0;
-    background:#0a0f1c;
-    color:white;
-    font-family:Arial, sans-serif;
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    overflow:hidden;
+:root {
+    --neon-cyan:   #00ffff;
+    --neon-blue:   #0066ff;
+    --neon-pink:   #ff0099;
+    --neon-purple: #9933ff;
+    --neon-green:  #00ff66;
+    --neon-yellow: #ffcc00;
+    --bg-dark:     #05050f;
+    --glass-bg:    rgba(10, 12, 30, 0.82);
+    --glass-border:rgba(0, 255, 255, 0.25);
 }
 
-#particles{
-    position:fixed;
-    width:100%;
-    height:100%;
-    top:0;
-    left:0;
-    z-index:0;
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: linear-gradient(135deg, #000000 0%, #050518 50%, #000033 100%);
+    color: #fff;
+    font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.particle{
-    position:absolute;
-    width:4px;
-    height:4px;
-    border-radius:50%;
-    opacity:0.7;
-    animation:float linear infinite;
+/* ── Background layers ── */
+.animated-bg {
+    position: fixed; inset: 0;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(0,102,255,.18) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(255,0,153,.18) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(0,255,255,.10) 0%, transparent 50%);
+    animation: bg-shift 20s ease-in-out infinite;
+    z-index: 0;
+}
+@keyframes bg-shift {
+    0%,100% { transform: scale(1) rotate(0deg); }
+    50%      { transform: scale(1.08) rotate(4deg); }
 }
 
-@keyframes float{
-    from{ transform:translateY(100vh); }
-    to{ transform:translateY(-10vh); }
+.cyber-grid {
+    position: fixed; inset: 0;
+    background-image:
+        linear-gradient(rgba(0,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,255,.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: grid-flow 3s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+@keyframes grid-flow {
+    0%   { background-position: 0 0; }
+    100% { background-position: 50px 50px; }
 }
 
-header{
-    padding:15px;
-    text-align:center;
-    z-index:1;
+#particles {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+.particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    animation: float-up linear infinite;
+}
+@keyframes float-up {
+    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(-10vh) scale(1.4); opacity: 0; }
 }
 
-#indicator{
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    display:inline-block;
-    margin-right:6px;
-    background:#00ffff;
-    box-shadow:0 0 20px #00ffff;
+/* ── Chat layout wrapper ── */
+#chatWrapper {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 16px 16px 0;
 }
 
-#statusLabel{
-    font-size:14px;
+/* ── Header ── */
+#chatHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+    flex-shrink: 0;
 }
 
-#messages{
-    flex:1;
-    overflow-y:auto;
-    padding:20px;
-    z-index:1;
-    display:flex;
-    flex-direction:column;
+.header-brand {
+    font-family: 'Courier New', 'Consolas', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
 }
 
-.message{
-    margin-bottom:12px;
-    padding:10px 14px;
-    border-radius:8px;
-    max-width:80%;
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.user-message{
-    background:#0066ff;
-    align-self:flex-end;
+#indicator {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 18px var(--neon-cyan);
+    transition: background .4s, box-shadow .4s;
+    flex-shrink: 0;
 }
 
-.ai-message{
-    background:#1f2937;
-    align-self:flex-start;
+#statusLabel {
+    font-size: .85rem;
+    letter-spacing: 1px;
+    color: var(--neon-cyan);
+    transition: color .4s, text-shadow .4s;
 }
 
-#inputArea{
-    display:flex;
-    padding:10px;
-    background:#111827;
-    z-index:1;
+#logoutBtn {
+    background: transparent;
+    border: 1px solid rgba(255,0,153,.4);
+    color: rgba(255,255,255,.65);
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: .8rem;
+    letter-spacing: 1px;
+    transition: all .3s;
+}
+#logoutBtn:hover {
+    background: rgba(255,0,153,.18);
+    border-color: var(--neon-pink);
+    color: #fff;
 }
 
-#userInput{
-    flex:1;
-    padding:10px;
-    border:none;
-    outline:none;
-    border-radius:6px;
+/* ── Messages area ── */
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    border-left: 1px solid var(--glass-border);
+    border-right: 1px solid var(--glass-border);
 }
 
-button{
-    margin-left:10px;
-    padding:10px 16px;
-    border:none;
-    background:#00ffff;
-    cursor:pointer;
-    border-radius:6px;
+#messages::-webkit-scrollbar       { width: 6px; }
+#messages::-webkit-scrollbar-track { background: transparent; }
+#messages::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--neon-cyan), var(--neon-blue));
+    border-radius: 3px;
 }
 
-.logout{
-    position:absolute;
-    top:15px;
-    right:15px;
-    cursor:pointer;
+.message {
+    max-width: 78%;
+    padding: 12px 18px;
+    border-radius: 14px;
+    line-height: 1.5;
+    font-size: .95rem;
+    animation: msg-in .35s ease-out;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+@keyframes msg-in {
+    from { opacity: 0; transform: translateY(14px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.user-message {
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+    align-self: flex-end;
+    box-shadow: 0 8px 24px rgba(0,102,255,.35);
+}
+
+.ai-message {
+    background: linear-gradient(135deg, rgba(153,51,255,.22), rgba(0,255,255,.14));
+    border: 1px solid rgba(0,255,255,.3);
+    align-self: flex-start;
+    box-shadow: 0 8px 24px rgba(0,255,255,.15);
+}
+
+/* ── Typing indicator ── */
+#typingIndicator {
+    display: none;
+    align-self: flex-start;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, rgba(153,51,255,.22), rgba(0,255,255,.14));
+    border: 1px solid rgba(0,255,255,.3);
+    border-radius: 14px;
+    gap: 5px;
+    align-items: center;
+}
+#typingIndicator.visible { display: flex; }
+.typing-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    animation: typing-bounce .9s infinite ease-in-out;
+    box-shadow: 0 0 8px var(--neon-cyan);
+}
+.typing-dot:nth-child(2) { animation-delay: .15s; }
+.typing-dot:nth-child(3) { animation-delay: .30s; }
+@keyframes typing-bounce {
+    0%,80%,100% { transform: translateY(0); }
+    40%          { transform: translateY(-8px); }
+}
+
+/* ── Input area ── */
+#inputArea {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    padding: 14px 22px;
+    background: rgba(5,5,20,.88);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid rgba(0,255,255,.15);
+    border-radius: 0 0 16px 16px;
+    flex-shrink: 0;
+    margin-bottom: 16px;
+}
+
+#userInput {
+    flex: 1;
+    padding: 12px 18px;
+    background: rgba(0,255,255,.07);
+    border: 1.5px solid rgba(0,255,255,.3);
+    border-radius: 12px;
+    color: #fff;
+    font-size: .95rem;
+    font-family: inherit;
+    outline: none;
+    resize: none;
+    max-height: 130px;
+    min-height: 46px;
+    line-height: 1.5;
+    transition: border-color .3s, box-shadow .3s;
+}
+#userInput::placeholder { color: rgba(255,255,255,.4); }
+#userInput:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 22px rgba(0,255,255,.3);
+}
+
+#sendBtn {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 700;
+    font-size: .9rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 6px 20px rgba(0,255,255,.35);
+    transition: transform .2s, box-shadow .2s, opacity .2s;
+    flex-shrink: 0;
+    align-self: flex-end;
+    height: 46px;
+}
+#sendBtn:hover  { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,255,255,.5); }
+#sendBtn:active { transform: translateY(0); opacity: .85; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    #chatWrapper { padding: 0; }
+    #chatHeader  { border-radius: 0; }
+    #inputArea   { border-radius: 0; margin-bottom: 0; }
+    .message     { max-width: 90%; }
 }
 </style>
 </head>
-
 <body>
 
+<div class="animated-bg"></div>
+<div class="cyber-grid"></div>
 <div id="particles"></div>
 
-<header>
-<span id="indicator"></span>
-<span id="statusLabel">Online</span>
-</header>
+<div id="chatWrapper">
+    <div id="chatHeader">
+        <span class="header-brand">ALICI™</span>
+        <div class="header-status">
+            <span id="indicator"></span>
+            <span id="statusLabel">Online</span>
+        </div>
+        <button id="logoutBtn" onclick="logout()">Sair</button>
+    </div>
 
-<div id="messages"></div>
+    <div id="messages"></div>
 
-<div id="inputArea">
-<input id="userInput" type="text" placeholder="Digite sua mensagem..." onkeydown="handleKey(event)">
-<button onclick="sendMsg()">Enviar</button>
+    <div id="typingIndicator" role="status" aria-live="polite" aria-label="ALICI está digitando">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+    </div>
+
+    <div id="inputArea">
+        <textarea id="userInput" rows="1" placeholder="Digite sua mensagem... (Shift+Enter para nova linha)" onkeydown="handleKey(event)"></textarea>
+        <button id="sendBtn" onclick="sendMsg()">Enviar</button>
+    </div>
 </div>
 
-<div class="logout" onclick="logout()">Sair</div>
-
 <script>
-function safeGet(id){
-    return document.getElementById(id);
-}
+function safeGet(id) { return document.getElementById(id); }
 
-function createParticles(){
+/* ── Particles ── */
+function createParticles() {
     const container = safeGet('particles');
-    if(!container) return;
-
-    container.innerHTML='';
-    const colors=['#00ffff','#0066ff','#ff0099','#9933ff','#00ff66'];
-
-    for(let i=0;i<60;i++){
-        const p=document.createElement('div');
-        p.className='particle';
-        p.style.left=Math.random()*100+'%';
-        p.style.animationDelay=Math.random()*20+'s';
-        p.style.animationDuration=(Math.random()*15+10)+'s';
-        const color=colors[Math.floor(Math.random()*colors.length)];
-        p.style.background=color;
-        p.style.boxShadow='0 0 10px '+color;
+    if (!container) return;
+    container.innerHTML = '';
+    const colors = ['#00ffff','#0066ff','#ff0099','#9933ff','#00ff66'];
+    for (let i = 0; i < 55; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDelay    = Math.random() * 20 + 's';
+        p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        p.style.background = c;
+        p.style.boxShadow  = '0 0 10px ' + c;
         container.appendChild(p);
     }
 }
 
-function changeState(state){
-    const indicator=safeGet('indicator');
-    const label=safeGet('statusLabel');
-    if(!indicator||!label) return;
-
-    const states={
-        analyze:{color:'#ff0099',label:'Analisando',shadow:'0 0 40px #ff0099'},
-        process:{color:'#00ff66',label:'Processando',shadow:'0 0 40px #00ff66'},
-        learn:{color:'#ffcc00',label:'Aprendendo',shadow:'0 0 40px #ffcc00'},
-        respond:{color:'#00ffff',label:'Respondendo',shadow:'0 0 40px #00ffff'},
-        online:{color:'#00ffff',label:'Online',shadow:'0 0 20px #00ffff'}
+/* ── Status ── */
+function changeState(state) {
+    const indicator = safeGet('indicator');
+    const label     = safeGet('statusLabel');
+    if (!indicator || !label) return;
+    const states = {
+        analyze: { color: '#ff0099', label: 'Analisando',  shadow: '0 0 36px #ff0099' },
+        process: { color: '#00ff66', label: 'Processando', shadow: '0 0 36px #00ff66' },
+        learn:   { color: '#ffcc00', label: 'Aprendendo',  shadow: '0 0 36px #ffcc00' },
+        respond: { color: '#00ffff', label: 'Respondendo', shadow: '0 0 36px #00ffff' },
+        online:  { color: '#00ffff', label: 'Online',      shadow: '0 0 18px #00ffff' }
     };
-
-    if(states[state]){
-        indicator.style.background=states[state].color;
-        indicator.style.boxShadow=states[state].shadow;
-        label.textContent=states[state].label;
-        label.style.textShadow=states[state].shadow;
+    if (states[state]) {
+        indicator.style.background = states[state].color;
+        indicator.style.boxShadow  = states[state].shadow;
+        label.textContent           = states[state].label;
+        label.style.color           = states[state].color;
+        label.style.textShadow      = states[state].shadow;
     }
 }
 
-function addMessage(text,sender){
-    const container=safeGet('messages');
-    if(!container) return;
+/* ── Messages ── */
+function addMessage(text, sender) {
+    const container = safeGet('messages');
+    if (!container) return;
+    const typing = safeGet('typingIndicator');
+    if (typing) container.parentNode.insertBefore(typing, container.nextSibling);
 
-    const msg=document.createElement('div');
-    msg.className='message '+sender+'-message';
-    msg.textContent=text;
+    const msg = document.createElement('div');
+    msg.className = 'message ' + sender + '-message';
+    msg.textContent = text;
     container.appendChild(msg);
-    container.scrollTop=container.scrollHeight;
+    container.scrollTop = container.scrollHeight;
 }
 
-async function sendMsg(){
-    const input=safeGet('userInput');
-    if(!input) return;
+function showTyping(visible) {
+    const el = safeGet('typingIndicator');
+    if (!el) return;
+    if (visible) {
+        el.classList.add('visible');
+        const msgs = safeGet('messages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    } else {
+        el.classList.remove('visible');
+    }
+}
 
-    const msg=input.value.trim();
-    if(!msg) return;
+/* ── Send ── */
+async function sendMsg() {
+    const input = safeGet('userInput');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (!msg) return;
 
-    addMessage(msg,'user');
-    input.value='';
+    addMessage(msg, 'user');
+    input.value = '';
+    input.style.height = '';
     input.focus();
 
     changeState('analyze');
+    showTyping(true);
 
-    try{
-        await new Promise(r=>setTimeout(r,400));
+    try {
+        await new Promise(r => setTimeout(r, 350));
         changeState('process');
 
-        const token=localStorage.getItem('alici_token');
+        const token = localStorage.getItem('alici_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
 
-        const headers={'Content-Type':'application/json'};
-        if(token){
-            headers['Authorization']='Bearer '+token;
-        }
-
-        const response=await fetch(window.location.origin+'/chat',{
-            method:'POST',
-            headers:headers,
-            body:JSON.stringify({
-                pergunta:msg,
-                incluir_emocao:false
-            })
+        const response = await fetch(window.location.origin + '/chat', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ pergunta: msg, incluir_emocao: false })
         });
 
-        if(!response.ok){
-            throw new Error('Erro HTTP');
-        }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
 
-        const data=await response.json();
-
+        const data = await response.json();
         changeState('respond');
 
-        setTimeout(()=>{
-            addMessage(data.resposta || 'Sem resposta do servidor.','ai');
-            setTimeout(()=>changeState('online'),1200);
-        },400);
+        await new Promise(r => setTimeout(r, 380));
+        showTyping(false);
+        addMessage(data.resposta || 'Sem resposta do servidor.', 'ai');
+        setTimeout(() => changeState('online'), 1000);
 
-    }catch(error){
-        console.error(error);
-        addMessage('Erro ao conectar com o servidor.','ai');
+    } catch (err) {
+        console.error(err);
+        showTyping(false);
+        addMessage('Erro ao conectar com o servidor.', 'ai');
         changeState('online');
     }
 }
 
-function handleKey(e){
-    if(e.key==='Enter'&&!e.shiftKey){
+/* ── Keyboard ── */
+function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMsg();
     }
 }
 
-function logout(){
-    localStorage.removeItem('alici_token');
-    localStorage.removeItem('alici_user');
-    window.location.href='/';
+/* ── Auto-resize textarea ── */
+function autoResize() {
+    const ta = safeGet('userInput');
+    if (!ta) return;
+    ta.style.height = '';
+    ta.style.height = Math.min(ta.scrollHeight, 130) + 'px';
 }
 
-document.addEventListener('DOMContentLoaded',function(){
+/* ── Logout ── */
+function logout() {
+    localStorage.removeItem('alici_token');
+    localStorage.removeItem('alici_user');
+    window.location.href = '/';
+}
 
-    let token=null;
-    try{
-        token=localStorage.getItem('alici_token');
-    }catch(e){}
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', function () {
+    let token = null;
+    try { token = localStorage.getItem('alici_token'); } catch (e) {}
 
-    if(!token){
-        window.location.href='/';
-        return;
-    }
+    if (!token) { window.location.href = '/'; return; }
 
     createParticles();
     changeState('learn');
+    setTimeout(() => changeState('online'), 2000);
 
-    setTimeout(()=>{
-        changeState('online');
-    },2000);
+    const input = safeGet('userInput');
+    if (input) {
+        input.focus();
+        input.addEventListener('input', autoResize);
+    }
 
-    const input=safeGet('userInput');
-    if(input) input.focus();
-
-    setInterval(createParticles,40000);
+    // Re-create particles every 40 s to keep them fresh
+    setInterval(createParticles, 40000);
 });
 </script>
 
