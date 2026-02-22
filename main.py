@@ -5,6 +5,7 @@ main.py - Entrypoint unificado para a aplicação ALICI™
 
 import os
 import sys
+import traceback
 from dotenv import load_dotenv
 
 # ==================================================
@@ -39,6 +40,7 @@ try:
 
 except Exception as e:
     logger_main.error(f"❌ Erro ao importar alici_api.app: {e}")
+    logger_main.debug(traceback.format_exc())
 
     from fastapi import FastAPI
     app = FastAPI(title="ALICI - App Fallback")

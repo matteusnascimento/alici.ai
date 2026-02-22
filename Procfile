@@ -1,1 +1,1 @@
-web: uvicorn main:app --host 0.0.0.0 --port $PORT
+web: uvicorn alici_api.app:app --host 0.0.0.0 --port $PORT
