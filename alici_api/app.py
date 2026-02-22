@@ -1,4 +1,4 @@
-﻿"""FastAPI application factory and setup."""
+"""FastAPI application factory and setup."""
 
 import os
 

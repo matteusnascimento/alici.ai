@@ -1,4 +1,4 @@
-﻿"""AI service helpers and availability flags."""
+"""AI service helpers and availability flags."""
 
 try:
     from engine import gerar_resposta, gerar_resposta_com_emocao

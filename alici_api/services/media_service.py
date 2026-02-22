@@ -1,4 +1,4 @@
-﻿"""Serviços multimodais básicos para geração e análise de mídia."""
+"""Serviços multimodais básicos para geração e análise de mídia."""
 
 from __future__ import annotations
 
