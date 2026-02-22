@@ -1,4 +1,4 @@
-﻿"""Shared dependencies for route handlers."""
+"""Shared dependencies for route handlers."""
 
 from fastapi import HTTPException, Request
 

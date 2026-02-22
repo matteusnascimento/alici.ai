@@ -1,4 +1,4 @@
-﻿"""HTML pages routes."""
+"""HTML pages routes."""
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
@@ -14,11 +14,11 @@ def home():
 
 @router.get("/chat", response_class=HTMLResponse)
 def chat_page():
-    with open("templates/index.html", "r", encoding="utf-8") as file:
+    with open("templates/chat.html", "r", encoding="utf-8") as file:
         return file.read()
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    with open("templates/index.html", "r", encoding="utf-8") as file:
+    with open("templates/chat.html", "r", encoding="utf-8") as file:
         return file.read()

@@ -1,4 +1,4 @@
-﻿"""Health and status routes."""
+"""Health and status routes."""
 
 from datetime import datetime
 

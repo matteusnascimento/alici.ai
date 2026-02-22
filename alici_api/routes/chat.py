@@ -1,4 +1,4 @@
-﻿"""Chat routes."""
+"""Chat routes."""
 
 import os
 import tempfile

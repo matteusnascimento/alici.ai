@@ -1,4 +1,4 @@
-﻿"""Multimodal media routes."""
+"""Multimodal media routes."""
 
 import os
 import tempfile

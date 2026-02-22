@@ -1,4 +1,4 @@
-﻿"""
+"""
 database.py
 Conexão com PostgreSQL (Neon) ou SQLite
 VERSÃO PRODUÇÃO PROFISSIONAL

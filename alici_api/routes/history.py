@@ -1,4 +1,4 @@
-﻿"""User history routes."""
+"""User history routes."""
 
 from fastapi import APIRouter, Depends, HTTPException
 
