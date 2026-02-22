@@ -27,21 +27,21 @@ def register(req: RegisterRequest):
     try:
         senha_hash = hash_password(req.senha)
         usuario = criar_usuario(req.nome, req.email, senha_hash)
-
-        if not usuario:
-            raise HTTPException(status_code=500, detail="Não foi possível criar usuário")
-
-        return {
-            "status": "sucesso",
-            "mensagem": "Usuário criado com sucesso",
-            "usuario": {
-                "id": usuario["id"],
-                "nome": usuario["nome"],
-                "email": usuario["email"],
-            },
-        }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+    if not usuario:
+        raise HTTPException(status_code=500, detail="Não foi possível criar usuário")
+
+    return {
+        "status": "sucesso",
+        "mensagem": "Usuário criado com sucesso",
+        "usuario": {
+            "id": usuario["id"],
+            "nome": usuario["nome"],
+            "email": usuario["email"],
+        },
+    }
 
 
 @router.post("/login")
