@@ -1,4 +1,4 @@
-"""
+﻿"""
 database.py
 Conexão com PostgreSQL (Neon) ou SQLite
 VERSÃO PRODUÇÃO PROFISSIONAL
@@ -360,3 +360,23 @@ def buscar_historico(user_id, limite=50):
     except Exception as e:
         logger_db.error(f"Erro ao buscar histórico: {e}")
         return []
+
+
+def limpar_historico(user_id):
+    if not DATABASE_ENABLED:
+        return
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+
+            cur.execute(f"""
+                DELETE FROM history
+                WHERE user_id = {placeholder}
+            """, (user_id,))
+
+            cur.close()
+
+    except Exception as e:
+        logger_db.error(f"Erro ao limpar histórico: {e}")

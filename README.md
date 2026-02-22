@@ -1,323 +1,240 @@
-# 🤖 ALICI™ - Inteligência Artificial Proprietária
+﻿# ALICI — Documentação Completa do Projeto
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green.svg)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791.svg)](https://neon.tech/)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#deployment)
+ALICI é uma API FastAPI com autenticação JWT, chat com memória, regras locais, fallback em modelo fundacional e camada multimodal (imagem, áudio, vídeo e análise de imagem).
 
-> **ALICI™** é uma assistente de inteligência artificial com **memória persistente**, **aprendizado contínuo** e **busca na web**.
-> Criada por **Mateus Nascimento dos Santos** 🇧🇷
+## 1. Visão Geral
 
----
+- Linguagem: Python
+- Framework: FastAPI
+- Auth: JWT + bcrypt
+- Banco: PostgreSQL (Neon) ou SQLite
+- Frontend: templates HTML + JS estático
+- Entrypoint principal: `main.py`
 
-## 🎯 Visão Geral - 5 Camadas de Decisão
+Fluxo central de resposta textual:
+1) identidade
+2) memória persistente
+3) regras locais
+4) busca web
+5) modelo fundacional
+6) fallback
 
-```
-USER: "quem é você"
-    ↓
-┌───────────────────────────┐
-│ 1. IDENTIDADE (fixo)      │ ✅ SIM → Resposta imediata
-├───────────────────────────┤
-│ 2. MEMÓRIA (Neon)         │ ✅ Perguntado antes?
-├───────────────────────────┤
-│ 3. REGRAS LOCAIS          │ ✅ 260+ padrões
-├───────────────────────────┤
-│ 4. WEB SEARCH (Internet)  │ ✅ DuckDuckGo
-├───────────────────────────┤
-│ 5. FALLBACK (honesto)     │ ✅ "Ainda não sei..."
-└───────────────────────────┘
-    ↓
-RESPOSTA + APRENDE (nunca esquece)
-```
-
----
-
-## ⚡ Quick Start (5 minutos)
-
-```bash
-# 1. Clone
-git clone https://github.com/matteusnascimento/alici.ai.git
-cd alici.ai
-
-# 2. Instalar dependências
-pip install -r requirements.txt
-
-# 3. Configurar Neon (veja NEON_SETUP.md)
-# Crie banco grátis em: https://neon.tech
-# Copie a CONNECTION STRING e cole no .env
-
-# Edite .env:
-DATABASE_URL=postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
-
-# 4. Criar tabelas
-python init_db.py
-
-# 5. Executar
-python main.py
-
-# 6. Acessar
-# http://localhost:8000
-```
-
-📖 **Guia detalhado:** [NEON_SETUP.md](NEON_SETUP.md)
-
----
-
-## ✨ Features
-
-| Feature | Descrição | Status |
-|---------|-----------|--------|
-| 🧠 Memória Persistente | PostgreSQL/Neon | ✅ |
-| 🤖 NLP Avançado | Hugging Face Transformers | ✅ |
-| 🔍 Web Search | DuckDuckGo automático | ✅ |
-| 📈 Aprendizado | Confidence score incrementa | ✅ |
-| 🏗️ 5 Camadas | Engine inteligente | ✅ |
-| 💬 260+ Regras | Respostas locais | ✅ |
-| 😊 Sistema Emoções | Metadata de resposta | ✅ |
-| 🔐 Autenticação | JWT + bcrypt | ✅ |
-| 📚 Histórico | Save de conversas | ✅ |
-| 🚀 Deploy | Render.com ready | ✅ |
-
----
-
-## 📦 Arquitetura
-
-```
-engine.py (orquestrador)
-├── identidade.py         → "quem é você?"
-├── database.py          → Neon PostgreSQL (storage)
-├── resposta.py          → 260+ padrões
-├── web_search.py        → DuckDuckGo
-├── transformers (HF)    → Modelos NLP
-└── sistema_emocoes.py   → metadata
-    ↓
-alici_api/app.py (FastAPI)
-    ↓
-    ├─→ Neon PostgreSQL (Memória Persistente)
-    └─→ Hugging Face (Modelos NLP)
-```
-
----
-
-## 🔧 Arquivos Essenciais
+## 2. Estrutura Atual
 
 ```
 alici.ai/
-├── main.py                 # Entrypoint Uvicorn
-├── engine.py               # 5-layer engine
-├── database.py             # PostgreSQL/Neon
-├── resposta.py             # 260+ rules
-├── identidade.py           # Identity (fixed)
-├── web_search.py           # DuckDuckGo
-├── sistema_emocoes.py      # Emotion system
-├── auth.py                 # JWT auth
-│
-├── alici_api/
-│   └── app.py              # FastAPI routes
-│
+├── main.py
+├── app.py
+├── auth.py
+├── database.py
+├── engine.py
+├── identidade.py
+├── intencao.py
+├── logger.py
+├── resposta.py
+├── sistema_emocoes.py
+├── web_search.py
+├── requirements.txt
+├── Procfile
+├── runtime.txt
 ├── templates/
-│   ├── chat.html           # UI principal
-│   └── login.html          # UI login
-│
+│   ├── login.html
+│   ├── index.html
+│   ├── chat.html
+│   └── quantum.html
+├── static/
 ├── Static/
-│   ├── chat.js             # Frontend chat
-│   └── chat.css            # Estilos
-│
-├── init_db.py              # DB init
-├── test_db.py              # DB test
-│
-└── Docs/
-    ├── NEON_SETUP.md       # Setup Neon
-    ├── TROUBLESHOOTING.md  # Problemas comuns
-    └── OPTIONAL_ML.md      # ML opcional
-```
-├── .env.example                     # Config template
-├── requirements.txt                 # Python deps
-├── Procfile                         # Render config
-├── runtime.txt                      # Python 3.11
-├── startup.sh                       # Shell init
-│
-├── SETUP.md                         # Setup guide
-├── TRAINING_GUIDE.md                # Training
-├── DEPLOYMENT_INTEGRATED.md         # Deploy
-└── README.md                        # This file
+├── generated/
+│   ├── images/
+│   ├── audios/
+│   └── videos/
+└── alici_api/
+    ├── app.py
+    ├── dependencies.py
+    ├── schemas.py
+    ├── routes/
+    │   ├── auth.py
+    │   ├── chat.py
+    │   ├── history.py
+    │   ├── health.py
+    │   ├── pages.py
+    │   └── media.py
+    └── services/
+        ├── ai.py
+        └── media_service.py
 ```
 
----
+## 3. Módulos Principais
 
-## 🚀 3 Formas de Deploy
+### `main.py`
+- Entrypoint para execução local e ASGI.
+- Importa `app` de `alici_api.app`.
 
-### 1️⃣ LOCAL (Desenvolvimento)
-```bash
-python main.py
-http://localhost:5000
+### `alici_api/app.py`
+- Cria app FastAPI.
+- Configura CORS.
+- Monta static files (`/static`, `/Static`, `/generated`).
+- Registra rotas (`auth`, `chat`, `media`, `history`, `pages`, `health`).
+- Inicializa banco no startup (`criar_tabelas`).
+
+### `engine.py`
+- Cérebro de resposta textual em camadas.
+- Integra memória (`database.py`), regras (`resposta.py`), web (`web_search.py`) e modelo fundacional.
+
+### `database.py`
+- Conexão com PostgreSQL/SQLite.
+- CRUD de usuários, memória e histórico.
+- Aprendizado com incremento de confiança.
+
+### `auth.py`
+- Hash e verificação de senha.
+- Emissão e validação JWT.
+
+### `alici_api/services/media_service.py`
+- MVP multimodal:
+  - `generate_image(prompt)` → SVG em `generated/images`
+  - `generate_audio(text)` → WAV em `generated/audios`
+  - `generate_video(prompt)` → job placeholder em `generated/videos`
+  - `analyze_image_bytes(...)` → fallback de análise quando visão não disponível
+
+## 4. Rotas da API
+
+### Auth
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/logout`
+
+### Chat
+- `POST /chat`
+- `POST /chat/image`
+
+### Histórico
+- `GET /history?limit=50`
+- `DELETE /history`
+
+### Health/Status
+- `GET /health`
+- `GET /api/status`
+
+### Páginas
+- `GET /`
+- `GET /chat`
+- `GET /dashboard`
+
+### Multimodal
+- `POST /generate-image`
+- `POST /generate-audio`
+- `POST /generate-video`
+- `POST /analyze-image` (multipart/form-data)
+
+## 5. Contratos de Requisição/Resposta
+
+### `POST /generate-image`
+Body:
+```json
+{ "prompt": "cidade cyberpunk neon" }
+```
+Resposta:
+```json
+{ "status": "sucesso", "url": "/generated/images/arquivo.svg", "usuario": "Nome" }
 ```
 
-### 2️⃣ RENDER (Recomendado - Grátis)
-```bash
-# Push no GitHub
-git push
-
-# Em Render.com:
-# 1. Conectar repo
-# 2. DATABASE_URL env var
-# 3. Deploy automático
+### `POST /generate-audio`
+Body:
+```json
+{ "texto": "Olá, eu sou a Alici." }
 ```
-URL: `https://alici-ai.onrender.com`
-
-### 3️⃣ DOCKER
-```bash
-docker build -t alici .
-docker run -p 5000:5000 -e DATABASE_URL="..." alici
+Resposta:
+```json
+{ "status": "sucesso", "audio_url": "/generated/audios/arquivo.wav", "usuario": "Nome" }
 ```
 
----
-
-## 🧪 Testar
-
-```bash
-# Verificação completa
-python init_alici.py
-
-# Teste engine
-python teste_engine_completo.py
-
-# Teste modelo
-python teste_modelo.py
-
-# Teste API
-curl -X POST http://localhost:5000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"mensagem":"quem é você"}'
+### `POST /generate-video`
+Body:
+```json
+{ "prompt": "voo por uma cidade futurista" }
+```
+Resposta:
+```json
+{ "status": "sucesso", "job_id": "video_xxx", "video_url": "/generated/videos/video_xxx.json", "message": "...", "usuario": "Nome" }
 ```
 
----
+### `POST /analyze-image`
+Form-data:
+- campo `file`
 
-## 🧠 Como Funciona
-
-### Pergunta Simples
-```
-"quem é você"
-  ↓
-Camada 1: Identidade? SIM
-  ↓
-Resposta imediata (< 10ms)
+Resposta (fallback):
+```json
+{ "status": "sucesso", "usuario": "Nome", "resultado": { "descricao": "...", "tipo": "image/jpeg" } }
 ```
 
-### Aprendizado
-```
-"qual é o capital da frança"
-  ↓
-1. Identidade? NÃO
-2. Memória? NÃO
-3. Regras? NÃO
-4. Web search? SIM
-  ↓
-Busca DuckDuckGo
-Aprende: INSERT INTO memoria
-  ↓
-Próxima vez: responde da memória (rápido!)
-```
+## 6. Configuração de Ambiente
 
----
-
-## 📊 Treinamento do Modelo
-
-### Passo-a-Passo
-
-```bash
-# 1. Expandir dataset (local)
-python gerar_dataset.py
-# Output: dataset_expandido.json (100 pares)
-
-# 2. Fine-tuning (Google Colab)
-# Ir a: https://colab.research.google.com
-# Upload: colab_finetuning.py + dataset_expandido.json
-# Executar (30 min com GPU free)
-# Baixar: alici_treinado_v3.h5
-
-# 3. Produção
-# Substitua: model/modelo_animais_cifar100.h5
-# git push
-# Deploy automático em Render
-```
-
-**Veja [TRAINING_GUIDE.md](TRAINING_GUIDE.md) para detalhes**
-
----
-
-## 🌐 Configuração
-
-### .env (Obrigatório)
+Variáveis recomendadas:
 
 ```env
-DATABASE_URL=postgresql://user:password@host.neon.tech/alici?sslmode=require
-FLASK_ENV=production
-DEBUG=False
+ENV=development
+PORT=8000
+SECRET_KEY=sua_chave_forte
+DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
+OPENAI_API_KEY=...
 ```
 
-### Obter DATABASE_URL
+Observações:
+- Sem `DATABASE_URL`, o banco fica indisponível para operações persistentes.
+- Em produção, `SECRET_KEY` deve ser obrigatoriamente segura.
 
-1. Ir a [neon.tech](https://neon.tech)
-2. Sign up (grátis)
-3. Criar projeto
-4. Copiar "Connection string"
-5. Colar em `.env`
+## 7. Execução Local
 
----
+1. Instalar dependências
+```bash
+pip install -r requirements.txt
+```
 
-## 📈 Performance
+2. Rodar aplicação
+```bash
+python main.py
+```
 
-| Métrica | Target | Atual |
-|---------|--------|-------|
-| Startup | < 5s | 2-3s ✅ |
-| Resposta (cache) | < 100ms | 50ms ✅ |
-| Resposta (web) | < 2s | 1.5s ✅ |
-| Memória | < 256MB | 180MB ✅ |
-| Uptime | 99.9% | 99.9% ✅ |
+3. Acessar
+- App: `http://localhost:8000`
+- Docs: `http://localhost:8000/docs`
 
----
+## 8. Deploy
 
-## 🐛 Troubleshooting
+### Render
+- Procfile atual:
+```txt
+web: uvicorn main:app --host 0.0.0.0 --port $PORT
+```
 
-| Erro | Solução |
-|------|---------|
-| `ModuleNotFoundError` | `pip install -r requirements.txt` |
-| `relation "memoria" does not exist` | `python init_db.py` |
-| `DATABASE_URL not found` | Editar `.env` |
-| Port in use | `python main.py --port 5001` |
+### Runtime
+- Python definido em `runtime.txt`.
 
-**Mais em [SETUP.md](SETUP.md)**
+## 9. Segurança e Limites (Recomendado)
 
----
+- Restringir CORS por domínio em produção.
+- Limitar tamanho de upload em rotas de mídia.
+- Aplicar rate limiting por usuário/token.
+- Sanitizar prompts e logs sensíveis.
 
-## 🔗 Links
+## 10. Limitações Conhecidas
 
-- **GitHub**: https://github.com/matteusnascimento/alici.ai
-- **Criador**: https://github.com/matteusnascimento
-- **Neon**: https://neon.tech
-- **Render**: https://render.com
-- **Colab**: https://colab.research.google.com
+- Geração de vídeo está em modo MVP assíncrono (job placeholder).
+- Geração de imagem/áudio multimodal atual é baseline local (não modelo pesado de produção).
+- Persistência de arquivos `generated/` em ambientes efêmeros pode ser perdida após restart.
 
----
+## 11. Próximos Passos Técnicos
 
-## 👤 Contato
+1. Integrar provider real de imagem/vídeo/TTS (OpenAI, Replicate, etc).
+2. Mover `generated/` para storage persistente (S3/R2/GCS).
+3. Implementar fila de jobs para vídeo (Redis + worker).
+4. Adicionar observabilidade (métricas, tracing, logs estruturados).
+5. Adicionar testes automatizados de rotas críticas.
 
-**Mateus Nascimento dos Santos** 🇧🇷
+## 12. Licença/Manutenção
 
-- Instagram: [@matteus_nascimento_ofc](https://instagram.com/matteus_nascimento_ofc)
-- GitHub: [matteusnascimento](https://github.com/matteusnascimento)
-- LinkedIn: [Mateus Nascimento](https://www.linkedin.com/in/mateus-nascimento-dos-santos-52ba04167)
-- TikTok: [@matteus_nascimento_ofc](https://tiktok.com/@matteus_nascimento_ofc)
-
----
-
-## 📄 Licença
-
-MIT License © 2026 Mateus Nascimento dos Santos
-
----
-
-**Status**: 🟢 **PRONTO PARA PRODUÇÃO**
-**Versão**: 1.0
-**Data**: Jan 24, 2026
+Projeto mantido por equipe Alici. Ajustes de arquitetura devem priorizar:
+- compatibilidade de contratos frontend/backend;
+- estabilidade do fluxo de autenticação;
+- separação clara entre `routes` e `services`.

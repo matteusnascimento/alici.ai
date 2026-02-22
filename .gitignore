@@ -37,3 +37,4 @@ Thumbs.db
 
 # Modelo (sera feito download em CI/CD)
 # model/*.h5 - Descomentar se usar Git LFS
+generated/
