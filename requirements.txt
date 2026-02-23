@@ -31,6 +31,7 @@ python-dotenv==1.0.0
 # HTTP & Web Search
 # ==============================
 requests==2.31.0
+boto3==1.34.162
 
 # ==============================
 # NLP & Language Models
@@ -41,6 +42,7 @@ transformers==4.35.0
 torch==2.1.0
 tokenizers==0.14.1
 tqdm==4.66.1
+langdetect==1.0.9
 
 # ==============================
 # Utilities

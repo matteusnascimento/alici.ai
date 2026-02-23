@@ -178,11 +178,23 @@ PORT=8000
 SECRET_KEY=sua_chave_forte
 DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
 OPENAI_API_KEY=...
+
+# Modelo textual no Cloudflare R2
+ALICI_R2_ACCOUNT_ID=...
+ALICI_R2_ACCESS_KEY=...
+ALICI_R2_SECRET_KEY=...
+ALICI_R2_BUCKET=alici-lake
+ALICI_R2_MODEL_PREFIX=models/alici_cpu_simple
+ALICI_MODEL_CACHE_DIR=/tmp/alici_cpu_simple_r2_cache
+ALICI_R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+ALICI_INTENT_MIN_CONFIDENCE=0.55
 ```
 
 Observações:
 - Sem `DATABASE_URL`, o banco fica indisponível para operações persistentes.
 - Em produção, `SECRET_KEY` deve ser obrigatoriamente segura.
+- No startup da API, o modelo textual é baixado do R2 para cache local temporário e usado no `engine.py` antes da camada de busca web.
+- O `.keras` não é carregado diretamente por stream do R2; ele é baixado para cache e então carregado pelo TensorFlow (comportamento esperado em cloud).
 
 ## 7. Execução Local
 

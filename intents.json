@@ -1,0 +1,66 @@
+{
+  "intents": [
+    {
+      "tag": "saudacao",
+      "patterns": [
+        "oi",
+        "olá",
+        "bom dia",
+        "boa tarde",
+        "boa noite",
+        "e aí"
+      ],
+      "responses": [
+        "Olá! Eu sou a ALICI 🚀"
+      ]
+    },
+    {
+      "tag": "despedida",
+      "patterns": [
+        "tchau",
+        "até logo",
+        "falou",
+        "até mais",
+        "fui nessa"
+      ],
+      "responses": [
+        "Até mais! Sempre que precisar, estarei aqui."
+      ]
+    },
+    {
+      "tag": "criador",
+      "patterns": [
+        "quem te criou",
+        "quem é seu criador",
+        "quem desenvolveu você"
+      ],
+      "responses": [
+        "Fui criada por Mateus Santos."
+      ]
+    },
+    {
+      "tag": "agradecimento",
+      "patterns": [
+        "obrigado",
+        "valeu",
+        "muito obrigado",
+        "agradeço a ajuda"
+      ],
+      "responses": [
+        "De nada! Foi um prazer ajudar."
+      ]
+    },
+    {
+      "tag": "ajuda",
+      "patterns": [
+        "preciso de ajuda",
+        "você pode me ajudar",
+        "como você funciona",
+        "o que você faz"
+      ],
+      "responses": [
+        "Posso ajudar com perguntas, explicações e tarefas inteligentes."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "samples": [
+    {
+      "text": "oi",
+      "label": "saudacao"
+    },
+    {
+      "text": "olá",
+      "label": "saudacao"
+    },
+    {
+      "text": "bom dia",
+      "label": "saudacao"
+    },
+    {
+      "text": "boa tarde",
+      "label": "saudacao"
+    },
+    {
+      "text": "boa noite",
+      "label": "saudacao"
+    },
+    {
+      "text": "e aí",
+      "label": "saudacao"
+    },
+    {
+      "text": "tchau",
+      "label": "despedida"
+    },
+    {
+      "text": "até logo",
+      "label": "despedida"
+    },
+    {
+      "text": "falou",
+      "label": "despedida"
+    },
+    {
+      "text": "até mais",
+      "label": "despedida"
+    },
+    {
+      "text": "fui nessa",
+      "label": "despedida"
+    },
+    {
+      "text": "quem te criou",
+      "label": "criador"
+    },
+    {
+      "text": "quem é seu criador",
+      "label": "criador"
+    },
+    {
+      "text": "quem desenvolveu você",
+      "label": "criador"
+    },
+    {
+      "text": "obrigado",
+      "label": "agradecimento"
+    },
+    {
+      "text": "valeu",
+      "label": "agradecimento"
+    },
+    {
+      "text": "muito obrigado",
+      "label": "agradecimento"
+    },
+    {
+      "text": "agradeço a ajuda",
+      "label": "agradecimento"
+    },
+    {
+      "text": "preciso de ajuda",
+      "label": "ajuda"
+    },
+    {
+      "text": "você pode me ajudar",
+      "label": "ajuda"
+    },
+    {
+      "text": "como você funciona",
+      "label": "ajuda"
+    },
+    {
+      "text": "o que você faz",
+      "label": "ajuda"
+    }
+  ],
+  "total": 22
+}

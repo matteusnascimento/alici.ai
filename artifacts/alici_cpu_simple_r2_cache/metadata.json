@@ -1,0 +1,21 @@
+{
+  "model_name": "ALICI CPU Simple",
+  "dataset": "intents.json",
+  "num_samples": 22,
+  "num_classes": 5,
+  "classes": [
+    "agradecimento",
+    "ajuda",
+    "criador",
+    "despedida",
+    "saudacao"
+  ],
+  "epochs_requested": 30,
+  "epochs_trained": 10,
+  "batch_size": 16,
+  "vocab_size": 10000,
+  "max_len": 40,
+  "learning_rate": 0.001,
+  "val_loss": 1.6030519008636475,
+  "val_accuracy": 0.20000000298023224
+}

@@ -14,6 +14,10 @@ from alici_api.routes.history import router as history_router
 from alici_api.routes.media import router as media_router
 from alici_api.routes.pages import router as pages_router
 from alici_api.services.ai import IA_DISPONIVEL, VISAO_DISPONIVEL
+from alici_api.services.text_model_r2 import (
+    get_text_model_status,
+    initialize_text_model_from_r2,
+)
 from database import criar_tabelas
 from logger import get_logger
 
@@ -61,6 +65,15 @@ def create_app() -> FastAPI:
 
         logger_app.info(f"IA textual disponível: {IA_DISPONIVEL}")
         logger_app.info(f"IA visão disponível: {VISAO_DISPONIVEL}")
+
+        initialized = initialize_text_model_from_r2()
+        text_model_status = get_text_model_status()
+        logger_app.info(f"Modelo textual R2 disponível: {initialized}")
+        if not initialized:
+            logger_app.warning(
+                f"⚠ Modelo textual R2 indisponível: {text_model_status.get('erro', 'erro desconhecido')}"
+            )
+
         logger_app.info("🤖 ALICI pronta para receber requisições")
 
     return app
