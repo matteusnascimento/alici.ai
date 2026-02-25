@@ -14,6 +14,10 @@ class LoginRequest(BaseModel):
     senha: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class ChatRequest(BaseModel):
     pergunta: str
     incluir_emocao: bool = False
@@ -33,3 +37,7 @@ class AudioRequest(BaseModel):
 
 class VideoRequest(BaseModel):
     prompt: str
+
+
+class BillingCheckoutRequest(BaseModel):
+    plano: str

@@ -211,7 +211,7 @@ async function sendMsg(){
         await new Promise(r=>setTimeout(r,400));
         changeState('process');
 
-        const token=localStorage.getItem('alici_token');
+        const token=localStorage.getItem('access_token');
 
         const headers={'Content-Type':'application/json'};
         if(token){
@@ -255,7 +255,8 @@ function handleKey(e){
 }
 
 function logout(){
-    localStorage.removeItem('alici_token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('alici_user');
     window.location.href='/';
 }

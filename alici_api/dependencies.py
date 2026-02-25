@@ -2,28 +2,45 @@
 
 from fastapi import HTTPException, Request
 
+from alici_api.repositories.user_repository import UserRepository
+from alici_api.responses import Codes
 from auth import verify_token
-from database import buscar_usuario_por_id
+
+user_repository = UserRepository()
 
 
 def get_current_user(request: Request):
     auth_header = request.headers.get("Authorization")
 
     if not auth_header:
-        raise HTTPException(status_code=401, detail="Token não fornecido")
+        raise HTTPException(
+            status_code=401,
+            detail={"code": Codes.UNAUTHORIZED, "message": "Token não fornecido"},
+        )
 
     try:
         if not auth_header.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Formato de token inválido")
+            raise HTTPException(
+                status_code=401,
+                detail={"code": Codes.UNAUTHORIZED, "message": "Formato de token inválido"},
+            )
 
         token = auth_header.replace("Bearer ", "", 1)
-        payload = verify_token(token)
+        payload = verify_token(token, expected_type="access")
         user_id = int(payload.get("sub"))
 
-        user = buscar_usuario_por_id(user_id)
+        user = user_repository.find_by_id(user_id)
         if not user:
-            raise HTTPException(status_code=401, detail="Usuário não encontrado")
+            raise HTTPException(
+                status_code=401,
+                detail={"code": Codes.UNAUTHORIZED, "message": "Usuário não encontrado"},
+            )
 
         return user
+    except HTTPException:
+        raise
     except Exception:
-        raise HTTPException(status_code=401, detail="Token inválido")
+        raise HTTPException(
+            status_code=401,
+            detail={"code": Codes.UNAUTHORIZED, "message": "Token inválido"},
+        )

@@ -3,17 +3,17 @@ auth.py
 Módulo de autenticação: criptografia de senha, geração e validação de JWT
 """
 
-from jose import jwt, JWTError, ExpiredSignatureError
-from passlib.context import CryptContext
-from datetime import datetime, timedelta, timezone
 import os
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+
 from dotenv import load_dotenv
+from jose import ExpiredSignatureError, JWTError, jwt
+from passlib.context import CryptContext
+
+from alici_api.config import get_settings
 
 load_dotenv()
-
-# ============================================================================
-# CONFIGURAÇÕES
-# ============================================================================
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ENV = os.getenv("ENV", "development")
@@ -28,16 +28,15 @@ if not SECRET_KEY:
     print("⚠️ AVISO: Usando SECRET_KEY padrão (apenas para desenvolvimento)")
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24h
+settings = get_settings()
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_MINUTES = settings.refresh_token_expire_minutes
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
 )
 
-# ============================================================================
-# SENHAS
-# ============================================================================
 
 def hash_password(password: str) -> str:
     if not password:
@@ -55,27 +54,32 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-# ============================================================================
-# JWT
-# ============================================================================
-
-def create_access_token(user_id: int, email: str) -> str:
-
+def _create_token(user_id: int, email: str, token_type: str, expire_minutes: int) -> str:
     now = datetime.now(timezone.utc)
 
     to_encode = {
         "sub": str(user_id),
         "email": email,
-        "type": "access",
+        "type": token_type,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp())
+        "exp": int((now + timedelta(minutes=expire_minutes)).timestamp()),
     }
+
+    if token_type == "refresh":
+        to_encode["jti"] = uuid4().hex
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_token(token: str) -> dict:
+def create_access_token(user_id: int, email: str) -> str:
+    return _create_token(user_id, email, "access", ACCESS_TOKEN_EXPIRE_MINUTES)
 
+
+def create_refresh_token(user_id: int, email: str) -> str:
+    return _create_token(user_id, email, "refresh", REFRESH_TOKEN_EXPIRE_MINUTES)
+
+
+def decode_token(token: str) -> dict:
     try:
         payload = jwt.decode(
             token,
@@ -91,8 +95,7 @@ def decode_token(token: str) -> dict:
         raise JWTError(f"Token inválido: {str(e)}")
 
 
-def verify_token(token: str) -> dict:
-
+def verify_token(token: str, expected_type: str = "access") -> dict:
     if not token:
         raise JWTError("Token não fornecido")
 
@@ -101,7 +104,7 @@ def verify_token(token: str) -> dict:
 
     payload = decode_token(token)
 
-    if payload.get("type") != "access":
+    if payload.get("type") != expected_type:
         raise JWTError("Tipo de token inválido")
 
     return payload

@@ -8,7 +8,10 @@ import os
 import sqlite3
 import time
 from contextlib import contextmanager
+from datetime import datetime, timezone
+
 from dotenv import load_dotenv
+
 from logger import get_logger
 
 logger_db = get_logger("database")
@@ -21,15 +24,11 @@ USE_POSTGRES = DATABASE_URL and DATABASE_URL.startswith("postgresql")
 pool = None
 DATABASE_ENABLED = False
 
-# ==========================================
-# 🔥 CONEXÃO COM RETRY (ANTI NEON SLEEP)
-# ==========================================
 if not DATABASE_URL:
     logger_db.warning("⚠️ DATABASE_URL não configurado")
 
 elif USE_POSTGRES:
     try:
-        import psycopg2
         from psycopg2.pool import SimpleConnectionPool
 
         retries = 5
@@ -61,9 +60,6 @@ else:
     logger_db.error("❌ DATABASE_URL inválido")
 
 
-# ==========================================
-# CONTEXT MANAGER
-# ==========================================
 @contextmanager
 def get_db_connection():
     if not DATABASE_ENABLED:
@@ -97,9 +93,6 @@ def get_db_connection():
                 pool.putconn(conn)
 
 
-# ==========================================
-# 🚀 CRIAR TABELAS
-# ==========================================
 def criar_tabelas():
     if not DATABASE_ENABLED:
         logger_db.warning("Banco indisponível - pulando criação")
@@ -122,9 +115,18 @@ def criar_tabelas():
             email TEXT UNIQUE NOT NULL,
             senha_hash TEXT NOT NULL,
             plano TEXT DEFAULT 'free',
+            mensagens_hoje INTEGER DEFAULT 0,
             criado_em {timestamp_field}
         )
         """)
+
+        if USE_SQLITE:
+            cur.execute("PRAGMA table_info(users)")
+            columns = [row[1] for row in cur.fetchall()]
+            if "mensagens_hoje" not in columns:
+                cur.execute("ALTER TABLE users ADD COLUMN mensagens_hoje INTEGER DEFAULT 0")
+        else:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS mensagens_hoje INTEGER DEFAULT 0")
 
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS memoria (
@@ -146,17 +148,64 @@ def criar_tabelas():
         )
         """)
 
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            id {id_field},
+            user_id INTEGER NOT NULL,
+            stripe_id TEXT,
+            status TEXT DEFAULT 'inactive',
+            plano TEXT DEFAULT 'free',
+            renovacao {timestamp_field},
+            criado_em {timestamp_field}
+        )
+        """)
+
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id {id_field},
+            user_id INTEGER NOT NULL,
+            titulo TEXT,
+            criado_em {timestamp_field}
+        )
+        """)
+
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS messages (
+            id {id_field},
+            conversation_id INTEGER,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            criado_em {timestamp_field}
+        )
+        """)
+
+        if USE_SQLITE:
+            refresh_token_id_field = "INTEGER PRIMARY KEY AUTOINCREMENT"
+            refresh_expires_field = "TEXT NOT NULL"
+            refresh_revoked_field = "INTEGER DEFAULT 0"
+        else:
+            refresh_token_id_field = "SERIAL PRIMARY KEY"
+            refresh_expires_field = "TIMESTAMP NOT NULL"
+            refresh_revoked_field = "BOOLEAN DEFAULT FALSE"
+
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+            id {refresh_token_id_field},
+            user_id INTEGER NOT NULL,
+            jti TEXT UNIQUE NOT NULL,
+            expires_at {refresh_expires_field},
+            revoked {refresh_revoked_field},
+            created_ip TEXT,
+            user_agent TEXT,
+            criado_em {timestamp_field}
+        )
+        """)
+
         cur.close()
         logger_db.info("✅ Tabelas verificadas/criadas")
 
 
-# ==========================================
-# 👤 USERS
-# ==========================================
 def criar_usuario(nome, email, senha_hash, plano="free"):
-    """
-    Recebe senha_hash já gerado no auth.py
-    """
     if not DATABASE_ENABLED:
         return None
 
@@ -243,9 +292,6 @@ def buscar_usuario_por_id(user_id):
     return buscar_usuario(user_id)
 
 
-# ==========================================
-# 🧠 MEMÓRIA IA
-# ==========================================
 def buscar_memoria(pergunta):
     if not DATABASE_ENABLED:
         return None
@@ -308,9 +354,6 @@ def aprender(pergunta, resposta):
         logger_db.error(f"Erro ao aprender: {e}")
 
 
-# ==========================================
-# 📜 HISTÓRICO
-# ==========================================
 def salvar_historico(user_id, pergunta, resposta):
     if not DATABASE_ENABLED:
         logger_db.warning("Banco indisponível - histórico não salvo")
@@ -380,3 +423,165 @@ def limpar_historico(user_id):
 
     except Exception as e:
         logger_db.error(f"Erro ao limpar histórico: {e}")
+
+
+def contar_mensagens_hoje(user_id):
+    if not DATABASE_ENABLED:
+        return 0
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+
+            if USE_SQLITE:
+                cur.execute(
+                    f"""
+                    SELECT COUNT(*)
+                    FROM history
+                    WHERE user_id = {placeholder}
+                      AND date(criado_em) = date('now')
+                    """,
+                    (user_id,),
+                )
+            else:
+                cur.execute(
+                    f"""
+                    SELECT COUNT(*)
+                    FROM history
+                    WHERE user_id = {placeholder}
+                      AND DATE(criado_em) = CURRENT_DATE
+                    """,
+                    (user_id,),
+                )
+
+            total = cur.fetchone()[0]
+            cur.close()
+            return int(total or 0)
+
+    except Exception as e:
+        logger_db.error(f"Erro ao contar mensagens do dia: {e}")
+        return 0
+
+
+def _to_utc_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+    if isinstance(value, str):
+        value = value.replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(value)
+            if parsed.tzinfo is None:
+                return parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+        except Exception:
+            return None
+    return None
+
+
+def salvar_refresh_token(user_id, jti, expires_at, created_ip=None, user_agent=None):
+    if not DATABASE_ENABLED:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            parsed_exp = _to_utc_datetime(expires_at)
+            expires_value = parsed_exp.isoformat() if USE_SQLITE and parsed_exp else parsed_exp
+
+            cur.execute(
+                f"""
+                INSERT INTO refresh_tokens (user_id, jti, expires_at, revoked, created_ip, user_agent)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                """,
+                (user_id, jti, expires_value, 0 if USE_SQLITE else False, created_ip, user_agent),
+            )
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao salvar refresh token: {e}")
+        return False
+
+
+def buscar_refresh_token_por_jti(jti):
+    if not DATABASE_ENABLED:
+        return None
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+
+            cur.execute(
+                f"""
+                SELECT id, user_id, jti, expires_at, revoked, created_ip, user_agent
+                FROM refresh_tokens
+                WHERE jti = {placeholder}
+                LIMIT 1
+                """,
+                (jti,),
+            )
+            row = cur.fetchone()
+            cur.close()
+
+            if not row:
+                return None
+
+            data = dict(zip(["id", "user_id", "jti", "expires_at", "revoked", "created_ip", "user_agent"], row))
+            data["expires_at"] = _to_utc_datetime(data.get("expires_at"))
+            data["revoked"] = bool(data.get("revoked"))
+            return data
+    except Exception as e:
+        logger_db.error(f"Erro ao buscar refresh token: {e}")
+        return None
+
+
+def revogar_refresh_token_por_jti(jti):
+    if not DATABASE_ENABLED:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"""
+                UPDATE refresh_tokens
+                SET revoked = {placeholder}
+                WHERE jti = {placeholder}
+                """,
+                (1 if USE_SQLITE else True, jti),
+            )
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao revogar refresh token: {e}")
+        return False
+
+
+def revogar_refresh_tokens_usuario(user_id):
+    if not DATABASE_ENABLED:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"""
+                UPDATE refresh_tokens
+                SET revoked = {placeholder}
+                WHERE user_id = {placeholder}
+                """,
+                (1 if USE_SQLITE else True, user_id),
+            )
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao revogar tokens do usuário: {e}")
+        return False

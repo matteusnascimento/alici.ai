@@ -555,7 +555,10 @@
 
                 if (response.ok) {
                     // Save token
-                    localStorage.setItem('alici_token', data.access_token);
+                    localStorage.setItem('access_token', data.access_token);
+                    if (data.refresh_token) {
+                        localStorage.setItem('refresh_token', data.refresh_token);
+                    }
                     localStorage.setItem('alici_user', JSON.stringify(data.usuario));
 
                     showMessage('loginSuccess', '✓ Login realizado! Redirecionando...');
@@ -585,8 +588,8 @@
                 return;
             }
 
-            if (password.length < 6) {
-                showMessage('registerError', 'A senha deve ter no mínimo 6 caracteres.');
+            if (password.length < 8) {
+                showMessage('registerError', 'A senha deve ter no mínimo 8 caracteres.');
                 return;
             }
 
@@ -637,7 +640,7 @@
             createParticles();
             
             // Check if already logged in
-            const token = localStorage.getItem('alici_token');
+            const token = localStorage.getItem('access_token');
             if (token) {
                 window.location.href = '/chat';
             }
