@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 1000);
             } else {
                 // Erro
-                const errorMsg = data.detail || 'Erro ao fazer login. Tente novamente.';
+                const errorMsg = data.message || data.detail || 'Erro ao fazer login. Tente novamente.';
                 showMessage(msgDiv, errorMsg, 'error');
                 submitBtn.disabled = false;
             }
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.disabled = false;
             } else {
                 // Erro
-                const errorMsg = data.detail || 'Erro ao criar conta. Email pode estar em uso.';
+                const errorMsg = data.message || data.detail || 'Erro ao criar conta. Email pode estar em uso.';
                 showMessage(msgDiv, errorMsg, 'error');
                 submitBtn.disabled = false;
             }

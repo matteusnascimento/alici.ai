@@ -8,10 +8,20 @@
         "bom dia",
         "boa tarde",
         "boa noite",
-        "e aí"
+        "e aí",
+        "hey",
+        "oi tudo bem",
+        "olá alici",
+        "oi alici",
+        "eae",
+        "opa",
+        "salve",
+        "bem vindo"
       ],
       "responses": [
-        "Olá! Eu sou a ALICI 🚀"
+        "Olá! Eu sou a ALICI 🚀 Como posso ajudar você hoje?",
+        "Oi! Pronta para ajudar! O que você precisa?",
+        "Olá! Tudo bem? Estou aqui para o que precisar!"
       ]
     },
     {
@@ -21,10 +31,19 @@
         "até logo",
         "falou",
         "até mais",
-        "fui nessa"
+        "fui nessa",
+        "bye",
+        "adeus",
+        "até",
+        "até a próxima",
+        "boa noite até mais",
+        "obrigado tchau",
+        "valeu tchau"
       ],
       "responses": [
-        "Até mais! Sempre que precisar, estarei aqui."
+        "Até mais! Sempre que precisar, estarei aqui.",
+        "Tchau! Foi um prazer conversar com você!",
+        "Até a próxima! 👋"
       ]
     },
     {
@@ -32,10 +51,18 @@
       "patterns": [
         "quem te criou",
         "quem é seu criador",
-        "quem desenvolveu você"
+        "quem desenvolveu você",
+        "quem fez você",
+        "quem é mateus",
+        "quem é mateus nascimento",
+        "quem criou a alici",
+        "quem programou você",
+        "quem é o fundador",
+        "seu criador",
+        "quem te fez"
       ],
       "responses": [
-        "Fui criada por Mateus Santos."
+        "Fui criada por Mateus Nascimento dos Santos, o fundador da Alici AI."
       ]
     },
     {
@@ -44,10 +71,20 @@
         "obrigado",
         "valeu",
         "muito obrigado",
-        "agradeço a ajuda"
+        "agradeço a ajuda",
+        "obrigada",
+        "grato",
+        "grata",
+        "muito obrigada",
+        "brigadão",
+        "brigadinha",
+        "thx",
+        "thanks"
       ],
       "responses": [
-        "De nada! Foi um prazer ajudar."
+        "De nada! Foi um prazer ajudar.",
+        "Fico feliz em ajudar! 😊",
+        "Por nada! Qualquer coisa estou aqui."
       ]
     },
     {
@@ -56,11 +93,25 @@
         "preciso de ajuda",
         "você pode me ajudar",
         "como você funciona",
-        "o que você faz"
+        "o que você faz",
+        "me ajuda",
+        "pode me ajudar",
+        "o que você sabe fazer",
+        "quais são suas funções",
+        "para que você serve",
+        "o que você pode fazer",
+        "me explica como funciona",
+        "como usar você",
+        "como conversar com você",
+        "quais suas capacidades",
+        "qual sua utilidade"
       ],
       "responses": [
-        "Posso ajudar com perguntas, explicações e tarefas inteligentes."
+        "Posso ajudar com perguntas, explicações e tarefas inteligentes.",
+        "Estou aqui para responder perguntas, explicar conceitos, e ajudar com diversas tarefas!",
+        "Posso conversar, responder perguntas, fazer pesquisas e muito mais. Como posso te ajudar?"
       ]
     }
   ]
 }
+
