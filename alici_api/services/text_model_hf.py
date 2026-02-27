@@ -58,14 +58,14 @@ def _load_intent_responses() -> dict[str, list[str]]:
 def _ensure_artifacts_local(force_download: bool = False) -> dict[str, Path]:
     from huggingface_hub import hf_hub_download
 
-    repo_id = os.getenv("ALICI_HF_REPO_ID", "")
+    repo_id = os.getenv("ALICI_HF_REPO_ID", "Matteusnascimento/alici.ai")
     repo_type = os.getenv("ALICI_HF_REPO_TYPE", "space")
     hf_token = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
     subfolder = os.getenv("ALICI_HF_SUBFOLDER", "")
 
     if not repo_id:
         raise RuntimeError(
-            "Configuração do HuggingFace incompleta. Defina ALICI_HF_REPO_ID"
+            "Configuração do HuggingFace incompleta. Defina ALICI_HF_REPO_ID (ex: Matteusnascimento/alici.ai)"
         )
 
     cache_dir = _cache_dir()

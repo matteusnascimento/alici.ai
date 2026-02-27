@@ -1,1 +1,12 @@
-git clone https://huggingface.co/spaces/Matteusnascimento/alici.ai
+HuggingFace Space: https://huggingface.co/spaces/Matteusnascimento/alici.ai
+
+Para clonar o Space localmente:
+  git clone https://huggingface.co/spaces/Matteusnascimento/alici.ai
+
+Variáveis de ambiente necessárias:
+  ALICI_HF_REPO_ID=Matteusnascimento/alici.ai
+  ALICI_HF_REPO_TYPE=space
+  HUGGINGFACE_TOKEN=<token de acesso gerado em https://huggingface.co/settings/tokens>
+
+Nunca armazene o token diretamente neste arquivo ou no código-fonte.
+Utilize variáveis de ambiente ou um gerenciador de segredos.
