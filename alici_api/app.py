@@ -21,6 +21,7 @@ from alici_api.routes.history import router as history_router
 from alici_api.routes.media import router as media_router
 from alici_api.routes.pages import router as pages_router
 from alici_api.services.ai import IA_DISPONIVEL, VISAO_DISPONIVEL
+from alici_api.services.text_model_hf import get_hf_model_status, initialize_text_model_from_hf
 from alici_api.services.text_model_r2 import get_text_model_status, initialize_text_model_from_r2
 from database import criar_tabelas
 from logger import get_logger
@@ -135,6 +136,14 @@ def create_app() -> FastAPI:
             logger_app.warning(
                 f"Modelo textual R2 indisponível: {text_model_status.get('erro', 'erro desconhecido')}"
             )
+            logger_app.info("Tentando carregar modelo textual do HuggingFace como alternativa...")
+            hf_initialized = initialize_text_model_from_hf()
+            hf_model_status = get_hf_model_status()
+            logger_app.info(f"Modelo textual HuggingFace disponível: {hf_initialized}")
+            if not hf_initialized:
+                logger_app.warning(
+                    f"Modelo textual HuggingFace indisponível: {hf_model_status.get('erro', 'erro desconhecido')}"
+                )
 
         logger_app.info("ALICI pronta para receber requisições")
 
