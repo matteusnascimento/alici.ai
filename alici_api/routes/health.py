@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from alici_api.dependencies import get_current_user
 from alici_api.responses import Codes, success
 from alici_api.services.ai import IA_DISPONIVEL, VISAO_DISPONIVEL
+from alici_api.services.text_model_hf import get_hf_model_status
 from alici_api.services.text_model_r2 import get_text_model_status
 
 router = APIRouter(tags=["health"])
@@ -19,6 +20,7 @@ def health():
         ia_disponivel=IA_DISPONIVEL,
         visao_disponivel=VISAO_DISPONIVEL,
         modelo_texto_r2=get_text_model_status(),
+        modelo_texto_hf=get_hf_model_status(),
         timestamp=datetime.now().isoformat(),
     )
 
@@ -37,5 +39,6 @@ def api_status(user=Depends(get_current_user)):
         ia_disponivel=IA_DISPONIVEL,
         visao_disponivel=VISAO_DISPONIVEL,
         modelo_texto_r2=get_text_model_status(),
+        modelo_texto_hf=get_hf_model_status(),
         timestamp=datetime.now().isoformat(),
     )

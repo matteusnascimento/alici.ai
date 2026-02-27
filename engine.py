@@ -13,6 +13,7 @@ from resposta import responder_local
 from sistema_emocoes import adicionar_metadados_resposta
 from openai import OpenAI
 from alici_api.services.text_model_r2 import predict_intent_from_text
+from alici_api.services.text_model_hf import predict_intent_from_text_hf
 
 # ==================================================
 # LOGGER
@@ -121,10 +122,15 @@ def gerar_resposta(pergunta: str) -> str:
         return resposta_local
 
     # ==================================================
-    # 3.1️⃣ CLASSIFICADOR DE INTENÇÃO (MODELO R2)
+    # 3.1️⃣ CLASSIFICADOR DE INTENÇÃO (MODELO R2 ou HuggingFace)
     # ==================================================
     intent_prediction = predict_intent_from_text(pergunta_original)
     min_confidence = float(os.getenv("ALICI_INTENT_MIN_CONFIDENCE", "0.55"))
+
+    if not intent_prediction:
+        intent_prediction = predict_intent_from_text_hf(pergunta_original)
+        if intent_prediction:
+            logger_engine.info("Predição via modelo HuggingFace (fallback)")
 
     if intent_prediction:
         confidence = float(intent_prediction.get("confidence", 0.0))
@@ -132,7 +138,7 @@ def gerar_resposta(pergunta: str) -> str:
         predicted_response = intent_prediction.get("response")
 
         logger_engine.info(
-            f"Predição intent R2 -> tag={predicted_tag} confidence={confidence:.4f}"
+            f"Predição intent -> tag={predicted_tag} confidence={confidence:.4f}"
         )
 
         if predicted_response and confidence >= min_confidence:
