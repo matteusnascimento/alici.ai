@@ -1,4 +1,4 @@
-"""Health and status routes."""
+﻿"""Health and status routes."""
 
 from datetime import datetime
 
@@ -14,6 +14,9 @@ router = APIRouter(tags=["health"])
 
 
 @router.get("/health")
+@router.get("/health.")
+@router.get("/api/health")
+@router.get("/v1/health")
 def health():
     return success(
         Codes.HEALTH_OK,
@@ -42,3 +45,4 @@ def api_status(user=Depends(get_current_user)):
         modelo_texto_hf=get_hf_model_status(),
         timestamp=datetime.now().isoformat(),
     )
+
