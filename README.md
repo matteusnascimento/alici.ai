@@ -49,12 +49,12 @@ Exemplo:
 
 ### HuggingFace Hub (modelo textual)
 
-O modelo textual da ALICI é carregado do HuggingFace Space [Matteusnascimento/alici.ai](https://huggingface.co/spaces/Matteusnascimento/alici.ai).
+O modelo textual da ALICI é carregado do HuggingFace Space <a href="https://huggingface.co/spaces/Matteusnascimento/alici.ai">Matteusnascimento/alici.ai</a>.
 
 - `ALICI_HF_REPO_ID` (default: `Matteusnascimento/alici.ai`)
 - `ALICI_HF_REPO_TYPE` (default: `space`)
 - `ALICI_HF_SUBFOLDER` (opcional, subfolder dentro do Space)
-- `HUGGINGFACE_TOKEN` — token de acesso gerado em <https://huggingface.co/settings/tokens> (necessário para Spaces privados ou com rate-limit)
+- `HUGGINGFACE_TOKEN` — token de acesso gerado em <a href="https://huggingface.co/settings/tokens">https://huggingface.co/settings/tokens</a> (necessário para Spaces privados ou com rate-limit)
 - `ALICI_HF_CACHE_DIR` (default: `/tmp/alici_hf_cache`)
 
 > ⚠️ **Nunca armazene o token HuggingFace no código-fonte.** Use variáveis de ambiente ou um gerenciador de segredos.
