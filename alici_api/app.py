@@ -57,8 +57,6 @@ def create_app() -> FastAPI:
 
     if os.path.isdir("static"):
         app.mount("/static", StaticFiles(directory="static"), name="static")
-    if os.path.isdir("Static"):
-        app.mount("/Static", StaticFiles(directory="Static"), name="Static")
     if os.path.isdir("generated"):
         app.mount("/generated", StaticFiles(directory="generated"), name="generated")
 
