@@ -1,84 +1,153 @@
 ﻿<!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ALICI Platform</title>
-  <meta name="description" content="ALICI - Plataforma SaaS de IA" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI Platform</title>
+    <meta name="description" content="ALICI - Plataforma SaaS de IA" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
-  <div id="appLoader" class="app-loader" aria-live="polite" aria-label="Carregando aplicação"><div class="loader-orbit"></div><p>Inicializando ALICI...</p></div>
-  <canvas id="particlesCanvas" class="particles-canvas" aria-hidden="true"></canvas>
-
-  <div id="loginScreen" class="login-screen">
-    <div class="login-card glass">
-      <div class="brand-block"><span class="brand-dot"></span><h1>ALICI</h1><p>Inteligência artificial para operações modernas.</p></div>
-      <form id="loginForm" class="login-form">
-        <label for="email">E-mail</label><input id="email" type="email" placeholder="seu@email.com" required />
-        <label for="password">Senha</label><input id="password" type="password" placeholder="••••••••" required />
-        <button type="submit" class="btn btn-primary">Entrar</button>
-      </form>
-      <small>Estrutura pronta para JWT (token em localStorage).</small>
+    <div id="appLoader" class="app-loader" aria-live="polite" aria-label="Carregando aplicação">
+        <div class="loader-orbit"></div>
+        <p>Inicializando ALICI...</p>
     </div>
-  </div>
 
-  <div id="app" class="app hidden">
-    <aside id="sidebar" class="sidebar glass">
-      <div class="sidebar-top">
-        <button id="closeSidebarBtn" class="icon-btn mobile-only" aria-label="Fechar menu"><i data-lucide="x"></i></button>
-        <div class="logo-wrap"><span class="logo-mark">A</span><div><strong>ALICI</strong><small>AI Platform</small></div></div>
-      </div>
-      <nav class="nav-menu">
-        <button class="nav-item active" data-section="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
-        <button class="nav-item" data-section="chat"><i data-lucide="message-square"></i><span>Chat IA</span></button>
-        <button class="nav-item" data-section="models"><i data-lucide="brain-circuit"></i><span>Modelos</span></button>
-        <button class="nav-item" data-section="analytics"><i data-lucide="line-chart"></i><span>Analytics</span></button>
-        <button class="nav-item" data-section="settings"><i data-lucide="settings"></i><span>Configurações</span></button>
-      </nav>
-      <button id="toggleSidebarBtn" class="collapse-btn icon-btn" aria-label="Recolher menu"><i data-lucide="panel-left-close"></i></button>
-    </aside>
+    <canvas id="particlesCanvas" class="particles-canvas" aria-hidden="true"></canvas>
 
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card glass">
+            <div class="brand-block">
+                <span class="brand-dot"></span>
+                <h1>ALICI</h1>
+                <p>Inteligência artificial para operações modernas.</p>
+            </div>
 
-    <main class="main-shell">
-      <header class="topbar glass">
-        <div class="topbar-left"><button id="openSidebarBtn" class="icon-btn" aria-label="Abrir menu"><i data-lucide="menu"></i></button><h2 id="sectionTitle">Dashboard</h2></div>
-        <div class="topbar-actions">
-          <button id="themeToggle" class="icon-btn" aria-label="Alternar tema"><i data-lucide="moon"></i></button>
-          <button id="notifyBtn" class="icon-btn" aria-label="Notificações"><i data-lucide="bell"></i><span id="notifyBadge" class="badge">3</span></button>
+            <form id="loginForm" class="login-form">
+                <label for="email">E-mail</label>
+                <input id="email" type="email" placeholder="seu@email.com" required />
+
+                <label for="password">Senha</label>
+                <input id="password" type="password" placeholder="••••••••" required />
+
+                <button type="submit" class="btn btn-primary">Entrar</button>
+            </form>
+
+            <small>Estrutura pronta para JWT (token em localStorage).</small>
         </div>
-      </header>
+    </div>
 
-      <section id="dashboard" class="app-section active">
-        <div class="stats-grid">
-          <article class="stat-card glass"><h3>Usuários Online</h3><p>1.284</p></article>
-          <article class="stat-card glass"><h3>Requisições</h3><p>82.514</p></article>
-          <article class="stat-card glass"><h3>Uso do Modelo</h3><p>74%</p></article>
-          <article class="stat-card glass"><h3>Status da API</h3><p class="status-online"><span class="pulse-dot"></span>Online</p></article>
-        </div>
-        <div class="chart-card glass"><h3>Requisições por Hora</h3><canvas id="requestsChart" height="120"></canvas></div>
-      </section>
+    <div id="app" class="app hidden">
+        <aside id="sidebar" class="sidebar glass">
+            <div class="sidebar-top">
+                <button id="closeSidebarBtn" class="icon-btn mobile-only" aria-label="Fechar menu">
+          <i data-lucide="x"></i>
+        </button>
 
-      <section id="chat" class="app-section">
-        <div class="chat-shell glass">
-          <div id="chatMessages" class="chat-messages"><article class="message assistant-message"><p>Olá! Sou a ALICI. Como posso ajudar você hoje?</p></article></div>
-          <form id="chatForm" class="chat-input-wrap"><input id="chatInput" type="text" placeholder="Digite sua mensagem e pressione Enter..." autocomplete="off" /><button type="submit" class="btn btn-primary">Enviar</button></form>
-        </div>
-      </section>
+                <div class="logo-wrap">
+                    <span class="logo-mark">A</span>
+                    <div>
+                        <strong>ALICI</strong>
+                        <small>AI Platform</small>
+                    </div>
+                </div>
 
-      <section id="models" class="app-section"><div class="content-card glass"><h3>Modelos de IA</h3><p>Gerencie versões, provedores e parâmetros de inferência.</p></div></section>
-      <section id="analytics" class="app-section"><div class="content-card glass"><h3>Analytics</h3><p>Métricas operacionais em tempo real.</p></div></section>
-      <section id="settings" class="app-section"><div class="content-card glass"><h3>Configurações</h3><p>Preferências de conta e segurança JWT.</p></div></section>
-    </main>
-  </div>
+                <nav class="nav-menu">
+                    <button class="nav-item active" data-section="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+                    <button class="nav-item" data-section="chat"><i data-lucide="message-square"></i><span>Chat IA</span></button>
+                    <button class="nav-item" data-section="models"><i data-lucide="brain-circuit"></i><span>Modelos</span></button>
+                    <button class="nav-item" data-section="analytics"><i data-lucide="line-chart"></i><span>Analytics</span></button>
+                    <button class="nav-item" data-section="settings"><i data-lucide="settings"></i><span>Configurações</span></button>
+                </nav>
+            </div>
 
-  <div id="notifications" class="notifications"></div>
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+            <button id="toggleSidebarBtn" class="collapse-btn icon-btn" aria-label="Recolher menu">
+        <i data-lucide="panel-left-close"></i>
+      </button>
+        </aside>
+
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <main class="main-shell">
+            <header class="topbar glass">
+                <div class="topbar-left">
+                    <button id="openSidebarBtn" class="icon-btn" aria-label="Abrir menu"><i data-lucide="menu"></i></button>
+                    <h2 id="sectionTitle">Dashboard</h2>
+                </div>
+
+                <div class="topbar-actions">
+                    <button id="themeToggle" class="icon-btn" aria-label="Alternar tema"><i data-lucide="moon"></i></button>
+                    <button id="notifyBtn" class="icon-btn" aria-label="Notificações"><i data-lucide="bell"></i><span id="notifyBadge" class="badge">3</span></button>
+                </div>
+            </header>
+
+            <section id="dashboard" class="app-section active">
+                <div class="stats-grid">
+                    <article class="stat-card glass">
+                        <h3>Usuários Online</h3>
+                        <p>1.284</p>
+                    </article>
+                    <article class="stat-card glass">
+                        <h3>Requisições</h3>
+                        <p>82.514</p>
+                    </article>
+                    <article class="stat-card glass">
+                        <h3>Uso do Modelo</h3>
+                        <p>74%</p>
+                    </article>
+                    <article class="stat-card glass">
+                        <h3>Status da API</h3>
+                        <p class="status-online"><span class="pulse-dot"></span>Online</p>
+                    </article>
+                </div>
+                <div class="chart-card glass">
+                    <h3>Requisições por Hora</h3><canvas id="requestsChart" height="120"></canvas></div>
+            </section>
+
+            <section id="chat" class="app-section">
+                <div class="chat-shell glass">
+                    <div id="chatMessages" class="chat-messages">
+                        <article class="message assistant-message">
+                            <p>Olá! Sou a ALICI. Como posso ajudar você hoje?</p>
+                        </article>
+                    </div>
+                    <form id="chatForm" class="chat-input-wrap">
+                        <input id="chatInput" type="text" placeholder="Digite sua mensagem e pressione Enter..." autocomplete="off" />
+                        <button type="submit" class="btn btn-primary">Enviar</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="models" class="app-section">
+                <div class="content-card glass">
+                    <h3>Modelos de IA</h3>
+                    <p>Gerencie versões, provedores e parâmetros de inferência.</p>
+                </div>
+            </section>
+            <section id="analytics" class="app-section">
+                <div class="content-card glass">
+                    <h3>Analytics</h3>
+                    <p>Métricas operacionais em tempo real.</p>
+                </div>
+            </section>
+            <section id="settings" class="app-section">
+                <div class="content-card glass">
+                    <h3>Configurações</h3>
+                    <p>Preferências de conta e segurança JWT.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="notifications" class="notifications"></div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>
