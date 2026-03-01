@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALICI™ — Dashboard</title>
+  <link rel="stylesheet" href="/Static/css/dashboard.css">
+</head>
+<body>
+
+<!-- 3D Neural Network Background -->
+<canvas id="neural-canvas" aria-hidden="true"></canvas>
+
+<!-- Mobile sidebar backdrop -->
+<div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+<!-- App Layout -->
+<div class="app-layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">A</div>
+      <div>
+        <div class="sidebar-title">ALICI™</div>
+      </div>
+    </div>
+
+    <button class="btn-new-chat" onclick="newChat()">
+      ✏️ Nova Conversa
+    </button>
+
+    <div class="sidebar-section-label">Conversas Recentes</div>
+    <div class="conv-list" id="conv-list"></div>
+
+    <!-- Bottom nav -->
+    <nav class="sidebar-nav">
+      <a class="nav-item" onclick="openPanel('profile-panel')">
+        <span class="nav-item-icon">👤</span> Perfil
+      </a>
+      <a class="nav-item" onclick="openPanel('billing-panel')">
+        <span class="nav-item-icon">💳</span> Plano &amp; Billing
+      </a>
+      <a class="nav-item" onclick="openPanel('settings-panel')">
+        <span class="nav-item-icon">⚙️</span> Configurações
+      </a>
+      <div style="padding:8px 12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:0.78rem;color:var(--text-muted);flex:1" id="sidebar-user-name">Carregando...</span>
+        <span style="font-size:0.65rem;padding:2px 6px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:700" id="sidebar-plan-badge">FREE</span>
+      </div>
+      <a class="nav-item danger" onclick="doLogout()">
+        <span class="nav-item-icon">🚪</span> Sair
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ===== MAIN AREA ===== -->
+  <div class="main-area">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <button class="sidebar-toggle icon-btn" onclick="openSidebar()" aria-label="Abrir menu">☰</button>
+      <span class="topbar-title" id="topbar-title">ALICI™ Chat</span>
+      <div class="topbar-actions">
+        <div class="usage-bar-wrap">
+          <div class="usage-bar"><div class="usage-fill" id="usage-fill" style="width:0%"></div></div>
+          <span id="usage-label">— msgs</span>
+        </div>
+        <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+      </div>
+    </div>
+
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcome-screen">
+      <div class="welcome-logo">A</div>
+      <h1 class="welcome-title">Olá! Eu sou a Alici.</h1>
+      <p class="welcome-subtitle">IA desenvolvida pela AXI — Artificial eXtreme Intelligence. Como posso te ajudar hoje?</p>
+      <div class="welcome-suggestions">
+        <button class="suggestion-chip" onclick="useSuggestion('Explique o que é inteligência artificial')">Explique o que é inteligência artificial</button>
+        <button class="suggestion-chip" onclick="useSuggestion('Como posso melhorar minha produtividade?')">Como melhorar minha produtividade?</button>
+        <button class="suggestion-chip" onclick="useSuggestion('Escreva um poema sobre tecnologia')">Escreva um poema sobre tecnologia</button>
+        <button class="suggestion-chip" onclick="useSuggestion('Quais são as tendências de IA para 2026?')">Tendências de IA para 2026</button>
+      </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="messages-area" id="messages-area" style="display:none"></div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea
+          id="user-input"
+          placeholder="Mensagem à Alici..."
+          rows="1"
+          onkeydown="handleInputKey(event)"
+          oninput="resizeTextarea(this)"
+        ></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Enviar">▶</button>
+      </div>
+      <p class="input-hint">Alici pode cometer erros. Verifique informações importantes. — AXI © 2026</p>
+    </div>
+
+  </div><!-- /main-area -->
+</div><!-- /app-layout -->
+
+
+<!-- ===== PROFILE PANEL ===== -->
+<div class="panel-overlay" id="profile-panel" onclick="if(event.target===this)closePanel('profile-panel')">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">👤 Meu Perfil</span>
+      <button class="panel-close" onclick="closePanel('profile-panel')">×</button>
+    </div>
+
+    <div class="avatar-row">
+      <div class="avatar-preview" id="profile-avatar-preview">A</div>
+      <div>
+        <label class="btn-secondary" style="width:auto;padding:8px 14px;cursor:pointer;display:inline-block;margin-bottom:6px">
+          📷 Trocar foto
+          <input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="uploadAvatar()">
+        </label>
+        <div style="font-size:0.75rem;color:var(--text-muted)">PNG, JPG ou WEBP (máx 2 MB)</div>
+        <div style="margin-top:4px;font-size:0.8rem;color:var(--text-secondary)">Plano: <strong id="profile-plan-display">FREE</strong></div>
+      </div>
+    </div>
+
+    <div id="profile-error" class="alert alert-error"></div>
+    <div id="profile-success" class="alert alert-success"></div>
+
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input type="text" id="profile-name-input" class="form-input" placeholder="Seu nome">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Tema</label>
+      <select id="profile-theme-select" class="form-input">
+        <option value="dark">🌙 Dark</option>
+        <option value="light">☀️ Light</option>
+      </select>
+    </div>
+
+    <button class="btn-primary" onclick="saveProfile()" style="margin-bottom:16px">Salvar alterações</button>
+
+    <hr style="border-color:var(--border-color);margin:16px 0">
+
+    <p style="font-size:0.85rem;font-weight:600;margin-bottom:12px">🔑 Alterar Senha</p>
+    <div id="password-error" class="alert alert-error"></div>
+    <div id="password-success" class="alert alert-success"></div>
+
+    <div class="form-group">
+      <label class="form-label">Senha Atual</label>
+      <input type="password" id="curr-password" class="form-input" placeholder="••••••••">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nova Senha</label>
+      <input type="password" id="new-password" class="form-input" placeholder="••••••••">
+    </div>
+    <button class="btn-secondary" onclick="changePassword()">Alterar senha</button>
+  </div>
+</div>
+
+
+<!-- ===== BILLING PANEL ===== -->
+<div class="panel-overlay" id="billing-panel" onclick="if(event.target===this)closePanel('billing-panel')">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">💳 Plano &amp; Billing</span>
+      <button class="panel-close" onclick="closePanel('billing-panel')">×</button>
+    </div>
+
+    <div id="billing-usage-info" style="margin-bottom:20px"></div>
+
+    <div class="plan-cards">
+      <div class="plan-card">
+        <div>
+          <div class="plan-name">Free</div>
+          <div class="plan-price">Gratuito — 20 msgs/dia</div>
+        </div>
+      </div>
+      <div class="plan-card" onclick="checkout('pro')" style="cursor:pointer">
+        <div class="plan-info">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">R$ 49/mês — 300 msgs/dia</div>
+        </div>
+        <span class="plan-badge">Popular</span>
+      </div>
+      <div class="plan-card" onclick="checkout('ultra')" style="cursor:pointer">
+        <div class="plan-info">
+          <div class="plan-name">Ultra</div>
+          <div class="plan-price">R$ 99/mês — 2000 msgs/dia</div>
+        </div>
+        <span class="plan-badge">Power</span>
+      </div>
+    </div>
+
+    <div class="alert alert-info show" style="font-size:0.8rem">
+      💡 Pagamentos processados com segurança via Stripe.
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== SETTINGS PANEL ===== -->
+<div class="panel-overlay" id="settings-panel" onclick="if(event.target===this)closePanel('settings-panel')">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">⚙️ Configurações</span>
+      <button class="panel-close" onclick="closePanel('settings-panel')">×</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Tema da Interface</label>
+      <div style="display:flex;gap:10px">
+        <button class="btn-secondary" onclick="applyTheme('dark');closePanel('settings-panel')" style="flex:1">🌙 Dark</button>
+        <button class="btn-secondary" onclick="applyTheme('light');closePanel('settings-panel')" style="flex:1">☀️ Light</button>
+      </div>
+    </div>
+
+    <hr style="border-color:var(--border-color);margin:16px 0">
+
+    <p style="font-size:0.8rem;color:var(--text-muted);text-align:center">
+      ALICI™ v3.0 — AXI Artificial eXtreme Intelligence<br>
+      Modelo Alici · Renderizado por AXI © 2026
+    </p>
+  </div>
+</div>
+
+
+<script>
+  // Expose applyTheme globally (used by settings panel buttons)
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('alici_theme', t);
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  }
+</script>
+<script src="/Static/js/scene.js" defer></script>
+<script type="module" src="/Static/js/dashboard.js"></script>
+
+</body>
+</html>

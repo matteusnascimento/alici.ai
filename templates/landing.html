@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALICI™ — Artificial eXtreme Intelligence by AXI</title>
+  <style>
+    :root {
+      --accent: #00e5ff;
+      --accent2: #7c3aed;
+      --bg: #050810;
+      --bg2: #0a0f1c;
+      --text: #f1f5f9;
+      --text2: #94a3b8;
+      --border: rgba(255,255,255,0.08);
+      --gradient: linear-gradient(135deg, #00e5ff, #7c3aed);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Canvas background */
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.35;
+    }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(5,8,16,0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-logo-icon {
+      width: 36px; height: 36px;
+      background: var(--gradient);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 18px; color: white;
+    }
+
+    .nav-logo-text {
+      font-size: 1.1rem; font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+
+    .nav-links a {
+      color: var(--text2); text-decoration: none;
+      font-size: 0.9rem; transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      padding: 9px 22px;
+      background: var(--gradient);
+      border: none; border-radius: 10px;
+      color: white; font-weight: 700; font-size: 0.9rem;
+      cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+      display: inline-block;
+    }
+
+    .nav-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* ===== SECTIONS ===== */
+    section { position: relative; z-index: 1; }
+
+    /* ===== HERO ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 100px 20px 60px;
+      flex-direction: column; gap: 28px;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px;
+      background: rgba(0,229,255,0.1);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 20px;
+      font-size: 0.78rem; color: var(--accent);
+      font-weight: 600; letter-spacing: 0.05em;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      max-width: 800px;
+    }
+
+    .hero h1 span {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--text2);
+      max-width: 560px; line-height: 1.7;
+    }
+
+    .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+
+    .btn-hero {
+      padding: 14px 32px;
+      background: var(--gradient);
+      border: none; border-radius: 12px;
+      color: white; font-size: 1rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 8px 32px rgba(0,229,255,0.25);
+      display: inline-block;
+    }
+
+    .btn-hero:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    .btn-hero-outline {
+      padding: 14px 32px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text); font-size: 1rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: background 0.2s, border-color 0.2s;
+      display: inline-block;
+    }
+
+    .btn-hero-outline:hover { background: rgba(255,255,255,0.05); border-color: var(--accent); }
+
+    .hero-stats {
+      display: flex; gap: 40px; flex-wrap: wrap; justify-content: center;
+      margin-top: 12px;
+    }
+
+    .hero-stat { text-align: center; }
+    .hero-stat-num { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+    .hero-stat-label { font-size: 0.78rem; color: var(--text2); margin-top: 2px; }
+
+    /* ===== FEATURES ===== */
+    .features { padding: 100px 40px; }
+
+    .section-label {
+      text-align: center;
+      font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800; margin-bottom: 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1100px; margin: 0 auto;
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover { border-color: rgba(0,229,255,0.3); transform: translateY(-4px); }
+
+    .feature-icon {
+      font-size: 2rem; margin-bottom: 14px;
+    }
+
+    .feature-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc { font-size: 0.875rem; color: var(--text2); line-height: 1.6; }
+
+    /* ===== PRICING ===== */
+    .pricing { padding: 100px 40px; background: var(--bg2); }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 900px; margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px;
+      display: flex; flex-direction: column; gap: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .pricing-card.featured {
+      border-color: var(--accent);
+      background: rgba(0,229,255,0.06);
+      position: relative;
+    }
+
+    .featured-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--gradient); color: white;
+      font-size: 0.72rem; font-weight: 700; padding: 3px 12px;
+      border-radius: 12px; white-space: nowrap;
+    }
+
+    .pricing-plan { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text2); }
+    .pricing-price { font-size: 2.5rem; font-weight: 900; }
+    .pricing-price span { font-size: 1rem; font-weight: 400; color: var(--text2); }
+    .pricing-desc { font-size: 0.875rem; color: var(--text2); }
+
+    .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .pricing-features li { font-size: 0.875rem; display: flex; align-items: center; gap: 8px; }
+    .pricing-features li::before { content: '✓'; color: var(--accent); font-weight: 700; }
+
+    .btn-pricing {
+      padding: 12px; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; text-align: center;
+      transition: opacity 0.2s, transform 0.2s;
+      display: block;
+    }
+
+    .btn-pricing.primary { background: var(--gradient); border: none; color: white; }
+    .btn-pricing.outline { background: none; border: 1px solid var(--border); color: var(--text); }
+    .btn-pricing:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* ===== API SECTION ===== */
+    .api-section {
+      padding: 100px 40px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 60px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto;
+    }
+
+    .api-text { flex: 1; min-width: 280px; }
+    .api-text h2 { font-size: 2rem; font-weight: 800; margin-bottom: 16px; }
+    .api-text p { color: var(--text2); line-height: 1.7; margin-bottom: 20px; }
+
+    .code-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      flex: 1; min-width: 280px;
+      overflow-x: auto; color: #a3e635;
+    }
+
+    .code-block .kw { color: var(--accent); }
+    .code-block .str { color: #fb923c; }
+    .code-block .num { color: #f59e0b; }
+    .code-block .cmt { color: #6b7280; }
+
+    /* ===== FOOTER ===== */
+    footer {
+      position: relative; z-index: 1;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 20px;
+    }
+
+    .footer-brand {
+      font-size: 0.9rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { color: var(--text2); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text); }
+
+    .footer-copy { color: var(--text2); font-size: 0.8rem; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .features, .pricing { padding: 60px 20px; }
+      footer { flex-direction: column; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">
+    <div class="nav-logo-icon">A</div>
+    <span class="nav-logo-text">ALICI™</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Recursos</a>
+    <a href="#pricing">Preços</a>
+    <a href="#api">API</a>
+    <a href="/login">Login</a>
+  </div>
+  <a class="nav-cta" href="/login">Começar Grátis →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <span class="hero-badge">✦ Desenvolvido pela AXI Research</span>
+  <h1>A IA que <span>pensa diferente</span></h1>
+  <p>ALICI é o modelo fundacional da AXI — criado para ser inteligente, rápido e honesto. Disponível agora para todos.</p>
+  <div class="hero-ctas">
+    <a class="btn-hero" href="/login">Experimentar Grátis</a>
+    <a class="btn-hero-outline" href="#features">Ver Recursos</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-num">100k+</div>
+      <div class="hero-stat-label">Usuários previstos</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">99.9%</div>
+      <div class="hero-stat-label">Uptime SLA</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">&lt;500ms</div>
+      <div class="hero-stat-label">Tempo de resposta</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <p class="section-label">Recursos</p>
+  <h2 class="section-title">Construído para o futuro</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <div class="feature-title">Memória Persistente</div>
+      <div class="feature-desc">ALICI lembra do histórico completo das suas conversas, aprendendo com cada interação para respostas cada vez melhores.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Ultra Rápida</div>
+      <div class="feature-desc">Respostas em menos de 500ms. Infraestrutura distribuída pronta para escalar para milhões de requisições.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Segurança JWT</div>
+      <div class="feature-desc">Autenticação com JWT + Refresh Token, rate limit por plano, CORS configurado e dados criptografados.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-title">Multi-Chat</div>
+      <div class="feature-desc">Organize suas conversas em sessões separadas. Títulos automáticos, histórico completo e fácil navegação.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎨</div>
+      <div class="feature-title">Dark / Light Mode</div>
+      <div class="feature-desc">Interface adaptável ao seu ambiente. Preferência salva e sincronizada entre dispositivos automaticamente.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔌</div>
+      <div class="feature-title">API Aberta</div>
+      <div class="feature-desc">Integre ALICI nas suas aplicações com nossa REST API documentada. SDKs em breve para Python, JS e Go.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <p class="section-label">Preços</p>
+  <h2 class="section-title">Simples e transparente</h2>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-plan">Free</div>
+      <div class="pricing-price">R$0 <span>/mês</span></div>
+      <div class="pricing-desc">Perfeito para experimentar</div>
+      <ul class="pricing-features">
+        <li>20 mensagens por dia</li>
+        <li>Histórico de conversas</li>
+        <li>Dark &amp; Light mode</li>
+        <li>Acesso à API básica</li>
+      </ul>
+      <a class="btn-pricing outline" href="/login">Começar grátis</a>
+    </div>
+    <div class="pricing-card featured">
+      <div class="featured-badge">⭐ Mais Popular</div>
+      <div class="pricing-plan">Pro</div>
+      <div class="pricing-price">R$49 <span>/mês</span></div>
+      <div class="pricing-desc">Para usuários avançados</div>
+      <ul class="pricing-features">
+        <li>300 mensagens por dia</li>
+        <li>Histórico ilimitado</li>
+        <li>Upload de imagens</li>
+        <li>Suporte prioritário</li>
+        <li>API avançada</li>
+      </ul>
+      <a class="btn-pricing primary" href="/login">Assinar Pro</a>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-plan">Ultra</div>
+      <div class="pricing-price">R$99 <span>/mês</span></div>
+      <div class="pricing-desc">Para equipes e power users</div>
+      <ul class="pricing-features">
+        <li>2000 mensagens por dia</li>
+        <li>Tudo do Pro</li>
+        <li>Acesso antecipado</li>
+        <li>Rate limit aumentado</li>
+        <li>SLA garantido</li>
+      </ul>
+      <a class="btn-pricing outline" href="/login">Assinar Ultra</a>
+    </div>
+  </div>
+</section>
+
+<!-- API SECTION -->
+<section id="api">
+  <div class="api-section">
+    <div class="api-text">
+      <p class="section-label">Desenvolvedores</p>
+      <h2>Integre ALICI na sua aplicação</h2>
+      <p>Nossa REST API é simples, bem documentada e pronta para produção. Autentique com JWT e comece a construir em minutos.</p>
+      <a class="btn-hero" href="/login">Obter API Key →</a>
+    </div>
+    <div class="code-block">
+<span class="cmt"># Exemplo de integração com ALICI API</span>
+<span class="kw">import</span> requests
+
+token = <span class="str">"seu_access_token"</span>
+response = requests.<span class="kw">post</span>(
+    <span class="str">"https://alici.ai/chat"</span>,
+    headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {token}"</span>},
+    json={<span class="str">"pergunta"</span>: <span class="str">"Olá, ALICI!"</span>}
+)
+data = response.json()
+<span class="kw">print</span>(data[<span class="str">"resposta"</span>])
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-brand">ALICI™ by AXI</span>
+  <div class="footer-links">
+    <a href="/login">Login</a>
+    <a href="#pricing">Preços</a>
+    <a href="#api">API</a>
+    <a href="#">Termos</a>
+    <a href="#">Privacidade</a>
+  </div>
+  <span class="footer-copy">© 2026 AXI — Artificial eXtreme Intelligence</span>
+</footer>
+
+<script>
+  // Lightweight particle background for landing
+  (function () {
+    const canvas = document.getElementById('bg-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, nodes = [], animId;
+    const N = 50;
+    const D = 130;
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function init() {
+      nodes = [];
+      for (let i = 0; i < N; i++) {
+        nodes.push({
+          x: Math.random() * W, y: Math.random() * H,
+          vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3,
+          r: Math.random() * 2 + 1,
+          pulse: Math.random() * Math.PI * 2,
+          ps: .015 + Math.random() * .015
+        });
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      for (const n of nodes) {
+        n.x += n.vx; n.y += n.vy; n.pulse += n.ps;
+        if (n.x < 0 || n.x > W) n.vx *= -1;
+        if (n.y < 0 || n.y > H) n.vy *= -1;
+      }
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < D) {
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = `rgba(0,200,255,${(1 - d / D) * .25})`;
+            ctx.lineWidth = .5;
+            ctx.stroke();
+          }
+        }
+      }
+      for (const n of nodes) {
+        const g = Math.sin(n.pulse) * .5 + .5;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * (1 + g * .5), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,200,255,${.4 + g * .3})`;
+        ctx.fill();
+      }
+      animId = requestAnimationFrame(draw);
+    }
+
+    resize();
+    init();
+    draw();
+    window.addEventListener('resize', () => { resize(); init(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) cancelAnimationFrame(animId);
+      else draw();
+    });
+  })();
+
+  // Redirect if already logged in
+  if (localStorage.getItem('access_token')) {
+    window.location.href = '/chat';
+  }
+</script>
+</body>
+</html>

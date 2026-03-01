@@ -16,10 +16,12 @@ from alici_api.responses import Codes, error_payload
 from alici_api.routes.auth import router as auth_router
 from alici_api.routes.billing import router as billing_router
 from alici_api.routes.chat import router as chat_router
+from alici_api.routes.conversations import router as conversations_router
 from alici_api.routes.health import router as health_router
 from alici_api.routes.history import router as history_router
 from alici_api.routes.media import router as media_router
 from alici_api.routes.pages import router as pages_router
+from alici_api.routes.profile import router as profile_router
 from alici_api.services.ai import IA_DISPONIVEL, VISAO_DISPONIVEL
 from alici_api.services.text_model_hf import get_hf_model_status, initialize_text_model_from_hf
 from alici_api.services.text_model_r2 import get_text_model_status, initialize_text_model_from_r2
@@ -59,15 +61,17 @@ def create_app() -> FastAPI:
         app.mount("/static", StaticFiles(directory="static"), name="static")
     if os.path.isdir("Static"):
         app.mount("/Static", StaticFiles(directory="Static"), name="Static")
-    if os.path.isdir("generated"):
-        app.mount("/generated", StaticFiles(directory="generated"), name="generated")
+    os.makedirs("generated", exist_ok=True)
+    app.mount("/generated", StaticFiles(directory="generated"), name="generated")
 
     app.include_router(auth_router)
     app.include_router(billing_router)
     app.include_router(chat_router)
+    app.include_router(conversations_router)
     app.include_router(media_router)
     app.include_router(history_router)
     app.include_router(pages_router)
+    app.include_router(profile_router)
     app.include_router(health_router)
 
     @app.exception_handler(HTTPException)

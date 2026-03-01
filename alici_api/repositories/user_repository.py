@@ -1,6 +1,6 @@
 """User repository for database operations."""
 
-from database import buscar_usuario_por_email, buscar_usuario_por_id, criar_usuario
+from database import atualizar_usuario, buscar_usuario_por_email, buscar_usuario_por_id, criar_usuario
 
 
 class UserRepository:
@@ -12,3 +12,6 @@ class UserRepository:
 
     def create(self, nome: str, email: str, senha_hash: str, plano: str = "free"):
         return criar_usuario(nome, email, senha_hash, plano)
+
+    def update(self, user_id: int, **campos):
+        return atualizar_usuario(user_id, **campos)

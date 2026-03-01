@@ -567,7 +567,7 @@
                         window.location.href = '/chat';
                     }, 1500);
                 } else {
-                    showMessage('loginError', data.detail || 'Erro ao fazer login');
+                    showMessage('loginError', data.message || data.detail || 'Erro ao fazer login');
                 }
             } catch (error) {
                 showMessage('loginError', 'Erro de conexão. Tente novamente.');
@@ -614,7 +614,7 @@
                         document.getElementById('loginEmail').value = email;
                     }, 2000);
                 } else {
-                    showMessage('registerError', data.detail || 'Erro ao criar conta');
+                    showMessage('registerError', data.message || data.detail || 'Erro ao criar conta');
                 }
             } catch (error) {
                 showMessage('registerError', 'Erro de conexão. Tente novamente.');
