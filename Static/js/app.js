@@ -23,8 +23,14 @@ function bindUI() { const loginForm = document.getElementById('loginForm'); cons
             sendMessage() } });
     themeToggle.addEventListener('click', toggleTheme);
     notifyBtn.addEventListener('click', () => showNotification('Você está com tudo sincronizado.'));
-    openSidebarBtn.addEventListener('click', () => { if (window.innerWidth <= 768) { document.getElementById('app').classList.add('sidebar-open'); return }
-        toggleSidebar() });
+    openSidebarBtn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            document.getElementById('app').classList.add('sidebar-open');
+            openSidebarBtn.setAttribute('aria-expanded', 'true');
+            return;
+        }
+        toggleSidebar();
+    });
     closeSidebarBtn.addEventListener('click', closeMobileSidebar);
     overlay.addEventListener('click', closeMobileSidebar);
     collapseSidebarBtn.addEventListener('click', toggleSidebar);
@@ -40,11 +46,25 @@ function unlockApp() { document.getElementById('loginScreen').classList.add('hid
     document.getElementById('app').classList.remove('hidden');
     autoScroll() }
 
-function closeMobileSidebar() { document.getElementById('app').classList.remove('sidebar-open') }
+function closeMobileSidebar() {
+    document.getElementById('app').classList.remove('sidebar-open');
+    const openBtn = document.getElementById('openSidebarBtn');
+    if (openBtn) { openBtn.setAttribute('aria-expanded', 'false') }
+}
 
-function toggleSidebar() { const app = document.getElementById('app');
+function toggleSidebar() {
+    const app = document.getElementById('app');
     state.sidebarCollapsed = !state.sidebarCollapsed;
-    app.classList.toggle('sidebar-collapsed', state.sidebarCollapsed) }
+    app.classList.toggle('sidebar-collapsed', state.sidebarCollapsed);
+    const btn = document.getElementById('toggleSidebarBtn');
+    if (btn) {
+        const icon = btn.querySelector('i');
+        if (icon) { icon.setAttribute('data-lucide', state.sidebarCollapsed ? 'panel-left-open' : 'panel-left-close') }
+        btn.setAttribute('aria-label', state.sidebarCollapsed ? 'Expandir menu' : 'Recolher menu');
+        btn.setAttribute('aria-expanded', state.sidebarCollapsed ? 'false' : 'true');
+        initializeLucide();
+    }
+}
 
 function showSection(sectionId) { state.currentSection = sectionId;
     document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
