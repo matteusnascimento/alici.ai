@@ -15,26 +15,27 @@ function bootLoader() { const loader = document.getElementById('appLoader');
 
 function bindUI() { const loginForm = document.getElementById('loginForm'); const chatForm = document.getElementById('chatForm'); const themeToggle = document.getElementById('themeToggle'); const notifyBtn = document.getElementById('notifyBtn'); const openSidebarBtn = document.getElementById('openSidebarBtn'); const closeSidebarBtn = document.getElementById('closeSidebarBtn'); const collapseSidebarBtn = document.getElementById('toggleSidebarBtn'); const overlay = document.getElementById('sidebarOverlay');
     document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => { showSection(item.dataset.section); if (window.innerWidth <= 768) { closeMobileSidebar() } }));
-    loginForm.addEventListener('submit', e => { e.preventDefault();
-        login() });
-    chatForm.addEventListener('submit', e => { e.preventDefault();
-        sendMessage() });
-    document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
-            sendMessage() } });
-    themeToggle.addEventListener('click', toggleTheme);
-    notifyBtn.addEventListener('click', () => showNotification('Você está com tudo sincronizado.'));
-    openSidebarBtn.addEventListener('click', () => { if (window.innerWidth <= 768) { document.getElementById('app').classList.add('sidebar-open'); return }
-        toggleSidebar() });
-    closeSidebarBtn.addEventListener('click', closeMobileSidebar);
-    overlay.addEventListener('click', closeMobileSidebar);
-    collapseSidebarBtn.addEventListener('click', toggleSidebar);
+    if (loginForm) { loginForm.addEventListener('submit', e => { e.preventDefault();
+        login() }) }
+    if (chatForm) { chatForm.addEventListener('submit', e => { e.preventDefault();
+        sendMessage() }) }
+    const chatInput = document.getElementById('chatInput'); if (chatInput) { chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
+            sendMessage() } }) }
+    if (themeToggle) { themeToggle.addEventListener('click', toggleTheme) }
+    if (notifyBtn) { notifyBtn.addEventListener('click', () => showNotification('Você está com tudo sincronizado.')) }
+    if (openSidebarBtn) { openSidebarBtn.addEventListener('click', () => { if (window.innerWidth <= 768) { document.getElementById('app').classList.add('sidebar-open'); return }
+        toggleSidebar() }) }
+    if (closeSidebarBtn) { closeSidebarBtn.addEventListener('click', closeMobileSidebar) }
+    if (overlay) { overlay.addEventListener('click', closeMobileSidebar) }
+    if (collapseSidebarBtn) { collapseSidebarBtn.addEventListener('click', toggleSidebar) }
     window.addEventListener('resize', () => { if (window.innerWidth > 768) { closeMobileSidebar() } }); if (localStorage.getItem('alici_jwt')) { unlockApp();
-        showNotification('Sessão restaurada com JWT local.') } }
+        showNotification('Sessão restaurada.') } }
 
-function login() { const email = document.getElementById('email').value.trim(); const password = document.getElementById('password').value.trim(); if (!email || !password) { showNotification('Preencha e-mail e senha para continuar.', 'warning'); return }
-    localStorage.setItem('alici_jwt', `alici.jwt.${Date.now()}`);
-    unlockApp();
-    showNotification('Login concluído. Bem-vindo(a) à ALICI!') }
+async function login() { const email = document.getElementById('email').value.trim(); const password = document.getElementById('password').value.trim(); if (!email || !password) { showNotification('Preencha e-mail e senha para continuar.', 'warning'); return }
+    try { const response = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, senha: password }) }); if (!response.ok) { let msg = 'Credenciais inválidas.'; try { const err = await response.json(); msg = err.message || msg } catch {} showNotification(msg, 'error'); return }
+        const data = await response.json();
+        localStorage.setItem('alici_jwt', data.access_token); if (data.refresh_token) { localStorage.setItem('alici_refresh', data.refresh_token) }
+        unlockApp(); showNotification('Login concluído. Bem-vindo(a) à ALICI!') } catch (e) { showNotification('Erro ao conectar com o servidor.', 'error') } }
 
 function unlockApp() { document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
@@ -70,8 +71,8 @@ async function sendMessage() { const input = document.getElementById('chatInput'
     appendMessage(userMessage, 'user');
     input.value = '';
     input.focus();
-    createTypingLoader(); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 15000); try { const response = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: userMessage }), signal: controller.signal }); let responseText = 'Recebi sua mensagem. Integre o endpoint para resposta em tempo real.'; if (response.ok) { const data = await response.json();
-            responseText = data.response || data.reply || data.message || responseText } else { responseText = `Erro ${response.status}: não foi possível obter resposta agora.` }
+    createTypingLoader(); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 15000); try { const token = localStorage.getItem('alici_jwt'); const headers = { 'Content-Type': 'application/json' }; if (token) { headers['Authorization'] = 'Bearer ' + token } const response = await fetch('/chat', { method: 'POST', headers, body: JSON.stringify({ pergunta: userMessage, incluir_emocao: false }), signal: controller.signal }); let responseText = 'Recebi sua mensagem. Integre o endpoint para resposta em tempo real.'; if (response.ok) { const data = await response.json();
+            responseText = data.resposta || responseText } else { responseText = `Erro ${response.status}: não foi possível obter resposta agora.` }
         removeTypingLoader();
         appendMessage(responseText, 'assistant') } catch (error) { removeTypingLoader();
         appendMessage('Falha de conexão com o servidor. Verifique o backend e tente novamente.', 'assistant');
