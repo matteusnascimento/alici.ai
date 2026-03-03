@@ -28,13 +28,13 @@ function bindUI() { const loginForm = document.getElementById('loginForm'); cons
     closeSidebarBtn.addEventListener('click', closeMobileSidebar);
     overlay.addEventListener('click', closeMobileSidebar);
     collapseSidebarBtn.addEventListener('click', toggleSidebar);
-    window.addEventListener('resize', () => { if (window.innerWidth > 768) { closeMobileSidebar() } }); if (localStorage.getItem('alici_jwt')) { unlockApp();
-        showNotification('Sessão restaurada com JWT local.') } }
+    window.addEventListener('resize', () => { if (window.innerWidth > 768) { closeMobileSidebar() } }); if (localStorage.getItem('access_token')) { unlockApp();
+        showNotification('Sessão restaurada.') } }
 
-function login() { const email = document.getElementById('email').value.trim(); const password = document.getElementById('password').value.trim(); if (!email || !password) { showNotification('Preencha e-mail e senha para continuar.', 'warning'); return }
-    localStorage.setItem('alici_jwt', `alici.jwt.${Date.now()}`);
-    unlockApp();
-    showNotification('Login concluído. Bem-vindo(a) à ALICI!') }
+async function login() { const email = document.getElementById('email').value.trim(); const password = document.getElementById('password').value.trim(); if (!email || !password) { showNotification('Preencha e-mail e senha para continuar.', 'warning'); return }
+    try { const response = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, senha: password }) }); const data = await response.json(); if (!response.ok) { showNotification(data.message || 'Credenciais inválidas.', 'error'); return }
+        localStorage.setItem('access_token', data.access_token); if (data.refresh_token) { localStorage.setItem('refresh_token', data.refresh_token) } if (data.usuario) { localStorage.setItem('alici_user', JSON.stringify(data.usuario)) }
+        unlockApp(); showNotification('Login concluído. Bem-vindo(a) à ALICI!') } catch (e) { showNotification('Erro de conexão. Tente novamente.', 'error') } }
 
 function unlockApp() { document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
@@ -70,8 +70,8 @@ async function sendMessage() { const input = document.getElementById('chatInput'
     appendMessage(userMessage, 'user');
     input.value = '';
     input.focus();
-    createTypingLoader(); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 15000); try { const response = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: userMessage }), signal: controller.signal }); let responseText = 'Recebi sua mensagem. Integre o endpoint para resposta em tempo real.'; if (response.ok) { const data = await response.json();
-            responseText = data.response || data.reply || data.message || responseText } else { responseText = `Erro ${response.status}: não foi possível obter resposta agora.` }
+    createTypingLoader(); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 15000); try { const token = localStorage.getItem('access_token'); const headers = { 'Content-Type': 'application/json' }; if (token) { headers['Authorization'] = 'Bearer ' + token } const response = await fetch('/chat', { method: 'POST', headers: headers, body: JSON.stringify({ pergunta: userMessage, incluir_emocao: false }), signal: controller.signal }); let responseText = 'Serviço de IA indisponível no momento. Tente novamente mais tarde.'; if (response.ok) { const data = await response.json();
+            responseText = data.resposta || responseText } else { responseText = `Erro ${response.status}: não foi possível obter resposta agora.` }
         removeTypingLoader();
         appendMessage(responseText, 'assistant') } catch (error) { removeTypingLoader();
         appendMessage('Falha de conexão com o servidor. Verifique o backend e tente novamente.', 'assistant');

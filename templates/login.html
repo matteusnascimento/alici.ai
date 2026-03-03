@@ -564,7 +564,7 @@
                     showMessage('loginSuccess', '✓ Login realizado! Redirecionando...');
                     
                     setTimeout(() => {
-                        window.location.href = '/chat';
+                        window.location.href = '/dashboard';
                     }, 1500);
                 } else {
                     showMessage('loginError', data.detail || 'Erro ao fazer login');
@@ -642,7 +642,7 @@
             // Check if already logged in
             const token = localStorage.getItem('access_token');
             if (token) {
-                window.location.href = '/chat';
+                window.location.href = '/dashboard';
             }
         });
     </script>

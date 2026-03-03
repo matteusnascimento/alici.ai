@@ -34,4 +34,4 @@ def chat_page():
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    return _read_template("chat.html")
+    return _read_template("index.html")
