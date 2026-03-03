@@ -29,9 +29,9 @@ def home():
 
 @router.get("/chat", response_class=HTMLResponse)
 def chat_page():
-    return _read_template("chat.html")
+    return _read_template("index.html")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    return _read_template("chat.html")
+    return _read_template("index.html")
