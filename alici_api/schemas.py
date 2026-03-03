@@ -1,5 +1,7 @@
 """Pydantic schemas used by the API."""
 
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr
 
 
@@ -41,3 +43,19 @@ class VideoRequest(BaseModel):
 
 class BillingCheckoutRequest(BaseModel):
     plano: str
+
+
+class UpdateProfileRequest(BaseModel):
+    nome: Optional[str] = None
+    senha_atual: Optional[str] = None
+    nova_senha: Optional[str] = None
+    tema: Optional[str] = None
+
+
+class CreateConversationRequest(BaseModel):
+    titulo: Optional[str] = None
+
+
+class ConversationChatRequest(BaseModel):
+    content: str
+    incluir_emocao: bool = False
