@@ -17,10 +17,12 @@
 9. [Dashboard e Frontend](#-dashboard-e-frontend)
 10. [Banco de Dados](#-banco-de-dados)
 11. [Planos e Monetização](#-planos-e-monetização)
-12. [Fluxos de Uso](#-fluxos-de-uso)
-13. [Deploy em Produção](#-deploy-em-produção)
-14. [Troubleshooting](#-troubleshooting)
-15. [Roadmap](#-roadmap)
+12. [Monetization Strategy (Completa)](#-monetization-strategy-completa)
+13. [Competitive Landscape](#-competitive-landscape)
+14. [Fluxos de Uso](#-fluxos-de-uso)
+15. [Deploy em Produção](#-deploy-em-produção)
+16. [Troubleshooting](#-troubleshooting)
+17. [Roadmap](#-roadmap)
 
 ---
 
@@ -634,7 +636,364 @@ export STRIPE_PUBLIC_KEY=pk_test_...
 
 ---
 
-## 🔄 Fluxos de Uso
+## � Monetization Strategy (Completa)
+
+### 🎯 Modelo de Receita Multi-Camada
+
+ALICI opera em 4 streams de receita simultâneos:
+
+#### **Stream 1: Freemium SaaS** (50% da receita)
+
+```
+Free Tier  ────────→  Pro Tier  ────────→  Ultra Tier
+20 msgs/dia           300 msgs/dia         2.000 msgs/dia
+R$0/mês              R$49/mês             R$99/mês
+20 req/min           120 req/min          300 req/min
+```
+
+**Funil de Conversão Esperado:**
+- 1.000 usuários freemium → 150 conversões Pro (15%) → 30 conversões Ultra (20%)
+- **ARR esperado**: 1.000 × 15% × R$49 + 1.000 × 3% × R$99 = R$7.350/mês = R$88k/ano
+
+---
+
+#### **Stream 2: API Keys & Developer Plan** (25% da receita)
+
+Para desenvolvedores integrarem ALICI em suas apps:
+
+```
+Developer Plan:
+- R$9/mês (até 10k chamadas/mês)
+- Dashboard de controle
+- Webhooks
+- Documentação completa
+
+Enterprise API:
+- R$499/mês (até 1M chamadas/mês)
+- SLA 99.99%
+- Suporte prioritário
+- Custom rate limits
+```
+
+**Modelo de Precificação:**
+```
+Pay-as-you-grow:
+- Primeiras 10k: incluído
+- 10k-100k: R$0,002 por chamada = R$180
+- 100k-1M: R$0,001 por chamada
+- >1M: contrato customizado
+```
+
+**Receita esperada:**
+- 500 developers × R$99/ano (média) = R$49.500/ano
+
+---
+
+#### **Stream 3: Enterprise Contracts** (20% da receita)
+
+Para grandes corporações:
+
+```
+Tier: Enterprise+
+- Deployment privado (on-premise ou dedicado)
+- Fine-tuning de modelos
+- Integração customizada
+- Dedicated support team
+- SLA 99.99% uptime
+- Preço: R$2k-R$50k/mês (por contato)
+```
+
+**Exemplos de Cliente:**
+- Fintech: R$5k-R$10k/mês (compliance + ML)
+- E-commerce: R$3k-R$7k/mês (chatbot + recomendação)
+- Healthcare: R$8k-R$50k/mês (análise dedados sensíveis)
+
+**Meta:** 10-15 clientes enterprise × R$8k/mês = R$120k/mês
+
+---
+
+#### **Stream 4: White-Label & Licensing** (5% da receita)
+
+Licenciar ALICI para:
+- Agências
+- SaaS incumbentes
+- Resellers
+
+```
+White-Label License:
+- Customização visual (logo, branding)
+- Subdomínio próprio
+- Integração API
+- Preço: R$999-R$9.999/mês
+```
+
+**Estratégia:**
+- 20-30 parceiros × média R$3k/mês = R$60k-R$90k/mês
+
+---
+
+### 📊 Projeção de Receita (12 meses)
+
+| Mês | Freemium | API Dev | Enterprise | White-Label | **Total** |
+|-----|----------|---------|-----------|-------------|----------|
+| M1 | R$1.5k | R$0 | R$0 | R$0 | **R$1.5k** |
+| M3 | R$5k | R$3k | R$8k | R$2k | **R$18k** |
+| M6 | R$12k | R$8k | R$35k | R$8k | **R$63k** |
+| M9 | R$18k | R$12k | R$70k | R$15k | **R$115k** |
+| M12 | R$25k | R$15k | R$120k | R$20k | **R$180k/mês** |
+
+**ARR Ano 1 (acumulado)**: ~R$900k
+
+---
+
+### 🚀 Estratégia de Conversão
+
+#### Freemium → Pro
+
+1. **In-app messaging**: "Limite atingido. Upgrade para continuar"
+2. **Feature gating**: Análise de imagem apenas em Pro+
+3. **Email nurture**: "Seu plano free será arquivos em 30 dias"
+4. **Social proof**: "50 empresas já usam Pro"
+
+#### Pro → Ultra
+
+1. **Usage analytics**: Dashboard mostrando "você usou 85% do seu limite"
+2. **Cost justification**: "Pague R$99 em vez de R$490 em calls adicionais"
+3. **Enterprise features**: Webhooks, API keys, prioridade support
+
+#### Freemium → Enterprise API
+
+1. **Developer community**: Criar Slack/Discord de devs
+2. **Documentação premium**: Exemplos em Node.js, Python, Go
+3. **Partner program**: Revshare 30% para partners que implementem ALICI
+
+---
+
+### 💰 Modelo de Unit Economics
+
+```
+Customer Acquisition Cost (CAC):
+- Freemium paid user: R$50 (via ads)
+- Pro user: R$150 (via targeted email)
+- Enterprise: R$5.000 (via sales outreach)
+
+Lifetime Value (LTV):
+- Freemium → Pro converter: R$49 × 12 × 3 anos = R$1.764
+- Pro → Ultra converter: R$1.764 + (R$99 × 12 × 2) = R$4.164
+- Enterprise: R$120k × 1 contrato = R$120.000
+
+LTV:CAC Ratio:
+- Pro: R$1.764 / R$150 = 11.76x ✅
+- Ultra: R$4.164 / R$150 = 27.76x ✅
+- Enterprise: R$120.000 / R$5.000 = 24x ✅
+
+Payback Period: 3-6 meses (Pro), 1-2 meses (Enterprise)
+```
+
+---
+
+### 🎯 Próximas Ações de Monetização
+
+1. **Semana 1-2**: Integrar Stripe webhook
+2. **Semana 3-4**: Testar pagamentos com 10 beta users
+3. **Mês 2**: Lançar Developer Plan
+4. **Mês 3**: Approach 20 empresas para Enterprise
+5. **Mês 4**: White-label document + sales
+
+---
+
+## 🏆 Competitive Landscape
+
+### Posicionamento: "AI Infrastructure for Emerging Markets"
+
+Enquanto OpenAI/Anthropic focam em modelos base, **ALICI é infraestrutura SaaS escalável no Brasil**.
+
+---
+
+### Comparação com Concorrentes
+
+#### **vs OpenAI (ChatGPT/API)**
+
+| Aspecto | OpenAI | ALICI |
+|---------|--------|-------|
+| **Modelo** | Proprietário (GPT-4) | Multimodal híbrido |
+| **Alvo** | Global, capacidade | Brasil, acessibilidade |
+| **Pricing** | R$0,03-R$0,06 por 1k tokens | R$9-R$99/mês (all-in) |
+| **Setup** | 5 min (API) | 1 min (SaaS) |
+| **Customização** | Fine-tuning pago | Memória persistente built-in |
+| **Memória** | Nenhuma (stateless) | Contextual, persistente |
+| **TAM** | Global | Latam + mercados emergentes |
+
+**Vantagem ALICI**: Pricing previsível, memória nativa, não precisa gerenciar tokens
+
+---
+
+#### **vs Anthropic (Claude)**
+
+| Aspecto | Anthropic | ALICI |
+|---------|-----------|-------|
+| **Focus** | Segurança/ética | Integração/escalabilidade |
+| **Interface** | API + Web | Dashboard SaaS + API |
+| **Pricing** | Pay-per-token | Subscription-based |
+| **Memória** | Nenhuma | Persistente |
+| **Comunidade** | Pequena | Crescimento Brasil |
+
+**Vantagem ALICI**: Pricing previsível, UI pronta, memória contextual
+
+---
+
+#### **vs Hugging Face (Inference API)**
+
+| Aspecto | HF | ALICI |
+|---------|----|----|
+| **Modelo** | Open-source (acesso) | Próprio + HF + R2 |
+| **Alvo** | Pesquisadores | Empresas SaaS |
+| **UX** | Técnico | Intuitivo |
+| **Dashboard** | Mínimo | Premium |
+| **Suporte** | Comunidade | Direto |
+| **Monetização** | Pay-as-you-go | Freemium + Enterprise |
+
+**Vantagem ALICI**: UX superior, suporte direto, monetização clara
+
+---
+
+### Diferencial Competitivo de ALICI
+
+#### **1. Persistent Contextual Memory**
+
+```python
+# OpenAI exige enviar histórico toda vez
+messages = [
+    {"role": "user", "content": "Meu nome é João"},
+    {"role": "assistant", "content": "Olá João!"},
+    {"role": "user", "content": "Qual é meu nome?"} # precisa enviar histórico
+]
+
+# ALICI armazena contexto
+POST /chat { "pergunta": "Lembra meu nome?" }
+# Sistema já sabe via user_id + histórico persistente
+```
+
+**Valor**: Menos tokens consumidos, memória real
+
+---
+
+#### **2. All-in-One SaaS (vs Componentes Separados)**
+
+| Concorrente | Solução |
+|-------------|---------|
+| OpenAI | API tokens |
+| Anthropic | API tokens |
+| HF | Modelos open-source |
+| ALICI | **Dashboard + API + Memória + Rate-limit** |
+
+ALICI = você não precisa integrar 5 ferramentas
+
+---
+
+#### **3. Pricing Previsível vs Pay-Per-Token**
+
+```
+OpenAI (GPT-4):
+- R$0,06 / 1k input tokens
+- R$0,18 / 1k output tokens
+- 1 conversa de 10 voltas = R$3-5 (imprevisível)
+
+ALICI Pro:
+- R$49 / mês
+- Até 300 mensagens/dia
+- Prço previsível, sem surpresas
+```
+
+**Insight**: CFO prefere R$49/mês que R$0.06/token
+
+---
+
+#### **4. Memória Neural Persistente**
+
+Nenhum concorrente oferece isto nativamente:
+
+```python
+# ALICI aprende com o tempo
+user_id=1, pergunta="Qual é meu CNPJ?"
+# Sistema consulta: memoria.get_by_user(1)
+# Se já respondeu antes, usa resposta cacheada (mais rápido)
+```
+
+---
+
+### Posicionamento no Mercado
+
+```
+        Capacidade/Qualidade
+               ↑
+        OpenAI │  ◆ Anthropic
+               │
+          ────┼──────→ Preço
+        ALICI│HF
+               │
+               │ Acessibilidade/Usabilidade
+```
+
+**ALICI** ocupa espaço de:
+- ✅ Muito acessível (UI amigável)
+- ✅ Muito acessível (prços baixos)
+- ✅ Suficiente capacidade (multimodal)
+- ✅ Fácil integração (SaaS)
+- ❌ Não compete em capacidade bruta (OpenAI)
+
+**Mensagem**: "AI Infrastructure for the Other 95% of the Market"
+
+---
+
+### Go-to-Market vs Concorrência
+
+| Channel | OpenAI | HF | ALICI |
+|---------|--------|----|----|
+| **Developers Diretos** | API docs | Community | Landing page |
+| **Empresas Médias** | B2B sales | - | Direct sales |
+| **Developers Brasil** | - | Community | **Portuguese support** |
+| **Partners/Resellers** | - | - | **White-label** |
+| **Enterprise** | Enterprise sales | - | **Dedicated accounts** |
+
+**Vantagem**: Focar em Brasil + mercados emergentes = menos saturação
+
+---
+
+### Roadmap Competitivo (12 meses)
+
+| Fase | Objetivo | vs OpenAI | vs HF |
+|------|----------|-----------|-------|
+| **M1-M3** | MVP + beta | Acessibilidade | UX melhor |
+| **M4-M6** | Crescimento 500 usuários | Pricing | Suporte melhor |
+| **M7-M9** | 50 clientes Enterprise | Customização | Memória nativa |
+| **M10-M12** | Presença regional | Comunidade | Marketplace |
+
+---
+
+## 🚀 Resumo Estratégico
+
+### ALICI não compete em...
+❌ Capacidade bruta de modelos (OpenAI vence)  
+❌ Comunidade open-source (HF vence)  
+❌ Fundos de pesquisa (Anthropic vence)  
+
+### ALICI compete em...
+✅ **Acessibilidade** (preos + UX)  
+✅ **Integração** (SaaS all-in-one)  
+✅ **Memória** (persistente + contextual)  
+✅ **Suporte** (português + especializado)  
+✅ **Mercado** (Brasil + Latam + emergentes)  
+
+**Mensagem Final para Investidores:**
+
+> ALICI não tenta vencer OpenAI no jogo deles.
+> ALICI joga seu próprio jogo:
+> **Infraestrutura SaaS acessível para os 95% do mercado que não pode pagar premium.**
+
+---
+
+## �🔄 Fluxos de Uso
 
 ### Fluxo 1: Novo Usuário
 
