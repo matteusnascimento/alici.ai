@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -12,14 +13,23 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+=======
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALICI™ — Chat</title>
+<link rel="stylesheet" href="/static/css/chat.css">
+>>>>>>> 62e5c827cefd55106e3e76df3cffcd367a6e43c4
 </head>
-
 <body>
     <div id="appLoader" class="app-loader" aria-live="polite" aria-label="Carregando aplicação">
         <div class="loader-orbit"></div>
         <p>Inicializando ALICI...</p>
     </div>
 
+<<<<<<< HEAD
     <canvas id="particlesCanvas" class="particles-canvas" aria-hidden="true"></canvas>
 
     <div id="loginScreen" class="login-screen">
@@ -148,6 +158,129 @@
 
     <div id="notifications" class="notifications"></div>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+=======
+<!-- Neural network background canvas -->
+<canvas id="neuralCanvas"></canvas>
+
+<div id="chatApp">
+
+  <!-- ═══ SIDEBAR ═══════════════════════════════════════════════════════ -->
+  <aside id="sidebar">
+
+    <div class="sidebar-header">
+      <span class="sidebar-title">ALICI™</span>
+      <div id="statusDot" style="width:9px;height:9px;border-radius:50%;background:#22d3ee;box-shadow:0 0 8px #22d3ee;flex-shrink:0;"></div>
+      <span id="statusLabel" style="font-size:12px;color:var(--text-muted);">Online</span>
+    </div>
+
+    <button id="btnNewChat">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nova Conversa
+    </button>
+
+    <div id="conversationList"></div>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-footer-btn" id="btnProfile">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Perfil
+      </button>
+      <button class="sidebar-footer-btn" id="btnTheme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        Alternar tema
+      </button>
+      <button class="sidebar-footer-btn danger" id="btnLogout">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sair
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Mobile sidebar overlay -->
+  <div id="sidebarOverlay"></div>
+
+  <!-- ═══ MAIN AREA ════════════════════════════════════════════════════ -->
+  <main id="mainArea">
+
+    <!-- Top bar -->
+    <div id="topBar">
+      <button class="topbar-btn" id="btnMenuToggle" title="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span id="convTitle">Selecione uma conversa</span>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" style="display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;color:var(--text-muted);padding:24px;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <h2 style="font-size:20px;color:var(--accent);">Bem-vindo à ALICI™</h2>
+      <p style="font-size:14px;">Crie uma nova conversa ou selecione uma existente.</p>
+    </div>
+
+    <!-- Messages -->
+    <div id="messages" style="display:none;flex:1;overflow-y:auto;padding:24px 20px;flex-direction:column;gap:12px;"></div>
+
+    <!-- Input area -->
+    <div id="inputArea">
+      <textarea
+        id="msgInput"
+        placeholder="Digite sua mensagem…"
+        rows="1"
+        autocomplete="off"
+      ></textarea>
+      <button id="btnSend">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Enviar
+      </button>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ═══ Profile Modal ═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-box">
+    <h3>Meu Perfil</h3>
+
+    <div style="text-align:center;margin-bottom:16px;">
+      <img id="profilePhoto" src="/static/Imagens/Avatar/alici_idle.jpg" alt="Avatar"
+           style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);">
+      <br>
+      <label style="cursor:pointer;font-size:13px;color:var(--accent);margin-top:6px;display:inline-block;">
+        Alterar foto
+        <input type="file" id="profilePhotoInput" accept="image/png,image/jpeg,image/webp" style="display:none;">
+      </label>
+    </div>
+
+    <div class="modal-field">
+      <label>Nome</label>
+      <input type="text" id="profileName" placeholder="Seu nome">
+    </div>
+    <div class="modal-field">
+      <label>E-mail (somente leitura)</label>
+      <input type="email" id="profileEmail" readonly style="opacity:0.6;cursor:not-allowed;">
+    </div>
+    <div class="modal-field">
+      <label>Senha atual</label>
+      <input type="password" id="profileCurrentPassword" placeholder="Para alterar a senha">
+    </div>
+    <div class="modal-field">
+      <label>Nova senha</label>
+      <input type="password" id="profileNewPassword" placeholder="Mínimo 8 caracteres">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" id="btnProfileCancel">Cancelar</button>
+      <button class="btn-primary" id="btnProfileSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/neural-bg.js"></script>
+<script type="module" src="/static/js/chat.js"></script>
+>>>>>>> 62e5c827cefd55106e3e76df3cffcd367a6e43c4
 </body>
 
 </html>

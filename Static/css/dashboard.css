@@ -79,3 +79,27 @@ html {
     color: #000;
     cursor: pointer;
 }
+
+
+/* message bubbles */
+
+.message {
+    max-width: 70%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    word-wrap: break-word;
+    display: inline-block;
+}
+
+.message.user {
+    background: var(--primary);
+    color: #000;
+    align-self: flex-end;
+}
+
+.message.assistant {
+    background: var(--glass);
+    color: #fff;
+    align-self: flex-start;
+}

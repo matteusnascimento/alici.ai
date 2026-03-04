@@ -16,6 +16,7 @@ from alici_api.responses import Codes, error_payload
 from alici_api.routes.auth import router as auth_router
 from alici_api.routes.billing import router as billing_router
 from alici_api.routes.chat import router as chat_router
+from alici_api.routes.conversations import router as conversations_router
 from alici_api.routes.health import router as health_router
 from alici_api.routes.history import router as history_router
 from alici_api.routes.media import router as media_router
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(billing_router)
     app.include_router(chat_router)
+    app.include_router(conversations_router)
     app.include_router(media_router)
     app.include_router(history_router)
     app.include_router(pages_router)

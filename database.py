@@ -125,8 +125,14 @@ def criar_tabelas():
             columns = [row[1] for row in cur.fetchall()]
             if "mensagens_hoje" not in columns:
                 cur.execute("ALTER TABLE users ADD COLUMN mensagens_hoje INTEGER DEFAULT 0")
+            if "foto_url" not in columns:
+                cur.execute("ALTER TABLE users ADD COLUMN foto_url TEXT")
+            if "tema" not in columns:
+                cur.execute("ALTER TABLE users ADD COLUMN tema TEXT DEFAULT 'dark'")
         else:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS mensagens_hoje INTEGER DEFAULT 0")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS foto_url TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS tema TEXT DEFAULT 'dark'")
 
         cur.execute(f"""
         CREATE TABLE IF NOT EXISTS memoria (
@@ -584,4 +590,297 @@ def revogar_refresh_tokens_usuario(user_id):
             return True
     except Exception as e:
         logger_db.error(f"Erro ao revogar tokens do usuário: {e}")
+        return False
+
+
+def atualizar_usuario(user_id, updates: dict):
+    """Atualiza campos do usuário (nome, tema, foto_url, senha_hash)."""
+    if not DATABASE_ENABLED or not updates:
+        return False
+
+    allowed = {"nome", "tema", "foto_url", "senha_hash"}
+    fields = {k: v for k, v in updates.items() if k in allowed}
+    if not fields:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            set_clause = ", ".join(f"{k} = {placeholder}" for k in fields)
+            values = list(fields.values()) + [user_id]
+            cur.execute(
+                f"UPDATE users SET {set_clause} WHERE id = {placeholder}",
+                values,
+            )
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao atualizar usuário: {e}")
+        return False
+
+
+def buscar_usuario_completo(user_id):
+    """Retorna todos os campos do usuário incluindo foto_url e tema."""
+    if not DATABASE_ENABLED:
+        return None
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"""
+                SELECT id, nome, email, senha_hash, plano, foto_url, tema
+                FROM users
+                WHERE id = {placeholder}
+                """,
+                (user_id,),
+            )
+            row = cur.fetchone()
+            cur.close()
+
+            if not row:
+                return None
+
+            return dict(zip(["id", "nome", "email", "senha_hash", "plano", "foto_url", "tema"], row))
+
+    except Exception as e:
+        logger_db.error(f"Erro ao buscar usuário completo: {e}")
+        return None
+
+
+# ─── Conversations ──────────────────────────────────────────────────────────
+
+def criar_conversa(user_id, titulo=None):
+    if not DATABASE_ENABLED:
+        return None
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+
+            if USE_POSTGRES:
+                cur.execute(
+                    f"INSERT INTO conversations (user_id, titulo) VALUES ({placeholder}, {placeholder}) RETURNING id, user_id, titulo, criado_em",
+                    (user_id, titulo),
+                )
+                row = cur.fetchone()
+                cur.close()
+                if row:
+                    return dict(zip(["id", "user_id", "titulo", "criado_em"], row))
+            else:
+                cur.execute(
+                    f"INSERT INTO conversations (user_id, titulo) VALUES ({placeholder}, {placeholder})",
+                    (user_id, titulo),
+                )
+                conv_id = cur.lastrowid
+                cur.execute(
+                    f"SELECT id, user_id, titulo, criado_em FROM conversations WHERE id = {placeholder}",
+                    (conv_id,),
+                )
+                row = cur.fetchone()
+                cur.close()
+                if row:
+                    return dict(zip(["id", "user_id", "titulo", "criado_em"], row))
+    except Exception as e:
+        logger_db.error(f"Erro ao criar conversa: {e}")
+    return None
+
+
+def listar_conversas(user_id, limite=50):
+    if not DATABASE_ENABLED:
+        return []
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"""
+                SELECT id, user_id, titulo, criado_em
+                FROM conversations
+                WHERE user_id = {placeholder}
+                ORDER BY criado_em DESC
+                LIMIT {int(limite)}
+                """,
+                (user_id,),
+            )
+            rows = cur.fetchall()
+            cur.close()
+            return [dict(zip(["id", "user_id", "titulo", "criado_em"], r)) for r in rows]
+    except Exception as e:
+        logger_db.error(f"Erro ao listar conversas: {e}")
+        return []
+
+
+def buscar_conversa(conversa_id):
+    if not DATABASE_ENABLED:
+        return None
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"SELECT id, user_id, titulo, criado_em FROM conversations WHERE id = {placeholder}",
+                (conversa_id,),
+            )
+            row = cur.fetchone()
+            cur.close()
+            if row:
+                return dict(zip(["id", "user_id", "titulo", "criado_em"], row))
+    except Exception as e:
+        logger_db.error(f"Erro ao buscar conversa: {e}")
+    return None
+
+
+def deletar_conversa(conversa_id):
+    if not DATABASE_ENABLED:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(f"DELETE FROM messages WHERE conversation_id = {placeholder}", (conversa_id,))
+            cur.execute(f"DELETE FROM conversations WHERE id = {placeholder}", (conversa_id,))
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao deletar conversa: {e}")
+        return False
+
+
+def adicionar_mensagem(conversa_id, role, content):
+    if not DATABASE_ENABLED:
+        return None
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+
+            if USE_POSTGRES:
+                cur.execute(
+                    f"INSERT INTO messages (conversation_id, role, content) VALUES ({placeholder}, {placeholder}, {placeholder}) RETURNING id, conversation_id, role, content, criado_em",
+                    (conversa_id, role, content),
+                )
+                row = cur.fetchone()
+                cur.close()
+                if row:
+                    return dict(zip(["id", "conversation_id", "role", "content", "criado_em"], row))
+            else:
+                cur.execute(
+                    f"INSERT INTO messages (conversation_id, role, content) VALUES ({placeholder}, {placeholder}, {placeholder})",
+                    (conversa_id, role, content),
+                )
+                msg_id = cur.lastrowid
+                cur.execute(
+                    f"SELECT id, conversation_id, role, content, criado_em FROM messages WHERE id = {placeholder}",
+                    (msg_id,),
+                )
+                row = cur.fetchone()
+                cur.close()
+                if row:
+                    return dict(zip(["id", "conversation_id", "role", "content", "criado_em"], row))
+    except Exception as e:
+        logger_db.error(f"Erro ao adicionar mensagem: {e}")
+    return None
+
+
+def listar_mensagens(conversa_id):
+    if not DATABASE_ENABLED:
+        return []
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"""
+                SELECT id, conversation_id, role, content, criado_em
+                FROM messages
+                WHERE conversation_id = {placeholder}
+                ORDER BY criado_em ASC
+                """,
+                (conversa_id,),
+            )
+            rows = cur.fetchall()
+            cur.close()
+            return [dict(zip(["id", "conversation_id", "role", "content", "criado_em"], r)) for r in rows]
+    except Exception as e:
+        logger_db.error(f"Erro ao listar mensagens: {e}")
+        return []
+
+
+def atualizar_titulo_conversa(conversa_id, titulo):
+    if not DATABASE_ENABLED:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"UPDATE conversations SET titulo = {placeholder} WHERE id = {placeholder}",
+                (titulo, conversa_id),
+            )
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao atualizar título da conversa: {e}")
+        return False
+
+
+def atualizar_plano_usuario(user_id, plano):
+    if not DATABASE_ENABLED:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+            cur.execute(
+                f"UPDATE users SET plano = {placeholder} WHERE id = {placeholder}",
+                (plano, user_id),
+            )
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao atualizar plano: {e}")
+        return False
+
+
+def upsert_subscription(user_id, stripe_id, status, plano):
+    if not DATABASE_ENABLED:
+        return False
+
+    try:
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            placeholder = "?" if USE_SQLITE else "%s"
+
+            cur.execute(
+                f"SELECT id FROM subscriptions WHERE user_id = {placeholder}",
+                (user_id,),
+            )
+            row = cur.fetchone()
+
+            if row:
+                cur.execute(
+                    f"UPDATE subscriptions SET stripe_id = {placeholder}, status = {placeholder}, plano = {placeholder} WHERE user_id = {placeholder}",
+                    (stripe_id, status, plano, user_id),
+                )
+            else:
+                cur.execute(
+                    f"INSERT INTO subscriptions (user_id, stripe_id, status, plano) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})",
+                    (user_id, stripe_id, status, plano),
+                )
+
+            cur.close()
+            return True
+    except Exception as e:
+        logger_db.error(f"Erro ao upsert subscription: {e}")
         return False
