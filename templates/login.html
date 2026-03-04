@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALICI™ - Neural Access</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;700&display=swap" rel="stylesheet">
-    
+
     <style>
-        :root {
+         :root {
             --neon-cyan: #00ffff;
             --neon-blue: #0066ff;
             --neon-pink: #ff0099;
@@ -16,13 +17,13 @@
             --bg-dark: #0a0a0f;
             --glass-bg: rgba(15, 15, 25, 0.85);
         }
-
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Exo 2', sans-serif;
             background: linear-gradient(135deg, #000000 0%, #0a0a1f 50%, #000033 100%);
@@ -34,45 +35,51 @@
             overflow: hidden;
             position: relative;
         }
-
         /* Background Effects */
+        
         .animated-bg {
             position: fixed;
             top: -50%;
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle at 30% 50%, rgba(0, 255, 255, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 50%, rgba(153, 51, 255, 0.15) 0%, transparent 50%);
+            background: radial-gradient(circle at 30% 50%, rgba(0, 255, 255, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(153, 51, 255, 0.15) 0%, transparent 50%);
             animation: bg-shift 20s ease-in-out infinite;
             z-index: 1;
         }
-
+        
         @keyframes bg-shift {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(-10%, -10%) scale(1.1) rotate(5deg); }
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            50% {
+                transform: translate(-10%, -10%) scale(1.1) rotate(5deg);
+            }
         }
-
+        
         .cyber-grid {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
-                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
             animation: grid-flow 3s linear infinite;
             z-index: 2;
         }
-
+        
         @keyframes grid-flow {
-            0% { background-position: 0 0; }
-            100% { background-position: 50px 50px; }
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 50px 50px;
+            }
         }
-
         /* Particles */
+        
         .particles {
             position: fixed;
             top: 0;
@@ -82,7 +89,7 @@
             overflow: hidden;
             z-index: 3;
         }
-
+        
         .particle {
             position: absolute;
             width: 4px;
@@ -92,21 +99,25 @@
             animation: float-up 20s linear infinite;
             opacity: 0.6;
         }
-
+        
         @keyframes float-up {
             0% {
                 transform: translateY(100vh) translateX(0);
                 opacity: 0;
             }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
             100% {
                 transform: translateY(-100vh) translateX(100px);
                 opacity: 0;
             }
         }
-
         /* Main Container */
+        
         .login-container {
             position: relative;
             z-index: 10;
@@ -120,7 +131,7 @@
             overflow: hidden;
             animation: container-appear 0.8s ease-out;
         }
-
+        
         @keyframes container-appear {
             from {
                 opacity: 0;
@@ -131,15 +142,15 @@
                 transform: translateY(0) scale(1);
             }
         }
-
         /* Header */
+        
         .login-header {
             text-align: center;
             padding: 40px 30px 30px;
             background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(153, 51, 255, 0.1));
             border-bottom: 1px solid rgba(0, 255, 255, 0.3);
         }
-
+        
         .logo-3d {
             width: 120px;
             height: 120px;
@@ -155,18 +166,19 @@
             animation: logo-pulse 3s ease-in-out infinite;
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
         }
-
+        
         @keyframes logo-pulse {
-            0%, 100% { 
+            0%,
+            100% {
                 transform: scale(1);
                 box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
             }
-            50% { 
+            50% {
                 transform: scale(1.05);
                 box-shadow: 0 0 50px rgba(255, 0, 153, 0.7);
             }
         }
-
+        
         .login-title {
             font-family: 'Orbitron', sans-serif;
             font-size: 2.5rem;
@@ -176,25 +188,25 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
-
+        
         .login-subtitle {
             font-size: 1rem;
             color: rgba(255, 255, 255, 0.7);
             text-transform: uppercase;
             letter-spacing: 3px;
         }
-
         /* Form Section */
+        
         .form-section {
             padding: 40px 30px;
         }
-
+        
         .tab-buttons {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
         }
-
+        
         .tab-btn {
             flex: 1;
             padding: 15px;
@@ -208,27 +220,27 @@
             transition: all 0.3s;
             text-transform: uppercase;
         }
-
+        
         .tab-btn:hover {
             background: rgba(0, 255, 255, 0.2);
             border-color: var(--neon-cyan);
         }
-
+        
         .tab-btn.active {
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             border-color: var(--neon-cyan);
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
         }
-
+        
         .form-container {
             display: none;
         }
-
+        
         .form-container.active {
             display: block;
             animation: form-appear 0.5s ease-out;
         }
-
+        
         @keyframes form-appear {
             from {
                 opacity: 0;
@@ -239,11 +251,11 @@
                 transform: translateY(0);
             }
         }
-
+        
         .input-group {
             margin-bottom: 25px;
         }
-
+        
         .input-label {
             display: block;
             margin-bottom: 10px;
@@ -253,7 +265,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-
+        
         .input-field {
             width: 100%;
             padding: 15px 20px;
@@ -266,17 +278,17 @@
             outline: none;
             transition: all 0.3s;
         }
-
+        
         .input-field:focus {
             border-color: var(--neon-cyan);
             background: rgba(0, 255, 255, 0.1);
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
         }
-
+        
         .input-field::placeholder {
             color: rgba(255, 255, 255, 0.4);
         }
-
+        
         .submit-btn {
             width: 100%;
             padding: 18px;
@@ -292,16 +304,16 @@
             transition: all 0.3s;
             box-shadow: 0 5px 20px rgba(0, 255, 255, 0.3);
         }
-
+        
         .submit-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(0, 255, 255, 0.5);
         }
-
+        
         .submit-btn:active {
             transform: translateY(0);
         }
-
+        
         .error-message {
             background: rgba(255, 0, 99, 0.2);
             border: 1px solid var(--neon-pink);
@@ -313,13 +325,20 @@
             font-size: 0.9rem;
             animation: shake 0.5s;
         }
-
+        
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-10px);
+            }
+            75% {
+                transform: translateX(10px);
+            }
         }
-
+        
         .success-message {
             background: rgba(0, 255, 102, 0.2);
             border: 1px solid #00ff66;
@@ -330,8 +349,8 @@
             display: none;
             font-size: 0.9rem;
         }
-
         /* Footer */
+        
         .login-footer {
             padding: 20px;
             text-align: center;
@@ -340,28 +359,28 @@
             color: rgba(255, 255, 255, 0.5);
             font-size: 0.85rem;
         }
-
+        
         .footer-link {
             color: var(--neon-cyan);
             text-decoration: none;
             transition: color 0.3s;
         }
-
+        
         .footer-link:hover {
             color: var(--neon-purple);
         }
-
         /* Loading */
+        
         .loading {
             display: none;
             text-align: center;
             padding: 20px;
         }
-
+        
         .loading.active {
             display: block;
         }
-
+        
         .spinner {
             width: 40px;
             height: 40px;
@@ -371,22 +390,22 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
+        
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-
         /* Responsive */
+        
         @media (max-width: 600px) {
             .login-container {
                 max-width: 95%;
                 margin: 20px;
             }
-
             .login-title {
                 font-size: 2rem;
             }
-
             .logo-3d {
                 width: 100px;
                 height: 100px;
@@ -395,6 +414,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Background Effects -->
     <div class="animated-bg"></div>
@@ -479,7 +499,7 @@
         function createParticles() {
             const container = document.getElementById('particles');
             const colors = ['#00ffff', '#0066ff', '#ff0099', '#9933ff', '#00ff66'];
-            
+
             for (let i = 0; i < 50; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
@@ -547,8 +567,13 @@
             try {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha: password })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email,
+                        senha: password
+                    })
                 });
 
                 const data = await response.json();
@@ -562,9 +587,9 @@
                     localStorage.setItem('alici_user', JSON.stringify(data.usuario));
 
                     showMessage('loginSuccess', '✓ Login realizado! Redirecionando...');
-                    
+
                     setTimeout(() => {
-                        window.location.href = '/chat';
+                        window.location.href = '/dashboard';
                     }, 1500);
                 } else {
                     showMessage('loginError', data.detail || 'Erro ao fazer login');
@@ -600,15 +625,21 @@
             try {
                 const response = await fetch('/auth/register', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome: name, email, senha: password })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nome: name,
+                        email,
+                        senha: password
+                    })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
                     showMessage('registerSuccess', '✓ Conta criada! Faça login para continuar.');
-                    
+
                     setTimeout(() => {
                         switchTab('login');
                         document.getElementById('loginEmail').value = email;
@@ -638,13 +669,14 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             createParticles();
-            
+
             // Check if already logged in
             const token = localStorage.getItem('access_token');
             if (token) {
-                window.location.href = '/chat';
+                window.location.href = '/dashboard';
             }
         });
     </script>
 </body>
+
 </html>

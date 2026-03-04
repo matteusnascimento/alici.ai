@@ -40,7 +40,8 @@ def register_page():
 
 @router.get("/chat", response_class=HTMLResponse)
 def chat_page():
-    return _read_template("chat.html")
+    # legacy route; redirect to new dashboard
+    return _read_template("dashboard.html")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
