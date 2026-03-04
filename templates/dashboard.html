@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI™ Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+</head>
+
+<body>
+    <div id="app">
+        <aside id="sidebar">
+            <ul>
+                <li><a href="#">New Chat</a></li>
+                <li><a href="#">Conversations</a></li>
+                <li><a href="#">Profile</a></li>
+                <li><a href="#">Billing</a></li>
+                <li><a href="#">Settings</a></li>
+                <li><a href="#">Logout</a></li>
+            </ul>
+        </aside>
+        <main id="main">
+            <!-- Chat history and input -->
+            <section id="chatHistory"></section>
+            <footer id="chatInput">
+                <input type="text" placeholder="Type your message..." />
+                <button>Send</button>
+            </footer>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+
+</html>

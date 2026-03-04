@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALICI™ - Landing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <header id="hero">
+        <h1>The Future of Artificial Intelligence Infrastructure</h1>
+        <p>Multimodal AI Engine with Persistent Neural Memory</p>
+        <div class="btn-group">
+            <a href="#" class="btn primary">Start Now</a>
+            <a href="#architecture" class="btn secondary">View Architecture</a>
+        </div>
+    </header>
+
+    <!-- Sections placeholders -->
+    <section id="technology"></section>
+    <section id="architecture"></section>
+    <section id="investors"></section>
+    <footer id="cta"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    <script src="{{ url_for('static', filename='js/three-background.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+
+</html>

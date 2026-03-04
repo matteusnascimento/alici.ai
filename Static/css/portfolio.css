@@ -1,0 +1,35 @@
+/* portfolio page styles */
+
+body {
+    background: linear-gradient(135deg, var(--dark) 0%, #0a0a1f 100%);
+}
+
+#profile {
+    text-align: center;
+    padding: var(--spacing-lg) 0;
+}
+
+#profile .profile-pic {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: var(--spacing-md);
+}
+
+section {
+    padding: var(--spacing-lg) 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+section h2 {
+    margin-bottom: var(--spacing-md);
+}
+
+.card {
+    background: var(--glass);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin: var(--spacing-sm) 0;
+}

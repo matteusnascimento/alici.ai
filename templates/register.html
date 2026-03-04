@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - ALICI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}" />
+</head>
+
+<body>
+    <div class="auth-card">
+        <h2>Register</h2>
+        <form id="registerForm">
+            <label for="name">Name</label>
+            <input type="text" id="name" required />
+            <label for="email">Email</label>
+            <input type="email" id="email" required />
+            <label for="password">Password</label>
+            <input type="password" id="password" required />
+            <button type="submit">Crear Conta</button>
+        </form>
+        <a href="/login">Already have an account? Login</a>
+    </div>
+</body>
+
+</html>

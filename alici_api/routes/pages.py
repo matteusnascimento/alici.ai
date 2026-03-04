@@ -24,7 +24,18 @@ def _read_template(filename: str) -> str:
 
 @router.get("/", response_class=HTMLResponse)
 def home():
+    # marketing landing page
+    return _read_template("landing.html")
+
+
+@router.get("/login", response_class=HTMLResponse)
+def login_page():
     return _read_template("login.html")
+
+
+@router.get("/register", response_class=HTMLResponse)
+def register_page():
+    return _read_template("register.html")
 
 
 @router.get("/chat", response_class=HTMLResponse)
@@ -34,4 +45,9 @@ def chat_page():
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    return _read_template("chat.html")
+    return _read_template("dashboard.html")
+
+
+@router.get("/portfolio", response_class=HTMLResponse)
+def portfolio():
+    return _read_template("portfolio.html")
