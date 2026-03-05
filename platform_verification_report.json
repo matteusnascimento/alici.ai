@@ -1,0 +1,121 @@
+{
+  "timestamp": "2026-03-04T21:50:32.643313",
+  "server": "http://127.0.0.1:8001",
+  "tests": [
+    {
+      "category": "Health",
+      "route": "/health",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "application/json",
+      "content_length": 855
+    },
+    {
+      "category": "Health",
+      "route": "/api/health",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "application/json",
+      "content_length": 855
+    },
+    {
+      "category": "P\u00e1ginas P\u00fablicas",
+      "route": "/",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 17871,
+      "has_html_content": true
+    },
+    {
+      "category": "P\u00e1ginas P\u00fablicas",
+      "route": "/login",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 22297,
+      "has_html_content": true
+    },
+    {
+      "category": "P\u00e1ginas P\u00fablicas",
+      "route": "/register",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 843,
+      "has_html_content": true
+    },
+    {
+      "category": "P\u00e1ginas P\u00fablicas",
+      "route": "/portfolio",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 901,
+      "has_html_content": true
+    },
+    {
+      "category": "Dashboard",
+      "route": "/dashboard",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 1280,
+      "has_html_content": true
+    },
+    {
+      "category": "Dashboard",
+      "route": "/chat",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 1280,
+      "has_html_content": true
+    },
+    {
+      "category": "Documenta\u00e7\u00e3o",
+      "route": "/docs",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 948,
+      "has_html_content": true
+    },
+    {
+      "category": "Documenta\u00e7\u00e3o",
+      "route": "/openapi.json",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "application/json",
+      "content_length": 15823
+    },
+    {
+      "category": "Assets Est\u00e1ticos",
+      "route": "/static/css/style.css",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "text/css; charset=utf-8",
+      "content_length": 19445
+    },
+    {
+      "category": "Assets Est\u00e1ticos",
+      "route": "/static/js/app.js",
+      "method": "GET",
+      "status_code": 200,
+      "success": true,
+      "content_type": "application/javascript",
+      "content_length": 13422
+    }
+  ]
+}
