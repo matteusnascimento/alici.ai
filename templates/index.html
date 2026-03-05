@@ -64,8 +64,13 @@
                     <button class="nav-item" data-section="chat"><i data-lucide="message-square"></i><span>Chat IA</span></button>
                     <button class="nav-item" data-section="models"><i data-lucide="brain-circuit"></i><span>Modelos</span></button>
                     <button class="nav-item" data-section="analytics"><i data-lucide="line-chart"></i><span>Analytics</span></button>
+                    <button class="nav-item" data-section="billing"><i data-lucide="credit-card"></i><span>Planos</span></button>
                     <button class="nav-item" data-section="settings"><i data-lucide="settings"></i><span>Configurações</span></button>
                 </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="icon-btn" aria-label="Sair" style="width: 100%; justify-content: flex-start; gap: 12px; padding: 10px 12px;"><i data-lucide="log-out"></i><span>Sair</span></button>
             </div>
 
             <button id="toggleSidebarBtn" class="collapse-btn icon-btn" aria-label="Recolher menu">
@@ -85,6 +90,7 @@
                 <div class="topbar-actions">
                     <button id="themeToggle" class="icon-btn" aria-label="Alternar tema"><i data-lucide="moon"></i></button>
                     <button id="notifyBtn" class="icon-btn" aria-label="Notificações"><i data-lucide="bell"></i><span id="notifyBadge" class="badge">3</span></button>
+                    <button id="profileBtn" class="icon-btn" aria-label="Perfil e Planos"><i data-lucide="user-circle"></i></button>
                 </div>
             </header>
 
@@ -143,7 +149,172 @@
                     <p>Preferências de conta e segurança JWT.</p>
                 </div>
             </section>
+
+            <section id="billing" class="app-section">
+                <div class="billing-container">
+                    <h2>Planos e Faturamento</h2>
+                    <p class="section-subtitle">Escolha o plano ideal para suas necessidades</p>
+
+                    <div class="current-plan-card glass">
+                        <div class="current-plan-info">
+                            <span class="badge-current">Seu Plano Atual</span>
+                            <h3 id="currentPlanName">Starter</h3>
+                            <p id="currentPlanDetails">100K requisições/mês • Suporte por email</p>
+                        </div>
+                        <div class="current-plan-price">
+                            <span class="price">R$ 299</span>
+                            <span class="period">/mês</span>
+                        </div>
+                    </div>
+
+                    <div class="plans-grid">
+                        <!-- Starter Plan -->
+                        <article class="plan-card glass">
+                            <div class="plan-header">
+                                <h3>Starter</h3>
+                                <p>Para experimentar</p>
+                            </div>
+                            <div class="plan-price">
+                                <span class="amount">R$ 299</span>
+                                <span class="period">/mês</span>
+                            </div>
+                            <ul class="plan-features">
+                                <li><i data-lucide="check" width="18" height="18"></i> 100K requisições/mês</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> 1 projeto</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> Suporte por email</li>
+                                <li><i data-lucide="x" width="18" height="18" style="opacity:0.4;"></i> API Analytics</li>
+                                <li><i data-lucide="x" width="18" height="18" style="opacity:0.4;"></i> Memória persistente</li>
+                            </ul>
+                            <button class="btn btn-outline plan-btn" data-plan="starter">Seu Plano Atual</button>
+                        </article>
+
+                        <!-- Professional Plan -->
+                        <article class="plan-card glass featured">
+                            <div class="plan-badge">MAIS POPULAR</div>
+                            <div class="plan-header">
+                                <h3>Professional</h3>
+                                <p>Para empresas em crescimento</p>
+                            </div>
+                            <div class="plan-price">
+                                <span class="amount">R$ 1.999</span>
+                                <span class="period">/mês</span>
+                            </div>
+                            <ul class="plan-features">
+                                <li><i data-lucide="check" width="18" height="18"></i> 5M requisições/mês</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> Projetos ilimitados</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> Suporte prioritário 24/7</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> API Analytics completo</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> Memória persistente</li>
+                            </ul>
+                            <button class="btn btn-primary plan-btn" data-plan="professional">Fazer Upgrade</button>
+                        </article>
+
+                        <!-- Enterprise Plan -->
+                        <article class="plan-card glass">
+                            <div class="plan-header">
+                                <h3>Enterprise</h3>
+                                <p>Para operações em larga escala</p>
+                            </div>
+                            <div class="plan-price">
+                                <span class="amount">Custom</span>
+                            </div>
+                            <ul class="plan-features">
+                                <li><i data-lucide="check" width="18" height="18"></i> Requisições ilimitadas</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> Infraestrutura dedicada</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> SLA 99.99% uptime</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> Integração customizada</li>
+                                <li><i data-lucide="check" width="18" height="18"></i> Data residency regional</li>
+                            </ul>
+                            <button class="btn btn-outline plan-btn" data-plan="enterprise">Falar com Vendas</button>
+                        </article>
+                    </div>
+
+                    <!-- Billing History -->
+                    <div class="billing-history glass">
+                        <h3>Histórico de Faturamento</h3>
+                        <table id="billingTable">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Plano</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>01 de Mar, 2026</td>
+                                    <td>Starter</td>
+                                    <td>R$ 299,00</td>
+                                    <td><span class="status-badge paid">Pago</span></td>
+                                    <td><a href="#" class="link-btn">Recibo</a></td>
+                                </tr>
+                                <tr>
+                                    <td>01 de Fev, 2026</td>
+                                    <td>Starter</td>
+                                    <td>R$ 299,00</td>
+                                    <td><span class="status-badge paid">Pago</span></td>
+                                    <td><a href="#" class="link-btn">Recibo</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
+
+        <!-- Profile Modal -->
+        <div id="profileModal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content glass">
+                <button class="modal-close" aria-label="Fechar perfil"><i data-lucide="x"></i></button>
+
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i data-lucide="user" width="56" height="56"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profileUserName">José Silva</h2>
+                        <p id="profileUserEmail">jose@empresa.com</p>
+                        <span class="profile-plan">Plano: <strong>Starter</strong></span>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Informações Pessoais</h3>
+                    <div class="profile-field">
+                        <label>Nome Completo</label>
+                        <input type="text" id="profileFullName" placeholder="Seu nome" value="José Silva" />
+                    </div>
+                    <div class="profile-field">
+                        <label>E-mail</label>
+                        <input type="email" placeholder="seu@email.com" value="jose@empresa.com" readonly />
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Segurança</h3>
+                    <button class="btn btn-outline" id="changePasswordBtn">Alterar Senha</button>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Plano Atual</h3>
+                    <div class="profile-plan-card">
+                        <div>
+                            <p><strong>Starter</strong></p>
+                            <p style="font-size:0.9rem; color:var(--text-secondary);">R$ 299/mês • 100K requisições/mês</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showSection('billing')">Ver Planos</button>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="btn btn-outline" id="closeProfileBtn">Fechar</button>
+                    <button class="btn btn-primary" id="saveProfileBtn">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="notifications" class="notifications"></div>
