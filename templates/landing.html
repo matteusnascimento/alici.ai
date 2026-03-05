@@ -2,33 +2,397 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALICI™ - Landing</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI - O Futuro da Infraestrutura de IA</title>
+    <meta name="description" content="ALICI - Mecanismo de IA Multimodal com Memória Neural Persistente" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}" />
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
-    <!-- Hero Section -->
-    <header id="hero">
-        <h1>The Future of Artificial Intelligence Infrastructure</h1>
-        <p>Multimodal AI Engine with Persistent Neural Memory</p>
-        <div class="btn-group">
-            <a href="#" class="btn primary">Start Now</a>
-            <a href="#architecture" class="btn secondary">View Architecture</a>
+    <!-- Navigation -->
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <div class="nav-brand">
+                <span class="brand-icon">A</span>
+                <span class="brand-text">ALICI</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Recursos</a></li>
+                <li><a href="#architecture">Arquitetura</a></li>
+                <li><a href="#pricing">Preços</a></li>
+                <li><a href="#contact">Contato</a></li>
+            </ul>
+            <a href="/login" class="btn-login">Entrar</a>
         </div>
-    </header>
+    </nav>
 
-    <!-- Sections placeholders -->
-    <section id="technology"></section>
-    <section id="architecture"></section>
-    <section id="investors"></section>
-    <footer id="cta"></footer>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="tech-background">
+            <div class="gradient-orb gradient-orb-1"></div>
+            <div class="gradient-orb gradient-orb-2"></div>
+            <div class="grid-pattern"></div>
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
-    <script src="{{ url_for('static', filename='js/three-background.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+        <div class="container hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    O Futuro da <span class="gradient-text">Infraestrutura de IA</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Mecanismo de IA Multimodal com Memória Neural Persistente
+                </p>
+                <p class="hero-description">
+                    Construa aplicações de IA mais inteligentes, rápidas e com compreensão contextual profunda. ALICI aprende e evolui com seu negócio.
+                </p>
+
+                <div class="hero-cta">
+                    <button class="btn btn-primary btn-lg" onclick="document.querySelector('#contact').scrollIntoView({behavior: 'smooth'})">
+                        <i data-lucide="play-circle" width="20" height="20"></i>
+                        Comece Agora
+                    </button>
+                    <button class="btn btn-secondary btn-lg" onclick="document.querySelector('#architecture').scrollIntoView({behavior: 'smooth'})">
+                        <i data-lucide="zap" width="20" height="20"></i>
+                        Ver Arquitetura
+                    </button>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat">
+                        <p class="stat-value">+10K</p>
+                        <p class="stat-label">Solicitações/min</p>
+                    </div>
+                    <div class="stat">
+                        <p class="stat-value">99.9%</p>
+                        <p class="stat-label">Uptime SLA</p>
+                    </div>
+                    <div class="stat">
+                        <p class="stat-value">&lt;50ms</p>
+                        <p class="stat-label">Latência Média</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="visual-card">
+                    <div class="neural-network">
+                        <div class="node node-1"></div>
+                        <div class="node node-2"></div>
+                        <div class="node node-3"></div>
+                        <div class="node node-4"></div>
+                        <div class="line line-1"></div>
+                        <div class="line line-2"></div>
+                        <div class="line line-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Capacidades Avançadas</h2>
+            <p class="section-subtitle">Tudo que você precisa para criar soluções de IA de próxima geração</p>
+
+            <div class="features-grid">
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="brain-circuit"></i>
+                    </div>
+                    <h3>Memória Neural Persistente</h3>
+                    <p>Contexto ilimitado com retenção de memória semântica. O sistema lembra de padrões e aprende continuamente.</p>
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="layers"></i>
+                    </div>
+                    <h3>Arquitetura Multimodal</h3>
+                    <p>Processe texto, imagem, áudio e vídeo em um único modelo unificado com compreensão cruzada.</p>
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h3>Latência Ultra-Baixa</h3>
+                    <p>Otimizado para inferência em tempo real. Respostas em menos de 50ms mesmo em produção.</p>
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <h3>Segurança Enterprise</h3>
+                    <p>Criptografia end-to-end, isolamento de dados e conformidade com LGPD, GDPR e SOC2.</p>
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                    <h3>Auto-Scaling Inteligente</h3>
+                    <p>Escale automaticamente de 0 a milhões de requisições sem intervenção manual.</p>
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="code"></i>
+                    </div>
+                    <h3>API Simples e Poderosa</h3>
+                    <p>Integre em minutos com SDKs para Python, JavaScript, Go e mais. Documentação completa incluída.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture" class="architecture">
+        <div class="container">
+            <h2 class="section-title">Arquitetura Proprietária</h2>
+            <p class="section-subtitle">Designed for Performance and Intelligence</p>
+
+            <div class="architecture-grid">
+                <div class="arch-component">
+                    <div class="arch-icon">
+                        <i data-lucide="database"></i>
+                    </div>
+                    <h4>Vector Database</h4>
+                    <p>Busca semântica em escala com Qdrant integrado</p>
+                </div>
+
+                <div class="arch-arrow">→</div>
+
+                <div class="arch-component">
+                    <div class="arch-icon">
+                        <i data-lucide="brain-circuit"></i>
+                    </div>
+                    <h4>Memory Engine</h4>
+                    <p>Processamento contextual com LoRA fine-tuning</p>
+                </div>
+
+                <div class="arch-arrow">→</div>
+
+                <div class="arch-component">
+                    <div class="arch-icon">
+                        <i data-lucide="layers"></i>
+                    </div>
+                    <h4>Multimodal Router</h4>
+                    <p>Roteamento inteligente entre modelos especializados</p>
+                </div>
+
+                <div class="arch-arrow">→</div>
+
+                <div class="arch-component">
+                    <div class="arch-icon">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h4>Output Cache</h4>
+                    <p>Resposta sub-50ms de cache distribuído</p>
+                </div>
+            </div>
+
+            <div class="tech-stack">
+                <h3>Stack Técnico</h3>
+                <div class="stack-badges">
+                    <span class="badge">GPT-4 Turbo</span>
+                    <span class="badge">Sentence-Transformers</span>
+                    <span class="badge">Qdrant Vector DB</span>
+                    <span class="badge">FastAPI</span>
+                    <span class="badge">PostgreSQL</span>
+                    <span class="badge">Redis Cache</span>
+                    <span class="badge">Kubernetes</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="container">
+            <h2 class="section-title">O Que Dizem Sobre ALICI</h2>
+
+            <div class="testimonials-grid">
+                <article class="testimonial-card">
+                    <div class="stars">★★★★★</div>
+                    <p>"ALICI transformou como processamos dados. A memória persistente nos permite manter contexto em conversas longas de forma que nenhuma outra solução faz."</p>
+                    <div class="testimonial-author">
+                        <p><strong>Marina Silva</strong></p>
+                        <p>CTO, TechCorp Brasil</p>
+                    </div>
+                </article>
+
+                <article class="testimonial-card">
+                    <div class="stars">★★★★★</div>
+                    <p>"A latência é impressionante. Conseguimos processar 10K requisições por minuto sem degradação. Exatamente o que precisávamos para escalar."</p>
+                    <div class="testimonial-author">
+                        <p><strong>Carlos Mendes</strong></p>
+                        <p>Head of Engineering, DataFlow AI</p>
+                    </div>
+                </article>
+
+                <article class="testimonial-card">
+                    <div class="stars">★★★★★</div>
+                    <p>"O suporte é excepcional e a API é intuitiva. Implementamos em produção em menos de 2 semanas. Melhor ROI em infraestrutura que já tivemos."</p>
+                    <div class="testimonial-author">
+                        <p><strong>Ana Costa</strong></p>
+                        <p>Product Manager, InnovateLabs</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <h2 class="section-title">Planos Simples e Transparentes</h2>
+            <p class="section-subtitle">Sem contratos de longa duração, cancele sempre que quiser</p>
+
+            <div class="pricing-grid">
+                <article class="pricing-card">
+                    <h3>Starter</h3>
+                    <p class="price">R$ 299<span>/mês</span></p>
+                    <p class="plan-desc">Para experimentar</p>
+                    <ul class="features-list">
+                        <li><i data-lucide="check" width="18" height="18"></i> 100K requisições/mês</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> 1 projeto</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> Suporte por email</li>
+                        <li><i data-lucide="x" width="18" height="18"></i> API Analytics</li>
+                        <li><i data-lucide="x" width="18" height="18"></i> Memória persistente</li>
+                    </ul>
+                    <button class="btn btn-outline">Começar Grátis</button>
+                </article>
+
+                <article class="pricing-card featured">
+                    <div class="badge-popular">MAIS POPULAR</div>
+                    <h3>Professional</h3>
+                    <p class="price">R$ 1.999<span>/mês</span></p>
+                    <p class="plan-desc">Para empresas em crescimento</p>
+                    <ul class="features-list">
+                        <li><i data-lucide="check" width="18" height="18"></i> 5M requisições/mês</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> Projetos ilimitados</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> Suporte prioritário 24/7</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> API Analytics completo</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> Memória persistente</li>
+                    </ul>
+                    <button class="btn btn-primary">Ativar Trial</button>
+                </article>
+
+                <article class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <p class="price">Custom</p>
+                    <p class="plan-desc">Para operações em larga escala</p>
+                    <ul class="features-list">
+                        <li><i data-lucide="check" width="18" height="18"></i> Requisições ilimitadas</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> Infraestrutura dedicada</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> SLA 99.99% uptime</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> Integração customizada</li>
+                        <li><i data-lucide="check" width="18" height="18"></i> Data residency regional</li>
+                    </ul>
+                    <button class="btn btn-outline">Falar com Vendas</button>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="contact" class="cta-section">
+        <div class="container cta-content">
+            <h2>Pronto Para o Futuro da IA?</h2>
+            <p>Junte-se a empresas que já usam ALICI para transformar seus negócios</p>
+            <button class="btn btn-primary btn-lg">
+                Começar Trial Gratuito - 14 Dias
+            </button>
+            <p class="cta-note">Sem cartão de crédito necessário</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-col">
+                    <h4>ALICI</h4>
+                    <p>Infraestrutura de IA para o futuro</p>
+                    <div class="social-links">
+                        <a href="#" title="GitHub"><i data-lucide="github" width="20" height="20"></i></a>
+                        <a href="#" title="Twitter"><i data-lucide="twitter" width="20" height="20"></i></a>
+                        <a href="#" title="LinkedIn"><i data-lucide="linkedin" width="20" height="20"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Produto</h4>
+                    <ul>
+                        <li><a href="#features">Recursos</a></li>
+                        <li><a href="#architecture">Arquitetura</a></li>
+                        <li><a href="#pricing">Preços</a></li>
+                        <li><a href="#">Documentação</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Empresa</h4>
+                    <ul>
+                        <li><a href="#">Sobre</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Carreiras</a></li>
+                        <li><a href="#">Contato</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="#">Privacidade</a></li>
+                        <li><a href="#">Termos</a></li>
+                        <li><a href="#">Cookies</a></li>
+                        <li><a href="#">Segurança</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 ALICI. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Navbar scroll effect
+        const navbar = document.querySelector('.navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.style.backdropFilter = 'blur(10px)';
+                navbar.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+            } else {
+                navbar.style.backdropFilter = 'blur(5px)';
+                navbar.style.borderBottom = 'none';
+            }
+        });
+
+        // Lucide icons
+        lucide.createIcons();
+    </script>
 </body>
 
 </html>
