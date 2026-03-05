@@ -239,21 +239,34 @@ class AnalyticsService:
     
     def estimate_ltv(self, arpu: float, gross_margin: float, monthly_churn: float) -> float:
         """
-        Estimate Lifetime Value
+        Estimate Lifetime Value (SaaS standard formula)
+        
+        Based on industry benchmarks for AI/SaaS products.
+        Formula: LTV = ARPU × Gross Margin / Monthly Churn Rate
         
         Args:
-            arpu: Average Revenue Per User (monthly)
-            gross_margin: Gross margin percentage (0.0-1.0)
-            monthly_churn: Monthly churn rate (0.0-1.0)
+            arpu: Average Revenue Per User (monthly, in BRL)
+            gross_margin: Gross margin percentage (0.0-1.0), typically 70-85% for SaaS
+            monthly_churn: Monthly churn rate (0.0-1.0), e.g., 0.05 = 5% monthly churn
             
         Returns:
-            Estimated LTV
+            Estimated LTV in BRL
         """
         if monthly_churn == 0:
-            return arpu * gross_margin * 100  # Assume ~100 months
+            # Zero churn scenario: assume 1-year payoff period minimum
+            # More realistic than infinite months
+            return arpu * gross_margin * 12
         
+        if monthly_churn >= 1.0:
+            return 0
+        
+        # Standard SaaS LTV formula
         avg_lifetime_months = 1 / monthly_churn
-        return arpu * gross_margin * avg_lifetime_months
+        ltv = (arpu * gross_margin) * avg_lifetime_months
+        
+        # Cap at reasonable maximum (e.g., 10 year customer)
+        max_ltv = arpu * gross_margin * 120
+        return min(ltv, max_ltv)
     
     def calculate_cac_payback(self, cac: float, arpu: float, gross_margin: float) -> float:
         """
@@ -271,6 +284,59 @@ class AnalyticsService:
             return float('inf')
         
         return cac / (arpu * gross_margin)
+    
+    def project_mrr(self, free_users: int, conversion_rate: float, arpu: float, monthly_churn: float) -> Dict:
+        """
+        Project Monthly Recurring Revenue from free user base
+        
+        Args:
+            free_users: Number of free users
+            conversion_rate: Conversion rate from free to paid (0.0-1.0)
+            arpu: Average Revenue Per User (monthly)
+            monthly_churn: Monthly churn rate (0.0-1.0)
+            
+        Returns:
+            Dict with MRR projections for next 12 months
+        """
+        projections = {}
+        current_paid_users = free_users * conversion_rate
+        current_mrr = current_paid_users * arpu
+        
+        for month in range(1, 13):
+            # Apply monthly churn
+            current_paid_users = current_paid_users * (1 - monthly_churn)
+            current_mrr = current_paid_users * arpu
+            
+            projections[f"month_{month}"] = {
+                "paid_users": round(current_paid_users, 0),
+                "mrr": round(current_mrr, 2),
+                "churn_rate": monthly_churn
+            }
+        
+        return projections
+    
+    def calculate_ltv_sensitivity(self, arpu: float, gross_margin: float, churn_rates: List[float]) -> Dict:
+        """
+        Calculate LTV sensitivity to churn rates
+        Useful for pitch deck and investor presentations
+        
+        Args:
+            arpu: Average Revenue Per User (monthly)
+            gross_margin: Gross margin percentage (0.0-1.0)
+            churn_rates: List of monthly churn rates to test
+            
+        Returns:
+            Dict mapping churn rate to LTV
+        """
+        sensitivity = {}
+        for churn in churn_rates:
+            ltv = self.estimate_ltv(arpu, gross_margin, churn)
+            sensitivity[f"{churn*100:.0f}%_churn"] = {
+                "ltv": round(ltv, 2),
+                "ltv_to_cac_ratio": round(ltv / 200, 2) if ltv > 0 else 0,
+                "payback_months": round(1 / churn, 1) if churn > 0 else float('inf')
+            }
+        return sensitivity
 
 
 # Global analytics instance
