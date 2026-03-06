@@ -69,6 +69,12 @@ async def platform_ui(request: Request):
     return templates.TemplateResponse("platform.html", {"request": request})
 
 
+@app.get("/dashboard")
+async def dashboard_ui(request: Request):
+    """Alternative dashboard route"""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
 @app.get("/login")
 async def login_page(request: Request):
     """Login page"""
