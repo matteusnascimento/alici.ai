@@ -1,13 +1,19 @@
 """
 Core configuration for ALICI Platform
 """
-import os
 from typing import List, Optional
-from pydantic_settings import BaseSettings
+from pydantic import AliasChoices, Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
     # App
     app_name: str = "ALICI Platform"
@@ -17,20 +23,32 @@ class Settings(BaseSettings):
 
     # Server
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = Field(default=8000, validation_alias=AliasChoices("PORT", "port"))
 
     # Database
-    database_url: str = "sqlite:///./alici.db"
+    database_url: str = Field(
+        default="sqlite:///./alici.db",
+        validation_alias=AliasChoices("DATABASE_URL", "database_url"),
+    )
 
     # Security
-    secret_key: str
-    jwt_secret_key: str
+    secret_key: str = Field(validation_alias=AliasChoices("SECRET_KEY", "secret_key"))
+    jwt_secret_key: str = Field(validation_alias=AliasChoices("JWT_SECRET_KEY", "jwt_secret_key"))
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
-    refresh_token_expire_days: int = 7
+    access_token_expire_minutes: int = Field(
+        default=30,
+        validation_alias=AliasChoices("ACCESS_TOKEN_EXPIRE_MINUTES", "access_token_expire_minutes"),
+    )
+    refresh_token_expire_days: int = Field(
+        default=7,
+        validation_alias=AliasChoices("REFRESH_TOKEN_EXPIRE_DAYS", "refresh_token_expire_days"),
+    )
 
     # CORS
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    cors_origins: List[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8000"],
+        validation_alias=AliasChoices("CORS_ORIGINS", "CORS_ALLOWED_ORIGINS", "cors_origins"),
+    )
 
     # Rate Limiting
     rate_limit_enabled: bool = True
@@ -60,9 +78,18 @@ class Settings(BaseSettings):
     # Redis (optional)
     redis_url: Optional[str] = None
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value):
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            if text.startswith("[") and text.endswith("]"):
+                # Pydantic handles JSON-like list strings after returning as-is.
+                return value
+            return [item.strip() for item in text.split(",") if item.strip()]
+        return value
 
 
 # Global settings instance
