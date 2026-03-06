@@ -8,7 +8,7 @@ from app.core.database import Base
 
 
 class Organization(Base):
-    __tablename__ = "organizations"
+    __tablename__ = "platform_organizations"
 
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)

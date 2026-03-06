@@ -8,7 +8,7 @@ from app.core.database import Base
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "platform_users"
 
     id = Column(String, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
@@ -18,7 +18,7 @@ class User(Base):
     is_superuser = Column(Boolean, default=False)
 
     # Multi-tenant
-    organization_id = Column(String, ForeignKey("organizations.id"), nullable=False)
+    organization_id = Column(String, ForeignKey("platform_organizations.id"), nullable=False)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

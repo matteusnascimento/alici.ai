@@ -8,14 +8,14 @@ from app.core.database import Base
 
 
 class APIKey(Base):
-    __tablename__ = "api_keys"
+    __tablename__ = "platform_api_keys"
 
     id = Column(String, primary_key=True, index=True)
     key = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
 
     # Multi-tenant
-    organization_id = Column(String, ForeignKey("organizations.id"), nullable=False)
+    organization_id = Column(String, ForeignKey("platform_organizations.id"), nullable=False)
 
     # Permissions
     can_chat = Column(Boolean, default=True)

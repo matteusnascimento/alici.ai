@@ -8,14 +8,14 @@ from app.core.database import Base
 
 
 class UsageLog(Base):
-    __tablename__ = "usage_logs"
+    __tablename__ = "platform_usage_logs"
 
     id = Column(String, primary_key=True, index=True)
 
     # Multi-tenant
-    organization_id = Column(String, ForeignKey("organizations.id"), nullable=False)
-    user_id = Column(String, ForeignKey("users.id"))
-    api_key_id = Column(String, ForeignKey("api_keys.id"))
+    organization_id = Column(String, ForeignKey("platform_organizations.id"), nullable=False)
+    user_id = Column(String, ForeignKey("platform_users.id"))
+    api_key_id = Column(String, ForeignKey("platform_api_keys.id"))
 
     # Request details
     endpoint = Column(String, nullable=False)
@@ -23,7 +23,7 @@ class UsageLog(Base):
     status_code = Column(Integer)
 
     # AI usage
-    agent_id = Column(String, ForeignKey("agents.id"))
+    agent_id = Column(String, ForeignKey("platform_agents.id"))
     model = Column(String)
     tokens_used = Column(Integer)
     cost = Column(Float, default=0.0)
@@ -45,15 +45,15 @@ class UsageLog(Base):
 
 
 class Conversation(Base):
-    __tablename__ = "conversations"
+    __tablename__ = "platform_conversations"
 
     id = Column(String, primary_key=True, index=True)
     title = Column(String)
 
     # Multi-tenant
-    organization_id = Column(String, ForeignKey("organizations.id"), nullable=False)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    agent_id = Column(String, ForeignKey("agents.id"), nullable=False)
+    organization_id = Column(String, ForeignKey("platform_organizations.id"), nullable=False)
+    user_id = Column(String, ForeignKey("platform_users.id"), nullable=False)
+    agent_id = Column(String, ForeignKey("platform_agents.id"), nullable=False)
 
     # Settings
     is_active = Column(Boolean, default=True)
@@ -73,12 +73,12 @@ class Conversation(Base):
 
 
 class Message(Base):
-    __tablename__ = "messages"
+    __tablename__ = "platform_messages"
 
     id = Column(String, primary_key=True, index=True)
 
     # Conversation
-    conversation_id = Column(String, ForeignKey("conversations.id"), nullable=False)
+    conversation_id = Column(String, ForeignKey("platform_conversations.id"), nullable=False)
 
     # Content
     role = Column(String, nullable=False)  # user, assistant, system

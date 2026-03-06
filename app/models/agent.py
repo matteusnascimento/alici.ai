@@ -8,7 +8,7 @@ from app.core.database import Base
 
 
 class Agent(Base):
-    __tablename__ = "agents"
+    __tablename__ = "platform_agents"
 
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
@@ -21,7 +21,7 @@ class Agent(Base):
     max_tokens = Column(Integer, default=1000)
 
     # Multi-tenant
-    organization_id = Column(String, ForeignKey("organizations.id"), nullable=False)
+    organization_id = Column(String, ForeignKey("platform_organizations.id"), nullable=False)
 
     # Settings
     is_active = Column(Boolean, default=True)
