@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI™ Dashboard</title>
+    <link rel="stylesheet" href="/static/css/alici-premium.css?v=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>ALICI™</span>
+                </div>
+                <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="#" data-section="chat" class="nav-item active">
+                            <i class="fas fa-comments"></i>
+                            <span>Chat</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="history" class="nav-item">
+                            <i class="fas fa-history"></i>
+                            <span>Histórico</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="profile" class="nav-item">
+                            <i class="fas fa-user"></i>
+                            <span>Perfil</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="billing" class="nav-item">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Cobrança</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="settings" class="nav-item">
+                            <i class="fas fa-cog"></i>
+                            <span>Configurações</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Sair</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main" class="main-content">
+            <!-- Chat Section -->
+            <section id="chatSection" class="section active">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <h2><i class="fas fa-brain"></i> Conversa com ALICI
+                            <div class="online-indicator"><span class="online-dot"></span>Online</div>
+                        </h2>
+                        <div class="chat-actions">
+                            <button id="newChatBtn" class="action-btn" title="Nova conversa">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button id="clearChatBtn" class="action-btn" title="Limpar conversa">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="chatHistory" class="chat-messages">
+                        <div class="welcome-message">
+                            <div class="welcome-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <h3>Olá! Sou a ALICI</h3>
+                            <p>Estou aqui para ajudar você com qualquer pergunta ou tarefa. Como posso te auxiliar hoje?</p>
+                        </div>
+                    </div>
+
+                    <div id="loadingIndicator" class="loading-indicator hidden">
+                        <div class="typing-indicator">
+                            <i class="fas fa-brain"></i>
+                            <span>ALICI está pensando</span>
+                            <div class="typing-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <form id="chatForm" class="chat-form">
+                            <div class="input-group">
+                                <textarea id="chatInput" placeholder="Digite sua mensagem aqui..." rows="1" maxlength="2000" aria-label="Digite sua mensagem"></textarea>
+                                <button type="submit" id="sendBtn" class="send-btn" disabled>
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                            <div class="input-footer">
+                                <span class="char-count">0/2000</span>
+                                <div class="input-hints">
+                                    <span>Pressione Enter para enviar</span>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section id="historySection" class="section">
+                <div class="history-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-history"></i> Histórico de Conversas</h2>
+                    </div>
+                    <div id="conversationsList" class="conversations-list">
+                        <!-- Conversations will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile Section -->
+            <section id="profileSection" class="section">
+                <div class="profile-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-user"></i> Perfil do Usuário</h2>
+                    </div>
+                    <div class="profile-content">
+                        <div class="profile-card">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="profile-info">
+                                <h3 id="userName">Carregando...</h3>
+                                <p id="userEmail">Carregando...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Billing Section -->
+            <section id="billingSection" class="section">
+                <div class="billing-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-credit-card"></i> Planos e Cobrança</h2>
+                    </div>
+                    <div class="billing-plans">
+                        <div class="plan-card">
+                            <div class="plan-header">
+                                <h3>Free</h3>
+                                <span class="plan-price">R$ 0</span>
+                            </div>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check"></i> 100 mensagens/mês</li>
+                                <li><i class="fas fa-check"></i> Acesso básico</li>
+                            </ul>
+                        </div>
+                        <div class="plan-card popular">
+                            <div class="plan-badge">Mais Popular</div>
+                            <div class="plan-header">
+                                <h3>Pro</h3>
+                                <span class="plan-price">R$ 29,90</span>
+                            </div>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check"></i> Mensagens ilimitadas</li>
+                                <li><i class="fas fa-check"></i> Acesso prioritário</li>
+                                <li><i class="fas fa-check"></i> Suporte premium</li>
+                            </ul>
+                            <button class="plan-btn">Escolher Pro</button>
+                        </div>
+                        <div class="plan-card">
+                            <div class="plan-header">
+                                <h3>Enterprise</h3>
+                                <span class="plan-price">R$ 99,90</span>
+                            </div>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check"></i> Tudo do Pro</li>
+                                <li><i class="fas fa-check"></i> API dedicada</li>
+                                <li><i class="fas fa-check"></i> SLA garantido</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settingsSection" class="section">
+                <div class="settings-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-cog"></i> Configurações</h2>
+                    </div>
+                    <div class="settings-content">
+                        <div class="setting-group">
+                            <h3>Aparência</h3>
+                            <div class="setting-item">
+                                <label for="themeToggle">Tema escuro</label>
+                                <input type="checkbox" id="themeToggle" checked>
+                            </div>
+                        </div>
+                        <div class="setting-group">
+                            <h3>Notificações</h3>
+                            <div class="setting-item">
+                                <label for="notificationsToggle">Ativar notificações</label>
+                                <input type="checkbox" id="notificationsToggle" checked>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Modals -->
+    <div id="confirmModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirmar Ação</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Tem certeza que deseja continuar?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmCancel" class="btn-secondary">Cancelar</button>
+                <button id="confirmOk" class="btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+
+</html>

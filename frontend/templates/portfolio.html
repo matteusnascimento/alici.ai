@@ -5,13 +5,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mateus Santos - Portfolio</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/portfolio.css') }}" />
+    <link rel="stylesheet" href="/static/css/global.css" />
+    <link rel="stylesheet" href="/static/css/portfolio.css" />
 </head>
 
 <body>
     <div id="profile">
-        <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Foto do fundador" class="profile-pic" />
+        <img src="/static/assets/logo.svg" alt="Foto do fundador" class="profile-pic" />
         <h1>Mateus Santos</h1>
         <p>AI Engineer &amp; Founder of ALICI</p>
     </div>
@@ -21,7 +21,7 @@
     <section id="vision"></section>
     <section id="contact"></section>
 
-    <script src="{{ url_for('static', filename='js/portfolio.js') }}"></script>
+    <script src="/static/js/portfolio.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,3 @@
+"""
+ALICI Platform App Package
+"""

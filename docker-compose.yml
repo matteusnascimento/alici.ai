@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  alici-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - DATABASE_URL=postgresql://alici:password@postgres:5432/alici_db
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - JWT_SECRET_KEY=dev-jwt-secret
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    command: uvicorn alici_api.app:app --host 0.0.0.0 --port 8000 --reload
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=alici_db
+      - POSTGRES_USER=alici
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
