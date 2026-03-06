@@ -81,6 +81,12 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 
+@app.get("/dashboard")
+async def dashboard_page(request: Request):
+    """Dashboard page"""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
 # API routes
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
