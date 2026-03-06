@@ -1,6 +1,7 @@
 """
 Core configuration for ALICI Platform
 """
+import secrets
 from typing import List, Optional
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -32,8 +33,14 @@ class Settings(BaseSettings):
     )
 
     # Security
-    secret_key: str = Field(validation_alias=AliasChoices("SECRET_KEY", "secret_key"))
-    jwt_secret_key: str = Field(validation_alias=AliasChoices("JWT_SECRET_KEY", "jwt_secret_key"))
+    secret_key: str = Field(
+        default_factory=lambda: secrets.token_urlsafe(32),
+        validation_alias=AliasChoices("SECRET_KEY", "secret_key", "SECRET"),
+    )
+    jwt_secret_key: str = Field(
+        default_factory=lambda: secrets.token_urlsafe(32),
+        validation_alias=AliasChoices("JWT_SECRET_KEY", "jwt_secret_key", "JWT_SECRET"),
+    )
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = Field(
         default=30,
