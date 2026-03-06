@@ -1,8 +1,8 @@
 // dashboard.js - Enhanced UX Dashboard
 // Connects dashboard UI to backend chat API and history
 
-const API_CHAT = '/chat';
-const API_HISTORY = '/history';
+const API_CHAT = '/api/chat/message';
+const API_HISTORY = '/api/chat/conversations';
 
 function getToken() {
     return localStorage.getItem('access_token');
@@ -56,10 +56,17 @@ async function loadHistory() {
         });
         const data = await res.json();
         if (res.ok) {
-            const hist = data.historico || [];
+            const hist = Array.isArray(data ? .historico) ?
+                data.historico :
+                Array.isArray(data ? .history) ?
+                data.history :
+                [];
+
             hist.reverse().forEach((h) => {
-                addMessage(h.pergunta, 'user');
-                addMessage(h.resposta, 'assistant');
+                const userText = h.pergunta || h.question || h.user;
+                const assistantText = h.resposta || h.answer || h.assistant;
+                if (userText) addMessage(userText, 'user');
+                if (assistantText) addMessage(assistantText, 'assistant');
             });
             updateCharCount();
         } else {
@@ -91,11 +98,12 @@ async function sendChat(question) {
         const res = await fetch(API_CHAT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-            body: JSON.stringify({ pergunta: question }),
+            body: JSON.stringify({ message: question }),
         });
         const data = await res.json();
         if (res.ok) {
-            addMessage(data.resposta, 'assistant');
+            const answer = data.content || data.message || data.response || data.resposta || 'Sem resposta do modelo.';
+            addMessage(answer, 'assistant');
             showToast('Mensagem enviada com sucesso', 'success', 1500);
         } else {
             const errorMsg = data.detail || 'Erro no servidor';

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI | Agentes de IA</title>
+    <link rel="stylesheet" href="/static/css/alici-premium.css?v=1.1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        .hub {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 28px 24px 32px;
+        }
+        
+        .hub-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .hub-title h1 {
+            font-size: 30px;
+            margin: 0;
+        }
+        
+        .hub-title p {
+            margin: 6px 0 0;
+            color: var(--alici-text-secondary);
+        }
+        
+        .primary-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 14px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #fff;
+            background: var(--alici-button-gradient);
+            box-shadow: var(--alici-shadow-glow);
+            font-weight: 600;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        
+        .agent-card {
+            background: var(--alici-glass-strong);
+            border: 1px solid var(--alici-border-light);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: var(--alici-shadow-md);
+        }
+        
+        .agent-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .agent-name {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        .agent-description {
+            margin: 0;
+            color: var(--alici-text-secondary);
+            font-size: 14px;
+            min-height: 40px;
+        }
+        
+        .agent-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .chip {
+            background: var(--alici-glass);
+            border: 1px solid var(--alici-border);
+            border-radius: 999px;
+            padding: 4px 10px;
+            color: var(--alici-text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: fit-content;
+        }
+        
+        .agent-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+        
+        .btn-ghost {
+            border: 1px solid var(--alici-border-light);
+            color: var(--alici-text-primary);
+            background: transparent;
+            border-radius: 10px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .status-on {
+            color: var(--alici-success);
+            font-weight: 600;
+        }
+        
+        .top-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        
+        .top-nav a {
+            text-decoration: none;
+            color: var(--alici-text-secondary);
+            border: 1px solid var(--alici-border);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        
+        .top-nav a.active {
+            color: #fff;
+            border-color: transparent;
+            background: var(--alici-accent-gradient);
+        }
+        
+        .empty {
+            color: var(--alici-text-secondary);
+            margin-top: 14px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="hub">
+        <nav class="top-nav">
+            <a href="/platform">Chat</a>
+            <a href="/agents" class="active">Agentes de IA</a>
+            <a href="/integrations">Integrações</a>
+        </nav>
+
+        <header class="hub-header">
+            <div class="hub-title">
+                <h1>Agentes de IA</h1>
+                <p>Crie, ative e escale agentes para atendimento, vendas e suporte.</p>
+            </div>
+            <a class="primary-link" href="/agents/create">
+                <i class="fa-solid fa-plus"></i> Criar Agente
+            </a>
+        </header>
+
+        <section id="agentsGrid" class="grid" aria-live="polite"></section>
+        <p id="agentsEmpty" class="empty" hidden>Nenhum agente encontrado. Crie o primeiro para começar.</p>
+    </main>
+
+    <script>
+        async function loadAgents() {
+            const grid = document.getElementById('agentsGrid');
+            const empty = document.getElementById('agentsEmpty');
+            const token = localStorage.getItem('access_token') || localStorage.getItem('alici_jwt');
+
+            try {
+                const headers = {};
+                if (token) {
+                    headers.Authorization = `Bearer ${token}`;
+                }
+
+                const res = await fetch('/api/agents/', {
+                    headers
+                });
+                const data = await res.json();
+
+                if (!res.ok || !Array.isArray(data)) {
+                    throw new Error(data.detail || 'Falha ao carregar agentes');
+                }
+
+                grid.innerHTML = '';
+                if (!data.length) {
+                    empty.hidden = false;
+                    return;
+                }
+
+                empty.hidden = true;
+                for (const agent of data) {
+                    const el = document.createElement('article');
+                    el.className = 'agent-card';
+                    el.innerHTML = `
+                        <div class="agent-top">
+                            <h2 class="agent-name">${agent.name || 'Agente sem nome'}</h2>
+                            <span class="chip ${agent.is_active ? 'status-on' : ''}">
+                                <i class="fa-solid ${agent.is_active ? 'fa-circle-check' : 'fa-circle-pause'}"></i>
+                                ${agent.is_active ? 'Ativo' : 'Inativo'}
+                            </span>
+                        </div>
+                        <p class="agent-description">${agent.description || 'Sem descrição cadastrada.'}</p>
+                        <div class="agent-meta">
+                            <span class="chip"><i class="fa-solid fa-brain"></i>${agent.model || 'n/a'}</span>
+                            <span class="chip"><i class="fa-solid fa-chart-line"></i>${agent.total_requests || 0} req.</span>
+                        </div>
+                        <div class="agent-actions">
+                            <button class="btn-ghost" type="button" disabled>Editar</button>
+                            <button class="btn-ghost" type="button" disabled>Ativar</button>
+                        </div>
+                    `;
+                    grid.appendChild(el);
+                }
+            } catch (err) {
+                grid.innerHTML = `<article class="agent-card"><p class="agent-description">Erro ao carregar agentes: ${err.message}</p></article>`;
+            }
+        }
+
+        loadAgents();
+    </script>
+</body>
+
+</html>

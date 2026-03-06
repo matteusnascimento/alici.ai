@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI | Criar Agente</title>
+    <link rel="stylesheet" href="/static/css/alici-premium.css?v=1.1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        .wrap {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 28px 24px 40px;
+        }
+        
+        .top-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        
+        .top-nav a {
+            text-decoration: none;
+            color: var(--alici-text-secondary);
+            border: 1px solid var(--alici-border);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        
+        .top-nav a.active {
+            color: #fff;
+            border-color: transparent;
+            background: var(--alici-accent-gradient);
+        }
+        
+        .panel {
+            background: var(--alici-glass-strong);
+            border: 1px solid var(--alici-border-light);
+            border-radius: 18px;
+            box-shadow: var(--alici-shadow-lg);
+            padding: 20px;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+        
+        .subtitle {
+            color: var(--alici-text-secondary);
+            margin: 8px 0 20px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .field.full {
+            grid-column: 1 / -1;
+        }
+        
+        label {
+            font-size: 13px;
+            color: var(--alici-text-secondary);
+        }
+        
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--alici-border-light);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--alici-text-primary);
+            border-radius: 12px;
+            padding: 10px 12px;
+            outline: none;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        
+        .btn-primary,
+        .btn-secondary {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            color: #fff;
+            background: var(--alici-button-gradient);
+        }
+        
+        .btn-secondary {
+            color: var(--alici-text-primary);
+            border: 1px solid var(--alici-border-light);
+            background: transparent;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        #feedback {
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--alici-text-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <nav class="top-nav">
+            <a href="/platform">Chat</a>
+            <a href="/agents" class="active">Agentes de IA</a>
+            <a href="/integrations">Integrações</a>
+        </nav>
+
+        <section class="panel">
+            <h1>Criar Agente</h1>
+            <p class="subtitle">Configure o comportamento, modelo e tom de conversa do seu agente.</p>
+
+            <form id="createAgentForm" class="grid">
+                <div class="field">
+                    <label for="name">Nome do agente</label>
+                    <input id="name" name="name" required placeholder="Atendimento Restaurante" />
+                </div>
+
+                <div class="field">
+                    <label for="model">Modelo</label>
+                    <select id="model" name="model">
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="claude-3-sonnet">claude-3-sonnet</option>
+                        <option value="hf:mixtral">hf:mixtral</option>
+                    </select>
+                </div>
+
+                <div class="field full">
+                    <label for="description">Descricao</label>
+                    <input id="description" name="description" placeholder="Responde clientes com foco em agendamento e suporte." />
+                </div>
+
+                <div class="field full">
+                    <label for="system_prompt">Objetivo e prompt do agente</label>
+                    <textarea id="system_prompt" name="system_prompt" required placeholder="Voce e um agente de atendimento amigavel para restaurante. Responda de forma clara e curta."></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="temperature">Tom (temperature 0-100)</label>
+                    <input id="temperature" name="temperature" type="number" min="0" max="100" value="70" />
+                </div>
+
+                <div class="field">
+                    <label for="max_tokens">Max tokens</label>
+                    <input id="max_tokens" name="max_tokens" type="number" min="100" max="4000" value="1000" />
+                </div>
+
+                <div class="field full actions">
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-rocket"></i>
+                        Criar Agente
+                    </button>
+                    <a class="btn-secondary" href="/agents">Voltar para vitrine</a>
+                </div>
+            </form>
+
+            <p id="feedback"></p>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById('createAgentForm');
+        const feedback = document.getElementById('feedback');
+
+        form.addEventListener('submit', async(event) => {
+            event.preventDefault();
+            feedback.textContent = 'Criando agente...';
+
+            const token = localStorage.getItem('access_token') || localStorage.getItem('alici_jwt');
+            const payload = {
+                name: form.name.value.trim(),
+                description: form.description.value.trim() || null,
+                system_prompt: form.system_prompt.value.trim(),
+                model: form.model.value,
+                temperature: Number(form.temperature.value || 70),
+                max_tokens: Number(form.max_tokens.value || 1000),
+            };
+
+            try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers.Authorization = `Bearer ${token}`;
+                }
+
+                const res = await fetch('/api/agents/', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Nao foi possivel criar o agente');
+                }
+
+                feedback.textContent = `Agente criado com sucesso: ${data.name}`;
+                form.reset();
+            } catch (err) {
+                feedback.textContent = `Erro: ${err.message}`;
+            }
+        });
+    </script>
+</body>
+
+</html>

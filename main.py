@@ -75,6 +75,24 @@ async def dashboard_ui(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
+@app.get("/agents")
+async def agents_page(request: Request):
+    """Agent showcase and management page"""
+    return templates.TemplateResponse("agents.html", {"request": request})
+
+
+@app.get("/agents/create")
+async def create_agent_page(request: Request):
+    """Agent creation form page"""
+    return templates.TemplateResponse("create_agent.html", {"request": request})
+
+
+@app.get("/integrations")
+async def integrations_page(request: Request):
+    """Integrations catalog page"""
+    return templates.TemplateResponse("integrations.html", {"request": request})
+
+
 @app.get("/login")
 async def login_page(request: Request):
     """Login page"""

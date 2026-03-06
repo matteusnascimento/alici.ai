@@ -4,6 +4,7 @@ Chat routes for the platform
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.services.ai_orchestrator import AIOrchestrator
@@ -16,17 +17,30 @@ orchestrator = AIOrchestrator()
 billing_service = BillingService()
 
 
+class ChatMessageRequest(BaseModel):
+    """Request schema compatible with both new and legacy frontends."""
+    message: Optional[str] = None
+    pergunta: Optional[str] = None
+    conversation_id: Optional[str] = None
+    agent_id: Optional[str] = None
+
+
 @router.post("/message")
 async def send_message(
-    message: str,
-    conversation_id: Optional[str] = None,
-    agent_id: Optional[str] = None,
+    payload: ChatMessageRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user)
 ):
     """Send a chat message"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    message = (payload.message or payload.pergunta or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    conversation_id = payload.conversation_id
+    agent_id = payload.agent_id
 
     # Check usage limits
     if billing_service.check_usage_limit(current_user.organization):
@@ -59,7 +73,14 @@ async def send_message(
         # Increment usage
         billing_service.increment_usage(current_user.organization_id)
 
-        return result
+        # Keep compatibility with multiple frontend payload contracts.
+        content = result.get("content", "")
+        return {
+            **result,
+            "message": content,
+            "response": content,
+            "resposta": content,
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

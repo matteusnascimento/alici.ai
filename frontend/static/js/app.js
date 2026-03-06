@@ -135,18 +135,23 @@ async function sendMessage() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-        const response = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: userMessage }), signal: controller.signal });
+        const token = localStorage.getItem('access_token') || localStorage.getItem('alici_jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+        const response = await fetch('/api/chat/message', { method: 'POST', headers, body: JSON.stringify({ message: userMessage }), signal: controller.signal });
         let responseText = 'Recebi sua mensagem. Integre o endpoint para resposta em tempo real.';
         if (response.ok) {
             const data = await response.json();
-            responseText = data.response || data.reply || data.message || responseText
+            responseText = data.content || data.response || data.reply || data.message || data.resposta || responseText
         } else { responseText = `Erro ${response.status}: não foi possível obter resposta agora.` }
         removeTypingLoader();
         appendMessage(responseText, 'assistant')
     } catch (error) {
         removeTypingLoader();
         appendMessage('Falha de conexão com o servidor. Verifique o backend e tente novamente.', 'assistant');
-        showNotification('Erro ao conectar no endpoint /chat.', 'error')
+        showNotification('Erro ao conectar no endpoint /api/chat/message.', 'error')
     } finally { clearTimeout(timeout) }
 }
 

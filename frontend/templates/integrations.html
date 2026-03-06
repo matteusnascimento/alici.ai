@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI | Integracoes</title>
+    <link rel="stylesheet" href="/static/css/alici-premium.css?v=1.1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 28px 24px 40px;
+        }
+        
+        .top-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        
+        .top-nav a {
+            text-decoration: none;
+            color: var(--alici-text-secondary);
+            border: 1px solid var(--alici-border);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        
+        .top-nav a.active {
+            color: #fff;
+            border-color: transparent;
+            background: var(--alici-accent-gradient);
+        }
+        
+        .heading h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+        
+        .heading p {
+            margin: 8px 0 20px;
+            color: var(--alici-text-secondary);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+        
+        .card {
+            border-radius: 16px;
+            border: 1px solid var(--alici-border-light);
+            background: var(--alici-glass-strong);
+            padding: 16px;
+            box-shadow: var(--alici-shadow-md);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .card h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        .card p {
+            margin: 0;
+            color: var(--alici-text-secondary);
+            font-size: 14px;
+            min-height: 36px;
+        }
+        
+        .tag {
+            width: fit-content;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            border: 1px solid var(--alici-border-light);
+            color: var(--alici-text-secondary);
+        }
+        
+        .connect {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: var(--alici-button-gradient);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <nav class="top-nav">
+            <a href="/platform">Chat</a>
+            <a href="/agents">Agentes de IA</a>
+            <a href="/integrations" class="active">Integracoes</a>
+        </nav>
+
+        <header class="heading">
+            <h1>Integracoes</h1>
+            <p>Conecte seus agentes aos canais de atendimento e automacao.</p>
+        </header>
+
+        <section class="grid">
+            <article class="card">
+                <h2><i class="fa-brands fa-whatsapp"></i> WhatsApp</h2>
+                <p>Webhook para mensagens e automacao de atendimento.</p>
+                <span class="tag">Meta Cloud API / Twilio</span>
+                <button class="connect" type="button" disabled>Conectar</button>
+            </article>
+
+            <article class="card">
+                <h2><i class="fa-brands fa-instagram"></i> Instagram</h2>
+                <p>Responda DMs com agentes especializados em vendas.</p>
+                <span class="tag">Meta Graph API</span>
+                <button class="connect" type="button" disabled>Conectar</button>
+            </article>
+
+            <article class="card">
+                <h2><i class="fa-brands fa-facebook-messenger"></i> Facebook</h2>
+                <p>Automatize o Messenger com roteamento inteligente.</p>
+                <span class="tag">Messenger Platform</span>
+                <button class="connect" type="button" disabled>Conectar</button>
+            </article>
+
+            <article class="card">
+                <h2><i class="fa-brands fa-telegram"></i> Telegram</h2>
+                <p>Bots de suporte e notificacoes operacionais em tempo real.</p>
+                <span class="tag">Telegram Bot API</span>
+                <button class="connect" type="button" disabled>Conectar</button>
+            </article>
+
+            <article class="card">
+                <h2><i class="fa-solid fa-globe"></i> Website Widget</h2>
+                <p>Embed de chat no site com contexto do seu produto.</p>
+                <span class="tag">script embutivel</span>
+                <button class="connect" type="button" disabled>Conectar</button>
+            </article>
+
+            <article class="card">
+                <h2><i class="fa-solid fa-code"></i> API Externa</h2>
+                <p>Consuma agentes via API para integracoes customizadas.</p>
+                <span class="tag">REST / Webhooks</span>
+                <button class="connect" type="button" disabled>Conectar</button>
+            </article>
+        </section>
+    </main>
+</body>
+
+</html>

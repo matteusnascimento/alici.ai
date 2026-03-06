@@ -1713,4 +1713,45 @@ body.sidebar-open .sidebar-overlay {
     }
 }
 
-</content><parameter name="filePath">c:\Users\PC\Videos\alici.ai\Static\css\alici-premium.css
+
+/* Chat layout safety: keep composer visible in all viewport sizes */
+
+#app {
+    height: 100dvh;
+}
+
+.main-content,
+.section.active,
+.chat-container,
+.chat-messages {
+    min-height: 0;
+}
+
+.chat-messages {
+    overflow-y: auto;
+    padding-bottom: 10px;
+}
+
+.loading-indicator,
+.chat-input-container {
+    flex-shrink: 0;
+}
+
+.chat-input-container {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.chat-form {
+    display: block !important;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .chat-input-container {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+}
