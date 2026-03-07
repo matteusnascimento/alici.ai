@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import create_tables
-from app.api.routes import chat, agents, platform, public_api
+from app.api.routes import chat, agents, platform, public_api, user_settings
 
 
 @asynccontextmanager
@@ -93,6 +93,12 @@ async def integrations_page(request: Request):
     return templates.TemplateResponse("integrations.html", {"request": request})
 
 
+@app.get("/settings")
+async def settings_page(request: Request):
+    """User settings hub page"""
+    return templates.TemplateResponse("settings.html", {"request": request})
+
+
 @app.get("/login")
 async def login_page(request: Request):
     """Login page"""
@@ -110,6 +116,7 @@ app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(platform.router, prefix="/api/platform", tags=["platform"])
 app.include_router(public_api.router, prefix="/v1", tags=["public-api"])
+app.include_router(user_settings.router, prefix="/api", tags=["settings"])
 
 
 if __name__ == "__main__":

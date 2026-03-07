@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALICI | Configuracoes</title>
+    <link rel="stylesheet" href="/static/css/alici-premium.css?v=1.2" />
+    <link rel="stylesheet" href="/static/css/settings.css?v=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body>
+    <main class="settings-shell">
+        <aside class="settings-menu">
+            <div class="brand">
+                <span class="brand-dot"></span>
+                <strong>Configuracoes</strong>
+            </div>
+            <button class="menu-item active" data-tab="account"><i class="fa-regular fa-user"></i>Conta</button>
+            <button class="menu-item" data-tab="personalization"><i class="fa-solid fa-palette"></i>Personalizacao</button>
+            <button class="menu-item" data-tab="notifications"><i class="fa-regular fa-bell"></i>Notificacoes</button>
+            <button class="menu-item" data-tab="apps"><i class="fa-solid fa-plug"></i>Aplicativos</button>
+            <button class="menu-item" data-tab="data"><i class="fa-solid fa-database"></i>Controle de Dados</button>
+            <button class="menu-item" data-tab="archived"><i class="fa-regular fa-folder"></i>Chats Arquivados</button>
+            <button class="menu-item" data-tab="security"><i class="fa-solid fa-shield"></i>Seguranca</button>
+            <button class="menu-item" data-tab="ai"><i class="fa-solid fa-brain"></i>IA</button>
+            <button class="menu-item" data-tab="about"><i class="fa-solid fa-circle-info"></i>Sobre</button>
+            <a class="back-link" href="/platform"><i class="fa-solid fa-arrow-left"></i>Voltar ao app</a>
+        </aside>
+
+        <section class="settings-content">
+            <article class="tab-panel active" id="tab-account">
+                <h1>Conta</h1>
+                <p class="subtitle">Gerencie perfil, assinatura e dados da conta.</p>
+                <div class="avatar-row">
+                    <img id="avatarPreview" src="/static/avatars/default.svg" alt="Avatar" class="avatar" />
+                    <input type="file" id="avatarUpload" accept="image/*" />
+                </div>
+                <div class="form-grid">
+                    <label>Nome<input type="text" id="nameInput" /></label>
+                    <label>Email<input type="email" id="emailInput" /></label>
+                    <label>Telefone<input type="tel" id="phoneInput" /></label>
+                </div>
+                <div class="plan-box">
+                    <h3>Assinatura</h3>
+                    <p id="planLabel">Plano Gratis</p>
+                    <button class="btn-primary" type="button">Fazer upgrade</button>
+                </div>
+                <button class="btn-primary" id="saveProfileBtn" type="button">Salvar Alteracoes</button>
+            </article>
+
+            <article class="tab-panel" id="tab-personalization">
+                <h1>Personalizacao</h1>
+                <p class="subtitle">Idioma, tema e preferencia visual.</p>
+                <div class="row">
+                    <label>Idioma
+                        <select id="languageSelect">
+                            <option value="pt-BR">Portugues</option>
+                            <option value="en-US">English</option>
+                            <option value="es-ES">Espanol</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="row grouped" id="themeGroup">
+                    <span>Aparencia</span>
+                    <label><input type="radio" name="theme" value="system" /> Sistema</label>
+                    <label><input type="radio" name="theme" value="light" /> Claro</label>
+                    <label><input type="radio" name="theme" value="dark" /> Escuro</label>
+                </div>
+                <div class="row grouped" id="accentGroup">
+                    <span>Cor de destaque</span>
+                    <label><input type="radio" name="accent" value="default" /> Padrao</label>
+                    <label><input type="radio" name="accent" value="blue" /> Azul</label>
+                    <label><input type="radio" name="accent" value="violet" /> Violeta</label>
+                    <label><input type="radio" name="accent" value="green" /> Verde</label>
+                </div>
+                <button class="btn-primary" id="saveThemeBtn" type="button">Salvar personalizacao</button>
+            </article>
+
+            <article class="tab-panel" id="tab-notifications">
+                <h1>Notificacoes</h1>
+                <p class="subtitle">Escolha o que deseja receber.</p>
+                <label class="switch-row"><span>Notificar novas respostas</span><input id="notifChat" type="checkbox" /></label>
+                <label class="switch-row"><span>Atividade dos agentes</span><input id="notifAgents" type="checkbox" /></label>
+                <label class="switch-row"><span>Atualizacoes da plataforma</span><input id="notifSystem" type="checkbox" /></label>
+                <label class="switch-row"><span>Receber novidades</span><input id="notifMarketing" type="checkbox" /></label>
+                <button class="btn-primary" id="saveNotifBtn" type="button">Salvar notificacoes</button>
+            </article>
+
+            <article class="tab-panel" id="tab-apps">
+                <h1>Aplicativos</h1>
+                <p class="subtitle">Conecte canais e APIs.</p>
+                <div class="cards" id="integrationCards"></div>
+            </article>
+
+            <article class="tab-panel" id="tab-data">
+                <h1>Controle de Dados</h1>
+                <p class="subtitle">Exportacao, limpeza e privacidade.</p>
+                <div class="actions-grid">
+                    <button class="btn-secondary" id="clearHistoryBtn" type="button">Limpar historico</button>
+                    <button class="btn-secondary" id="exportDataBtn" type="button">Exportar dados</button>
+                    <button class="btn-danger" id="deleteDataBtn" type="button">Excluir todos os dados</button>
+                </div>
+                <p id="dataFeedback" class="feedback"></p>
+            </article>
+
+            <article class="tab-panel" id="tab-archived">
+                <h1>Chats Arquivados</h1>
+                <p class="subtitle">Restaure ou exclua conversas arquivadas.</p>
+                <ul class="archive-list" id="archivedList"></ul>
+            </article>
+
+            <article class="tab-panel" id="tab-security">
+                <h1>Seguranca</h1>
+                <p class="subtitle">Senha, 2FA e sessoes ativas.</p>
+                <div class="form-grid">
+                    <label>Senha atual<input type="password" /></label>
+                    <label>Nova senha<input type="password" /></label>
+                    <label>Confirmar senha<input type="password" /></label>
+                </div>
+                <label class="switch-row"><span>Autenticacao 2FA</span><input type="checkbox" /></label>
+                <button class="btn-primary" type="button">Atualizar seguranca</button>
+            </article>
+
+            <article class="tab-panel" id="tab-ai">
+                <h1>IA</h1>
+                <p class="subtitle">Configuracao do agente e modelo padrao.</p>
+                <div class="form-grid">
+                    <label>Modelo padrao
+                        <select id="aiModel">
+                            <option value="ALICI Core">ALICI Core</option>
+                            <option value="gpt-4">gpt-4</option>
+                            <option value="claude-3-sonnet">claude-3-sonnet</option>
+                        </select>
+                    </label>
+                    <label>Temperatura
+                        <input type="number" id="aiTemperature" min="0" max="1" step="0.1" value="0.7" />
+                    </label>
+                </div>
+                <label class="switch-row"><span>Memoria ativa</span><input id="aiMemory" type="checkbox" checked /></label>
+                <label class="switch-row"><span>Web Search</span><input id="aiWebSearch" type="checkbox" checked /></label>
+                <button class="btn-primary" id="saveAiBtn" type="button">Salvar IA</button>
+            </article>
+
+            <article class="tab-panel" id="tab-about">
+                <h1>Sobre</h1>
+                <p class="subtitle">Informacoes da plataforma.</p>
+                <div class="about-grid">
+                    <div><strong>ALICI AI Platform</strong><span>Versao 1.0.0</span></div>
+                    <div><strong>API</strong><span>Online</span></div>
+                    <div><strong>Render Server</strong><span>Ativo</span></div>
+                </div>
+                <div class="links-row">
+                    <a href="#">Relatar bug</a>
+                    <a href="#">Central de ajuda</a>
+                    <a href="#">Termos de uso</a>
+                    <a href="#">Privacidade</a>
+                </div>
+            </article>
+
+            <p id="globalFeedback" class="feedback"></p>
+        </section>
+    </main>
+
+    <script src="/static/js/settings.js"></script>
+</body>
+
+</html>
