@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 const sections = [
   {
@@ -19,7 +20,10 @@ const sections = [
       { href: "/settings", label: "Settings" }
     ]
   }
-];
+] as const satisfies ReadonlyArray<{
+  title: string;
+  links: ReadonlyArray<{ href: Route; label: string }>;
+}>;
 
 export function Sidebar() {
   return (

@@ -4,8 +4,8 @@ import { clearSessionTokens, getAccessToken, getRefreshToken, setSessionTokens }
 type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
 interface RefreshResponse {
-  accessToken: string;
-  refreshToken?: string;
+  access_token: string;
+  refresh_token?: string;
 }
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
@@ -23,11 +23,11 @@ async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const { data } = await axios.post<RefreshResponse>(`${baseURL}/auth/refresh`, {
-      refreshToken
+      refresh_token: refreshToken
     });
 
-    setSessionTokens(data.accessToken, data.refreshToken);
-    return data.accessToken;
+    setSessionTokens(data.access_token, data.refresh_token);
+    return data.access_token;
   } catch {
     clearSessionTokens();
     return null;

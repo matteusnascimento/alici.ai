@@ -66,6 +66,8 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    web_search_enabled: bool = True
+    web_search_timeout_seconds: int = 12
 
     # Billing
     stripe_secret_key: Optional[str] = None

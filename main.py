@@ -3,6 +3,7 @@ ALICI Platform - Enterprise AI Infrastructure
 """
 import uvicorn
 from fastapi import FastAPI, Request
+from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +11,21 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import create_tables
-from app.api.routes import chat, agents, platform, public_api, user_settings
+from app.api.routes import (
+    agents,
+    analytics,
+    auth,
+    billing,
+    chat,
+    conversations,
+    expansion,
+    integrations,
+    knowledge,
+    platform,
+    public_api,
+    user_settings,
+    users,
+)
 
 
 @asynccontextmanager
@@ -50,6 +65,10 @@ app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 templates = Jinja2Templates(directory="frontend/templates")
 
 
+class LegacyChatRequest(BaseModel):
+    mensagem: str
+
+
 # Frontend routes
 @app.get("/")
 async def landing(request: Request):
@@ -61,6 +80,22 @@ async def landing(request: Request):
 async def chat_ui(request: Request):
     """Chat interface"""
     return templates.TemplateResponse("chat.html", {"request": request})
+
+
+@app.post("/chat")
+async def legacy_chat(payload: LegacyChatRequest):
+    """Legacy compatibility endpoint used by older template variants."""
+    text = (payload.mensagem or "").strip()
+    if not text:
+        return {"status": "error", "data": None, "error": "mensagem obrigatoria", "resposta": ""}
+
+    resposta = f"Recebido: {text}"
+    return {
+        "status": "success",
+        "data": {"resposta": resposta},
+        "error": None,
+        "resposta": resposta,
+    }
 
 
 @app.get("/platform")
@@ -111,12 +146,32 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 
+@app.get("/health")
+def health():
+    """Compatibility health check endpoint."""
+    return {"status": "ok"}
+
+
+@app.get("/healthz")
+def healthz():
+    """Kubernetes/Docker health check endpoint."""
+    return {"status": "ok"}
+
+
 # API routes
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(conversations.router, prefix="/api/conversations", tags=["conversations"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(users.router, prefix="/api/user", tags=["user"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
+app.include_router(billing.router, prefix="/api/billing", tags=["billing"])
+app.include_router(integrations.router, prefix="/api/integrations", tags=["integrations"])
+app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(platform.router, prefix="/api/platform", tags=["platform"])
 app.include_router(public_api.router, prefix="/v1", tags=["public-api"])
 app.include_router(user_settings.router, prefix="/api", tags=["settings"])
+app.include_router(expansion.router, prefix="/api", tags=["expansion"])
 
 
 if __name__ == "__main__":

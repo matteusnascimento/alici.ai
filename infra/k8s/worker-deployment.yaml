@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alici-workers
+  namespace: alici-prod
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: alici-workers
+  template:
+    metadata:
+      labels:
+        app: alici-workers
+    spec:
+      containers:
+      - name: workers
+        image: ghcr.io/matteusnascimento/alici-workers:latest
+        command: ["python", "-m", "app.workers.main"]
+        env:
+        - name: ENV
+          value: production
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: alici-secrets
+              key: database_url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: alici-secrets
+              key: redis_url
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"

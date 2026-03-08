@@ -2,6 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "ghost";
+  className?: string;
 }
 
 export function Button({ variant = "primary", className = "", ...props }: ButtonProps) {

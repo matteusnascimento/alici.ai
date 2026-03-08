@@ -181,7 +181,7 @@ async function saveNotifications() {
 async function loadAISettings() {
     const data = await apiFetch("/api/settings/ai");
     document.getElementById("aiModel").value = data.default_model || "ALICI Core";
-    document.getElementById("aiTemperature").value = data.temperature ? ? 0.7;
+    document.getElementById("aiTemperature").value = data.temperature ?? 0.7;
     document.getElementById("aiMemory").checked = !!data.memory_enabled;
     document.getElementById("aiWebSearch").checked = !!data.web_search_enabled;
 }
@@ -201,6 +201,49 @@ async function saveAISettings() {
     });
 
     setFeedback("Configuracoes de IA salvas.");
+}
+
+async function startUpgradeCheckout() {
+    const payload = { plan: "pro" };
+    const data = await apiFetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+
+    if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+    }
+    setFeedback("Checkout iniciado sem URL de redirecionamento.");
+}
+
+async function saveSecurity() {
+    const currentPassword = document.getElementById("currentPasswordInput").value;
+    const newPassword = document.getElementById("newPasswordInput").value;
+    const confirmPassword = document.getElementById("confirmPasswordInput").value;
+
+    if (!currentPassword || !newPassword) {
+        throw new Error("Preencha senha atual e nova senha.");
+    }
+
+    if (newPassword !== confirmPassword) {
+        throw new Error("Confirmacao de senha nao confere.");
+    }
+
+    await apiFetch("/api/user/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword,
+        }),
+    });
+
+    document.getElementById("currentPasswordInput").value = "";
+    document.getElementById("newPasswordInput").value = "";
+    document.getElementById("confirmPasswordInput").value = "";
+    setFeedback("Configuracoes de seguranca atualizadas.");
 }
 
 function renderIntegrationCards() {
@@ -294,6 +337,22 @@ async function bindEvents() {
             await saveAISettings();
         } catch (err) {
             setFeedback(`Erro ao salvar IA: ${err.message}`);
+        }
+    });
+
+    document.getElementById("upgradePlanBtn").addEventListener("click", async() => {
+        try {
+            await startUpgradeCheckout();
+        } catch (err) {
+            setFeedback(`Erro ao iniciar upgrade: ${err.message}`);
+        }
+    });
+
+    document.getElementById("saveSecurityBtn").addEventListener("click", async() => {
+        try {
+            await saveSecurity();
+        } catch (err) {
+            setFeedback(`Erro de seguranca: ${err.message}`);
         }
     });
 

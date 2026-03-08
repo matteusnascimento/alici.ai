@@ -8,10 +8,15 @@ export interface InvoiceItem {
   id: string;
   period: string;
   amount: number;
-  status: "paid" | "pending";
+  status: "paid" | "pending" | "failed" | "canceled";
 }
 
 export interface BillingOverview {
   plan: PlanInfo;
   invoices: InvoiceItem[];
+}
+
+export interface BillingActionResult {
+  message: string;
+  checkoutUrl?: string;
 }

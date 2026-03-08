@@ -56,11 +56,20 @@ async function loadHistory() {
         });
         const data = await res.json();
         if (res.ok) {
-            const hist = Array.isArray(data ? .historico) ?
-                data.historico :
-                Array.isArray(data ? .history) ?
-                data.history :
-                [];
+            const source = Array.isArray(data) ? data :
+                Array.isArray(data?.historico) ? data.historico :
+                Array.isArray(data?.history) ? data.history :
+                Array.isArray(data?.data) ? data.data : [];
+
+            const hist = source.flatMap((h) => {
+                if (Array.isArray(h?.messages)) {
+                    return h.messages.map((m) => ({
+                        pergunta: m.role === 'user' ? m.content : null,
+                        resposta: m.role === 'assistant' ? m.content : null,
+                    }));
+                }
+                return [h];
+            });
 
             hist.reverse().forEach((h) => {
                 const userText = h.pergunta || h.question || h.user;
@@ -122,7 +131,7 @@ async function sendChat(question) {
 function logout() {
     const token = getToken();
     if (token) {
-        fetch('/auth/logout', {
+        fetch('/api/auth/logout', {
             method: 'POST',
             headers: { Authorization: 'Bearer ' + token },
         }).finally(() => {
@@ -360,6 +369,42 @@ window.addEventListener('DOMContentLoaded', () => {
     if (clearChatBtn) {
         clearChatBtn.addEventListener('click', clearChat);
     }
+
+    // Billing plan buttons
+    document.querySelectorAll('.plan-btn').forEach((btn) => {
+        btn.addEventListener('click', async() => {
+            const text = (btn.textContent || '').toLowerCase();
+            const plan = text.includes('pro') ? 'pro' : text.includes('enterprise') ? 'enterprise' : 'free';
+
+            if (plan === 'free') {
+                showToast('Voce ja esta no plano gratuito.', 'info');
+                return;
+            }
+
+            try {
+                const token = getToken();
+                const res = await fetch('/api/billing/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer ' + token,
+                    },
+                    body: JSON.stringify({ plan }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || data.error || 'Falha ao iniciar checkout');
+                }
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                    return;
+                }
+                showToast('Checkout criado sem URL de redirecionamento.', 'warning');
+            } catch (e) {
+                showToast(e.message || 'Erro no checkout', 'error');
+            }
+        });
+    });
 
     // Sidebar toggle
     const sidebarToggle = document.getElementById('sidebarToggle');

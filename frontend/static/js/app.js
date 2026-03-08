@@ -1,4 +1,4 @@
-﻿const state = { currentSection: 'dashboard', chart: null, theme: localStorage.getItem('alici_theme') || 'dark', sidebarCollapsed: false };
+const state = { currentSection: 'dashboard', chart: null, theme: localStorage.getItem('alici_theme') || 'dark', sidebarCollapsed: false };
 document.addEventListener('DOMContentLoaded', () => initializeApp());
 
 function initializeApp() {
@@ -42,7 +42,7 @@ function bindUI() {
         }
     });
     themeToggle.addEventListener('click', toggleTheme);
-    notifyBtn.addEventListener('click', () => showNotification('Você está com tudo sincronizado.'));
+    notifyBtn.addEventListener('click', () => showNotification('Voce esta com tudo sincronizado.'));
     openSidebarBtn.addEventListener('click', () => {
         if (window.innerWidth <= 768) { document.getElementById('app').classList.add('sidebar-open'); return }
         toggleSidebar()
@@ -53,19 +53,35 @@ function bindUI() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
     window.addEventListener('resize', () => { if (window.innerWidth > 768) { closeMobileSidebar() } });
-    if (localStorage.getItem('alici_jwt')) {
+    if (localStorage.getItem('access_token') || localStorage.getItem('alici_jwt')) {
         unlockApp();
-        showNotification('Sessão restaurada com JWT local.')
+        showNotification('Sessao restaurada com JWT local.')
     }
 }
 
-function login() {
+async function login() {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
     if (!email || !password) { showNotification('Preencha e-mail e senha para continuar.', 'warning'); return }
-    localStorage.setItem('alici_jwt', `alici.jwt.${Date.now()}`);
-    unlockApp();
-    showNotification('Login concluído. Bem-vindo(a) à ALICI!')
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.access_token) {
+            throw new Error(data.detail || 'Falha ao autenticar');
+        }
+        localStorage.setItem('access_token', data.access_token);
+        if (data.refresh_token) {
+            localStorage.setItem('refresh_token', data.refresh_token);
+        }
+        unlockApp();
+        showNotification('Login concluido. Bem-vindo(a) a ALICI!');
+    } catch (error) {
+        showNotification(`Erro no login: ${error.message}`, 'error');
+    }
 }
 
 function unlockApp() {
@@ -75,12 +91,14 @@ function unlockApp() {
 }
 
 function logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('alici_jwt');
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('app').classList.add('hidden');
     document.getElementById('email').value = '';
     document.getElementById('password').value = '';
-    showNotification('Você foi desconectado.');
+    showNotification('Voce foi desconectado.');
 }
 
 function closeMobileSidebar() { document.getElementById('app').classList.remove('sidebar-open') }
@@ -98,7 +116,7 @@ function showSection(sectionId) {
     const active = document.getElementById(sectionId);
     if (active) { active.classList.add('active') }
     const title = document.getElementById('sectionTitle');
-    title.textContent = { dashboard: 'Dashboard', chat: 'Chat IA', models: 'Modelos', analytics: 'Analytics', settings: 'Configurações', billing: 'Planos & Faturamento' }[sectionId] || 'ALICI';
+    title.textContent = { dashboard: 'Dashboard', chat: 'Chat IA', models: 'Modelos', analytics: 'Analytics', settings: 'Configuracoes', billing: 'Planos & Faturamento' }[sectionId] || 'ALICI';
     if (sectionId === 'chat') { autoScroll() }
 }
 
@@ -145,12 +163,12 @@ async function sendMessage() {
         if (response.ok) {
             const data = await response.json();
             responseText = data.content || data.response || data.reply || data.message || data.resposta || responseText
-        } else { responseText = `Erro ${response.status}: não foi possível obter resposta agora.` }
+        } else { responseText = `Erro ${response.status}: nao foi possivel obter resposta agora.` }
         removeTypingLoader();
         appendMessage(responseText, 'assistant')
     } catch (error) {
         removeTypingLoader();
-        appendMessage('Falha de conexão com o servidor. Verifique o backend e tente novamente.', 'assistant');
+        appendMessage('Falha de conexao com o servidor. Verifique o backend e tente novamente.', 'assistant');
         showNotification('Erro ao conectar no endpoint /api/chat/message.', 'error')
     } finally { clearTimeout(timeout) }
 }
@@ -193,7 +211,7 @@ function initializeChart() {
     const light = document.documentElement.getAttribute('data-theme') === 'light';
     const textColor = light ? '#334155' : '#94a3b8';
     const gridColor = light ? 'rgba(148,163,184,.25)' : 'rgba(148,163,184,.16)';
-    state.chart = new Chart(canvas, { type: 'line', data: { labels: ['00h', '04h', '08h', '12h', '16h', '20h', '24h'], datasets: [{ label: 'Requisições', data: [210, 340, 440, 620, 740, 680, 510], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,.14)', fill: true, tension: .35, pointRadius: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor } } }, scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { ticks: { color: textColor }, grid: { color: gridColor } } } } })
+    state.chart = new Chart(canvas, { type: 'line', data: { labels: ['00h', '04h', '08h', '12h', '16h', '20h', '24h'], datasets: [{ label: 'Requisicoes', data: [210, 340, 440, 620, 740, 680, 510], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,.14)', fill: true, tension: .35, pointRadius: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor } } }, scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { ticks: { color: textColor }, grid: { color: gridColor } } } } })
 }
 
 /* ========== PROFILE & BILLING FUNCTIONS ========== */
@@ -202,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileBtn = document.getElementById('profileBtn');
     const closeProfileBtn = document.getElementById('closeProfileBtn');
     const profileModal = document.getElementById('profileModal');
-    const modalOverlay = profileModal ? .querySelector('.modal-overlay');
+    const modalOverlay = profileModal?.querySelector('.modal-overlay');
 
     if (profileBtn) {
         profileBtn.addEventListener('click', openProfileModal);
@@ -252,7 +270,7 @@ function handlePlanSelection(plan) {
     const planName = plans[plan];
 
     if (plan === 'starter') {
-        showNotification('Você já está no plano Starter.', 'warning');
+        showNotification('Voce ja esta no plano Starter.', 'warning');
         return;
     }
 
@@ -262,25 +280,47 @@ function handlePlanSelection(plan) {
     }
 
     if (plan === 'professional') {
-        showNotification(`Redirecionando para checkout do plano ${planName}...`);
-        setTimeout(() => {
-            window.location.href = '/billing/checkout?plan=professional';
-        }, 1200);
+        showNotification(`Gerando checkout do plano ${planName}...`);
+        const token = localStorage.getItem('access_token') || localStorage.getItem('alici_jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+
+        fetch('/api/billing/checkout', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ plan: 'pro' })
+            })
+            .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok) {
+                    throw new Error(data.detail || 'Nao foi possivel iniciar checkout');
+                }
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                    return;
+                }
+                showNotification('Checkout criado, mas sem URL de redirecionamento.', 'warning');
+            })
+            .catch((err) => {
+                showNotification(`Falha no checkout: ${err.message}`, 'error');
+            });
     }
 }
 
 function saveProfile() {
-    const fullName = document.getElementById('profileFullName') ? .value;
-    const currentPassword = document.getElementById('profileCurrentPassword') ? .value;
-    const newPassword = document.getElementById('profileNewPassword') ? .value;
+    const fullName = document.getElementById('profileFullName')?.value;
+    const currentPassword = document.getElementById('profileCurrentPassword')?.value;
+    const newPassword = document.getElementById('profileNewPassword')?.value;
 
     if (!fullName || fullName.trim() === '') {
-        showNotification('Nome não pode estar vazio.', 'warning');
+        showNotification('Nome nao pode estar vazio.', 'warning');
         return;
     }
 
     if (newPassword && newPassword.length < 8) {
-        showNotification('Senha deve ter no mínimo 8 caracteres.', 'warning');
+        showNotification('Senha deve ter no minimo 8 caracteres.', 'warning');
         return;
     }
 
@@ -289,7 +329,7 @@ function saveProfile() {
 }
 
 function openChangePassword() {
-    document.getElementById('profileCurrentPassword') ? .focus();
+    document.getElementById('profileCurrentPassword')?.focus();
     showNotification('Digite sua senha atual e uma nova senha.');
 }
 

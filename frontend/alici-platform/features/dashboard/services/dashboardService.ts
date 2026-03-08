@@ -24,8 +24,47 @@ const fallbackData: DashboardData = {
 
 export async function fetchDashboard(): Promise<DashboardData> {
   try {
-    const response = await api.get<DashboardData>("/dashboard");
-    return response.data;
+    const response = await api.get("/platform/overview");
+    const payload = response.data;
+
+    return {
+      usage: {
+        tokens: {
+          title: "Tokens",
+          value: String(payload?.stats?.current_month_tokens ?? 0),
+          change: 0
+        },
+        requests: {
+          title: "Requests",
+          value: String(payload?.organization?.current_usage ?? 0),
+          change: 0
+        },
+        storage: {
+          title: "Storage",
+          value: "n/a",
+          change: 0
+        },
+        bandwidth: {
+          title: "Bandwidth",
+          value: "n/a",
+          change: 0
+        },
+        tokensHistory: []
+      },
+      costs: (payload?.recent_activity || []).map((item: { cost?: number }) => Number(item.cost || 0)),
+      agents: [
+        {
+          id: "active-agents",
+          name: "Active agents",
+          status: (payload?.stats?.total_agents ?? 0) > 0 ? "online" : "degraded"
+        }
+      ],
+      activity: (payload?.recent_activity || []).map((item: { id: string; endpoint?: string; created_at?: string }) => ({
+        id: item.id,
+        description: item.endpoint || "activity",
+        timestamp: item.created_at || ""
+      }))
+    };
   } catch {
     return fallbackData;
   }

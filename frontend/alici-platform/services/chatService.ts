@@ -6,6 +6,6 @@ export interface SendMessageInput {
 }
 
 export async function sendMessage(data: SendMessageInput) {
-  const response = await api.post("/chat", data);
+  const response = await api.post("/chat/message", data);
   return response.data;
 }

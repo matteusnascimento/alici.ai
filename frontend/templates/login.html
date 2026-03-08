@@ -565,14 +565,14 @@
             document.getElementById('loginLoading').classList.add('active');
 
             try {
-                const response = await fetch('/auth/login', {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         email,
-                        senha: password
+                        password
                     })
                 });
 
@@ -584,12 +584,12 @@
                     if (data.refresh_token) {
                         localStorage.setItem('refresh_token', data.refresh_token);
                     }
-                    localStorage.setItem('alici_user', JSON.stringify(data.usuario));
+                    localStorage.setItem('alici_user', JSON.stringify(data.user || {}));
 
                     showMessage('loginSuccess', '✓ Login realizado! Redirecionando...');
 
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        window.location.href = '/platform';
                     }, 1500);
                 } else {
                     showMessage('loginError', data.detail || 'Erro ao fazer login');
@@ -623,15 +623,15 @@
             document.getElementById('registerLoading').classList.add('active');
 
             try {
-                const response = await fetch('/auth/register', {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        nome: name,
                         email,
-                        senha: password
+                        password,
+                        full_name: name
                     })
                 });
 
@@ -673,7 +673,7 @@
             // Check if already logged in
             const token = localStorage.getItem('access_token');
             if (token) {
-                window.location.href = '/dashboard';
+                window.location.href = '/platform';
             }
         });
     </script>

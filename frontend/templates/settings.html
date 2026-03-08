@@ -45,7 +45,7 @@
                 <div class="plan-box">
                     <h3>Assinatura</h3>
                     <p id="planLabel">Plano Gratis</p>
-                    <button class="btn-primary" type="button">Fazer upgrade</button>
+                    <button class="btn-primary" id="upgradePlanBtn" type="button">Fazer upgrade</button>
                 </div>
                 <button class="btn-primary" id="saveProfileBtn" type="button">Salvar Alteracoes</button>
             </article>
@@ -115,12 +115,12 @@
                 <h1>Seguranca</h1>
                 <p class="subtitle">Senha, 2FA e sessoes ativas.</p>
                 <div class="form-grid">
-                    <label>Senha atual<input type="password" /></label>
-                    <label>Nova senha<input type="password" /></label>
-                    <label>Confirmar senha<input type="password" /></label>
+                    <label>Senha atual<input type="password" id="currentPasswordInput" /></label>
+                    <label>Nova senha<input type="password" id="newPasswordInput" /></label>
+                    <label>Confirmar senha<input type="password" id="confirmPasswordInput" /></label>
                 </div>
                 <label class="switch-row"><span>Autenticacao 2FA</span><input type="checkbox" /></label>
-                <button class="btn-primary" type="button">Atualizar seguranca</button>
+                <button class="btn-primary" id="saveSecurityBtn" type="button">Atualizar seguranca</button>
             </article>
 
             <article class="tab-panel" id="tab-ai">

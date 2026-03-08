@@ -8,6 +8,8 @@ import uuid
 
 from app.core.config import settings
 from app.models import Agent, Conversation, Message, UsageLog
+from app.services.user_memory_service import UserMemoryService
+from app.services.web_search_service import WebSearchService
 from app.core.database import SessionLocal
 
 
@@ -20,6 +22,8 @@ class AIOrchestrator:
             "anthropic": self._call_anthropic,
             "huggingface": self._call_huggingface,
         }
+        self.user_memory_service = UserMemoryService()
+        self.web_search_service = WebSearchService()
 
     async def process_chat(
         self,
@@ -74,6 +78,8 @@ class AIOrchestrator:
                 message=message,
                 agent=agent,
                 history=history,
+                db=db,
+                user_id=user_id,
                 **kwargs
             )
 
@@ -88,6 +94,8 @@ class AIOrchestrator:
             )
 
             # Update conversation
+            if conversation.title and conversation.title.startswith("Chat with"):
+                conversation.title = message[:60]
             conversation.last_message_at = datetime.utcnow()
             conversation.updated_at = datetime.utcnow()
 
@@ -98,7 +106,8 @@ class AIOrchestrator:
                 user_id=user_id,
                 agent_id=agent_id,
                 tokens_used=response_data.get("tokens_used", 0),
-                cost=response_data.get("cost", 0.0)
+                cost=response_data.get("cost", 0.0),
+                endpoint="/api/chat/message",
             )
 
             db.commit()
@@ -153,15 +162,27 @@ class AIOrchestrator:
         message: str,
         agent: Agent,
         history: List[Dict],
+        db=None,
+        user_id: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """Generate AI response using appropriate provider"""
         provider = self._get_provider_for_model(agent.model)
         if not provider:
+            fallback = await self._web_search_fallback(message)
+            if fallback:
+                return fallback
             raise ValueError(f"No provider available for model {agent.model}")
 
         # Build messages for API
-        messages = [{"role": "system", "content": agent.system_prompt}]
+        system_prompt = agent.system_prompt
+        if db is not None and user_id:
+            memories = self.user_memory_service.list_memory(db, user_id=user_id, limit=20)
+            memory_context = self.user_memory_service.build_memory_context(memories)
+            if memory_context:
+                system_prompt = f"{system_prompt}\n\n{memory_context}"
+
+        messages = [{"role": "system", "content": system_prompt}]
 
         # Add history
         messages.extend(history[-10:])  # Last 10 messages for context
@@ -169,14 +190,72 @@ class AIOrchestrator:
         # Add current message
         messages.append({"role": "user", "content": message})
 
-        # Call provider
-        return await self.providers[provider](
-            messages=messages,
-            model=agent.model,
-            temperature=agent.temperature / 100.0,  # Convert to 0-1 scale
-            max_tokens=agent.max_tokens,
-            **kwargs
+        # Call provider; fallback to web search when unavailable or empty.
+        try:
+            response = await self.providers[provider](
+                messages=messages,
+                model=agent.model,
+                temperature=agent.temperature / 100.0,  # Convert to 0-1 scale
+                max_tokens=agent.max_tokens,
+                **kwargs
+            )
+        except Exception:
+            fallback = await self._web_search_fallback(message)
+            if fallback:
+                return fallback
+            raise
+
+        if not (response or {}).get("content"):
+            fallback = await self._web_search_fallback(message)
+            if fallback:
+                return fallback
+
+        return response
+
+    async def _web_search_fallback(self, message: str) -> Optional[Dict[str, Any]]:
+        """Fallback to web search when model/provider cannot answer."""
+        if not settings.web_search_enabled:
+            return None
+        if not self._looks_like_web_query(message):
+            return None
+
+        try:
+            result = await asyncio.to_thread(self.web_search_service.search, message)
+        except Exception:
+            return None
+
+        if not result.get("found"):
+            return None
+
+        answer = result.get("answer") or ""
+        source = result.get("source") or "DuckDuckGo"
+        return {
+            "content": f"{answer}\n\nFonte: {source}",
+            "model": "web-search-fallback",
+            "tokens_used": len(answer.split()),
+            "finish_reason": "stop",
+            "cost": 0.0,
+        }
+
+    def _looks_like_web_query(self, message: str) -> bool:
+        text = (message or "").strip().lower()
+        if not text:
+            return False
+
+        triggers = (
+            "hoje",
+            "atual",
+            "noticia",
+            "noticias",
+            "preco",
+            "cotacao",
+            "quem",
+            "quando",
+            "onde",
+            "qual",
+            "o que",
         )
+        return any(token in text for token in triggers)
 
     def _get_provider_for_model(self, model: str) -> Optional[str]:
         """Determine which provider to use for a model"""
@@ -266,7 +345,8 @@ class AIOrchestrator:
         user_id: Optional[str] = None,
         agent_id: Optional[str] = None,
         tokens_used: int = 0,
-        cost: float = 0.0
+        cost: float = 0.0,
+        endpoint: str = "/api/chat",
     ):
         """Track API usage"""
         usage_log = UsageLog(
@@ -274,7 +354,7 @@ class AIOrchestrator:
             organization_id=organization_id,
             user_id=user_id,
             agent_id=agent_id,
-            endpoint="/api/chat",
+            endpoint=endpoint,
             method="POST",
             status_code=200,
             model="gpt-3.5-turbo",  # Default
