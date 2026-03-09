@@ -57,7 +57,7 @@ export async function fetchDashboard(): Promise<DashboardData> {
         {
           id: "active-agents",
           name: "Active agents",
-          status: (stats?.agents ?? 0) > 0 ? "online" : "degraded"
+          status: (Number(stats?.agents ?? 0)) > 0 ? "online" : "degraded"
         }
       ],
       activity: [
@@ -72,17 +72,20 @@ export async function fetchDashboard(): Promise<DashboardData> {
     try {
       const response = await api.get<ApiEnvelope<Record<string, unknown>>>("/platform/overview");
       const payload = response.data?.data ?? {};
+      const payloadStats = (payload?.stats ?? {}) as Record<string, unknown>;
+      const payloadOrg = (payload?.organization ?? {}) as Record<string, unknown>;
+      const recentActivity = Array.isArray(payload?.recent_activity) ? payload.recent_activity : [];
 
       return {
         usage: {
           tokens: {
             title: "Tokens",
-            value: String(payload?.stats?.current_month_tokens ?? 0),
+            value: String(payloadStats?.current_month_tokens ?? 0),
             change: 0
           },
           requests: {
             title: "Requests",
-            value: String(payload?.organization?.current_usage ?? 0),
+            value: String(payloadOrg?.current_usage ?? 0),
             change: 0
           },
           storage: {
@@ -97,15 +100,15 @@ export async function fetchDashboard(): Promise<DashboardData> {
           },
           tokensHistory: []
         },
-        costs: (payload?.recent_activity || []).map((item: { cost?: number }) => Number(item.cost || 0)),
+        costs: recentActivity.map((item: { cost?: number }) => Number(item.cost || 0)),
         agents: [
           {
             id: "active-agents",
             name: "Active agents",
-            status: (payload?.stats?.total_agents ?? 0) > 0 ? "online" : "degraded"
+            status: Number(payloadStats?.total_agents ?? 0) > 0 ? "online" : "degraded"
           }
         ],
-        activity: (payload?.recent_activity || []).map((item: { id: string; endpoint?: string; created_at?: string }) => ({
+        activity: recentActivity.map((item: { id: string; endpoint?: string; created_at?: string }) => ({
           id: item.id,
           description: item.endpoint || "activity",
           timestamp: item.created_at || ""
