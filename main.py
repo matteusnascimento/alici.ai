@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import create_tables
+from app.api.v1 import research as v1_research
 from app.api.routes import (
     ai_architecture,
     agents,
@@ -212,6 +213,7 @@ app.include_router(public_api.router, prefix="/v1", tags=["public-api"])
 app.include_router(user_settings.router, prefix="/api", tags=["settings"])
 app.include_router(expansion.router, prefix="/api", tags=["expansion"])
 app.include_router(ai_architecture.router, prefix="/api/ai", tags=["ai-architecture"])
+app.include_router(v1_research.router, prefix="/v1", tags=["research-v1"])
 
 
 if __name__ == "__main__":
