@@ -5,6 +5,7 @@ import type { ApiEnvelope } from "@/types/api";
 export interface SendMessageInput {
   conversationId?: string;
   message: string;
+  agentId?: string;
 }
 
 export interface ConversationItem {
@@ -120,7 +121,8 @@ export async function streamMessage(
     },
     body: JSON.stringify({
       message: data.message,
-      conversation_id: data.conversationId
+      conversation_id: data.conversationId,
+      ...(data.agentId ? { agent_id: data.agentId } : {})
     })
   });
 

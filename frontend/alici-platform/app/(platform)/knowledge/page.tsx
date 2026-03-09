@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { api } from "@/services/api";
 
 interface KnowledgeDocument {
@@ -17,6 +18,7 @@ export default function KnowledgeRoute() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function loadDocuments() {
@@ -56,6 +58,19 @@ export default function KnowledgeRoute() {
     } finally {
       uploadingRef.current = false;
       setUploading(false);
+    }
+  }
+
+  async function handleDelete(docId: string) {
+    if (deletingId) return;
+    setDeletingId(docId);
+    try {
+      await api.delete(`/knowledge/${docId}`);
+      setDocuments((prev) => prev.filter((d) => d.id !== docId));
+    } catch {
+      // ignore
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -159,15 +174,24 @@ export default function KnowledgeRoute() {
                   key={doc.id}
                   className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">📄</span>
-                    <span className="text-sm text-slate-100">{doc.filename}</span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-lg shrink-0">📄</span>
+                    <span className="text-sm text-slate-100 truncate">{doc.filename}</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0 ml-3">
                     {doc.status && (
                       <span className="text-xs text-emerald-400">{doc.status}</span>
                     )}
                     <span className="text-xs text-slate-400">{doc.created_at}</span>
+                    <button
+                      type="button"
+                      aria-label={`Delete ${doc.filename}`}
+                      onClick={() => void handleDelete(doc.id)}
+                      disabled={deletingId === doc.id}
+                      className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-800 hover:text-red-400 disabled:opacity-50"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               ))}

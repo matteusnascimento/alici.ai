@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChatMessage,
@@ -10,6 +10,8 @@ import {
   getConversations,
   streamMessage
 } from "@/services/chatService";
+import { fetchAgents } from "@/features/agents/services/agentService";
+import type { AgentItem } from "@/features/agents/types/agentTypes";
 
 interface ChatWorkspaceProps {
   initialConversationId?: string;
@@ -26,6 +28,29 @@ export function ChatWorkspace({ initialConversationId }: ChatWorkspaceProps) {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<AgentItem[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("");
+  const agentLoadedRef = useRef(false);
+
+  // Load available agents for the selector once on mount
+  useEffect(() => {
+    if (agentLoadedRef.current) return;
+    agentLoadedRef.current = true;
+
+    async function loadAgents() {
+      try {
+        const data = await fetchAgents();
+        setAgents(data.agents);
+        if (data.agents.length > 0) {
+          setSelectedAgentId((prev) => prev || data.agents[0].id);
+        }
+      } catch {
+        // Ignore – agent selector is optional
+      }
+    }
+
+    void loadAgents();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -84,6 +109,11 @@ export function ChatWorkspace({ initialConversationId }: ChatWorkspaceProps) {
   const selectedConversation = useMemo(
     () => conversations.find((item) => item.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId]
+  );
+
+  const selectedAgent = useMemo(
+    () => agents.find((a) => a.id === selectedAgentId) ?? null,
+    [agents, selectedAgentId]
   );
 
   async function handleCreateConversation() {
@@ -155,7 +185,8 @@ export function ChatWorkspace({ initialConversationId }: ChatWorkspaceProps) {
       await streamMessage(
         {
         conversationId: targetConversationId ?? undefined,
-        message: content
+        message: content,
+        agentId: selectedAgentId || undefined,
         },
         {
           onChunk: (chunk) => {
@@ -238,9 +269,35 @@ export function ChatWorkspace({ initialConversationId }: ChatWorkspaceProps) {
       </aside>
 
       <div className="flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900/70">
-        <header className="border-b border-slate-800 px-5 py-4">
-          <h1 className="text-lg font-semibold">{selectedConversation?.title ?? "Professional Chat"}</h1>
-          <p className="text-sm text-slate-400">AI assistant with conversation context and persistent history.</p>
+        <header className="border-b border-slate-800 px-5 py-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold truncate">{selectedConversation?.title ?? "Professional Chat"}</h1>
+            <p className="text-sm text-slate-400">AI assistant with conversation context and persistent history.</p>
+          </div>
+
+          {/* Agent selector */}
+          {agents.length > 0 && (
+            <div className="shrink-0 flex items-center gap-2">
+              <label htmlFor="agent-select" className="text-xs text-slate-400 whitespace-nowrap">
+                Agent:
+              </label>
+              <select
+                id="agent-select"
+                value={selectedAgentId}
+                onChange={(e) => setSelectedAgentId(e.target.value)}
+                className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-slate-100 outline-none focus:border-sky-500"
+              >
+                {agents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </option>
+                ))}
+              </select>
+              {selectedAgent && (
+                <span className="text-xs text-slate-500">{selectedAgent.model}</span>
+              )}
+            </div>
+          )}
         </header>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">

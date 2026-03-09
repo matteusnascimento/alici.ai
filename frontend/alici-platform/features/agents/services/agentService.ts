@@ -55,3 +55,7 @@ export async function createAgent(payload: AgentCreatePayload): Promise<AgentCre
   const response = await api.post<ApiEnvelope<AgentCreateResponse>>("/agents", payload);
   return response.data.data;
 }
+
+export async function deleteAgentById(agentId: string): Promise<void> {
+  await api.delete(`/agents/${agentId}`);
+}
