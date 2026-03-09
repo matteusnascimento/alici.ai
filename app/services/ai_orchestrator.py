@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.models import Agent, Conversation, Message, UsageLog
 from app.services.user_memory_service import UserMemoryService
 from app.services.web_search_service import WebSearchService
+from app.services.model_router_service import ModelRouterService
 from app.core.database import SessionLocal
 
 
@@ -24,6 +25,7 @@ class AIOrchestrator:
         }
         self.user_memory_service = UserMemoryService()
         self.web_search_service = WebSearchService()
+        self.model_router_service = ModelRouterService()
 
     async def process_chat(
         self,
@@ -259,13 +261,7 @@ class AIOrchestrator:
 
     def _get_provider_for_model(self, model: str) -> Optional[str]:
         """Determine which provider to use for a model"""
-        if model.startswith("gpt"):
-            return "openai"
-        elif model.startswith("claude"):
-            return "anthropic"
-        elif model.startswith("hf:"):
-            return "huggingface"
-        return None
+        return self.model_router_service.resolve_provider(model)
 
     async def _call_openai(self, messages: List[Dict], model: str, **kwargs) -> Dict[str, Any]:
         """Call OpenAI API"""

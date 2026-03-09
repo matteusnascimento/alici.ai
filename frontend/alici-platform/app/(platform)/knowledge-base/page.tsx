@@ -1,9 +1,13 @@
+import { redirect } from "next/navigation";
+
 export default function Page() {
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">Knowledge Base</h1>
-      <p className="mt-2 text-sm text-slate-300">Module scaffold ready.</p>
-    </main>
-  );
+  /**
+   * Function: Page
+   * Description: Redirect legacy knowledge-base route to canonical knowledge route.
+   * Parameters:
+   * Returns:
+   *   Never returns because redirect terminates rendering.
+   */
+  redirect("/knowledge");
 }
 

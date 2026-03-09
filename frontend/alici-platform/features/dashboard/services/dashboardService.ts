@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import type { ApiEnvelope } from "@/types/api";
 import type { DashboardData } from "@/types/dashboard";
 
 const fallbackData: DashboardData = {
@@ -24,8 +25,8 @@ const fallbackData: DashboardData = {
 
 export async function fetchDashboard(): Promise<DashboardData> {
   try {
-    const response = await api.get("/platform/overview");
-    const payload = response.data;
+    const response = await api.get<ApiEnvelope<Record<string, unknown>>>("/platform/overview");
+    const payload = response.data?.data ?? {};
 
     return {
       usage: {

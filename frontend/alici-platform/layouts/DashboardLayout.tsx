@@ -4,9 +4,9 @@ import { Topbar } from "@/components/navigation/Topbar";
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="grid min-h-screen grid-cols-[260px_1fr] bg-slate-950 text-slate-100">
       <Sidebar />
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-col">
         <Topbar />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

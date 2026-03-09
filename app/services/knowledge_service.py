@@ -12,6 +12,8 @@ from app.models import KnowledgeChunk, KnowledgeDocument
 
 
 class KnowledgeService:
+    # TODO: Add embedding + vector index pipeline (Upload -> Parse -> Chunk -> Embed -> Store -> Retrieve)
+    # TODO: Keep lexical fallback as safety path when vector infra is unavailable.
     ALLOWED_EXTENSIONS = {"pdf", "docx", "txt", "csv"}
 
     def validate_extension(self, filename: str) -> str:

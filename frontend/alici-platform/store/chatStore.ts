@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 
+// TODO: verify if safe to remove
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";

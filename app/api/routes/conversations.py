@@ -13,6 +13,10 @@ from app.services.auth_service import AuthService
 router = APIRouter()
 
 
+def _ok(data):
+    return {"status": "success", "data": data, "error": None}
+
+
 class ConversationCreateRequest(BaseModel):
     title: str | None = None
     agent_id: str | None = None
@@ -83,7 +87,7 @@ def list_conversations(
                 "last_message_at": last_message_at,
             }
         )
-    return response
+    return _ok({"history": response})
 
 
 @router.post("")
@@ -115,11 +119,15 @@ def create_conversation(
     db.commit()
     db.refresh(conversation)
 
-    return {
-        "id": conversation.id,
-        "title": conversation.title,
-        "created_at": conversation.created_at,
-    }
+    return _ok(
+        {
+            "conversation": {
+                "id": conversation.id,
+                "title": conversation.title,
+                "created_at": conversation.created_at,
+            }
+        }
+    )
 
 
 @router.get("/{conversation_id}")
@@ -148,20 +156,24 @@ def get_conversation(
         .all()
     )
 
-    return {
-        "id": conversation.id,
-        "title": conversation.title,
-        "created_at": conversation.created_at,
-        "messages": [
-            {
-                "id": msg.id,
-                "role": msg.role,
-                "content": msg.content,
-                "timestamp": msg.created_at,
+    return _ok(
+        {
+            "conversation": {
+                "id": conversation.id,
+                "title": conversation.title,
+                "created_at": conversation.created_at,
+                "messages": [
+                    {
+                        "id": msg.id,
+                        "role": msg.role,
+                        "content": msg.content,
+                        "timestamp": msg.created_at,
+                    }
+                    for msg in messages
+                ],
             }
-            for msg in messages
-        ],
-    }
+        }
+    )
 
 
 @router.delete("/{conversation_id}")
@@ -186,4 +198,4 @@ def delete_conversation(
     db.delete(conversation)
     db.commit()
 
-    return {"message": "Conversation deleted"}
+    return _ok({"message": "Conversation deleted", "conversation_id": conversation_id})

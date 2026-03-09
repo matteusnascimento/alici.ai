@@ -22,6 +22,10 @@ billing_service = BillingService()
 user_memory_service = UserMemoryService()
 
 
+def _ok(data):
+    return {"status": "success", "data": data, "error": None}
+
+
 class ChatMessageRequest(BaseModel):
     """Request schema compatible with both new and legacy frontends."""
     message: Optional[str] = None
@@ -51,6 +55,7 @@ async def streamResponse(content: str) -> AsyncGenerator[str, None]:
 
 
 @router.post("/message")
+@router.post("")
 async def send_message(
     payload: ChatMessageRequest,
     db: Session = Depends(get_db),
@@ -121,15 +126,14 @@ async def send_message(
 
         # Keep compatibility with multiple frontend payload contracts.
         content = result.get("content", "")
-        return {
-            **result,
-            "message": content,
-            "response": content,
-            "resposta": content,
-            "status": "success",
-            "data": result,
-            "error": None,
-        }
+        return _ok(
+            {
+                **result,
+                "message": content,
+                "response": content,
+                "resposta": content,
+            }
+        )
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -140,6 +144,7 @@ async def send_message(
 
 
 @router.get("/conversations")
+@router.get("/history")
 def get_conversations(
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user)
@@ -153,7 +158,7 @@ def get_conversations(
         Conversation.user_id == current_user.id
     ).order_by(Conversation.updated_at.desc()).all()
 
-    return [
+    history = [
         {
             "id": conv.id,
             "title": conv.title,
@@ -163,6 +168,7 @@ def get_conversations(
         }
         for conv in conversations
     ]
+    return _ok({"history": history})
 
 
 @router.get("/conversations/{conversation_id}/messages")
@@ -188,7 +194,7 @@ def get_conversation_messages(
         Message.conversation_id == conversation_id
     ).order_by(Message.created_at).all()
 
-    return [
+    messages_payload = [
         {
             "id": msg.id,
             "role": msg.role,
@@ -198,6 +204,7 @@ def get_conversation_messages(
         }
         for msg in messages
     ]
+    return _ok({"messages": messages_payload})
 
 
 @router.post("/stream")
@@ -208,5 +215,6 @@ async def stream_message(
 ):
     """Stream chat response chunks as Server-Sent Events."""
     result = await send_message(payload=payload, db=db, current_user=current_user)
-    content = result.get("content") or result.get("message") or ""
+    body = result.get("data") or {}
+    content = body.get("content") or body.get("message") or ""
     return StreamingResponse(streamResponse(content), media_type="text/event-stream")

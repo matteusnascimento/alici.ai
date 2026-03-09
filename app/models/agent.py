@@ -14,6 +14,10 @@ class Agent(Base):
     name = Column(String, nullable=False)
     description = Column(Text)
     system_prompt = Column(Text, nullable=False)
+    instructions = Column(Text)
+    tools = Column(Text)
+    knowledge = Column(Text)
+    memory = Column(Text)
 
     # Configuration
     model = Column(String, default="gpt-3.5-turbo")  # gpt-3.5-turbo, gpt-4, claude, etc.

@@ -1,20 +1,36 @@
 "use client";
 
 import { useEffect } from "react";
-import { fetchWorkflows } from "../services/workflowService";
-import { useWorkflowStore } from "../store/workflowStore";
+import { useState } from "react";
+import { fetchWorkflows } from "@/features/workflows/services/workflowService";
+import { useWorkflowStore } from "@/features/workflows/store/workflowStore";
 
 export function useWorkflows() {
-  const { loading, workflows, setWorkflows } = useWorkflowStore();
+  const { workflows, setWorkflows } = useWorkflowStore();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     async function load() {
-      const data = await fetchWorkflows();
-      setWorkflows(data.workflows);
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchWorkflows();
+        if (active) setWorkflows(data.workflows);
+      } catch {
+        if (active) setError("Failed to load workflows");
+      } finally {
+        if (active) setLoading(false);
+      }
     }
 
     void load();
+    return () => {
+      active = false;
+    };
   }, [setWorkflows]);
 
-  return { loading, workflows };
+  return { loading, error, data: workflows, workflows };
 }

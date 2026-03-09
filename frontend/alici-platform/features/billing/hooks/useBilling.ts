@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { cancelPlan, fetchBillingOverview, subscribePlan } from "../services/billingService";
-import { useBillingStore } from "../store/billingStore";
+import { cancelPlan, fetchBillingOverview, subscribePlan } from "@/features/billing/services/billingService";
+import { useBillingStore } from "@/features/billing/store/billingStore";
 
 export function useBilling() {
   const {
@@ -67,5 +67,5 @@ export function useBilling() {
     }
   }
 
-  return { loading, actionLoading, error, overview, upgrade, cancelSubscription };
+  return { loading, actionLoading, error, data: overview, overview, upgrade, cancelSubscription };
 }

@@ -986,9 +986,20 @@ async def upload_file(
     file: UploadFile = File(...),
     current_user: User = Depends(AuthService.get_current_user),
 ):
+    # /**
+    #  * Function: upload_file
+    #  * Description: Persist an uploaded file for current user and index metadata.
+    #  * Parameters:
+    #  *   file: uploaded binary payload.
+    #  *   current_user: authenticated user context.
+    #  * Returns:
+    #  *   Standard API envelope with indexed file metadata.
+    #  */
     if not file.filename:
         return _fail("Filename is required")
 
+    # TODO: Replace local filesystem storage with external object storage (S3 / R2 / Supabase Storage) before production.
+    # WARNING: Replace local storage with S3/R2/Supabase before production.
     os.makedirs("generated/uploads", exist_ok=True)
     file_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1]

@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import type { ApiEnvelope } from "@/types/api";
 import type { IntegrationListResponse } from "../types/integrationTypes";
 
 const fallback: IntegrationListResponse = {
@@ -10,9 +11,22 @@ const fallback: IntegrationListResponse = {
 };
 
 export async function fetchIntegrations(): Promise<IntegrationListResponse> {
+  /**
+   * Function: fetchIntegrations
+   * Description: Fetch organization integrations using the standard API envelope.
+   * Parameters:
+   * Returns:
+   *   IntegrationListResponse with normalized items.
+   */
   try {
-    const response = await api.get<IntegrationListResponse>("/integrations");
-    return response.data;
+    const response = await api.get<ApiEnvelope<IntegrationListResponse>>("/integrations");
+    const envelopeData = response.data?.data ?? fallback;
+    return {
+      integrations: (envelopeData.integrations || []).map((item) => ({
+        ...item,
+        status: item.status === "connected" ? "connected" : "disconnected"
+      }))
+    };
   } catch {
     return fallback;
   }

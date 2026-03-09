@@ -66,6 +66,22 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    mistral_api_key: Optional[str] = None
+    local_llm_endpoint: Optional[str] = None
+
+    # AI architecture defaults
+    default_model_provider: str = "openai"
+    default_vector_provider: str = "memory"
+
+    # Vector providers
+    supabase_vector_url: Optional[str] = None
+    supabase_vector_api_key: Optional[str] = None
+    pinecone_api_key: Optional[str] = None
+    pinecone_environment: Optional[str] = None
+    weaviate_url: Optional[str] = None
+    weaviate_api_key: Optional[str] = None
+
     web_search_enabled: bool = True
     web_search_timeout_seconds: int = 12
 

@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import type { ApiEnvelope } from "@/types/api";
 import type { WorkflowListResponse } from "../types/workflowTypes";
 
 const fallback: WorkflowListResponse = {
@@ -11,8 +12,8 @@ const fallback: WorkflowListResponse = {
 
 export async function fetchWorkflows(): Promise<WorkflowListResponse> {
   try {
-    const response = await api.get<WorkflowListResponse>("/workflows");
-    return response.data;
+    const response = await api.get<ApiEnvelope<WorkflowListResponse>>("/workflows");
+    return response.data?.data ?? fallback;
   } catch {
     return fallback;
   }

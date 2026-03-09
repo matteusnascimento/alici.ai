@@ -3,6 +3,8 @@ ALICI Platform - Enterprise AI Infrastructure
 """
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -12,6 +14,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import create_tables
 from app.api.routes import (
+    ai_architecture,
     agents,
     analytics,
     auth,
@@ -25,6 +28,7 @@ from app.api.routes import (
     public_api,
     user_settings,
     users,
+    workflows,
 )
 
 
@@ -48,6 +52,40 @@ app = FastAPI(
     version="2.2.0",
     lifespan=lifespan
 )
+
+
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    """Normalize HTTP errors into a standard API envelope."""
+    code = f"HTTP_{exc.status_code}"
+    message = str(exc.detail) if exc.detail else "Request failed"
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "data": None,
+            "error": {
+                "code": code,
+                "message": message,
+            },
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Return a safe standardized error payload for unexpected failures."""
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "data": None,
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "Internal server error",
+            },
+        },
+    )
 
 # CORS
 app.add_middleware(
@@ -168,10 +206,12 @@ app.include_router(billing.router, prefix="/api/billing", tags=["billing"])
 app.include_router(integrations.router, prefix="/api/integrations", tags=["integrations"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(workflows.router, prefix="/api/workflows", tags=["workflows"])
 app.include_router(platform.router, prefix="/api/platform", tags=["platform"])
 app.include_router(public_api.router, prefix="/v1", tags=["public-api"])
 app.include_router(user_settings.router, prefix="/api", tags=["settings"])
 app.include_router(expansion.router, prefix="/api", tags=["expansion"])
+app.include_router(ai_architecture.router, prefix="/api/ai", tags=["ai-architecture"])
 
 
 if __name__ == "__main__":

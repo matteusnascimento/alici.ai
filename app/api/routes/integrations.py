@@ -14,6 +14,18 @@ from app.services.auth_service import AuthService
 router = APIRouter()
 
 
+def _ok(data):
+    # /**
+    #  * Function: _ok
+    #  * Description: Wrap successful responses in the standard envelope.
+    #  * Parameters:
+    #  *   data: response payload.
+    #  * Returns:
+    #  *   dict status envelope.
+    #  */
+    return {"status": "success", "data": data, "error": None}
+
+
 class IntegrationUpsertRequest(BaseModel):
     type: str
     credentials: dict | None = None
@@ -25,6 +37,15 @@ def list_integrations(
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user),
 ):
+    # /**
+    #  * Function: list_integrations
+    #  * Description: List active integrations for the authenticated organization.
+    #  * Parameters:
+    #  *   db: active SQLAlchemy session.
+    #  *   current_user: authenticated user context.
+    #  * Returns:
+    #  *   Standard API envelope with integrations list.
+    #  */
     rows = (
         db.query(Integration)
         .filter(
@@ -35,16 +56,16 @@ def list_integrations(
         .all()
     )
 
-    return [
+    integrations = [
         {
             "id": row.id,
-            "type": row.type,
+            "provider": row.type,
             "status": row.status,
-            "credentials": json.loads(row.credentials or "{}"),
-            "updated_at": row.updated_at,
+            "lastSync": row.updated_at.isoformat() if row.updated_at else "never",
         }
         for row in rows
     ]
+    return _ok({"integrations": integrations})
 
 
 @router.post("")
@@ -53,6 +74,16 @@ def create_or_update_integration(
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user),
 ):
+    # /**
+    #  * Function: create_or_update_integration
+    #  * Description: Create or update one integration configuration by provider type.
+    #  * Parameters:
+    #  *   payload: provider and credentials.
+    #  *   db: active SQLAlchemy session.
+    #  *   current_user: authenticated user context.
+    #  * Returns:
+    #  *   Standard API envelope with integration summary.
+    #  */
     integration_type = payload.type.strip().lower()
     if not integration_type:
         raise HTTPException(status_code=400, detail="Integration type is required")
@@ -82,12 +113,12 @@ def create_or_update_integration(
     db.commit()
     db.refresh(item)
 
-    return {
+    return _ok({
         "id": item.id,
-        "type": integration_type,
+        "provider": integration_type,
         "status": item.status,
-        "updated_at": item.updated_at,
-    }
+        "lastSync": item.updated_at.isoformat() if item.updated_at else "never",
+    })
 
 
 @router.delete("/{integration_type}")
@@ -96,6 +127,16 @@ def delete_integration(
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user),
 ):
+    # /**
+    #  * Function: delete_integration
+    #  * Description: Soft-delete an integration by provider type.
+    #  * Parameters:
+    #  *   integration_type: provider identifier in route.
+    #  *   db: active SQLAlchemy session.
+    #  *   current_user: authenticated user context.
+    #  * Returns:
+    #  *   Standard API envelope with deletion status.
+    #  */
     row = (
         db.query(Integration)
         .filter(
@@ -111,4 +152,4 @@ def delete_integration(
 
     row.is_active = False
     db.commit()
-    return {"message": "Integration deleted"}
+    return _ok({"message": "Integration deleted", "provider": integration_type.strip().lower()})

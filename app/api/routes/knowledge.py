@@ -13,6 +13,10 @@ router = APIRouter()
 knowledge_service = KnowledgeService()
 
 
+def _ok(data):
+    return {"status": "success", "data": data, "error": None}
+
+
 class KnowledgeQueryRequest(BaseModel):
     query: str
     top_k: int = 5
@@ -48,18 +52,13 @@ async def upload_document(
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc))
 
-    payload = {
+    data = {
         "document_id": document.id,
         "filename": document.filename,
         "file_type": document.file_type,
         "total_chunks": document.total_chunks,
     }
-    return {
-        **payload,
-        "status": "success",
-        "data": payload,
-        "error": None,
-    }
+    return _ok(data)
 
 
 @router.post("/query")
@@ -92,12 +91,7 @@ def query_documents(
             for chunk in chunks
         ],
     }
-    return {
-        **payload_data,
-        "status": "success",
-        "data": payload_data,
-        "error": None,
-    }
+    return _ok(payload_data)
 
 
 @router.get("/list")
@@ -121,11 +115,7 @@ def list_documents(
         }
         for doc in docs
     ]
-    return {
-        "status": "success",
-        "data": data,
-        "error": None,
-    }
+    return _ok({"documents": data})
 
 
 @router.delete("/{document_id}")
@@ -143,8 +133,4 @@ def delete_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     db.commit()
-    return {
-        "status": "success",
-        "data": {"deleted": True, "document_id": document_id},
-        "error": None,
-    }
+    return _ok({"deleted": True, "document_id": document_id})

@@ -38,3 +38,9 @@ Thumbs.db
 # Modelo (sera feito download em CI/CD)
 # model/*.h5 - Descomentar se usar Git LFS
 generated/
+
+# Frontend dependencies/build artifacts
+node_modules/
+frontend/alici-platform/node_modules/
+frontend/alici-platform/.next/
+frontend/alici-platform/tsconfig.tsbuildinfo

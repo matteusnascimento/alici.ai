@@ -10,7 +10,7 @@ export function Button({ variant = "primary", className = "", ...props }: Button
   const styles =
     variant === "primary"
       ? "bg-sky-500 text-white hover:bg-sky-400"
-      : "border border-slate-700 text-slate-200 hover:bg-slate-800";
+      : "text-slate-200 hover:bg-slate-800";
 
   return <button className={`${base} ${styles} ${className}`.trim()} {...props} />;
 }
