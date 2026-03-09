@@ -21,7 +21,7 @@ export default function KnowledgeRoute() {
 
   async function loadDocuments() {
     try {
-      const res = await api.get<{ data: { documents: KnowledgeDocument[] } }>("/knowledge");
+      const res = await api.get<{ data: { documents: KnowledgeDocument[] } }>("/knowledge/list");
       const data = res.data?.data ?? res.data;
       setDocuments(data?.documents ?? []);
     } catch {

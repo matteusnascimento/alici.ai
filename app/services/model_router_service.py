@@ -30,9 +30,13 @@ class ModelRouterService:
     _MODEL_PREFIX_PROVIDER: dict[str, str] = {
         "gpt": "openai",
         "o1": "openai",
+        "o3": "openai",
+        "o4": "openai",
         "claude": "anthropic",
         "gemini": "gemini",
         "mistral": "mistral",
+        "r2": "openai",
+        "deepseek": "openai",
         "hf:": "huggingface",
         "local:": "local",
     }

@@ -25,6 +25,8 @@ export default function LoginPage() {
 
     try {
       const { data } = await api.post<LoginResponse>("/auth/login", { email, password });
+      // setSessionTokens persists under "alici_access_token" key; also save under
+      // the generic "token" key required by legacy platform components.
       setSessionTokens(data.access_token, data.refresh_token);
       localStorage.setItem("token", data.access_token);
       router.push("/dashboard");

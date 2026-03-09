@@ -83,6 +83,8 @@ export function DashboardAgentBuilder() {
         description: form.description.trim() || undefined,
         system_prompt: `${form.instructions}\n\nMemory: ${form.memory}\nKnowledge: ${form.knowledgeBase}\nTools: ${form.tools.join(", ")}`,
         model: form.model,
+        temperature: 70,
+        max_tokens: 1000,
         is_public: false,
       });
       setSuccess(true);

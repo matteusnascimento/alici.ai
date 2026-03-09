@@ -102,6 +102,8 @@ export default function AgentsCreateRoute() {
         description: form.description.trim() || undefined,
         system_prompt: `${form.instructions.trim()}\n\nMemory: ${form.memory}\nKnowledge: ${form.knowledgeBase}\nTools: ${form.tools.join(", ")}`,
         model: form.model,
+        temperature: 70,  // backend stores 0-100 and converts to 0-1 on AI call
+        max_tokens: 1000,
         is_public: form.isPublic,
       });
       router.push("/agents");
