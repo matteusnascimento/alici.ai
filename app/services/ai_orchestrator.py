@@ -2,6 +2,9 @@
 AI Orchestrator - Central hub for all AI operations
 """
 import asyncio
+import json as _json
+import urllib.error
+import urllib.request
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import uuid
@@ -12,6 +15,16 @@ from app.services.user_memory_service import UserMemoryService
 from app.services.web_search_service import WebSearchService
 from app.services.model_router_service import ModelRouterService
 from app.core.database import SessionLocal
+
+try:
+    import openai as _openai  # type: ignore
+except ImportError:
+    _openai = None  # type: ignore
+
+try:
+    import anthropic as _anthropic  # type: ignore
+except ImportError:
+    _anthropic = None  # type: ignore
 
 
 class AIOrchestrator:
@@ -267,48 +280,88 @@ class AIOrchestrator:
         """Call OpenAI API"""
         if not settings.openai_api_key:
             raise ValueError("OpenAI API key not configured")
+        if _openai is None:
+            raise ValueError("openai package not installed")
 
-        # Placeholder - implement actual OpenAI call
-        await asyncio.sleep(0.1)  # Simulate API call
-
+        client = _openai.AsyncOpenAI(api_key=settings.openai_api_key)
+        completion = await client.chat.completions.create(
+            model=model,
+            messages=messages,  # type: ignore[arg-type]
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1000),
+        )
+        choice = completion.choices[0]
+        content = choice.message.content or ""
+        tokens_used = completion.usage.total_tokens if completion.usage else len(content.split())
         return {
-            "content": f"ALICI response via {model}: {messages[-1]['content'][:50]}...",
-            "model": model,
-            "tokens_used": len(messages[-1]['content'].split()) * 2,
-            "finish_reason": "stop",
-            "cost": 0.002
+            "content": content,
+            "model": completion.model,
+            "tokens_used": tokens_used,
+            "finish_reason": choice.finish_reason,
+            "cost": round(tokens_used * 0.000002, 6),
         }
 
     async def _call_anthropic(self, messages: List[Dict], model: str, **kwargs) -> Dict[str, Any]:
         """Call Anthropic API"""
         if not settings.anthropic_api_key:
             raise ValueError("Anthropic API key not configured")
+        if _anthropic is None:
+            raise ValueError("anthropic package not installed")
 
-        # Placeholder - implement actual Anthropic call
-        await asyncio.sleep(0.1)
-
+        client = _anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        system_msgs = [m["content"] for m in messages if m.get("role") == "system"]
+        user_msgs = [m for m in messages if m.get("role") != "system"]
+        system_text = "\n".join(str(s) for s in system_msgs) or "You are a helpful assistant."
+        response = await client.messages.create(
+            model=model,
+            max_tokens=int(kwargs.get("max_tokens", 1000)),
+            system=system_text,
+            messages=user_msgs,  # type: ignore[arg-type]
+        )
+        content = response.content[0].text if response.content else ""
+        tokens_used = (response.usage.input_tokens + response.usage.output_tokens) if response.usage else 0
         return {
-            "content": f"Claude response: {messages[-1]['content'][:50]}...",
+            "content": content,
             "model": model,
-            "tokens_used": len(messages[-1]['content'].split()) * 2,
-            "finish_reason": "stop",
-            "cost": 0.003
+            "tokens_used": tokens_used,
+            "finish_reason": response.stop_reason or "stop",
+            "cost": round(tokens_used * 0.000003, 6),
         }
 
     async def _call_huggingface(self, messages: List[Dict], model: str, **kwargs) -> Dict[str, Any]:
-        """Call HuggingFace API"""
+        """Call HuggingFace Inference API"""
         if not settings.huggingface_api_key:
             raise ValueError("HuggingFace API key not configured")
 
-        # Placeholder - implement actual HuggingFace call
-        await asyncio.sleep(0.1)
+        hf_model = model.removeprefix("hf:")
+        prompt = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in messages)
+        headers = {
+            "Authorization": f"Bearer {settings.huggingface_api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = _json.dumps({"inputs": prompt, "parameters": {"max_new_tokens": int(kwargs.get("max_tokens", 512))}})
 
+        def _do_request() -> str:
+            url = f"https://api-inference.huggingface.co/models/{hf_model}"
+            req = urllib.request.Request(url, data=payload.encode(), headers=headers, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = _json.loads(resp.read())
+                    if isinstance(data, list) and data:
+                        return str(data[0].get("generated_text") or "")
+                    return ""
+            except urllib.error.HTTPError as exc:
+                raise ValueError(f"HuggingFace API error {exc.code}: {exc.reason}") from exc
+            except urllib.error.URLError as exc:
+                raise ValueError(f"HuggingFace network error: {exc.reason}") from exc
+
+        content = await asyncio.to_thread(_do_request)
         return {
-            "content": f"HuggingFace response: {messages[-1]['content'][:50]}...",
+            "content": content,
             "model": model,
-            "tokens_used": len(messages[-1]['content'].split()) * 2,
+            "tokens_used": len(content.split()),
             "finish_reason": "stop",
-            "cost": 0.001
+            "cost": 0.0,
         }
 
     def _save_message(

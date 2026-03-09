@@ -94,6 +94,7 @@ def query_documents(
     return _ok(payload_data)
 
 
+@router.get("")
 @router.get("/list")
 def list_documents(
     db: Session = Depends(get_db),
