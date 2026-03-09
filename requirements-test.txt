@@ -1,0 +1,35 @@
+# ==============================
+# Test dependencies (lightweight subset of requirements.txt)
+# ==============================
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.4.2
+pydantic-settings==2.1.0
+email-validator==2.2.0
+python-multipart==0.0.6
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Database & ORM
+sqlalchemy==2.0.23
+alembic==1.12.1
+python-dotenv==1.0.0
+
+# HTTP
+requests==2.31.0
+
+# Payments
+stripe==7.4.0
+
+# Analytics
+mixpanel==4.10.1
+
+# Test runner
+pytest==7.4.3
+pytest-anyio==0.0.0
+anyio==3.7.1
+httpx==0.25.2
