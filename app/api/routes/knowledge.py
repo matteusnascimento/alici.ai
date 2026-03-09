@@ -29,6 +29,9 @@ async def upload_document(
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user),
 ):
+    # WARNING: Uploaded file is read into memory and not persisted to disk.
+    # For production deployments, replace in-memory handling with S3/R2/Supabase
+    # storage before deploying at scale.
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required")
 
