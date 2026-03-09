@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MessageSquare, Bot, Database, Cpu, Wrench, Plug, CreditCard, Settings } from "lucide-react";
+import { Home, MessageSquare, Bot, Database, Cpu, Wrench, Plug, CreditCard, Settings, Brain, History, User } from "lucide-react";
 
 const menu = [
   { name: "Dashboard", icon: Home, path: "/dashboard" },
   { name: "Chat", icon: MessageSquare, path: "/chat" },
   { name: "Agents", icon: Bot, path: "/agents" },
+  { name: "Memória Neural", icon: Brain, path: "/memory" },
+  { name: "Histórico", icon: History, path: "/history" },
   { name: "Knowledge", icon: Database, path: "/knowledge" },
   { name: "Models", icon: Cpu, path: "/models" },
   { name: "Tools", icon: Wrench, path: "/tools" },
   { name: "Integrations", icon: Plug, path: "/integrations" },
   { name: "Billing", icon: CreditCard, path: "/billing" },
+  { name: "Perfil", icon: User, path: "/profile" },
   { name: "Settings", icon: Settings, path: "/settings" }
 ] as const;
 

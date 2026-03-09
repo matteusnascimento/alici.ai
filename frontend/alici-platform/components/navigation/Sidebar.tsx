@@ -5,13 +5,16 @@ import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import {
   Bot,
+  Brain,
   Cpu,
   CreditCard,
   Database,
+  History,
   Home,
   MessageSquare,
   Plug,
   Settings,
+  User,
   Wrench
 } from "lucide-react";
 
@@ -19,15 +22,17 @@ const sections = [
   {
     title: "ALICI Platform",
     links: [
-      { href: "/platform", label: "Platform Home" },
       { href: "/dashboard", label: "Dashboard" },
       { href: "/chat", label: "Chat" },
       { href: "/agents", label: "Agents" },
+      { href: "/memory", label: "Memória Neural" },
+      { href: "/history", label: "Histórico" },
       { href: "/knowledge", label: "Knowledge" },
       { href: "/models", label: "Models" },
       { href: "/tools", label: "Tools" },
       { href: "/integrations", label: "Integrations" },
       { href: "/billing", label: "Billing" },
+      { href: "/profile", label: "Perfil" },
       { href: "/settings", label: "Settings" }
     ]
   }
@@ -38,13 +43,16 @@ const sections = [
 
 function getIcon(label: string) {
   switch (label) {
-    case "Platform Home":
     case "Dashboard":
       return Home;
     case "Chat":
       return MessageSquare;
     case "Agents":
       return Bot;
+    case "Memória Neural":
+      return Brain;
+    case "Histórico":
+      return History;
     case "Knowledge":
       return Database;
     case "Models":
@@ -55,6 +63,8 @@ function getIcon(label: string) {
       return Plug;
     case "Billing":
       return CreditCard;
+    case "Perfil":
+      return User;
     case "Settings":
       return Settings;
     default:
@@ -63,7 +73,6 @@ function getIcon(label: string) {
 }
 
 function isRouteActive(pathname: string, href: string) {
-  if (href === "/platform") return pathname === "/platform";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

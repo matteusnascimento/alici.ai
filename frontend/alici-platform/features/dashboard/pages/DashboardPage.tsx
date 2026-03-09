@@ -4,6 +4,7 @@ import { ActivityFeed } from "../components/ActivityFeed";
 import { AgentStatusCard } from "../components/AgentStatusCard";
 import { CostChart } from "../components/CostChart";
 import { DashboardHeader } from "../components/DashboardHeader";
+import { NeuralMemoryCard } from "../components/NeuralMemoryCard";
 import { QuickActions } from "../components/QuickActions";
 import { TokenUsageChart } from "../components/TokenUsageChart";
 import { UsageCard } from "../components/UsageCard";
@@ -36,6 +37,8 @@ export function DashboardPage() {
         <AgentStatusCard agents={agents} />
         <QuickActions />
       </section>
+
+      <NeuralMemoryCard />
 
       <ActivityFeed activity={activity} />
     </div>
