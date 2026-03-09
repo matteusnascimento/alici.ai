@@ -129,7 +129,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-xs text-slate-500">
           Já tem conta?{" "}
-          <a href="/login" className="text-sky-400 hover:underline">
+          <a href="/dashboard" className="text-sky-400 hover:underline">
             Entrar
           </a>
         </p>
