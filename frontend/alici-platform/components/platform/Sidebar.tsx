@@ -27,10 +27,10 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex w-[260px] flex-col gap-4 border-r bg-white p-4">
-      <div className="text-2xl font-bold">ALICI</div>
+    <aside className="flex w-[260px] flex-col gap-4 border-r border-slate-800 bg-slate-950 p-4">
+      <div className="text-2xl font-bold text-sky-400">ALICI</div>
 
-      <nav className="mt-4 flex flex-col gap-2">
+      <nav className="mt-4 flex flex-col gap-1">
         {menu.map((item) => {
           const Icon = item.icon;
 
@@ -38,20 +38,20 @@ export default function Sidebar() {
             <Link
               key={item.path}
               href={item.path}
-              className={`flex items-center gap-2 rounded px-3 py-2 ${
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
                 isActive(item.path)
-                  ? "bg-gray-900 text-white"
-                  : "text-gray-800 hover:bg-gray-100"
+                  ? "bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/40"
+                  : "text-slate-200 hover:bg-slate-800"
               }`}
             >
-              <Icon size={18} />
+              <Icon size={16} />
               {item.name}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto text-xs text-gray-400">AI Platform</div>
+      <div className="mt-auto text-xs text-slate-500">AI Platform</div>
     </aside>
   );
 }
