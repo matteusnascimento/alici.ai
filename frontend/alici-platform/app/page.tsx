@@ -11,10 +11,10 @@ export default function HomePage() {
       </p>
       <div className="flex gap-4">
         <Link
-          href={"/platform" as Route}
+          href={"/dashboard" as Route}
           className="rounded-lg bg-sky-500 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-400"
         >
-          Entrar na Plataforma
+          Comece Agora
         </Link>
       </div>
     </main>

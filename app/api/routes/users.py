@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password
-from app.models import UsageLog, User, UserSetting
+from app.models import UsageLog, User, UserMemory, UserSetting
 from app.services.auth_service import AuthService
 from app.services.user_memory_service import UserMemoryService
 
@@ -189,8 +189,22 @@ def list_user_memory(
     ]
 
 
-@router.post("/memory")
-def upsert_user_memory(
+@router.delete("/memory/{key}")
+def delete_user_memory(
+    key: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(AuthService.get_current_user),
+):
+    row = (
+        db.query(UserMemory)
+        .filter(UserMemory.user_id == current_user.id, UserMemory.key == key)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Memory entry not found")
+    db.delete(row)
+    db.commit()
+    return {"message": "Memory entry deleted"}
     payload: UserMemoryUpsertRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user),
