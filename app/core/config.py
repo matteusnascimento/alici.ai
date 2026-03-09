@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     app_version: str = "2.2.0"
     debug: bool = False
     env: str = "development"
+    dev_mode: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("DEV_MODE", "dev_mode"),
+    )
 
     # Server
     host: str = "0.0.0.0"

@@ -18,11 +18,12 @@ from app.core.security import (
     get_token_type
 )
 from app.core.config import settings
+from app.core.dev_user import DEV_USER
 from app.models import User, Organization, APIKey
 from app.core.database import SessionLocal, get_db
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 class AuthService:
@@ -131,10 +132,17 @@ class AuthService:
 
     @staticmethod
     def get_current_user(
-        token: str = Depends(oauth2_scheme),
+        token: Optional[str] = Depends(oauth2_scheme),
         db: Session = Depends(get_db),
     ) -> User:
         """Get current user from bearer token (FastAPI dependency)."""
+        # DEV_MODE: bypass authentication and return the mock developer user.
+        if settings.dev_mode:
+            return DEV_USER
+
+        if not token:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
         payload = AuthService.verify_access_token(token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid or expired token")

@@ -3,7 +3,7 @@ ALICI Platform - Enterprise AI Infrastructure
 """
 import uvicorn
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
@@ -112,7 +112,9 @@ class LegacyChatRequest(BaseModel):
 # Frontend routes
 @app.get("/")
 async def landing(request: Request):
-    """Landing page"""
+    """Landing page – redirects to /dashboard when DEV_MODE is enabled."""
+    if settings.dev_mode:
+        return RedirectResponse("/dashboard", status_code=307)
     return templates.TemplateResponse("landing.html", {"request": request})
 
 
