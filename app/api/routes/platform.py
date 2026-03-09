@@ -101,6 +101,37 @@ def get_platform_overview(
     return _ok(payload)
 
 
+@router.get("/stats")
+def get_platform_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(AuthService.get_current_user)
+):
+    """Return compact platform counters for lightweight dashboard widgets."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    org_id = current_user.organization_id
+
+    chats = db.query(UsageLog).filter(UsageLog.organization_id == org_id).count()
+    agents = db.query(Agent).filter(Agent.organization_id == org_id).count()
+    documents = db.query(KnowledgeDocument).filter(KnowledgeDocument.organization_id == org_id).count()
+    tokens = (
+        db.query(func.sum(UsageLog.tokens_used))
+        .filter(UsageLog.organization_id == org_id)
+        .scalar()
+        or 0
+    )
+
+    return _ok(
+        {
+            "chats": chats,
+            "agents": agents,
+            "documents": documents,
+            "tokens": int(tokens),
+        }
+    )
+
+
 @router.get("/api-keys")
 def list_api_keys(
     db: Session = Depends(get_db),
