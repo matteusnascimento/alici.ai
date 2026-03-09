@@ -47,8 +47,9 @@ async def test_upload_txt_and_query_returns_references():
         upload = await client.post("/api/knowledge/upload", files=files, headers=headers)
         assert upload.status_code == 200
         upload_payload = upload.json()
-        assert upload_payload["file_type"] == "txt"
-        assert upload_payload["total_chunks"] >= 1
+        assert upload_payload["status"] == "success"
+        assert upload_payload["data"]["file_type"] == "txt"
+        assert upload_payload["data"]["total_chunks"] >= 1
 
         query = await client.post(
             "/api/knowledge/query",
@@ -57,8 +58,9 @@ async def test_upload_txt_and_query_returns_references():
         )
         assert query.status_code == 200
         payload = query.json()
-        assert payload["references"]
-        assert "trechos relevantes" in payload["answer"].lower()
+        assert payload["status"] == "success"
+        assert payload["data"]["references"]
+        assert "trechos relevantes" in payload["data"]["answer"].lower()
 
 
 @pytest.mark.anyio
@@ -74,7 +76,9 @@ async def test_upload_csv_is_supported():
 
         upload = await client.post("/api/knowledge/upload", files=files, headers=headers)
         assert upload.status_code == 200
-        assert upload.json()["file_type"] == "csv"
+        payload = upload.json()
+        assert payload["status"] == "success"
+        assert payload["data"]["file_type"] == "csv"
 
 
 @pytest.mark.anyio
@@ -89,4 +93,6 @@ async def test_upload_rejects_unsupported_extension():
         upload = await client.post("/api/knowledge/upload", files=files, headers=headers)
 
         assert upload.status_code == 400
-        assert "unsupported file type" in upload.json()["detail"].lower()
+        payload = upload.json()
+        assert payload["status"] == "error"
+        assert "unsupported file type" in payload["error"]["message"].lower()

@@ -11,10 +11,28 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Keep backward compatibility for tests that still import legacy package paths.
+LEGACY_ROOT = PROJECT_ROOT / "legacy"
+if LEGACY_ROOT.exists():
+    sys.path.insert(0, str(LEGACY_ROOT))
+
 # Set test environment variables
 os.environ["STRIPE_SECRET_KEY"] = "sk_test_123456789"
 os.environ["STRIPE_WEBHOOK_SECRET"] = "whsec_test_123456789"
 os.environ["MIXPANEL_TOKEN"] = "test_token_123"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _prepare_test_database():
+    """Ensure test DB schema matches current SQLAlchemy models before running tests."""
+    # Import models to guarantee metadata registration before create/drop tables.
+    import app.models  # noqa: F401
+    from app.core.database import create_tables, drop_tables
+
+    drop_tables()
+    create_tables()
+
+    yield
 
 
 @pytest.fixture(scope="session")
