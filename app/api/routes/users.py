@@ -17,6 +17,10 @@ router = APIRouter()
 user_memory_service = UserMemoryService()
 
 
+# =========================
+# Request Schemas
+# =========================
+
 class UserUpdateRequest(BaseModel):
     full_name: str | None = None
     email: EmailStr | None = None
@@ -39,15 +43,25 @@ class UserMemoryUpsertRequest(BaseModel):
     value: str
 
 
+# =========================
+# Helpers
+# =========================
+
 def _get_or_create_settings(db: Session, user_id: str) -> UserSetting:
     settings = db.query(UserSetting).filter(UserSetting.user_id == user_id).first()
+
     if settings:
         return settings
 
-    settings = UserSetting(id=str(uuid.uuid4()), user_id=user_id)
+    settings = UserSetting(
+        id=str(uuid.uuid4()),
+        user_id=user_id
+    )
+
     db.add(settings)
     db.commit()
     db.refresh(settings)
+
     return settings
 
 
@@ -59,6 +73,7 @@ def _validate_password_strength(password: str) -> bool:
         bool(re.search(r"\d", password)),
         bool(re.search(r"[^A-Za-z0-9]", password)),
     ]
+
     return all(rules)
 
 
@@ -74,8 +89,13 @@ def _log_user_action(db: Session, current_user: User, endpoint: str, method: str
         tokens_used=0,
         cost=0.0,
     )
+
     db.add(log)
 
+
+# =========================
+# User Profile
+# =========================
 
 @router.get("")
 def get_user(current_user: User = Depends(AuthService.get_current_user)):
@@ -96,25 +116,48 @@ def update_user(
     current_user: User = Depends(AuthService.get_current_user),
 ):
     if payload.email and payload.email != current_user.email:
-        exists = db.query(User).filter(User.email == payload.email, User.id != current_user.id).first()
+        exists = (
+            db.query(User)
+            .filter(User.email == payload.email, User.id != current_user.id)
+            .first()
+        )
+
         if exists:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already in use"
+            )
+
         current_user.email = payload.email
 
     if payload.full_name is not None:
         full_name = payload.full_name.strip()
+
         if not full_name:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Full name cannot be empty")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Full name cannot be empty"
+            )
+
         if len(full_name) > 120:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Full name is too long")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Full name is too long"
+            )
+
         current_user.full_name = full_name
 
     _log_user_action(db, current_user, "/api/user", method="PUT")
 
     db.commit()
     db.refresh(current_user)
+
     return {"message": "User profile updated"}
 
+
+# =========================
+# Password
+# =========================
 
 @router.put("/password")
 def update_password(
@@ -123,22 +166,35 @@ def update_password(
     current_user: User = Depends(AuthService.get_current_user),
 ):
     if not verify_password(payload.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
 
     if payload.current_password == payload.new_password:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different"
+        )
 
     if not _validate_password_strength(payload.new_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain upper, lower, number and symbol with at least 8 chars",
+            detail="Password must contain upper, lower, number and symbol with at least 8 chars"
         )
 
     current_user.hashed_password = get_password_hash(payload.new_password)
+
     _log_user_action(db, current_user, "/api/user/password", method="PUT")
+
     db.commit()
+
     return {"message": "Password updated"}
 
+
+# =========================
+# User Settings
+# =========================
 
 @router.get("/settings")
 def get_user_settings(
@@ -146,6 +202,7 @@ def get_user_settings(
     current_user: User = Depends(AuthService.get_current_user),
 ):
     settings = _get_or_create_settings(db, current_user.id)
+
     return {
         "language": settings.language,
         "theme": settings.theme,
@@ -161,7 +218,9 @@ def update_user_settings(
     current_user: User = Depends(AuthService.get_current_user),
 ):
     settings = _get_or_create_settings(db, current_user.id)
+
     values = payload.model_dump(exclude_unset=True)
+
     for key, value in values.items():
         setattr(settings, key, value)
 
@@ -169,8 +228,13 @@ def update_user_settings(
 
     db.commit()
     db.refresh(settings)
+
     return {"message": "User settings updated"}
 
+
+# =========================
+# User Memory
+# =========================
 
 @router.get("/memory")
 def list_user_memory(
@@ -179,6 +243,7 @@ def list_user_memory(
     current_user: User = Depends(AuthService.get_current_user),
 ):
     rows = user_memory_service.list_memory(db, current_user.id, limit=limit)
+
     return [
         {
             "key": row.key,
@@ -189,30 +254,20 @@ def list_user_memory(
     ]
 
 
-@router.delete("/memory/{key}")
-def delete_user_memory(
-    key: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(AuthService.get_current_user),
-):
-    row = (
-        db.query(UserMemory)
-        .filter(UserMemory.user_id == current_user.id, UserMemory.key == key)
-        .first()
-    )
-    if not row:
-        raise HTTPException(status_code=404, detail="Memory entry not found")
-    db.delete(row)
-    db.commit()
-    return {"message": "Memory entry deleted"}
+@router.put("/memory")
+def upsert_user_memory(
     payload: UserMemoryUpsertRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user),
 ):
     key = payload.key.strip()
     value = payload.value.strip()
+
     if not key or not value:
-        raise HTTPException(status_code=400, detail="Key and value are required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Key and value are required"
+        )
 
     row = user_memory_service.upsert_memory(
         db,
@@ -221,10 +276,39 @@ def delete_user_memory(
         key=key,
         value=value,
     )
+
     db.commit()
     db.refresh(row)
+
     return {
         "key": row.key,
         "value": row.value,
         "timestamp": row.timestamp,
     }
+
+
+@router.delete("/memory/{key}")
+def delete_user_memory(
+    key: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(AuthService.get_current_user),
+):
+    row = (
+        db.query(UserMemory)
+        .filter(
+            UserMemory.user_id == current_user.id,
+            UserMemory.key == key
+        )
+        .first()
+    )
+
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail="Memory entry not found"
+        )
+
+    db.delete(row)
+    db.commit()
+
+    return {"message": "Memory entry deleted"}
