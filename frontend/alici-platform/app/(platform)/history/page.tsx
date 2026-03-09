@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageSquare, ChevronRight } from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { api } from "@/services/api";
 
 interface ConversationSummary {
@@ -48,7 +47,6 @@ export default function HistoryPage() {
   }, []);
 
   return (
-    <DashboardLayout>
       <section className="space-y-6">
         <header>
           <div className="flex items-center gap-3">
@@ -115,6 +113,5 @@ export default function HistoryPage() {
           )}
         </article>
       </section>
-    </DashboardLayout>
   );
 }

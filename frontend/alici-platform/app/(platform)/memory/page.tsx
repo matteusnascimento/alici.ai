@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Brain, Trash2 } from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { api } from "@/services/api";
 
 interface MemoryEntry {
@@ -65,7 +64,6 @@ export default function MemoryPage() {
   }
 
   return (
-    <DashboardLayout>
       <section className="space-y-6">
         <header>
           <div className="flex items-center gap-3">
@@ -159,6 +157,5 @@ export default function MemoryPage() {
           )}
         </article>
       </section>
-    </DashboardLayout>
   );
 }

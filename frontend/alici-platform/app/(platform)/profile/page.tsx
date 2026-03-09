@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { User, Mail, Building, Calendar } from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { api } from "@/services/api";
 
@@ -61,7 +60,6 @@ export default function ProfilePage() {
   }
 
   return (
-    <DashboardLayout>
       <section className="space-y-6">
         <header>
           <div className="flex items-center gap-3">
@@ -152,6 +150,5 @@ export default function ProfilePage() {
           </div>
         )}
       </section>
-    </DashboardLayout>
   );
 }

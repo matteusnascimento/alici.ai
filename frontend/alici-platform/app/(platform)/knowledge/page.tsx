@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { api } from "@/services/api";
 
 interface KnowledgeDocument {
@@ -88,7 +87,6 @@ export default function KnowledgeRoute() {
   }
 
   return (
-    <DashboardLayout>
       <section className="space-y-6">
         <header>
           <p className="text-xs uppercase tracking-widest text-slate-400">Neural Memory</p>
@@ -177,6 +175,5 @@ export default function KnowledgeRoute() {
           )}
         </div>
       </section>
-    </DashboardLayout>
   );
 }

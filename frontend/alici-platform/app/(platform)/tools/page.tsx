@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { api } from "@/services/api";
 
 const toolDescriptions: Record<string, { label: string; description: string; icon: string }> = {
@@ -92,7 +91,6 @@ export default function ToolsRoute() {
   }
 
   return (
-    <DashboardLayout>
       <section className="space-y-6">
         <header>
           <p className="text-xs uppercase tracking-widest text-slate-400">Capabilities</p>
@@ -152,6 +150,5 @@ export default function ToolsRoute() {
           </div>
         )}
       </section>
-    </DashboardLayout>
   );
 }

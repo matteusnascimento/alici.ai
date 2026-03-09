@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { api } from "@/services/api";
 
@@ -68,7 +67,6 @@ export default function PlatformHomePage() {
   }, []);
 
   return (
-    <DashboardLayout>
       <section className="space-y-8">
         <header className="flex items-center justify-between">
           <h1 className="text-3xl font-semibold">Dashboard</h1>
@@ -130,6 +128,5 @@ export default function PlatformHomePage() {
           ))}
         </div>
       </section>
-    </DashboardLayout>
   );
 }

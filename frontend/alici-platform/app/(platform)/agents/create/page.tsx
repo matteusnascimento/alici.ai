@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { createAgent } from "@/features/agents/services/agentService";
 
 const models = ["gpt-4.1", "gpt-4o-mini", "r2", "claude-3-5-sonnet", "gemini-1.5-pro"] as const;
@@ -96,7 +95,6 @@ export default function AgentsCreateRoute() {
   }
 
   return (
-    <DashboardLayout>
       <section className="space-y-6">
         <header className="flex items-center justify-between">
           <div>
@@ -288,6 +286,5 @@ export default function AgentsCreateRoute() {
           </aside>
         </form>
       </section>
-    </DashboardLayout>
   );
 }

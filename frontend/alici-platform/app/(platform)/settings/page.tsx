@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { api } from "@/services/api";
 
@@ -55,7 +54,6 @@ export default function SettingsPage() {
   }
 
   return (
-    <DashboardLayout>
       <section className="space-y-6">
         <header>
           <div className="flex items-center gap-3">
@@ -141,7 +139,6 @@ export default function SettingsPage() {
           </Card>
         )}
       </section>
-    </DashboardLayout>
   );
 }
 
