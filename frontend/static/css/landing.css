@@ -161,7 +161,7 @@ body {
     font-size: 1.1rem;
 }
 
-.btn-login {
+.btn-cta {
     padding: 0.5rem 1.25rem;
     background: transparent;
     border: 2px solid var(--border);
@@ -172,7 +172,7 @@ body {
     text-decoration: none;
 }
 
-.btn-login:hover {
+.btn-cta:hover {
     border-color: var(--primary);
     color: var(--primary);
 }
