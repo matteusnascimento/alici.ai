@@ -87,7 +87,7 @@ def list_conversations(
                 "last_message_at": last_message_at,
             }
         )
-    return _ok({"history": response})
+    return response
 
 
 @router.post("")
