@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useState } from "react";
-import { fetchAgents } from "@/features/agents/services/agentService";
+import { fetchAgents, deleteAgentById } from "@/features/agents/services/agentService";
 import { useAgentStore } from "@/features/agents/store/agentStore";
 
 export function useAgents() {
@@ -32,5 +32,10 @@ export function useAgents() {
     };
   }, [setAgents]);
 
-  return { loading, error, data: agents, agents };
+  async function deleteAgent(agentId: string) {
+    await deleteAgentById(agentId);
+    setAgents(agents.filter((a) => a.id !== agentId));
+  }
+
+  return { loading, error, data: agents, agents, deleteAgent };
 }
