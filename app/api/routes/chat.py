@@ -126,14 +126,12 @@ async def send_message(
 
         # Keep compatibility with multiple frontend payload contracts.
         content = result.get("content", "")
-        return _ok(
-            {
-                **result,
-                "message": content,
-                "response": content,
-                "resposta": content,
-            }
-        )
+        return {
+            **result,
+            "message": content,
+            "response": content,
+            "resposta": content,
+        }
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -144,12 +142,37 @@ async def send_message(
 
 
 @router.get("/conversations")
-@router.get("/history")
 def get_conversations(
     db: Session = Depends(get_db),
     current_user: User = Depends(AuthService.get_current_user)
 ):
-    """Get user's conversations"""
+    """Get user's conversations as a plain list"""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conversations = db.query(Conversation).filter(
+        Conversation.organization_id == current_user.organization_id,
+        Conversation.user_id == current_user.id
+    ).order_by(Conversation.updated_at.desc()).all()
+
+    return [
+        {
+            "id": conv.id,
+            "title": conv.title,
+            "agent_id": conv.agent_id,
+            "last_message_at": conv.last_message_at,
+            "created_at": conv.created_at
+        }
+        for conv in conversations
+    ]
+
+
+@router.get("/history")
+def get_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(AuthService.get_current_user)
+):
+    """Get user's conversation history wrapped in standard API envelope"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -204,7 +227,7 @@ def get_conversation_messages(
         }
         for msg in messages
     ]
-    return _ok({"messages": messages_payload})
+    return messages_payload
 
 
 @router.post("/stream")

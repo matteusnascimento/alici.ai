@@ -187,7 +187,7 @@ class AIOrchestrator:
             fallback = await self._web_search_fallback(message)
             if fallback:
                 return fallback
-            raise ValueError(f"No provider available for model {agent.model}")
+            return self._local_fallback_response(message)
 
         # Build messages for API
         system_prompt = agent.system_prompt
@@ -218,7 +218,7 @@ class AIOrchestrator:
             fallback = await self._web_search_fallback(message)
             if fallback:
                 return fallback
-            raise
+            return self._local_fallback_response(message)
 
         if not (response or {}).get("content"):
             fallback = await self._web_search_fallback(message)
@@ -226,6 +226,20 @@ class AIOrchestrator:
                 return fallback
 
         return response
+
+    def _local_fallback_response(self, message: str) -> Dict[str, Any]:
+        """Return a stub response when no AI provider is reachable."""
+        content = (
+            "Olá! No momento estou sem acesso aos modelos de IA externos. "
+            "Por favor, configure uma chave de API válida ou tente novamente mais tarde."
+        )
+        return {
+            "content": content,
+            "model": "local-fallback",
+            "tokens_used": len(content.split()),
+            "finish_reason": "stop",
+            "cost": 0.0,
+        }
 
     async def _web_search_fallback(self, message: str) -> Optional[Dict[str, Any]]:
         """Fallback to web search when model/provider cannot answer."""
