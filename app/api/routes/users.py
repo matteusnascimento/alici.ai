@@ -254,6 +254,7 @@ def list_user_memory(
     ]
 
 
+@router.post("/memory")
 @router.put("/memory")
 def upsert_user_memory(
     payload: UserMemoryUpsertRequest,

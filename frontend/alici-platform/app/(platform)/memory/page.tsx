@@ -52,7 +52,7 @@ export default function MemoryPage() {
     if (!newKey.trim() || !newValue.trim()) return;
     setSaving(true);
     try {
-      await api.post("/user/memory", { key: newKey.trim(), value: newValue.trim() });
+      await api.put("/user/memory", { key: newKey.trim(), value: newValue.trim() });
       setNewKey("");
       setNewValue("");
       await loadMemories();
