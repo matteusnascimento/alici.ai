@@ -2,6 +2,9 @@
 # Test dependencies (lightweight subset of requirements.txt)
 # ==============================
 
+# Templating
+jinja2==3.1.2
+
 # Web Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
