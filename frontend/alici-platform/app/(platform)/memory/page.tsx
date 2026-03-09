@@ -18,6 +18,8 @@ export default function MemoryPage() {
   const [newValue, setNewValue] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [deleting, setDeleting] = useState<string | null>(null);
+
   async function loadMemories() {
     setLoading(true);
     try {
@@ -33,6 +35,18 @@ export default function MemoryPage() {
   useEffect(() => {
     void loadMemories();
   }, []);
+
+  async function handleDelete(key: string) {
+    setDeleting(key);
+    try {
+      await api.delete(`/user/memory/${encodeURIComponent(key)}`);
+      setMemories((prev) => prev.filter((m) => m.key !== key));
+    } catch {
+      // ignore
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -133,7 +147,9 @@ export default function MemoryPage() {
                   <button
                     type="button"
                     aria-label={`Remover memória ${mem.key}`}
-                    className="ml-4 rounded-lg p-2 text-slate-500 transition hover:bg-slate-800 hover:text-red-400"
+                    onClick={() => void handleDelete(mem.key)}
+                    disabled={deleting === mem.key}
+                    className="ml-4 rounded-lg p-2 text-slate-500 transition hover:bg-slate-800 hover:text-red-400 disabled:opacity-50"
                   >
                     <Trash2 size={16} />
                   </button>
