@@ -186,6 +186,24 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 
+@app.get("/portfolio")
+async def portfolio_page(request: Request):
+    """Portfolio page"""
+    return templates.TemplateResponse("portfolio.html", {"request": request})
+
+
+@app.get("/quantum")
+async def quantum_page(request: Request):
+    """Quantum features page"""
+    return templates.TemplateResponse("quantum.html", {"request": request})
+
+
+@app.get("/index")
+async def index_page(request: Request):
+    """Legacy index / platform shell page"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
 @app.get("/health")
 def health():
     """Compatibility health check endpoint."""
