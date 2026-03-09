@@ -101,7 +101,10 @@ class Settings(BaseSettings):
     aws_secret_access_key: Optional[str] = None
 
     # Redis (optional)
-    redis_url: Optional[str] = None
+    redis_url: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("REDIS_URL", "redis_url"),
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod
