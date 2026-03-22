@@ -21,3 +21,8 @@ class User(Base):
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     agents = relationship("Agent", back_populates="user", cascade="all, delete-orphan")
     settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    billing_events = relationship("BillingEvent", back_populates="user", cascade="all, delete-orphan")
+    usage_logs = relationship("UsageLog", back_populates="user", cascade="all, delete-orphan")
+    integrations = relationship("Integration", back_populates="user", cascade="all, delete-orphan")
+    marketing_projects = relationship("MarketingProject", back_populates="user", cascade="all, delete-orphan")

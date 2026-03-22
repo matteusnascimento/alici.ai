@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -23,6 +23,29 @@ def create_agent(
 ) -> AgentRead:
     agent = AgentService(db).create_agent(current_user, payload)
     return AgentRead.model_validate(agent)
+
+
+@router.get("/{agent_id}", response_model=AgentRead)
+def get_agent(agent_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> AgentRead:
+    agent = AgentService(db).get_agent(current_user, agent_id)
+    return AgentRead.model_validate(agent)
+
+
+@router.patch("/{agent_id}", response_model=AgentRead)
+def update_agent(
+    agent_id: int,
+    payload: AgentCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentRead:
+    agent = AgentService(db).update_agent(current_user, agent_id, payload)
+    return AgentRead.model_validate(agent)
+
+
+@router.delete("/{agent_id}", status_code=204)
+def delete_agent(agent_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Response:
+    AgentService(db).delete_agent(current_user, agent_id)
+    return Response(status_code=204)
 
 
 @router.post("/{agent_id}/toggle", response_model=AgentToggleResponse)

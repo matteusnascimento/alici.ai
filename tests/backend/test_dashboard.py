@@ -19,3 +19,15 @@ def test_dashboard_stats(client, auth_headers):
     assert body['total_messages'] >= 2
     assert body['total_agents'] == 1
     assert len(body['usage_bars']) == 7
+
+    overview_response = client.get('/api/dashboard/overview', headers=auth_headers)
+    assert overview_response.status_code == 200
+    assert overview_response.json()['total_agents'] == 1
+
+    usage_response = client.get('/api/dashboard/usage', headers=auth_headers)
+    assert usage_response.status_code == 200
+    assert usage_response.json()['messages_limit'] >= 500
+
+    metrics_response = client.get('/api/dashboard/metrics', headers=auth_headers)
+    assert metrics_response.status_code == 200
+    assert len(metrics_response.json()['items']) >= 4

@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token, get_password_hash, verify_password
+from app.models.subscription import Subscription
 from app.models.setting import UserSettings
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest
@@ -22,13 +23,23 @@ class AuthService:
             email=payload.email,
             phone=payload.phone,
             password_hash=get_password_hash(payload.password),
-            plan="starter",
+            plan="free",
         )
         self.db.add(user)
         self.db.flush()
 
         defaults = UserSettings(user_id=user.id)
         self.db.add(defaults)
+        self.db.add(
+            Subscription(
+                user_id=user.id,
+                plan_id="free",
+                status="active",
+                monthly_price=0.0,
+                yearly_price=0.0,
+                billing_cycle="monthly",
+            )
+        )
         self.db.commit()
         self.db.refresh(user)
         token = create_access_token(str(user.id))

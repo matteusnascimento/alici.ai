@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.conversation import Conversation, Message
+from app.models.usage_log import UsageLog
 from app.models.user import User
 from app.schemas.chat import ChatSendRequest
 
@@ -16,11 +17,24 @@ class ChatService:
         assistant_text = self._generate_reply(payload.text)
         assistant_message = Message(conversation_id=conversation.id, role="assistant", text=assistant_text)
         self.db.add(assistant_message)
+        self.db.add(UsageLog(user_id=user.id, metric="messages", quantity=2, source="chat"))
         self.db.commit()
         self.db.refresh(conversation)
         self.db.refresh(user_message)
         self.db.refresh(assistant_message)
         return conversation, user_message, assistant_message
+
+    def history(self, user: User) -> list[dict]:
+        conversations = self.list_conversations(user)
+        return [
+            {
+                "conversation_id": item.id,
+                "title": item.title,
+                "created_at": item.created_at,
+                "message_count": len(item.messages),
+            }
+            for item in conversations
+        ]
 
     def list_conversations(self, user: User) -> list[Conversation]:
         return (
