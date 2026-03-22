@@ -40,7 +40,3 @@ build/
 *.swo
 *~
 .DS_Store
-
-# Parent directory files
-../
-../../
