@@ -8,6 +8,13 @@ class ChatSendRequest(BaseModel):
     conversation_id: int | None = None
 
 
+class ChatUploadResponse(BaseModel):
+    filename: str
+    size: int
+    content_type: str | None = None
+    message: str
+
+
 class MessageRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -32,6 +32,29 @@ def test_login_and_me(client):
     assert login_response.status_code == 200
 
     token = login_response.json()['access_token']
-    me_response = client.get('/api/auth/me', headers={'Authorization': f'Bearer {token}'})
+    me_response = client.get('/api/user/me', headers={'Authorization': f'Bearer {token}'})
     assert me_response.status_code == 200
     assert me_response.json()['username'] == 'ana'
+
+
+def test_patch_user_me(client):
+    register_response = client.post(
+        '/api/auth/register',
+        json={
+            'name': 'Ana Silva',
+            'username': 'ana',
+            'email': 'ana@example.com',
+            'phone': '11999999999',
+            'password': '12345678',
+        },
+    )
+    token = register_response.json()['access_token']
+
+    update_response = client.patch(
+        '/api/user/me',
+        headers={'Authorization': f'Bearer {token}'},
+        json={'name': 'Ana Souza', 'phone': '11888887777'},
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()['name'] == 'Ana Souza'

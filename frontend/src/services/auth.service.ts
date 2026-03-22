@@ -20,7 +20,7 @@ export async function login(payload: LoginInput) {
 }
 
 export async function getMe() {
-  return apiFetch<User>('/auth/me');
+  return apiFetch<User>('/user/me');
 }
 
 export function logout() {

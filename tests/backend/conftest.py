@@ -22,6 +22,7 @@ def pytest_sessionstart(session):
 
 
 def pytest_sessionfinish(session, exitstatus):
+    engine.dispose()
     if TEST_DB.exists():
         TEST_DB.unlink()
 

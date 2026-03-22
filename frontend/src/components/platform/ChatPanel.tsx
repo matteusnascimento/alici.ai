@@ -8,7 +8,11 @@ export function ChatPanel() {
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    viewportRef.current?.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
+    const viewport = viewportRef.current;
+    if (!viewport || typeof viewport.scrollTo !== 'function') {
+      return;
+    }
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

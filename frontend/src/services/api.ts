@@ -46,9 +46,20 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { detail: text };
+    }
+  }
   if (!response.ok) {
-    throw new ApiError(data?.detail || 'Erro de rede', response.status);
+    const detail =
+      typeof data === 'object' && data !== null && 'detail' in data
+        ? String((data as { detail: unknown }).detail)
+        : 'Erro de rede';
+    throw new ApiError(detail, response.status);
   }
   return data as T;
 }
