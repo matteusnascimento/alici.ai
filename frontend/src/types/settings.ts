@@ -6,6 +6,13 @@ export interface Profile {
   plan: string;
 }
 
+export interface ProfileUpdate {
+  name: string;
+  username: string;
+  email: string;
+  phone: string | null;
+}
+
 export interface UserSettings {
   background_conversation: boolean;
   autocomplete: boolean;

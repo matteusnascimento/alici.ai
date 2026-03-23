@@ -7,7 +7,7 @@ export function AccountPanel() {
   const { account, loading, saving, error, saveProfile, saveSettings } = useSettings();
   const { plans, current, usage, upgrading, upgrade } = useBilling();
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
-  const [profile, setProfile] = useState({ name: '', username: '', email: '', phone: '', plan: 'starter' });
+  const [profile, setProfile] = useState({ name: '', username: '', email: '', phone: '' });
   const [settings, setLocalSettings] = useState({
     background_conversation: true,
     autocomplete: true,
@@ -25,7 +25,6 @@ export function AccountPanel() {
         username: account.profile.username,
         email: account.profile.email,
         phone: account.profile.phone || '',
-        plan: account.profile.plan,
       });
       setLocalSettings(account.settings);
     }
@@ -55,7 +54,6 @@ export function AccountPanel() {
             ['username', 'Username'],
             ['email', 'Email'],
             ['phone', 'Telefone'],
-            ['plan', 'Plano'],
           ].map(([key, label]) => (
             <div key={key}>
               <label className="mb-2 block text-sm text-slate-300">{label}</label>
@@ -99,9 +97,9 @@ export function AccountPanel() {
       </section>
       <section className="panel-base xl:col-span-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="font-display text-2xl text-white">Billing AXI</h3>
+          <h3 className="font-display text-2xl text-white">Assinatura</h3>
           <p className="text-sm text-slate-300">
-            Plano atual: <span className="font-semibold text-white">{current?.plan_name || profile.plan}</span>
+            Plano atual: <span className="font-semibold text-white">{current?.plan_name ?? account?.profile.plan ?? 'free'}</span>
           </p>
         </div>
 

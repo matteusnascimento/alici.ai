@@ -52,7 +52,7 @@ def auth_headers(client: TestClient):
         'username': 'ana',
         'email': 'ana@example.com',
         'phone': '11999999999',
-        'password': '12345678',
+        'password': 'Senha123',
     }
     response = client.post('/api/auth/register', json=payload)
     token = response.json()['access_token']

@@ -7,7 +7,7 @@ def test_billing_plan_and_upgrade_flow(client, auth_headers):
 
     current_response = client.get('/api/billing/current', headers=auth_headers)
     assert current_response.status_code == 200
-    assert current_response.json()['plan_id'] in {'free', 'starter'}
+    assert current_response.json()['plan_id'] == 'free'
 
     upgrade_response = client.post(
         '/api/billing/upgrade',
