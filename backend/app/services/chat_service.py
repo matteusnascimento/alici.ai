@@ -6,6 +6,52 @@ from app.models.user import User
 from app.schemas.chat import ChatSendRequest
 
 
+# ---------------------------------------------------------------------------
+# Mock provider – fallback used while real AI is not yet connected
+# ---------------------------------------------------------------------------
+
+class _MockProvider:
+    """Keyword-based fallback provider. Returns canned responses."""
+
+    def generate(self, prompt: str) -> str:
+        normalized = prompt.lower()
+        if "campanha" in normalized or "marketing" in normalized:
+            return "Posso estruturar uma campanha com oferta, objeções e CTA. Abra Marketing Studio para gerar a versão completa."
+        if "agente" in normalized:
+            return "Seus agentes podem ser ativados por canal. Use a aba Agents para configurar função, linguagem e conexões."
+        if "dashboard" in normalized or "métrica" in normalized:
+            return "O dashboard resume mensagens, agentes e indicadores operacionais em tempo real a partir do banco."
+        return "Entendi. Posso ajudar a transformar essa demanda em ação dentro da AXI com chat, agentes, marketing e métricas conectadas."
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator – selects the active provider
+# ---------------------------------------------------------------------------
+
+class _ChatOrchestrator:
+    """
+    Routes chat requests to the appropriate AI provider.
+
+    Currently uses _MockProvider as the only active provider.
+    To plug in a real provider (e.g. OpenAI), replace _provider here
+    and implement the same ``generate(prompt: str) -> str`` interface.
+    """
+
+    def __init__(self) -> None:
+        # TODO: swap _MockProvider for OpenAIProvider when ready
+        self._provider = _MockProvider()
+
+    def reply(self, prompt: str) -> str:
+        return self._provider.generate(prompt)
+
+
+_orchestrator = _ChatOrchestrator()
+
+
+# ---------------------------------------------------------------------------
+# ChatService – handles persistence and delegates generation to orchestrator
+# ---------------------------------------------------------------------------
+
 class ChatService:
     def __init__(self, db: Session):
         self.db = db
@@ -14,7 +60,7 @@ class ChatService:
         conversation = self._resolve_conversation(user.id, payload)
         user_message = Message(conversation_id=conversation.id, role="user", text=payload.text)
         self.db.add(user_message)
-        assistant_text = self._generate_reply(payload.text)
+        assistant_text = _orchestrator.reply(payload.text)
         assistant_message = Message(conversation_id=conversation.id, role="assistant", text=assistant_text)
         self.db.add(assistant_message)
         self.db.add(UsageLog(user_id=user.id, metric="messages", quantity=2, source="chat"))
@@ -75,13 +121,3 @@ class ChatService:
         self.db.commit()
         self.db.refresh(conversation)
         return conversation
-
-    def _generate_reply(self, prompt: str) -> str:
-        normalized = prompt.lower()
-        if "campanha" in normalized or "marketing" in normalized:
-            return "Posso estruturar uma campanha com oferta, objeções e CTA. Abra Marketing Studio para gerar a versão completa."
-        if "agente" in normalized:
-            return "Seus agentes podem ser ativados por canal. Use a aba Agents para configurar função, linguagem e conexões."
-        if "dashboard" in normalized or "métrica" in normalized:
-            return "O dashboard resume mensagens, agentes e indicadores operacionais em tempo real a partir do banco."
-        return "Entendi. Posso ajudar a transformar essa demanda em ação dentro da AXI com chat, agentes, marketing e métricas conectadas."

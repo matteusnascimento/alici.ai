@@ -26,7 +26,6 @@ class SettingsService:
         user.username = payload.username
         user.email = payload.email
         user.phone = payload.phone
-        user.plan = payload.plan
         self.db.commit()
         self.db.refresh(user)
         return user

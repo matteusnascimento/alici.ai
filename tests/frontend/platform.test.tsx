@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 
 vi.mock('../../frontend/src/hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { name: 'Ana', plan: 'starter' },
+    user: { name: 'Ana', plan: 'free' },
     isAuthenticated: true,
     ready: true,
     logout: vi.fn(),

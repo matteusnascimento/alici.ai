@@ -31,18 +31,36 @@ export function clearAuthToken() {
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const headers = new Headers(init.headers || {});
-  headers.set('Content-Type', 'application/json');
+
+  // Set Content-Type only for requests that carry a body (avoid breaking multipart uploads)
+  if (init.body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  } catch {
+    throw new ApiError('Servidor indisponível. Verifique sua conexão.', 0);
+  }
 
-  if (response.status === 401 && unauthorizedHandler) {
-    unauthorizedHandler();
+  if (response.status === 401) {
+    if (unauthorizedHandler) {
+      unauthorizedHandler();
+    }
+    throw new ApiError('Sessão expirada. Faça login novamente.', 401);
+  }
+
+  if (response.status === 403) {
+    throw new ApiError('Acesso negado. Você não tem permissão para esta ação.', 403);
+  }
+
+  if (response.status >= 500) {
+    throw new ApiError('Erro interno do servidor. Tente novamente mais tarde.', response.status);
   }
 
   const text = await response.text();

@@ -12,6 +12,9 @@ class IntegrationService:
         ("instagram", "Instagram"),
     ]
 
+    # Providers with real connectivity implemented (none yet).
+    _LIVE_PROVIDERS: set[str] = set()
+
     def __init__(self, db: Session):
         self.db = db
 
@@ -37,10 +40,22 @@ class IntegrationService:
     def test_provider(self, provider: str) -> IntegrationTestResponse:
         labels = {"openai": "OpenAI", "whatsapp": "WhatsApp", "instagram": "Instagram"}
         label = labels.get(provider, provider)
+
+        if provider in self._LIVE_PROVIDERS:
+            return IntegrationTestResponse(
+                provider=provider,
+                status="ok",
+                message=f"Conexão com {label} validada com sucesso.",
+            )
+
+        # Provider not yet connected – return honest placeholder response
         return IntegrationTestResponse(
             provider=provider,
-            status="ok",
-            message=f"Conexao de teste com {label} validada. Pronto para configurar credenciais reais.",
+            status="placeholder",
+            message=(
+                f"A integração com {label} ainda não está conectada. "
+                "Configure as credenciais reais e reimplemente este provider para ativá-la."
+            ),
         )
 
     def _seed_defaults(self, user: User) -> None:

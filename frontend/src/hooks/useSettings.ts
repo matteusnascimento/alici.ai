@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { getAccountData, updateProfile, updateSettings } from '../services/settings.service';
-import type { AccountData, Profile, UserSettings } from '../types/settings';
+import type { AccountData, ProfileUpdate, UserSettings } from '../types/settings';
 
 export function useSettings() {
   const [account, setAccount] = useState<AccountData | null>(null);
@@ -26,7 +26,7 @@ export function useSettings() {
     void loadAccount();
   }, []);
 
-  async function saveProfile(payload: Profile) {
+  async function saveProfile(payload: ProfileUpdate) {
     setSaving(true);
     try {
       const profile = await updateProfile(payload);
