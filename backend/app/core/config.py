@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     app_env: str = "development"
     debug: bool = True
     database_url: str = "sqlite:///./axi.db"
+    enable_dev_seed_user: bool = True
+    dev_seed_name: str = "AXI Dev"
+    dev_seed_username: str = "devaxi"
+    dev_seed_email: str = "dev@axi-platform.com"
+    dev_seed_phone: str = "11990000000"
+    dev_seed_password: str = "AxiDev#2026"
     secret_key: str = "change-me"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
