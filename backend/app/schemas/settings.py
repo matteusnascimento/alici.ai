@@ -16,7 +16,6 @@ class ProfileUpdate(BaseModel):
     username: str
     email: EmailStr
     phone: str | None = None
-    plan: str
 
 
 class SettingsRead(BaseModel):

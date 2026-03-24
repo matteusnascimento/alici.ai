@@ -8,11 +8,21 @@ from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest
 
 
+def _validate_password(password: str) -> None:
+    if len(password) < 8:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A senha deve ter no mínimo 8 caracteres")
+    if not any(c.isalpha() for c in password):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A senha deve conter ao menos uma letra")
+    if not any(c.isdigit() for c in password):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A senha deve conter ao menos um número")
+
+
 class AuthService:
     def __init__(self, db: Session):
         self.db = db
 
     def register(self, payload: RegisterRequest) -> tuple[str, User]:
+        _validate_password(payload.password)
         existing_user = self.db.query(User).filter((User.email == payload.email) | (User.username == payload.username)).first()
         if existing_user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email or username already in use")

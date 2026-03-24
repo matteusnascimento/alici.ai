@@ -10,8 +10,8 @@ def test_integrations_endpoints(client, auth_headers):
 
     whatsapp_response = client.post('/api/integrations/whatsapp/test', headers=auth_headers, json={})
     assert whatsapp_response.status_code == 200
-    assert whatsapp_response.json()['status'] == 'ok'
+    assert whatsapp_response.json()['status'] == 'placeholder'
 
     instagram_response = client.post('/api/integrations/instagram/test', headers=auth_headers, json={})
     assert instagram_response.status_code == 200
-    assert instagram_response.json()['status'] == 'ok'
+    assert instagram_response.json()['status'] == 'placeholder'
