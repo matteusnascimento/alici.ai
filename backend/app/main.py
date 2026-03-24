@@ -18,12 +18,18 @@ from app.api.routes import (
     users,
 )
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import Base, SessionLocal, engine
+from app.services.dev_seed_service import DevSeedService
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        DevSeedService(db).ensure_local_dev_user()
+    finally:
+        db.close()
     yield
 
 
