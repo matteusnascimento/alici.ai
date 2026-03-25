@@ -20,11 +20,13 @@ from app.api.routes import (
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.services.dev_seed_service import DevSeedService
+from app.services.schema_sync_service import SchemaSyncService
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    SchemaSyncService(engine).apply_startup_fixes()
     db = SessionLocal()
     try:
         DevSeedService(db).ensure_local_dev_user()

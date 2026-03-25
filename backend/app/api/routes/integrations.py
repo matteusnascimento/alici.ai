@@ -6,7 +6,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.integration import IntegrationRead, IntegrationTestRequest, IntegrationTestResponse
 from app.services.integration_service import IntegrationService
-from app.services.openai_service import OpenAIService, OpenAIServiceError
+from app.services.openai_service import OpenAIService
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
@@ -29,11 +29,12 @@ def test_openai(
             message="OPENAI_API_KEY nao configurada. Configure para testes reais.",
         )
 
-    try:
-        response = service.send_chat_message(messages=[{"role": "user", "content": "ping"}], temperature=0)
-        return IntegrationTestResponse(provider="openai", status="ok", message=f"OpenAI conectado ({response['model']}).")
-    except OpenAIServiceError as exc:
-        return IntegrationTestResponse(provider="openai", status="error", message=str(exc))
+    result = service.healthcheck()
+    status = result.get("status", "error")
+    message = result.get("message", "Falha ao validar OpenAI")
+    if status == "ok" and result.get("model"):
+        message = f"OpenAI conectado ({result['model']}). {message}".strip()
+    return IntegrationTestResponse(provider="openai", status=status, message=message)
 
 
 @router.post("/whatsapp/test", response_model=IntegrationTestResponse)

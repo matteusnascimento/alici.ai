@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.conversation import Conversation, Message
 from app.models.usage_log import UsageLog
 from app.models.user import User
 from app.schemas.chat import ChatSendRequest
+from app.services.openai_service import OpenAIService, OpenAIServiceError
 
 
 # ---------------------------------------------------------------------------
@@ -24,6 +26,32 @@ class _MockProvider:
         return "Entendi. Posso ajudar a transformar essa demanda em ação dentro da AXI com chat, agentes, marketing e métricas conectadas."
 
 
+class _OpenAIProvider:
+    """Provider real usando OpenAI Chat Completions."""
+
+    def __init__(self) -> None:
+        self._service = OpenAIService()
+
+    def generate(self, prompt: str) -> str:
+        response = self._service.send_chat_message(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Você é a assistente AXI da plataforma Alici. "
+                        "Responda em pt-BR, com objetividade, clareza e foco em execução."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+        )
+        content = response.get("content", "").strip()
+        if not content:
+            raise OpenAIServiceError("OpenAI returned empty content")
+        return content
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator – selects the active provider
 # ---------------------------------------------------------------------------
@@ -32,17 +60,20 @@ class _ChatOrchestrator:
     """
     Routes chat requests to the appropriate AI provider.
 
-    Currently uses _MockProvider as the only active provider.
-    To plug in a real provider (e.g. OpenAI), replace _provider here
-    and implement the same ``generate(prompt: str) -> str`` interface.
+    Uses OpenAI when configured and healthy, with automatic fallback
+    to local mock provider for resilience.
     """
 
     def __init__(self) -> None:
-        # TODO: swap _MockProvider for OpenAIProvider when ready
-        self._provider = _MockProvider()
+        self._fallback_provider = _MockProvider()
+        self._provider = _OpenAIProvider() if settings.openai_api_key else self._fallback_provider
 
     def reply(self, prompt: str) -> str:
-        return self._provider.generate(prompt)
+        try:
+            return self._provider.generate(prompt)
+        except Exception:
+            # Never fail chat generation hard because of provider outage.
+            return self._fallback_provider.generate(prompt)
 
 
 _orchestrator = _ChatOrchestrator()

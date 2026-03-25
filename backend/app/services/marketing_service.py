@@ -2,6 +2,7 @@ from datetime import UTC
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.marketing_project import MarketingProject
 from app.models.user import User
 from app.schemas.marketing import (
@@ -13,11 +14,13 @@ from app.schemas.marketing import (
     MarketingProjectRead,
     MarketingTool,
 )
+from app.services.openai_service import OpenAIService
 
 
 class MarketingService:
     def __init__(self, db: Session):
         self.db = db
+        self.openai = OpenAIService() if settings.openai_api_key else None
 
     def list_tools(self) -> list[MarketingTool]:
         return [
@@ -27,6 +30,25 @@ class MarketingService:
         ]
 
     def generate(self, payload: MarketingCampaignRequest) -> MarketingCampaignResponse:
+        if self.openai:
+            try:
+                prompt = (
+                    "Gere uma campanha de marketing completa em pt-BR para os dados abaixo. "
+                    "Responda no formato:\n"
+                    "campaign: ...\ncopy: ...\ncta: ...\nad_structure: ...\ncreative_suggestion: ...\n\n"
+                    f"company_name={payload.company_name}\n"
+                    f"audience={payload.audience}\n"
+                    f"objective={payload.objective}\n"
+                    f"offer={payload.offer}\n"
+                    f"tone={payload.tone}"
+                )
+                raw = self.openai.generate_marketing_copy(prompt)
+                parsed = self._parse_campaign_block(raw)
+                if parsed:
+                    return MarketingCampaignResponse(**parsed)
+            except Exception:
+                pass
+
         campaign = (
             f"Campanha {payload.objective} para {payload.company_name}: posicionar a oferta '{payload.offer}' "
             f"para o público {payload.audience} com tom {payload.tone}."
@@ -53,6 +75,17 @@ class MarketingService:
         )
 
     def generate_copy(self, prompt: str) -> MarketingCopyResponse:
+        if self.openai:
+            try:
+                copy_text = self.openai.generate_marketing_copy(
+                    "Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final. "
+                    f"Contexto: {prompt.strip()}"
+                )
+                if copy_text.strip():
+                    return MarketingCopyResponse(copy_text=copy_text)
+            except Exception:
+                pass
+
         return MarketingCopyResponse(
             copy_text=(
                 "Oferta AXI para acelerar resultado comercial:\n"
@@ -62,6 +95,33 @@ class MarketingService:
         )
 
     def generate_image_prompt(self, prompt: str) -> MarketingImagePromptResponse:
+        if self.openai:
+            try:
+                response = self.openai.send_chat_message(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You write high quality prompts for image generation models. "
+                                "Return only one concise prompt in English."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": (
+                                "Create a premium ad image prompt for this context: "
+                                f"{prompt.strip() or 'high-conversion SaaS campaign'}"
+                            ),
+                        },
+                    ],
+                    temperature=0.5,
+                )
+                prompt_text = response.get("content", "").strip()
+                if prompt_text:
+                    return MarketingImagePromptResponse(prompt=prompt_text)
+            except Exception:
+                pass
+
         normalized = prompt.strip() or "campanha de alta conversao para SaaS"
         return MarketingImagePromptResponse(
             prompt=(
@@ -69,6 +129,32 @@ class MarketingService:
                 f" focus on {normalized}, high contrast, realistic, 4k, clean typography"
             )
         )
+
+    def _parse_campaign_block(self, text: str) -> dict | None:
+        sections = {
+            "campaign": "",
+            "copy": "",
+            "cta": "",
+            "ad_structure": "",
+            "creative_suggestion": "",
+        }
+        for line in text.splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            normalized_key = key.strip().lower()
+            if normalized_key in sections:
+                sections[normalized_key] = value.strip()
+
+        if all(sections.values()):
+            return {
+                "campaign": sections["campaign"],
+                "copy_text": sections["copy"],
+                "cta": sections["cta"],
+                "ad_structure": sections["ad_structure"],
+                "creative_suggestion": sections["creative_suggestion"],
+            }
+        return None
 
     def create_project(self, user: User, payload: MarketingProjectCreate) -> MarketingProjectRead:
         project = MarketingProject(user_id=user.id, **payload.model_dump())
