@@ -12,8 +12,18 @@ class Base(DeclarativeBase):
 
 database_url = settings.sqlalchemy_database_url
 
-connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
-engine = create_engine(database_url, future=True, connect_args=connect_args)
+if database_url.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+    engine = create_engine(database_url, future=True, connect_args=connect_args)
+else:
+    # Neon/Postgres can close idle TLS sessions; pre_ping avoids reusing dead pooled connections.
+    engine = create_engine(
+        database_url,
+        future=True,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        pool_use_lifo=True,
+    )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
 
 
