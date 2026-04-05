@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.chat import ChatSendRequest, ChatSendResponse, ChatUploadResponse, ConversationRead, MessageRead
+from app.services.ai_service import AIServiceError
 from app.services.chat_service import ChatService
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -16,7 +17,10 @@ def send_message(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ChatSendResponse:
-    conversation, user_message, assistant_message = ChatService(db).send(current_user, payload)
+    try:
+        conversation, user_message, assistant_message = ChatService(db).send(current_user, payload)
+    except AIServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
     return ChatSendResponse(
         conversation=ConversationRead.model_validate(conversation),
         user_message=MessageRead.model_validate(user_message),

@@ -5,10 +5,12 @@ let unauthorizedHandler: (() => void) | null = null;
 
 export class ApiError extends Error {
   status: number;
+  details?: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, details?: unknown) {
     super(message);
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -73,11 +75,13 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     }
   }
   if (!response.ok) {
-    const detail =
+    const detailValue =
       typeof data === 'object' && data !== null && 'detail' in data
-        ? String((data as { detail: unknown }).detail)
+        ? (data as { detail: unknown }).detail
         : 'Erro de rede';
-    throw new ApiError(detail, response.status);
+
+    const detailMessage = typeof detailValue === 'string' ? detailValue : 'Operacao nao concluida.';
+    throw new ApiError(detailMessage, response.status, detailValue);
   }
   return data as T;
 }

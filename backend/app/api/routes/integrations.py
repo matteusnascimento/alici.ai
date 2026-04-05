@@ -5,8 +5,8 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.integration import IntegrationRead, IntegrationTestRequest, IntegrationTestResponse
+from app.services.ai_service import AIConfigurationError, AIService, AIServiceError
 from app.services.integration_service import IntegrationService
-from app.services.openai_service import OpenAIService
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
@@ -16,25 +16,43 @@ def list_integrations(current_user: User = Depends(get_current_user), db: Sessio
     return IntegrationService(db).list_integrations(current_user)
 
 
+def _run_openai_healthcheck() -> IntegrationTestResponse:
+    service = AIService(provider="openai")
+    try:
+        result = service.healthcheck()
+        status = result.get("status", "error")
+        model = result.get("model")
+        message = result.get("message", "Falha ao validar OpenAI")
+        if status == "ok" and model:
+            message = "OpenAI integration is working."
+        return IntegrationTestResponse(provider="openai", status=status, message=message, model=model)
+    except AIConfigurationError:
+        return IntegrationTestResponse(
+            provider="openai",
+            status="warning",
+            message="A chave da OpenAI nao foi encontrada no ambiente.",
+            model=None,
+        )
+    except AIServiceError as exc:
+        return IntegrationTestResponse(
+            provider="openai",
+            status="error",
+            message=exc.user_message,
+            model=None,
+        )
+
+
+@router.get("/openai/test", response_model=IntegrationTestResponse)
+def test_openai_get(__: User = Depends(get_current_user)) -> IntegrationTestResponse:
+    return _run_openai_healthcheck()
+
+
 @router.post("/openai/test", response_model=IntegrationTestResponse)
 def test_openai(
     _: IntegrationTestRequest,
     __: User = Depends(get_current_user),
 ) -> IntegrationTestResponse:
-    service = OpenAIService()
-    if not service.api_key:
-        return IntegrationTestResponse(
-            provider="openai",
-            status="warning",
-            message="OPENAI_API_KEY nao configurada. Configure para testes reais.",
-        )
-
-    result = service.healthcheck()
-    status = result.get("status", "error")
-    message = result.get("message", "Falha ao validar OpenAI")
-    if status == "ok" and result.get("model"):
-        message = f"OpenAI conectado ({result['model']}). {message}".strip()
-    return IntegrationTestResponse(provider="openai", status=status, message=message)
+    return _run_openai_healthcheck()
 
 
 @router.post("/whatsapp/test", response_model=IntegrationTestResponse)

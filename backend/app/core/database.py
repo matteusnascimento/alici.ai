@@ -10,9 +10,7 @@ class Base(DeclarativeBase):
     pass
 
 
-database_url = settings.database_url
-if database_url.startswith("postgresql://") and not database_url.startswith("postgresql+psycopg://"):
-    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+database_url = settings.sqlalchemy_database_url
 
 connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
 engine = create_engine(database_url, future=True, connect_args=connect_args)

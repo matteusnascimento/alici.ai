@@ -1,8 +1,8 @@
 from datetime import UTC
+import json
 
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.models.marketing_project import MarketingProject
 from app.models.user import User
 from app.schemas.marketing import (
@@ -14,13 +14,14 @@ from app.schemas.marketing import (
     MarketingProjectRead,
     MarketingTool,
 )
-from app.services.openai_service import OpenAIService
+from app.services.ai_service import AIService
+from app.services.model_router import AIFunction
 
 
 class MarketingService:
     def __init__(self, db: Session):
         self.db = db
-        self.openai = OpenAIService() if settings.openai_api_key else None
+        self.ai = AIService()
 
     def list_tools(self) -> list[MarketingTool]:
         return [
@@ -30,105 +31,52 @@ class MarketingService:
         ]
 
     def generate(self, payload: MarketingCampaignRequest) -> MarketingCampaignResponse:
-        if self.openai:
-            try:
-                prompt = (
-                    "Gere uma campanha de marketing completa em pt-BR para os dados abaixo. "
-                    "Responda no formato:\n"
-                    "campaign: ...\ncopy: ...\ncta: ...\nad_structure: ...\ncreative_suggestion: ...\n\n"
-                    f"company_name={payload.company_name}\n"
-                    f"audience={payload.audience}\n"
-                    f"objective={payload.objective}\n"
-                    f"offer={payload.offer}\n"
-                    f"tone={payload.tone}"
-                )
-                raw = self.openai.generate_marketing_copy(prompt)
-                parsed = self._parse_campaign_block(raw)
-                if parsed:
-                    return MarketingCampaignResponse(**parsed)
-            except Exception:
-                pass
-
-        campaign = (
-            f"Campanha {payload.objective} para {payload.company_name}: posicionar a oferta '{payload.offer}' "
-            f"para o público {payload.audience} com tom {payload.tone}."
+        schema = {
+            "type": "object",
+            "properties": {
+                "campaign": {"type": "string"},
+                "copy_text": {"type": "string"},
+                "cta": {"type": "string"},
+                "ad_structure": {"type": "string"},
+                "creative_suggestion": {"type": "string"},
+            },
+            "required": ["campaign", "copy_text", "cta", "ad_structure", "creative_suggestion"],
+            "additionalProperties": False,
+        }
+        result = self.ai.generate_structured_output(
+            prompt=(
+                f"Empresa: {payload.company_name}\n"
+                f"Publico: {payload.audience}\n"
+                f"Objetivo: {payload.objective}\n"
+                f"Oferta: {payload.offer}\n"
+                f"Tom: {payload.tone}"
+            ),
+            schema=schema,
+            system_prompt=(
+                "Gere uma campanha de marketing completa em pt-BR. "
+                "Retorne somente JSON valido com campanha, copy_text, cta, ad_structure e creative_suggestion."
+            ),
+            function_name=AIFunction.MARKETING_COPY,
         )
-        copy = (
-            f"{payload.company_name} entrega uma forma mais rápida de {payload.objective.lower()} para {payload.audience}. "
-            f"A oferta central é {payload.offer}, com comunicação {payload.tone} e foco em clareza, urgência e prova."
-        )
-        cta = f"Quero ativar {payload.offer} agora"
-        ad_structure = (
-            "Hook de dor -> prova social -> mecanismo único -> oferta -> urgência -> CTA. "
-            f"Abra com uma promessa curta sobre {payload.objective.lower()} e feche convidando o lead a falar com a AXI."
-        )
-        creative_suggestion = (
-            f"Use visual limpo, contraste alto e demonstração do resultado final para {payload.audience}. "
-            "Combine screenshot do painel com headline curta e selo de automação inteligente."
-        )
-        return MarketingCampaignResponse(
-            campaign=campaign,
-            copy_text=copy,
-            cta=cta,
-            ad_structure=ad_structure,
-            creative_suggestion=creative_suggestion,
-        )
+        return MarketingCampaignResponse(**result)
 
     def generate_copy(self, prompt: str) -> MarketingCopyResponse:
-        if self.openai:
-            try:
-                copy_text = self.openai.generate_marketing_copy(
-                    "Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final. "
-                    f"Contexto: {prompt.strip()}"
-                )
-                if copy_text.strip():
-                    return MarketingCopyResponse(copy_text=copy_text)
-            except Exception:
-                pass
-
-        return MarketingCopyResponse(
-            copy_text=(
-                "Oferta AXI para acelerar resultado comercial:\n"
-                f"{prompt.strip()}\n"
-                "Mensagem principal: clareza de proposta, prova de resultado e CTA unico para conversa."
-            )
+        copy_text = self.ai.generate_text(
+            system_prompt="Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final.",
+            user_prompt=f"Contexto: {prompt.strip()}",
+            temperature=0.5,
+            function_name=AIFunction.MARKETING_COPY,
         )
+        return MarketingCopyResponse(copy_text=copy_text)
 
     def generate_image_prompt(self, prompt: str) -> MarketingImagePromptResponse:
-        if self.openai:
-            try:
-                response = self.openai.send_chat_message(
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You write high quality prompts for image generation models. "
-                                "Return only one concise prompt in English."
-                            ),
-                        },
-                        {
-                            "role": "user",
-                            "content": (
-                                "Create a premium ad image prompt for this context: "
-                                f"{prompt.strip() or 'high-conversion SaaS campaign'}"
-                            ),
-                        },
-                    ],
-                    temperature=0.5,
-                )
-                prompt_text = response.get("content", "").strip()
-                if prompt_text:
-                    return MarketingImagePromptResponse(prompt=prompt_text)
-            except Exception:
-                pass
-
-        normalized = prompt.strip() or "campanha de alta conversao para SaaS"
-        return MarketingImagePromptResponse(
-            prompt=(
-                "Create a premium ad visual, cinematic light, modern SaaS dashboard,"
-                f" focus on {normalized}, high contrast, realistic, 4k, clean typography"
-            )
+        prompt_text = self.ai.generate_text(
+            system_prompt="You write premium prompts for image generation models. Return only one concise prompt in English.",
+            user_prompt=f"Create a premium ad image prompt for this context: {prompt.strip() or 'high-conversion SaaS campaign'}",
+            temperature=0.5,
+            function_name=AIFunction.MARKETING_COPY,
         )
+        return MarketingImagePromptResponse(prompt=prompt_text)
 
     def _parse_campaign_block(self, text: str) -> dict | None:
         sections = {

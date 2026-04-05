@@ -1,20 +1,16 @@
 import { render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
-vi.mock('../hooks/useMarketing', () => ({
-  useMarketing: () => ({
-    result: null,
-    loading: false,
-    error: null,
-    runCampaign: vi.fn(async () => undefined),
-  }),
-}));
-
-import { MarketingPanel } from '../components/platform/MarketingPanel';
+import { StudioHomePage } from '../components/studio/tools/StudioHomePage';
 
 describe('MarketingPanel', () => {
-  it('renderiza formulario de geracao', () => {
-    render(<MarketingPanel />);
-    expect(screen.getByText(/Gerar campanha textual/i)).toBeInTheDocument();
+  it('renderiza cards principais do AXI Studio', () => {
+    render(
+      <MemoryRouter>
+        <StudioHomePage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/Create \/ Generate/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Anuncios Inteligentes/i })).toBeInTheDocument();
   });
 });

@@ -1,5 +1,7 @@
 from enum import Enum
 
+from app.core.config import settings
+
 
 class AIFunction(str, Enum):
     CHAT = "chat"
@@ -17,11 +19,11 @@ class AIFunction(str, Enum):
 
 
 MODEL_BY_FUNCTION = {
-    AIFunction.CHAT: "gpt-4o-mini",
+    AIFunction.CHAT: settings.openai_model,
     AIFunction.CHAT_PREMIUM: "gpt-5.4-mini",
-    AIFunction.MARKETING_COPY: "gpt-4o-mini",
-    AIFunction.STRUCTURED_EXTRACTION: "gpt-4o-mini",
-    AIFunction.IMAGE_ANALYSIS: "gpt-4o-mini",
+    AIFunction.MARKETING_COPY: settings.openai_model,
+    AIFunction.STRUCTURED_EXTRACTION: settings.openai_model,
+    AIFunction.IMAGE_ANALYSIS: settings.openai_model,
     AIFunction.IMAGE_GENERATION: "gpt-image-1",
     AIFunction.IMAGE_EDIT: "gpt-image-1",
     AIFunction.AUDIO_TRANSCRIPTION: "gpt-4o-transcribe",

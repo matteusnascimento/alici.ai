@@ -4,6 +4,8 @@ from pathlib import Path
 
 TEST_DB = Path(__file__).resolve().parent / 'test_axi.db'
 os.environ['DATABASE_URL'] = f"sqlite:///{TEST_DB.as_posix()}"
+os.environ.setdefault('SECRET_KEY', 'test-secret-key')
+os.environ.setdefault('ENABLE_DEV_SEED_USER', 'false')
 
 BACKEND_PATH = Path(__file__).resolve().parents[2] / 'backend'
 if str(BACKEND_PATH) not in sys.path:

@@ -97,7 +97,8 @@ Copie `backend/.env.example` para `backend/.env` e preencha:
 | `SECRET_KEY`                 | Chave JWT — use uma chave forte em produção   | `troque-esta-chave-...`   |
 | `ACCESS_TOKEN_EXPIRE_MINUTES`| Expiração do token de acesso (minutos)        | `1440` (24 h)             |
 | `CORS_ALLOWED_ORIGINS`       | Origens permitidas no CORS (vírgula)          | `http://localhost:5173`   |
-| `OPENAI_API_KEY`             | Chave da API OpenAI (opcional por ora)        | _(vazio)_                 |
+| `DEFAULT_AI_PROVIDER`        | Provider de IA padrão do backend              | `openai`                  |
+| `OPENAI_API_KEY`             | Chave da API OpenAI lida apenas no backend    | _(vazio)_                 |
 | `OPENAI_MODEL`               | Modelo OpenAI padrão                          | `gpt-4o-mini`             |
 
 ---

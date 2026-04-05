@@ -23,6 +23,6 @@ describe('PlatformShell', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/Control Room/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Control Room/i).length).toBeGreaterThan(0);
   });
 });

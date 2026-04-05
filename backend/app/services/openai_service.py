@@ -244,18 +244,25 @@ class OpenAIService:
             }
 
     # Backward-compatible wrappers used in existing services/routes.
-    def send_chat_message(self, messages: list[dict], model: str | None = None, temperature: float = 0.2) -> dict[str, Any]:
+    def send_chat_message(
+        self,
+        messages: list[dict],
+        model: str | None = None,
+        temperature: float = 0.2,
+        max_tokens: int | None = None,
+    ) -> dict[str, Any]:
         if not messages:
             raise OpenAIServiceError("messages cannot be empty")
 
-        response = self._post_json(
-            "/chat/completions",
-            {
-                "model": model or self.default_model,
-                "messages": messages,
-                "temperature": temperature,
-            },
-        )
+        payload = {
+            "model": model or self.default_model,
+            "messages": messages,
+            "temperature": temperature,
+        }
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
+        response = self._post_json("/chat/completions", payload)
         content = ""
         choices = response.get("choices") or []
         if choices:

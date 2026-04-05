@@ -1,65 +1,76 @@
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
 
-import { useMarketing } from '../../hooks/useMarketing';
+import { AdsWorkspace } from '../studio/AdsWorkspace';
+import { MarketingWorkspace } from '../studio/MarketingWorkspace';
+import { PhotoEditorWorkspace } from '../studio/PhotoEditorWorkspace';
+import { PosterWorkspace } from '../studio/PosterWorkspace';
+import { ProductPhotoWorkspace } from '../studio/ProductPhotoWorkspace';
+import { ProjectsWorkspace } from '../studio/ProjectsWorkspace';
+import { StudioHeader } from '../studio/StudioHeader';
+import { StudioToolGrid } from '../studio/StudioToolGrid';
+import { ToolEmptyState } from '../studio/ToolEmptyState';
+import type { StudioToolId } from '../studio/studioTypes';
+
+function renderWorkspace(tool: StudioToolId | null, onNotify: (msg: string) => void) {
+  switch (tool) {
+    case 'ads':
+      return <AdsWorkspace onNotify={onNotify} />;
+    case 'product-photos':
+      return <ProductPhotoWorkspace onNotify={onNotify} />;
+    case 'poster-ai':
+      return <PosterWorkspace onNotify={onNotify} />;
+    case 'photo-editor':
+      return <PhotoEditorWorkspace onNotify={onNotify} />;
+    case 'marketing-tools':
+      return <MarketingWorkspace onNotify={onNotify} />;
+    case 'projects':
+      return <ProjectsWorkspace onNotify={onNotify} />;
+    default:
+      if (!tool) return null;
+      return (
+        <ToolEmptyState
+          title="Workspace em configuracao"
+          message="Este modulo ja esta preparado visualmente e com mocks. A proxima etapa e plugar os endpoints de IA no service layer do studio."
+        />
+      );
+  }
+}
 
 export function MarketingPanel() {
-  const { result, loading, error, runCampaign } = useMarketing();
-  const [form, setForm] = useState({
-    company_name: 'AXI',
-    audience: 'times comerciais e operação digital',
-    objective: 'gerar reuniões qualificadas',
-    offer: 'uma operação AI unificada',
-    tone: 'premium',
-  });
+  const [activeTool, setActiveTool] = useState<StudioToolId | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    await runCampaign(form);
+  function notify(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 2600);
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-      <section className="panel-base">
-        <h3 className="font-display text-2xl text-white">Gerar campanha textual</h3>
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          {[
-            ['company_name', 'Empresa'],
-            ['audience', 'Público'],
-            ['objective', 'Objetivo'],
-            ['offer', 'Oferta'],
-            ['tone', 'Tom'],
-          ].map(([key, label]) => (
-            <div key={key}>
-              <label className="mb-2 block text-sm text-slate-300">{label}</label>
-              <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-cyan" value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} required />
-            </div>
-          ))}
-          <button className="w-full rounded-2xl bg-sand px-4 py-3 font-semibold text-ink transition hover:bg-white disabled:opacity-60" disabled={loading} type="submit">
-            {loading ? 'Gerando...' : 'Gerar campanha'}
-          </button>
-        </form>
-        {error ? <p className="mt-4 text-sm text-coral">{error}</p> : null}
-      </section>
-      <section className="panel-base">
-        <h3 className="font-display text-2xl text-white">Saída da campanha</h3>
-        {!result ? <p className="mt-6 text-slate-300">Preencha o formulário para gerar campanha, copy, CTA, estrutura de anúncio e sugestão de criativo.</p> : null}
-        {result ? (
-          <div className="mt-6 grid gap-4">
-            {[
-              ['Campanha', result.campaign],
-              ['Copy', result.copy],
-              ['CTA', result.cta],
-              ['Estrutura do anúncio', result.ad_structure],
-              ['Sugestão de criativo', result.creative_suggestion],
-            ].map(([label, value]) => (
-              <article key={label} className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <p className="text-sm uppercase tracking-[0.3em] text-cyan">{label}</p>
-                <p className="mt-3 whitespace-pre-wrap text-slate-100">{value}</p>
-              </article>
-            ))}
-          </div>
-        ) : null}
-      </section>
+    <div className="space-y-6">
+      <StudioHeader
+        onQuickCreate={() => {
+          setActiveTool('ads');
+          notify('Workspace de Anuncios Inteligentes aberto.');
+        }}
+        onQuickGenerate={() => notify('Geracao IA acionada em modo mock para demos.')}
+      />
+
+      <StudioToolGrid activeTool={activeTool} onSelect={(tool) => setActiveTool(tool)} />
+
+      {activeTool ? (
+        <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-4 md:p-5">{renderWorkspace(activeTool, notify)}</section>
+      ) : (
+        <ToolEmptyState
+          title="Selecione uma ferramenta"
+          message="Escolha um card acima para abrir um workspace de criacao visual, marketing operacional ou projetos."
+        />
+      )}
+
+      {toast ? (
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl border border-cyan/30 bg-ink/90 px-4 py-3 text-sm text-cyan shadow-soft backdrop-blur">
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,6 +14,7 @@ from app.schemas.marketing import (
     MarketingProjectRead,
     MarketingTool,
 )
+from app.services.ai_service import AIServiceError
 from app.services.marketing_service import MarketingService
 
 router = APIRouter(prefix="/marketing", tags=["marketing"])
@@ -25,7 +26,10 @@ def generate_campaign(
     _: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingCampaignResponse:
-    return MarketingService(db).generate(payload)
+    try:
+        return MarketingService(db).generate(payload)
+    except AIServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
 
 
 @router.get("/tools", response_model=list[MarketingTool])
@@ -39,7 +43,10 @@ def generate_copy(
     _: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingCopyResponse:
-    return MarketingService(db).generate_copy(payload.prompt)
+    try:
+        return MarketingService(db).generate_copy(payload.prompt)
+    except AIServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
 
 
 @router.post("/generate-image-prompt", response_model=MarketingImagePromptResponse)
@@ -48,7 +55,10 @@ def generate_image_prompt(
     _: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingImagePromptResponse:
-    return MarketingService(db).generate_image_prompt(payload.prompt)
+    try:
+        return MarketingService(db).generate_image_prompt(payload.prompt)
+    except AIServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
 
 
 @router.post("/projects", response_model=MarketingProjectRead)

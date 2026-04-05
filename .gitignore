@@ -25,6 +25,8 @@ wheels/
 .pytest_cache/
 axi.db
 .env
+.env.*
+!.env.example
 
 # Node
 node_modules/

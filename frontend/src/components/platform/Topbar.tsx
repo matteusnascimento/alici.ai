@@ -7,7 +7,7 @@ const titleMap: Record<string, string> = {
   '/app/dashboard': 'Dashboard',
   '/app/chat': 'Alici Chat',
   '/app/agents': 'Agents',
-  '/app/marketing': 'Marketing Studio',
+  '/app/studio': 'AXI Studio',
   '/app/account': 'Conta AXI',
 };
 
@@ -15,6 +15,11 @@ export function Topbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const title = location.pathname.startsWith('/app/studio') || location.pathname.startsWith('/app/marketing')
+    ? 'AXI Studio'
+    : location.pathname.startsWith('/app/account')
+      ? 'Conta AXI'
+      : titleMap[location.pathname] || 'AXI';
 
   function handleLogout() {
     logout();
@@ -25,7 +30,7 @@ export function Topbar() {
     <div className="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur lg:flex-row lg:items-center lg:justify-between">
       <div>
         <p className="text-sm uppercase tracking-[0.3em] text-cyan">Plataforma AXI</p>
-        <h2 className="mt-2 font-display text-3xl text-white">{titleMap[location.pathname] || 'AXI'}</h2>
+        <h2 className="mt-2 font-display text-3xl text-white">{title}</h2>
       </div>
       <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-ink/40 px-4 py-3 text-white">
         <div>

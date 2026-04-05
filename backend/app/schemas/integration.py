@@ -21,3 +21,4 @@ class IntegrationTestResponse(BaseModel):
     provider: str
     status: str
     message: str
+    model: str | None = None

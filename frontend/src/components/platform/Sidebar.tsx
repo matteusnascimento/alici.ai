@@ -7,7 +7,7 @@ const items = [
   { label: 'Dashboard', to: '/app/dashboard', icon: LayoutDashboard },
   { label: 'Alici Chat', to: '/app/chat', icon: Bot },
   { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
-  { label: 'Marketing Studio', to: '/app/marketing', icon: Megaphone },
+  { label: 'AXI Growth Studio', to: '/app/marketing', icon: Megaphone },
   { label: 'Conta AXI', to: '/app/account', icon: Settings2 },
 ];
 

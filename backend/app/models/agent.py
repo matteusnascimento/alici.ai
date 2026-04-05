@@ -22,6 +22,18 @@ class Agent(Base):
     outros: Mapped[str | None] = mapped_column(String(255), nullable=True)
     outros_nome: Mapped[str | None] = mapped_column(String(120), nullable=True)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 
     user = relationship("User", back_populates="agents")
+    channels = relationship("AgentChannel", back_populates="agent", cascade="all, delete-orphan")
+    knowledge_items = relationship("AgentKnowledge", back_populates="agent", cascade="all, delete-orphan")
+    actions = relationship("AgentAction", back_populates="agent", cascade="all, delete-orphan")
+    runtime_conversations = relationship("AgentConversation", back_populates="agent", cascade="all, delete-orphan")
+    runtime_logs = relationship("AgentLog", back_populates="agent", cascade="all, delete-orphan")
+    widget_sessions = relationship("WidgetSession", back_populates="agent", cascade="all, delete-orphan")

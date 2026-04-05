@@ -1,82 +1,10 @@
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.models.conversation import Conversation, Message
 from app.models.usage_log import UsageLog
 from app.models.user import User
 from app.schemas.chat import ChatSendRequest
-from app.services.openai_service import OpenAIService, OpenAIServiceError
-
-
-# ---------------------------------------------------------------------------
-# Mock provider – fallback used while real AI is not yet connected
-# ---------------------------------------------------------------------------
-
-class _MockProvider:
-    """Keyword-based fallback provider. Returns canned responses."""
-
-    def generate(self, prompt: str) -> str:
-        normalized = prompt.lower()
-        if "campanha" in normalized or "marketing" in normalized:
-            return "Posso estruturar uma campanha com oferta, objeções e CTA. Abra Marketing Studio para gerar a versão completa."
-        if "agente" in normalized:
-            return "Seus agentes podem ser ativados por canal. Use a aba Agents para configurar função, linguagem e conexões."
-        if "dashboard" in normalized or "métrica" in normalized:
-            return "O dashboard resume mensagens, agentes e indicadores operacionais em tempo real a partir do banco."
-        return "Entendi. Posso ajudar a transformar essa demanda em ação dentro da AXI com chat, agentes, marketing e métricas conectadas."
-
-
-class _OpenAIProvider:
-    """Provider real usando OpenAI Chat Completions."""
-
-    def __init__(self) -> None:
-        self._service = OpenAIService()
-
-    def generate(self, prompt: str) -> str:
-        response = self._service.send_chat_message(
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Você é a assistente AXI da plataforma Alici. "
-                        "Responda em pt-BR, com objetividade, clareza e foco em execução."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.3,
-        )
-        content = response.get("content", "").strip()
-        if not content:
-            raise OpenAIServiceError("OpenAI returned empty content")
-        return content
-
-
-# ---------------------------------------------------------------------------
-# Orchestrator – selects the active provider
-# ---------------------------------------------------------------------------
-
-class _ChatOrchestrator:
-    """
-    Routes chat requests to the appropriate AI provider.
-
-    Uses OpenAI when configured and healthy, with automatic fallback
-    to local mock provider for resilience.
-    """
-
-    def __init__(self) -> None:
-        self._fallback_provider = _MockProvider()
-        self._provider = _OpenAIProvider() if settings.openai_api_key else self._fallback_provider
-
-    def reply(self, prompt: str) -> str:
-        try:
-            return self._provider.generate(prompt)
-        except Exception:
-            # Never fail chat generation hard because of provider outage.
-            return self._fallback_provider.generate(prompt)
-
-
-_orchestrator = _ChatOrchestrator()
+from app.services.ai_service import AIService
 
 
 # ---------------------------------------------------------------------------
@@ -86,12 +14,20 @@ _orchestrator = _ChatOrchestrator()
 class ChatService:
     def __init__(self, db: Session):
         self.db = db
+        self.ai = AIService()
 
     def send(self, user: User, payload: ChatSendRequest) -> tuple[Conversation, Message, Message]:
         conversation = self._resolve_conversation(user.id, payload)
         user_message = Message(conversation_id=conversation.id, role="user", text=payload.text)
         self.db.add(user_message)
-        assistant_text = _orchestrator.reply(payload.text)
+        assistant_text = self.ai.generate_text(
+            system_prompt=(
+                "Voce e a assistente AXI da plataforma Alici. "
+                "Responda em pt-BR, com objetividade, clareza e foco em execucao."
+            ),
+            user_prompt=payload.text,
+            temperature=0.3,
+        )
         assistant_message = Message(conversation_id=conversation.id, role="assistant", text=assistant_text)
         self.db.add(assistant_message)
         self.db.add(UsageLog(user_id=user.id, metric="messages", quantity=2, source="chat"))

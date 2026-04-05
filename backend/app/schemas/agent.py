@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentCreate(BaseModel):
@@ -9,6 +9,8 @@ class AgentCreate(BaseModel):
     tipo: str
     linguagem: str = "pt-BR"
     prompt: str
+    tone: str | None = None
+    objectives: list[str] = Field(default_factory=list)
     whatsapp: str | None = None
     instagram: str | None = None
     api: str | None = None

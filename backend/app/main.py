@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
+    account,
     agents,
     auth,
     billing,
@@ -12,11 +13,14 @@ from app.api.routes import (
     health,
     integrations,
     marketing,
+    media,
     settings as settings_routes,
+    studio,
     subscriptions,
     usage,
     users,
 )
+from app import models as _models  # noqa: F401
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.services.dev_seed_service import DevSeedService
@@ -47,13 +51,16 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(account.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(agents.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(marketing.router, prefix="/api")
+app.include_router(media.router, prefix="/api")
 app.include_router(settings_routes.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
 app.include_router(subscriptions.router, prefix="/api")
 app.include_router(usage.router, prefix="/api")
 app.include_router(integrations.router, prefix="/api")
+app.include_router(studio.router, prefix="/api")
 app.include_router(health.router)

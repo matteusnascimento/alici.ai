@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -14,9 +14,16 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    bio: Mapped[str | None] = mapped_column(Text(), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     plan: Mapped[str] = mapped_column(String(50), default="free")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     agents = relationship("Agent", back_populates="user", cascade="all, delete-orphan")
@@ -26,3 +33,8 @@ class User(Base):
     usage_logs = relationship("UsageLog", back_populates="user", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="user", cascade="all, delete-orphan")
     marketing_projects = relationship("MarketingProject", back_populates="user", cascade="all, delete-orphan")
+    media_projects = relationship("MediaProject", back_populates="user", cascade="all, delete-orphan")
+    media_jobs = relationship("MediaJob", back_populates="user", cascade="all, delete-orphan")
+    agent_channels = relationship("AgentChannel", back_populates="user", cascade="all, delete-orphan")
+    agent_knowledge_items = relationship("AgentKnowledge", back_populates="user", cascade="all, delete-orphan")
+    agent_actions = relationship("AgentAction", back_populates="user", cascade="all, delete-orphan")
