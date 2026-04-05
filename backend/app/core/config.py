@@ -1,4 +1,5 @@
 import warnings
+import json
 from functools import lru_cache
 
 from pydantic import Field, field_validator
@@ -34,8 +35,16 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
-            return [item.strip() for item in value.split(",") if item.strip()]
-        return value
+            raw = value.strip()
+            if not raw:
+                return []
+            if raw.startswith("["):
+                parsed = json.loads(raw)
+                if not isinstance(parsed, list):
+                    raise ValueError("CORS_ALLOWED_ORIGINS JSON deve ser uma lista de strings")
+                return [item.strip() for item in parsed if isinstance(item, str) and item.strip()]
+            return [item.strip() for item in raw.split(",") if item.strip()]
+        return [item.strip() for item in value if isinstance(item, str) and item.strip()]
 
     def __init__(self, **data):
         super().__init__(**data)

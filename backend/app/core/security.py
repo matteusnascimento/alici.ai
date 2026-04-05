@@ -42,7 +42,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     subject = payload.get("sub")
     if not subject:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token sem subject")
-    user = db.query(User).filter(User.id == int(subject)).first()
+    try:
+        user_id = int(subject)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token com subject inválido") from exc
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado")
     return user
