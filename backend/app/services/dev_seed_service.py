@@ -55,8 +55,4 @@ class DevSeedService:
         return user
 
     def _should_seed_dev_user(self) -> bool:
-        return (
-            settings.enable_dev_seed_user
-            and settings.app_env.lower() != "production"
-            and settings.database_url.startswith("sqlite")
-        )
+        return settings.should_seed_dev_user

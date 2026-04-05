@@ -50,7 +50,7 @@ class Settings(BaseSettings):
                 "Set a strong SECRET_KEY via environment variable."
             )
 
-        if self.enable_dev_seed_user and not self.dev_seed_password:
+        if self.should_seed_dev_user and not self.dev_seed_password:
             raise ValueError(
                 "ENABLE_DEV_SEED_USER=true requires DEV_SEED_PASSWORD to be set via environment variable."
             )
@@ -63,6 +63,14 @@ class Settings(BaseSettings):
         if self.database_url.startswith("postgresql://") and not self.database_url.startswith("postgresql+psycopg://"):
             return self.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
         return self.database_url
+
+    @property
+    def should_seed_dev_user(self) -> bool:
+        return (
+            self.enable_dev_seed_user
+            and self.app_env.lower() != "production"
+            and self.database_url.startswith("sqlite")
+        )
 
 
 @lru_cache
