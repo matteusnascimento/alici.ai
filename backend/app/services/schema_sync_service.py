@@ -19,6 +19,7 @@ class SchemaSyncService:
 
             self._sync_users_table(conn)
             self._sync_user_settings_table(conn)
+            self._sync_subscriptions_table(conn)
             self._sync_media_tables(conn)
 
     def _sync_users_table(self, conn) -> None:
@@ -93,6 +94,28 @@ class SchemaSyncService:
 
     def _get_users_columns(self, conn) -> set[str]:
         return self._get_table_columns(conn, "users")
+
+    def _sync_subscriptions_table(self, conn) -> None:
+        table_exists = conn.execute(text("select to_regclass('public.subscriptions')")).scalar()
+        if not table_exists:
+            return
+
+        columns = self._get_table_columns(conn, "subscriptions")
+        missing_columns = {
+            "plan_id": "VARCHAR(40) NOT NULL DEFAULT 'free'",
+            "monthly_price": "FLOAT NOT NULL DEFAULT 0.0",
+            "yearly_price": "FLOAT",
+            "billing_cycle": "VARCHAR(20) NOT NULL DEFAULT 'monthly'",
+            "trial_ends_at": "TIMESTAMPTZ",
+            "current_period_start": "TIMESTAMPTZ NOT NULL DEFAULT now()",
+            "current_period_end": "TIMESTAMPTZ",
+            "auto_renew": "BOOLEAN NOT NULL DEFAULT true",
+            "seats": "INTEGER NOT NULL DEFAULT 1",
+            "updated_at": "TIMESTAMPTZ NOT NULL DEFAULT now()",
+        }
+        for col, definition in missing_columns.items():
+            if col not in columns:
+                conn.execute(text(f"ALTER TABLE subscriptions ADD COLUMN {col} {definition}"))
 
     def _sync_media_tables(self, conn) -> None:
         media_projects_exists = conn.execute(text("select to_regclass('public.media_projects')")).scalar()
