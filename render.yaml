@@ -9,7 +9,7 @@ services:
     name: axi-backend
     runtime: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt && python scripts/render_migrate.py
+    buildCommand: pip install -r requirements.txt && cd ../frontend && npm install && npm run build && cd ../backend && rm -rf frontend_dist && mkdir -p frontend_dist && cp -r ../frontend/dist/* frontend_dist/ && python scripts/render_migrate.py
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: APP_ENV
@@ -35,12 +35,4 @@ services:
       - key: OPENAI_MODEL
         value: gpt-4o-mini
 
-  - type: web
-    name: axi-frontend
-    runtime: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://alici-ai.onrender.com/api
+
