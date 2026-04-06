@@ -44,7 +44,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=settings.app_name, debug=settings.debug, lifespan=lifespan)
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+# backend/app/main.py -> parents[1] aponta para a pasta backend
+BASE_DIR = Path(__file__).resolve().parents[1]
 FRONTEND_DIST = BASE_DIR / "frontend_dist"
 ASSETS_DIR = FRONTEND_DIST / "assets"
 
