@@ -39,18 +39,20 @@ class AgentRuntimeService:
             return {}
 
     @staticmethod
-    def _select_agent_for_channel(db: Session, user_id: int, channel_type: str, channel_id: str) -> tuple[Agent, AgentChannel]:
+    def _select_agent_for_channel(db: Session, user_id: int, channel_type: str, channel_id: str, test_mode: bool = False) -> tuple[Agent, AgentChannel]:
+        filters = [
+            Agent.user_id == user_id,
+            AgentChannel.channel_type == channel_type,
+            AgentChannel.channel_id == channel_id,
+            AgentChannel.enabled.is_(True),
+            Agent.archived.is_(False),
+        ]
+        if not test_mode:
+            filters.append(Agent.ativo.is_(True))
         channel = (
             db.query(AgentChannel)
             .join(Agent, Agent.id == AgentChannel.agent_id)
-            .filter(
-                Agent.user_id == user_id,
-                AgentChannel.channel_type == channel_type,
-                AgentChannel.channel_id == channel_id,
-                AgentChannel.enabled.is_(True),
-                Agent.ativo.is_(True),
-                Agent.archived.is_(False),
-            )
+            .filter(*filters)
             .first()
         )
         if not channel:
@@ -233,11 +235,12 @@ class AgentRuntimeService:
         external_conversation_id: str,
         text: str,
         metadata: dict[str, Any] | None = None,
+        test_mode: bool = False,
     ) -> dict[str, Any]:
         start = datetime.utcnow()
         metadata = metadata or {}
 
-        agent, _channel = AgentRuntimeService._select_agent_for_channel(db, user_id, channel_type, channel_id)
+        agent, _channel = AgentRuntimeService._select_agent_for_channel(db, user_id, channel_type, channel_id, test_mode=test_mode)
         conversation = AgentRuntimeService._get_or_create_conversation(
             db,
             agent_id=agent.id,
