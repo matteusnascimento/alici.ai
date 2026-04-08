@@ -79,12 +79,27 @@ export interface AgentCreateFlowResponse {
 
 export interface AgentChannel {
   id: number;
+  agent_id: number;
   channel_type: string;
-  channel_id: string;
-  status?: string;
+  channel_id?: string;
+  status: string;
+  is_enabled: boolean;
+  enabled: boolean;
+  provider_name: string;
+  external_account_id: string | null;
+  webhook_url: string | null;
+  last_sync_at: string | null;
+  last_error: string | null;
   conexao_do_agente?: string;
-  provider_name?: string;
-  enabled?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentConnectionActionResult {
+  success: boolean;
+  message: string;
+  data: Record<string, unknown>;
+  channel_type: string;
 }
 
 export interface AgentKnowledgeSource {

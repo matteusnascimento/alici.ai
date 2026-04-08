@@ -2,6 +2,7 @@ import { apiFetch } from './api';
 import type {
   AgentActionItem,
   AgentChannel,
+  AgentConnectionActionResult,
   AgentCreateFlowResponse,
   AgentKnowledgeSource,
   AgentOverview,
@@ -97,6 +98,52 @@ export function runAgentTestV2(agentId: number, payload: Record<string, unknown>
 export function listAgentLogsV2(agentId: number, filter?: string) {
   const query = filter ? `?kind=${encodeURIComponent(filter)}` : '';
   return apiFetch<Array<Record<string, unknown>>>(`/agents/${agentId}/logs${query}`);
+}
+
+// --- Connections API ---
+
+export function listAgentConnections(agentId: number) {
+  return apiFetch<AgentChannel[]>(`/agents/${agentId}/connections`);
+}
+
+export function connectAgentProvider(
+  agentId: number,
+  provider: string,
+  config: Record<string, unknown> = {},
+) {
+  return apiFetch<AgentChannel>(`/agents/${agentId}/connections/${provider}/connect`, {
+    method: 'POST',
+    body: JSON.stringify({ config }),
+  });
+}
+
+export function disconnectAgentProvider(agentId: number, provider: string) {
+  return apiFetch<AgentChannel>(`/agents/${agentId}/connections/${provider}/disconnect`, {
+    method: 'POST',
+  });
+}
+
+export function syncAgentProvider(agentId: number, provider: string) {
+  return apiFetch<AgentChannel>(`/agents/${agentId}/connections/${provider}/sync`, {
+    method: 'POST',
+  });
+}
+
+export function testAgentProvider(agentId: number, provider: string) {
+  return apiFetch<AgentConnectionActionResult>(`/agents/${agentId}/connections/${provider}/test`, {
+    method: 'POST',
+  });
+}
+
+export function updateAgentProviderConfig(
+  agentId: number,
+  provider: string,
+  payload: Record<string, unknown>,
+) {
+  return apiFetch<AgentChannel>(`/agents/${agentId}/connections/${provider}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 }
 
 export function getAgentAnalyticsV2(agentId: number) {

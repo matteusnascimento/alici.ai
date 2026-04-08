@@ -43,9 +43,13 @@ from app.schemas.agent_runtime import (
     WidgetSessionCreateResponse,
 )
 from app.schemas.agents_v2 import (
-    AgentCreatedFlowResponse,
     AgentChannelConnectRequest,
     AgentChannelStatusResponse,
+    AgentConnectionActionResponse,
+    AgentConnectionConnectRequest,
+    AgentConnectionRead,
+    AgentConnectionUpdateRequest,
+    AgentCreatedFlowResponse,
     AgentKnowledgeSourceRequest,
     AgentKnowledgeSourceResponse,
     AgentOverviewResponse,
@@ -344,36 +348,42 @@ def get_agent_settings(agent_id: int, current_user: User = Depends(get_current_u
     cfg = db.query(AgentConfiguration).filter(AgentConfiguration.agent_id == agent_id, AgentConfiguration.user_id == current_user.id).first()
 
     if not cfg:
-        return AgentSettingsResponse.model_validate({
+        return AgentSettingsResponse.model_validate(
+            {
+                "basic": {
+                    "name": agent.nome,
+                    "role": agent.funcao,
+                    "language": agent.linguagem,
+                    "tone": None,
+                    "working_hours": None,
+                    "active": agent.ativo,
+                    "fallback_to_human": True,
+                },
+                "advanced": {
+                    "modelo": agent.preferred_model,
+                },
+            }
+        )
+
+    return AgentSettingsResponse.model_validate(
+        {
             "basic": {
                 "name": agent.nome,
                 "role": agent.funcao,
-                "language": agent.linguagem,
-                "tone": None,
-                "working_hours": None,
+                "language": cfg.language,
+                "tone": cfg.tone,
+                "working_hours": cfg.working_hours,
                 "active": agent.ativo,
-                "fallback_to_human": True,
+                "fallback_to_human": cfg.fallback_to_human,
             },
-            "advanced": {},
-        })
-
-    return AgentSettingsResponse.model_validate({
-        "basic": {
-            "name": agent.nome,
-            "role": agent.funcao,
-            "language": cfg.language,
-            "tone": cfg.tone,
-            "working_hours": cfg.working_hours,
-            "active": agent.ativo,
-            "fallback_to_human": cfg.fallback_to_human,
-        },
-        "advanced": {
-            "instrucoes_principais_do_agente": cfg.system_instructions,
-            "modelo": cfg.model_name,
-            "temperature": cfg.temperature,
-            "opcoes_avancadas": _json_loads(cfg.advanced_json),
-        },
-    })
+            "advanced": {
+                "instrucoes_principais_do_agente": cfg.system_instructions,
+                "modelo": cfg.model_name or agent.preferred_model,
+                "temperature": cfg.temperature,
+                "opcoes_avancadas": _json_loads(cfg.advanced_json),
+            },
+        }
+    )
 
 
 @router.patch("/{agent_id}/settings")
@@ -412,6 +422,7 @@ def update_agent_settings(
         cfg.system_instructions = advanced["instrucoes_principais_do_agente"]
     if "modelo" in advanced:
         cfg.model_name = advanced["modelo"]
+        agent.preferred_model = advanced["modelo"]
     if "temperature" in advanced:
         cfg.temperature = str(advanced["temperature"])
     cfg.advanced_json = json.dumps(advanced.get("opcoes_avancadas") or {}, ensure_ascii=True)
@@ -1266,3 +1277,82 @@ async def webhook_instagram(request: Request, db: Session = Depends(get_db)) -> 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     return InboundWebhookResponse(ok=True, detail="instagram processed")
+
+
+# =============================================================================
+# Connections API — gerencia integrações por provider
+# =============================================================================
+
+@router.get("/{agent_id}/connections", response_model=list[AgentConnectionRead])
+def list_connections(
+    agent_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[AgentConnectionRead]:
+    """Retorna todas as conexões do agente (cria registros padrão se necessário)."""
+    channels = AgentChannelService(db).get_connections(current_user, agent_id)
+    return [AgentConnectionRead.from_orm(ch) for ch in channels]
+
+
+@router.post("/{agent_id}/connections/{provider}/connect", response_model=AgentConnectionRead)
+def connect_provider(
+    agent_id: int,
+    provider: str,
+    payload: AgentConnectionConnectRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentConnectionRead:
+    """Conecta o agente a um provider externo."""
+    channel = AgentChannelService(db).connect_provider(current_user, agent_id, provider, payload.config)
+    return AgentConnectionRead.from_orm(channel)
+
+
+@router.post("/{agent_id}/connections/{provider}/disconnect", response_model=AgentConnectionRead)
+def disconnect_provider(
+    agent_id: int,
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentConnectionRead:
+    """Desconecta o agente de um provider."""
+    channel = AgentChannelService(db).disconnect_provider(current_user, agent_id, provider)
+    return AgentConnectionRead.from_orm(channel)
+
+
+@router.post("/{agent_id}/connections/{provider}/sync", response_model=AgentConnectionRead)
+def sync_provider(
+    agent_id: int,
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentConnectionRead:
+    """Sincroniza dados com o provider."""
+    channel = AgentChannelService(db).sync_provider(current_user, agent_id, provider)
+    return AgentConnectionRead.from_orm(channel)
+
+
+@router.post("/{agent_id}/connections/{provider}/test", response_model=AgentConnectionActionResponse)
+def test_provider(
+    agent_id: int,
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentConnectionActionResponse:
+    """Testa a conexão com o provider sem sincronização completa."""
+    result = AgentChannelService(db).test_provider(current_user, agent_id, provider)
+    return AgentConnectionActionResponse(**result)
+
+
+@router.put("/{agent_id}/connections/{provider}", response_model=AgentConnectionRead)
+def update_provider_config(
+    agent_id: int,
+    provider: str,
+    payload: AgentConnectionUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentConnectionRead:
+    """Atualiza configurações de um provider."""
+    channel = AgentChannelService(db).update_provider_config(
+        current_user, agent_id, provider, payload.model_dump(exclude_none=True)
+    )
+    return AgentConnectionRead.from_orm(channel)

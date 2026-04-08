@@ -2,7 +2,8 @@ import os
 import sys
 from pathlib import Path
 
-TEST_DB = Path(__file__).resolve().parent / 'test_axi.db'
+# Use um arquivo por processo para evitar lock compartilhado no Windows.
+TEST_DB = Path(__file__).resolve().parent / f"test_axi_{os.getpid()}.db"
 os.environ['DATABASE_URL'] = f"sqlite:///{TEST_DB.as_posix()}"
 os.environ.setdefault('SECRET_KEY', 'test-secret-key')
 os.environ.setdefault('ENABLE_DEV_SEED_USER', 'false')
@@ -19,14 +20,20 @@ from app.main import app
 
 def pytest_sessionstart(session):
     if TEST_DB.exists():
-        TEST_DB.unlink()
+        try:
+            TEST_DB.unlink()
+        except PermissionError:
+            pass
     Base.metadata.create_all(bind=engine)
 
 
 def pytest_sessionfinish(session, exitstatus):
     engine.dispose()
     if TEST_DB.exists():
-        TEST_DB.unlink()
+        try:
+            TEST_DB.unlink()
+        except PermissionError:
+            pass
 
 
 import pytest

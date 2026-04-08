@@ -139,6 +139,46 @@ class AIService:
         except Exception as exc:
             raise self._wrap_error(exc) from exc
 
+    # ------------------------------------------------------------------
+    # Agent response - ponto unico de chamada para agentes
+    # ------------------------------------------------------------------
+
+    def generate_agent_response(
+        self,
+        *,
+        agent_nome: str,
+        agent_funcao: str,
+        agent_prompt: str,
+        user_message: str,
+        conversation_history: list[dict[str, Any]] | None = None,
+        preferred_model: str | None = None,
+        temperature: float = 0.4,
+    ) -> str:
+        """Gera resposta do agente usando OpenAI no backend.
+
+        - preferred_model: modelo especifico do agente (fallback: OPENAI_MODEL do env)
+        - Nunca expoe OPENAI_API_KEY para o frontend
+        """
+        system_prompt = (
+            f"Voce e {agent_nome}, um assistente de IA com a funcao: {agent_funcao}.\n\n"
+            f"Instrucoes do agente:\n{agent_prompt}\n\n"
+            "Responda de forma direta, profissional e alinhada com sua funcao. "
+            "Nao invente informacoes. Se nao souber, diga que precisa verificar."
+        )
+        messages: list[dict[str, Any]] = []
+        if conversation_history:
+            messages.extend(conversation_history[-10:])
+        messages.append({"role": "user", "content": user_message})
+
+        model = preferred_model or self.default_model
+        return self.generate_text(
+            user_prompt=user_message,
+            system_prompt=system_prompt,
+            model=model,
+            temperature=temperature,
+            function_name=AIFunction.CHAT,
+        )
+
     def healthcheck(self) -> dict[str, Any]:
         self._ensure_provider()
         assert self._openai is not None

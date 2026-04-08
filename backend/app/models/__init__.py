@@ -10,7 +10,9 @@ from app.models.agent_metric import AgentMetric
 from app.models.agent_test_session import AgentTestSession
 from app.models.agent_test_message import AgentTestMessage
 from app.models.billing_event import BillingEvent
+from app.models.brand_asset import BrandAsset
 from app.models.conversation import Conversation, Message
+from app.models.creative_generation import CreativeGeneration
 from app.models.integration import Integration
 from app.models.media_job import MediaJob
 from app.models.media_project import MediaProject
@@ -40,7 +42,9 @@ __all__ = [
 	"AgentTestSession",
 	"AgentTestMessage",
 	"BillingEvent",
+	"BrandAsset",
 	"Conversation",
+	"CreativeGeneration",
 	"Integration",
 	"MediaJob",
 	"MediaProject",

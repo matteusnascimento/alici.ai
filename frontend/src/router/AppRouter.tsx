@@ -19,10 +19,18 @@ import { AccountPersonalizationPage } from '../components/account/pages/AccountP
 import { AccountProfilePage } from '../components/account/pages/AccountProfilePage';
 import { AccountSecurityPage } from '../components/account/pages/AccountSecurityPage';
 import { AssetsStudioPage } from '../components/studio/v2/AssetsStudioPage';
+import { AiCreativeStudioPage } from '../components/studio/v2/AiCreativeStudioPage';
+import { AdBuilderStudioPage } from '../components/studio/v2/AdBuilderStudioPage';
 import { BannerStudioPage } from '../components/studio/v2/BannerStudioPage';
+import { CampaignStudioPage } from '../components/studio/v2/CampaignStudioPage';
 import { CaptionsStudioPage } from '../components/studio/v2/CaptionsStudioPage';
+import { BrandStudioPage } from '../components/studio/v2/BrandStudioPage';
+import { CtaGeneratorStudioPage } from '../components/studio/v2/CtaGeneratorStudioPage';
+import { ExportsStudioPage } from '../components/studio/v2/ExportsStudioPage';
+import { MediaLibraryStudioPage } from '../components/studio/v2/MediaLibraryStudioPage';
 import { PhotoEditorStudioPage } from '../components/studio/v2/PhotoEditorStudioPage';
 import { PosterStudioPage } from '../components/studio/v2/PosterStudioPage';
+import { PromoCopyStudioPage } from '../components/studio/v2/PromoCopyStudioPage';
 import { ProjectsStudioPage } from '../components/studio/v2/ProjectsStudioPage';
 import { RemoveBackgroundStudioPage } from '../components/studio/v2/RemoveBackgroundStudioPage';
 import { RetouchStudioPage } from '../components/studio/v2/RetouchStudioPage';
@@ -115,19 +123,36 @@ export function AppRouter() {
             <Route path="studio">
               <Route index element={<StudioHomePage />} />
               <Route path="poster" element={<PosterStudioPage />} />
+              <Route path="poster/new" element={<PosterStudioPage />} />
               <Route path="story" element={<StoryStudioPage />} />
+              <Route path="story/new" element={<StoryStudioPage />} />
+              <Route path="ad-builder" element={<AdBuilderStudioPage />} />
               <Route path="banner" element={<BannerStudioPage />} />
+              <Route path="ad/new" element={<BannerStudioPage />} />
               <Route path="photo-editor" element={<PhotoEditorStudioPage />} />
+              <Route path="photo/edit" element={<PhotoEditorStudioPage />} />
               <Route path="video-editor" element={<VideoEditorStudioPage />} />
+              <Route path="video/new" element={<VideoEditorStudioPage />} />
               <Route path="remove-background" element={<RemoveBackgroundStudioPage />} />
+              <Route path="background-remove" element={<RemoveBackgroundStudioPage />} />
               <Route path="retouch" element={<RetouchStudioPage />} />
               <Route path="legendas" element={<CaptionsStudioPage />} />
+              <Route path="caption-generator" element={<CaptionsStudioPage />} />
+              <Route path="caption/new" element={<CaptionsStudioPage />} />
+              <Route path="cta-generator" element={<CtaGeneratorStudioPage />} />
+              <Route path="promo-copy" element={<PromoCopyStudioPage />} />
+              <Route path="brand-kit" element={<BrandStudioPage />} />
               <Route path="projects" element={<ProjectsStudioPage />} />
+              <Route path="brand" element={<BrandStudioPage />} />
+              <Route path="exports" element={<ExportsStudioPage />} />
+              <Route path="campaign" element={<CampaignStudioPage />} />
+              <Route path="media-library" element={<MediaLibraryStudioPage />} />
+              <Route path="ai-creative" element={<AiCreativeStudioPage />} />
               <Route path="templates" element={<TemplatesStudioPage />} />
               <Route path="assets" element={<AssetsStudioPage />} />
               <Route path="ads" element={<BannerStudioPage />} />
               <Route path="captions" element={<CaptionsStudioPage />} />
-              <Route path="library" element={<TemplatesStudioPage />} />
+              <Route path="library" element={<BrandStudioPage />} />
               <Route path="cloud" element={<AssetsStudioPage />} />
             </Route>
             <Route path="marketing/*" element={<LegacyStudioRedirect />} />

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { useStudioV2 } from '../../../hooks/useStudioV2';
+import { useToast } from '../../../hooks/useToast';
 import { studioGeneratePoster, studioGenerateVariations } from '../../../services/studio.service';
 import { StudioAssetsPanel } from './StudioAssetsPanel';
 import { StudioBottomDock } from './StudioBottomDock';
@@ -19,6 +20,7 @@ const posterTools = ['Templates', 'Assets', 'Uploads', 'Elementos', 'Texto', 'Br
 
 export function PosterStudioPage() {
   const studio = useStudioV2({ defaultType: 'poster', defaultTitle: 'Poster com IA' });
+  const { pushToast } = useToast();
   const [objective, setObjective] = useState('Conversao');
   const [audience, setAudience] = useState('Ecommerce local');
   const [tone, setTone] = useState('Premium moderno');
@@ -41,17 +43,23 @@ export function PosterStudioPage() {
 
   async function handleGenerate() {
     if (!studio.currentProject) return;
-    const result = await studioGeneratePoster({
-      project_id: studio.currentProject.id,
-      prompt,
-      objective,
-      audience,
-      tone,
-      offer,
-      cta,
-      style: 'premium-neon',
-      options: { ratio: '1:1' },
-    });
+    let result;
+    try {
+      result = await studioGeneratePoster({
+        project_id: studio.currentProject.id,
+        prompt,
+        objective,
+        audience,
+        tone,
+        offer,
+        cta,
+        style: 'premium-neon',
+        options: { ratio: '1:1' },
+      });
+    } catch {
+      pushToast('Falha ao gerar poster com IA.', 'error');
+      return;
+    }
 
     const rawVariations = Array.isArray(result.result.variations) ? result.result.variations : [];
     const mapped = rawVariations
@@ -67,15 +75,22 @@ export function PosterStudioPage() {
       setVariationId(mapped[0].id);
     }
     studio.setSaveState('dirty');
+    pushToast('Poster base gerado com IA.', 'success');
   }
 
   async function handleGenerateVariation() {
     if (!studio.currentProject) return;
-    const result = await studioGenerateVariations({
-      project_id: studio.currentProject.id,
-      prompt,
-      options: { objective, audience, tone, offer, cta },
-    });
+    let result;
+    try {
+      result = await studioGenerateVariations({
+        project_id: studio.currentProject.id,
+        prompt,
+        options: { objective, audience, tone, offer, cta },
+      });
+    } catch {
+      pushToast('Falha ao gerar variacoes.', 'error');
+      return;
+    }
 
     const rawVariations = Array.isArray(result.result.variations) ? result.result.variations : [];
     const mapped = rawVariations
@@ -91,6 +106,7 @@ export function PosterStudioPage() {
       setVariationId(mapped[0].id);
     }
     studio.setSaveState('dirty');
+    pushToast('Novas variacoes geradas.', 'info');
   }
 
   return (

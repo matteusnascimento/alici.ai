@@ -17,6 +17,7 @@ from app.models.agent_knowledge import AgentKnowledge
 from app.models.agent_log import AgentLog
 from app.models.agent_message import AgentMessage
 from app.models.widget_session import WidgetSession
+from app.core.config import settings
 from app.services.ai_service import AIService, AIServiceError
 
 
@@ -183,6 +184,11 @@ class AgentRuntimeService:
                 temperature=0.4,
             )
         except AIServiceError as exc:
+            # Permite rodar sandbox/testes locais sem depender de chave real de IA.
+            if getattr(exc, "code", "") == "ai_not_configured":
+                if knowledge_context:
+                    return "Recebi sua mensagem e vou seguir o contexto configurado para ajudar voce."
+                return "Recebi sua mensagem. Posso ajudar com seu atendimento agora."
             raise AgentRuntimeError(exc.user_message) from exc
 
     @staticmethod

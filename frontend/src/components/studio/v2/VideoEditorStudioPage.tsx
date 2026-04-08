@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { useStudioV2 } from '../../../hooks/useStudioV2';
+import { useToast } from '../../../hooks/useToast';
 import { studioVideoCaptions, studioVideoGenerate, studioVideoVoiceover } from '../../../services/studio.service';
 import { StudioBottomDock } from './StudioBottomDock';
 import { StudioCanvas } from './StudioCanvas';
@@ -14,20 +15,26 @@ const tools = ['Upload', 'AI Video', 'Cortes', 'Texto', 'Legendas', 'Audio', 'Vo
 
 export function VideoEditorStudioPage() {
   const studio = useStudioV2({ defaultType: 'video-editor', defaultTitle: 'Editor de Video IA' });
+  const { pushToast } = useToast();
   const [activeTool, setActiveTool] = useState(tools[0]);
   const [openExport, setOpenExport] = useState(false);
   const [prompt, setPrompt] = useState('Video promocional de 15 segundos para produto premium no formato reel');
 
   async function runTool() {
     if (!studio.currentProject) return;
-    if (activeTool === 'Legendas') {
-      await studioVideoCaptions({ project_id: studio.currentProject.id, prompt, options: { style: 'bold-modern' } });
-    } else if (activeTool === 'Voz IA') {
-      await studioVideoVoiceover({ project_id: studio.currentProject.id, prompt, options: { voice: 'pt-BR-female-pro' } });
-    } else {
-      await studioVideoGenerate({ project_id: studio.currentProject.id, prompt, options: { ratio: '9:16', duration: 15 } });
+    try {
+      if (activeTool === 'Legendas') {
+        await studioVideoCaptions({ project_id: studio.currentProject.id, prompt, options: { style: 'bold-modern' } });
+      } else if (activeTool === 'Voz IA') {
+        await studioVideoVoiceover({ project_id: studio.currentProject.id, prompt, options: { voice: 'pt-BR-female-pro' } });
+      } else {
+        await studioVideoGenerate({ project_id: studio.currentProject.id, prompt, options: { ratio: '9:16', duration: 15 } });
+      }
+      studio.setSaveState('dirty');
+      pushToast('Processamento de video concluido.', 'success');
+    } catch {
+      pushToast('Falha ao processar video.', 'error');
     }
-    studio.setSaveState('dirty');
   }
 
   return (

@@ -172,3 +172,58 @@ class AgentsTemplateRead(BaseModel):
     descricao: str
     funcao: str
     objetivos: list[str]
+
+
+# --- Connections / Integrations ---
+
+class AgentConnectionRead(BaseModel):
+    id: int
+    agent_id: int
+    channel_type: str
+    provider_name: str
+    status: str
+    is_enabled: bool
+    enabled: bool
+    external_account_id: str | None
+    webhook_url: str | None
+    last_sync_at: datetime | None
+    last_error: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def from_orm(cls, obj: Any) -> "AgentConnectionRead":
+        return cls(
+            id=obj.id,
+            agent_id=obj.agent_id,
+            channel_type=obj.channel_type,
+            provider_name=obj.provider_name or "internal",
+            status=obj.status or "disconnected",
+            is_enabled=bool(obj.enabled),
+            enabled=bool(obj.enabled),
+            external_account_id=obj.external_account_id,
+            webhook_url=obj.webhook_url,
+            last_sync_at=obj.last_sync_at,
+            last_error=obj.last_error,
+            created_at=obj.created_at,
+            updated_at=obj.updated_at,
+        )
+
+
+class AgentConnectionConnectRequest(BaseModel):
+    config: dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+
+
+class AgentConnectionUpdateRequest(BaseModel):
+    config: dict[str, Any] | None = None
+    enabled: bool | None = None
+    webhook_url: str | None = None
+    external_account_id: str | None = None
+
+
+class AgentConnectionActionResponse(BaseModel):
+    success: bool
+    message: str
+    data: dict[str, Any] = Field(default_factory=dict)
+    channel_type: str

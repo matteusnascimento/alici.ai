@@ -13,6 +13,7 @@ import {
   saveStudioProject,
 } from '../services/studio.service';
 import type { StudioAsset, StudioExport, StudioProject, StudioTemplate, StudioVersion } from '../types/studioV2';
+import { useToast } from './useToast';
 
 interface UseStudioV2Options {
   defaultType: string;
@@ -20,6 +21,7 @@ interface UseStudioV2Options {
 }
 
 export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
+  const { pushToast } = useToast();
   const [projects, setProjects] = useState<StudioProject[]>([]);
   const [assets, setAssets] = useState<StudioAsset[]>([]);
   const [templates, setTemplates] = useState<StudioTemplate[]>([]);
@@ -62,6 +64,7 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar Studio');
+      pushToast('Falha ao carregar workspace do Studio.', 'error');
     } finally {
       setLoading(false);
     }
@@ -80,9 +83,11 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
       setProjects((current) => current.map((item) => (item.id === saved.id ? saved : item)));
       setSaveState('saved');
       setError(null);
+      pushToast('Projeto salvo com sucesso.', 'success');
     } catch (err) {
       setSaveState('dirty');
       setError(err instanceof Error ? err.message : 'Falha ao salvar projeto');
+      pushToast('Falha ao salvar projeto.', 'error');
     }
   }
 
@@ -95,8 +100,10 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
       const loadedVersions = await listStudioVersions(duplicate.id);
       setVersions(loadedVersions);
       setError(null);
+      pushToast('Projeto duplicado com sucesso.', 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao duplicar projeto');
+      pushToast('Falha ao duplicar projeto.', 'error');
     }
   }
 
@@ -111,8 +118,10 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
       });
       setVersions((current) => [version, ...current]);
       setError(null);
+      pushToast('Versao salva.', 'info');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao salvar versao');
+      pushToast('Falha ao salvar versao.', 'error');
     }
   }
 
@@ -124,8 +133,10 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
       setProjects((current) => current.map((item) => (item.id === result.project.id ? result.project : item)));
       setSaveState('dirty');
       setError(null);
+      pushToast('Template aplicado ao projeto.', 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao aplicar template');
+      pushToast('Falha ao aplicar template.', 'error');
     }
   }
 
@@ -135,8 +146,10 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
       const output = await exportStudioProject(currentProject.id, { export_type: format });
       setLastExport(output);
       setError(null);
+      pushToast(`Exportacao ${format.toUpperCase()} concluida.`, 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao exportar projeto');
+      pushToast('Falha ao exportar projeto.', 'error');
     }
   }
 

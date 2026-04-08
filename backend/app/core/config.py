@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     default_ai_provider: str = "openai"
     openai_api_key: str = ""
-    openai_model: str = "gpt-4o-mini"
+    openai_model: str = "gpt-5.4-mini"
     openai_timeout_seconds: float = 30.0
     cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
 

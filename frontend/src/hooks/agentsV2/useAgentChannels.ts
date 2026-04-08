@@ -1,35 +1,112 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { connectAgentChannelV2, listAgentChannelsV2 } from '../../services/agentsV2.service';
-import type { AgentChannel } from '../../types/agentsV2';
+import {
+  connectAgentProvider,
+  disconnectAgentProvider,
+  listAgentConnections,
+  syncAgentProvider,
+  testAgentProvider,
+  updateAgentProviderConfig,
+} from '../../services/agentsV2.service';
+import type { AgentChannel, AgentConnectionActionResult } from '../../types/agentsV2';
 
 export function useAgentChannels(agentId: number) {
   const [data, setData] = useState<AgentChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Loading por provider para UX de botão individual
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
-  async function reload() {
+  const setProviderLoading = (provider: string, value: boolean) =>
+    setActionLoading((prev) => ({ ...prev, [provider]: value }));
+
+  const reload = useCallback(async () => {
+    if (!agentId) return;
     setLoading(true);
     try {
-      const result = await listAgentChannelsV2(agentId);
+      const result = await listAgentConnections(agentId);
       setData(result);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar canais');
+      setError(err instanceof Error ? err.message : 'Falha ao carregar conexões');
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    if (!agentId) return;
-    void reload();
   }, [agentId]);
 
-  async function connect(payload: Record<string, unknown>) {
-    const created = await connectAgentChannelV2(agentId, payload);
-    setData((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  function updateLocalChannel(updated: AgentChannel) {
+    setData((prev) =>
+      prev.map((ch) => (ch.channel_type === updated.channel_type ? updated : ch)),
+    );
   }
 
-  return { data, loading, error, reload, connect };
+  async function connect(provider: string, config: Record<string, unknown> = {}) {
+    setProviderLoading(provider, true);
+    try {
+      const updated = await connectAgentProvider(agentId, provider, config);
+      updateLocalChannel(updated);
+      return updated;
+    } finally {
+      setProviderLoading(provider, false);
+    }
+  }
+
+  async function disconnect(provider: string) {
+    setProviderLoading(provider, true);
+    try {
+      const updated = await disconnectAgentProvider(agentId, provider);
+      updateLocalChannel(updated);
+      return updated;
+    } finally {
+      setProviderLoading(provider, false);
+    }
+  }
+
+  async function sync(provider: string) {
+    setProviderLoading(provider, true);
+    try {
+      const updated = await syncAgentProvider(agentId, provider);
+      updateLocalChannel(updated);
+      return updated;
+    } finally {
+      setProviderLoading(provider, false);
+    }
+  }
+
+  async function test(provider: string): Promise<AgentConnectionActionResult> {
+    setProviderLoading(provider, true);
+    try {
+      return await testAgentProvider(agentId, provider);
+    } finally {
+      setProviderLoading(provider, false);
+    }
+  }
+
+  async function updateConfig(provider: string, payload: Record<string, unknown>) {
+    setProviderLoading(provider, true);
+    try {
+      const updated = await updateAgentProviderConfig(agentId, provider, payload);
+      updateLocalChannel(updated);
+      return updated;
+    } finally {
+      setProviderLoading(provider, false);
+    }
+  }
+
+  return {
+    data,
+    loading,
+    error,
+    actionLoading,
+    reload,
+    connect,
+    disconnect,
+    sync,
+    test,
+    updateConfig,
+  };
 }

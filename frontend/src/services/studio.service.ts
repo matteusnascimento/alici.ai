@@ -1,5 +1,33 @@
 import { apiFetch } from './api';
-import type { StudioAsset, StudioExport, StudioGenerateResponse, StudioProject, StudioTemplate, StudioVersion } from '../types/studioV2';
+import type {
+  StudioAsset,
+  StudioBrandSummary,
+  StudioExport,
+  StudioGenerateResponse,
+  StudioOverviewResponse,
+  StudioProject,
+  StudioRecentExportItem,
+  StudioRecentProjectItem,
+  StudioTemplate,
+  StudioToolActionResponse,
+  StudioVersion,
+} from '../types/studioV2';
+
+export function getStudioOverview() {
+  return apiFetch<StudioOverviewResponse>('/studio/overview');
+}
+
+export function listStudioRecentProjects(limit = 6) {
+  return apiFetch<StudioRecentProjectItem[]>(`/studio/projects/recent?limit=${limit}`);
+}
+
+export function listStudioRecentExports(limit = 6) {
+  return apiFetch<StudioRecentExportItem[]>(`/studio/exports/recent?limit=${limit}`);
+}
+
+export function getStudioBrandSummary() {
+  return apiFetch<StudioBrandSummary>('/studio/brand/summary');
+}
 
 export function listStudioProjects() {
   return apiFetch<StudioProject[]>('/studio/projects');
@@ -108,6 +136,76 @@ export const studioVideoCut = (payload: Record<string, unknown>) => video('cut',
 export const studioVideoVoiceover = (payload: Record<string, unknown>) => video('voiceover', payload);
 export const studioVideoExport = (payload: Record<string, unknown>) => video('export', payload);
 export const studioVideoThumbnail = (payload: Record<string, unknown>) => video('thumbnail', payload);
+
+export function studioCreatePoster(payload: Record<string, unknown>) {
+  return apiFetch<StudioToolActionResponse>('/studio/poster/create', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioCreateStory(payload: Record<string, unknown>) {
+  return apiFetch<StudioToolActionResponse>('/studio/story/create', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioCreateAd(payload: Record<string, unknown>) {
+  return apiFetch<StudioToolActionResponse>('/studio/ad-builder/create', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioCreateVideo(payload: Record<string, unknown>) {
+  return apiFetch<StudioToolActionResponse>('/studio/video-editor/create', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioPhotoEdit(payload: Record<string, unknown>) {
+  return apiFetch<StudioToolActionResponse>('/studio/photo-editor/save', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioBackgroundRemove(payload: Record<string, unknown>) {
+  return apiFetch<StudioToolActionResponse>('/studio/background-remove/process', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioCaptionGenerate(payload: Record<string, unknown>) {
+  return apiFetch<StudioGenerateResponse>('/studio/caption/generate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioCtaGenerate(payload: Record<string, unknown>) {
+  return apiFetch<StudioGenerateResponse>('/studio/cta/generate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioCopyGenerate(payload: Record<string, unknown>) {
+  return apiFetch<StudioGenerateResponse>('/studio/copy/generate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function studioAICreativeGenerate(payload: Record<string, unknown>) {
+  return apiFetch<StudioGenerateResponse>('/studio/ai-creative/generate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
 
 export function listStudioAssets() {
   return apiFetch<StudioAsset[]>('/studio/assets/list');

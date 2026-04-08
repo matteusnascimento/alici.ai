@@ -73,3 +73,48 @@ export interface StudioGenerateResponse {
   status: string;
   result: Record<string, unknown>;
 }
+
+export interface StudioRecentProjectItem {
+  id: number;
+  title: string;
+  project_type: string;
+  status: string;
+  updated_at: string;
+  thumbnail_url: string | null;
+}
+
+export interface StudioRecentExportItem {
+  id: number;
+  project_id: number;
+  project_title: string;
+  file_name: string;
+  export_type: string;
+  source: string;
+  file_url: string;
+  created_at: string;
+}
+
+export interface StudioBrandSummary {
+  logos_count: number;
+  templates_count: number;
+  palettes_count: number;
+  assets_count: number;
+}
+
+export interface StudioOverviewResponse {
+  recent_projects: StudioRecentProjectItem[];
+  recent_exports: StudioRecentExportItem[];
+  brand_summary: StudioBrandSummary;
+  suggested_actions: Array<{
+    id: string;
+    label: string;
+    description: string;
+    route: string;
+  }>;
+}
+
+export interface StudioToolActionResponse {
+  project: StudioProject;
+  generation: StudioGenerateResponse | null;
+  message: string;
+}

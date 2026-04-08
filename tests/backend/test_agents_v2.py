@@ -181,3 +181,72 @@ def test_agent_settings_and_overview(client, auth_headers):
     assert overview.status_code == 200
     assert 'kpis' in overview.json()
     assert 'setup' in overview.json()
+
+
+def test_agent_connections_list_creates_defaults(client, auth_headers):
+    agent_id = _create_agent(client, auth_headers)
+
+    response = client.get(f'/api/agents/{agent_id}/connections', headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+
+    assert isinstance(body, list)
+    assert len(body) >= 7
+    providers = {item['channel_type'] for item in body}
+    assert {'whatsapp', 'instagram', 'website_chat', 'email', 'crm', 'api', 'webhook'}.issubset(providers)
+
+
+def test_agent_connection_connect_disconnect_sync_and_test(client, auth_headers):
+    agent_id = _create_agent(client, auth_headers)
+
+    connect = client.post(
+        f'/api/agents/{agent_id}/connections/website_chat/connect',
+        headers=auth_headers,
+        json={'config': {}},
+    )
+    assert connect.status_code == 200
+    connected = connect.json()
+    assert connected['channel_type'] == 'website_chat'
+    assert connected['status'] == 'connected'
+    assert connected['is_enabled'] is True
+
+    sync = client.post(f'/api/agents/{agent_id}/connections/website_chat/sync', headers=auth_headers)
+    assert sync.status_code == 200
+    assert sync.json()['last_sync_at'] is not None
+
+    test_conn = client.post(f'/api/agents/{agent_id}/connections/website_chat/test', headers=auth_headers)
+    assert test_conn.status_code == 200
+    test_body = test_conn.json()
+    assert test_body['success'] is True
+    assert test_body['channel_type'] == 'website_chat'
+
+    disconnect = client.post(f'/api/agents/{agent_id}/connections/website_chat/disconnect', headers=auth_headers)
+    assert disconnect.status_code == 200
+    assert disconnect.json()['status'] == 'disconnected'
+
+
+def test_agent_connection_provider_validation_and_secret_safety(client, auth_headers):
+    agent_id = _create_agent(client, auth_headers)
+
+    invalid = client.post(
+        f'/api/agents/{agent_id}/connections/invalid_provider/connect',
+        headers=auth_headers,
+        json={'config': {}},
+    )
+    assert invalid.status_code == 400
+
+    updated = client.put(
+        f'/api/agents/{agent_id}/connections/webhook',
+        headers=auth_headers,
+        json={
+            'config': {'webhook_url': 'https://example.com/hook', 'token': 'secret-token-value'},
+            'enabled': True,
+            'webhook_url': 'https://example.com/hook',
+        },
+    )
+    assert updated.status_code == 200
+    body = updated.json()
+
+    # API nunca deve expor tokens secretos em texto puro
+    assert 'access_token' not in body
+    assert 'refresh_token' not in body

@@ -7,29 +7,45 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.studio import (
+    StudioAdCreateRequest,
     StudioAssetDeleteResponse,
     StudioAssetRead,
+    StudioBackgroundRemoveRequest,
+    StudioBrandSummary,
+    StudioCaptionGenerateRequest,
+    StudioCreativeCreateRequest,
     StudioExportRead,
     StudioExportRequest,
     StudioGenerateRequest,
     StudioGenerateResponse,
     StudioImageRequest,
+    StudioOverviewResponse,
+    StudioPhotoEditRequest,
     StudioProjectCreate,
     StudioProjectRead,
     StudioProjectUpdate,
+    StudioRecentExportItem,
+    StudioRecentProjectItem,
+    StudioTextGenerateRequest,
     StudioTemplateApplyRequest,
     StudioTemplateApplyResponse,
     StudioTemplateRead,
+    StudioToolActionResponse,
     StudioVersionCreate,
     StudioVersionRead,
     StudioVideoRequest,
+    StudioAICreativeRequest,
 )
 from app.services.ai_service import AIServiceError
+from app.services.brand_library_service import BrandLibraryService
+from app.services.creative_generation_service import CreativeGenerationService
+from app.services.media_processing_service import MediaProcessingService
 from app.services.studio_asset_service import StudioAssetService
 from app.services.studio_export_service import StudioExportService
 from app.services.studio_generation_service import StudioGenerationService
 from app.services.studio_image_service import StudioImageService
 from app.services.studio_project_service import StudioProjectService
+from app.services.studio_service import StudioService
 from app.services.studio_template_service import StudioTemplateService
 from app.services.studio_video_service import StudioVideoService
 
@@ -115,6 +131,38 @@ def _export_read(item) -> StudioExportRead:
 def list_projects(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[StudioProjectRead]:
     service = StudioProjectService(db)
     return [_project_read(item) for item in service.list_projects(current_user)]
+
+
+@router.get("/overview", response_model=StudioOverviewResponse)
+def get_studio_overview(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> StudioOverviewResponse:
+    service = StudioService(db)
+    return service.get_overview(current_user)
+
+
+@router.get("/projects/recent", response_model=list[StudioRecentProjectItem])
+def list_recent_projects(
+    limit: int = Query(default=6, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[StudioRecentProjectItem]:
+    service = StudioService(db)
+    return service.list_recent_projects(current_user, limit=limit)
+
+
+@router.get("/exports/recent", response_model=list[StudioRecentExportItem])
+def list_recent_exports(
+    limit: int = Query(default=6, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[StudioRecentExportItem]:
+    service = StudioService(db)
+    return service.list_recent_exports(current_user, limit=limit)
+
+
+@router.get("/brand/summary", response_model=StudioBrandSummary)
+def get_brand_summary(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> StudioBrandSummary:
+    service = BrandLibraryService(db)
+    return service.summary(current_user)
 
 
 @router.post("/projects", response_model=StudioProjectRead)
@@ -560,3 +608,195 @@ def list_exports(
 ) -> list[StudioExportRead]:
     service = StudioExportService(db)
     return [_export_read(item) for item in service.list_exports(current_user, project_id)]
+
+
+@router.post("/poster/create", response_model=StudioToolActionResponse)
+def create_poster_workspace(
+    payload: StudioCreativeCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.create_poster(current_user, payload)
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)
+
+
+@router.post("/story/create", response_model=StudioToolActionResponse)
+def create_story_workspace(
+    payload: StudioCreativeCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.create_story(current_user, payload)
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)
+
+
+@router.post("/ad/create", response_model=StudioToolActionResponse)
+def create_ad_workspace(
+    payload: StudioAdCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.create_ad(current_user, payload)
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)
+
+
+@router.post("/ad-builder/create", response_model=StudioToolActionResponse)
+def create_ad_builder_workspace(
+    payload: StudioAdCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.create_ad(current_user, payload)
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)
+
+
+@router.post("/video/create", response_model=StudioToolActionResponse)
+def create_video_workspace(
+    payload: StudioCreativeCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = CreativeGenerationService(db)
+    return service.create_video(current_user, payload)
+
+
+@router.post("/video-editor/create", response_model=StudioToolActionResponse)
+def create_video_editor_workspace(
+    payload: StudioCreativeCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = CreativeGenerationService(db)
+    return service.create_video(current_user, payload)
+
+
+@router.post("/photo/edit", response_model=StudioToolActionResponse)
+def edit_photo_workspace(
+    payload: StudioPhotoEditRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = MediaProcessingService(db)
+    return service.edit_photo(current_user, payload)
+
+
+@router.post("/photo-editor/save", response_model=StudioToolActionResponse)
+def save_photo_editor_workspace(
+    payload: StudioPhotoEditRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = MediaProcessingService(db)
+    return service.edit_photo(current_user, payload)
+
+
+@router.post("/background-remove", response_model=StudioToolActionResponse)
+def background_remove_workspace(
+    payload: StudioBackgroundRemoveRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = MediaProcessingService(db)
+    return service.remove_background(current_user, payload)
+
+
+@router.post("/background-remove/process", response_model=StudioToolActionResponse)
+def background_remove_process(
+    payload: StudioBackgroundRemoveRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioToolActionResponse:
+    service = MediaProcessingService(db)
+    return service.remove_background(current_user, payload)
+
+
+@router.post("/caption/generate", response_model=StudioGenerateResponse)
+def caption_generate(
+    payload: StudioCaptionGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioGenerateResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.generate_caption(
+            current_user,
+            project_id=payload.project_id,
+            campaign_context=payload.campaign_context,
+            channel=payload.channel,
+            tone=payload.tone,
+            include_cta=payload.include_cta,
+            include_hashtags=payload.include_hashtags,
+            variations=payload.variations,
+        )
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)
+
+
+@router.post("/cta/generate", response_model=StudioGenerateResponse)
+def cta_generate(
+    payload: StudioTextGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioGenerateResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.generate_cta(
+            current_user,
+            project_id=payload.project_id,
+            campaign_context=payload.campaign_context,
+            channel=payload.channel,
+            tone=payload.tone,
+            variations=payload.variations,
+        )
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)
+
+
+@router.post("/copy/generate", response_model=StudioGenerateResponse)
+def copy_generate(
+    payload: StudioTextGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioGenerateResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.generate_promo_copy(
+            current_user,
+            project_id=payload.project_id,
+            campaign_context=payload.campaign_context,
+            channel=payload.channel,
+            tone=payload.tone,
+            variations=payload.variations,
+        )
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)
+
+
+@router.post("/ai-creative/generate", response_model=StudioGenerateResponse)
+def ai_creative_generate(
+    payload: StudioAICreativeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudioGenerateResponse:
+    service = CreativeGenerationService(db)
+    try:
+        return service.ai_creative_assistant(
+            current_user,
+            project_id=payload.project_id,
+            action=payload.action,
+            briefing=payload.briefing,
+        )
+    except AIServiceError as exc:
+        _raise_ai_http_error(exc)

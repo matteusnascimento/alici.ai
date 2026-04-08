@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { useStudioV2 } from '../../../hooks/useStudioV2';
+import { useToast } from '../../../hooks/useToast';
 import { studioImageEnhance, studioImageRemoveBackground, studioImageRetouch } from '../../../services/studio.service';
 import { StudioBottomDock } from './StudioBottomDock';
 import { StudioCanvas } from './StudioCanvas';
@@ -9,24 +10,53 @@ import { StudioInspectorPanel } from './StudioInspectorPanel';
 import { StudioShell } from './StudioShell';
 import { StudioToolRail } from './StudioToolRail';
 
-const tools = ['Ajustar', 'Filtros', 'Recorte', 'Remover Fundo', 'Retoque', 'Texto', 'Stickers', 'Logo', 'IA Enhance', 'Resize', 'Branding'];
+const tools = [
+  'Crop / Cortar',
+  'Redimensionar',
+  'Rotacionar',
+  'Brilho',
+  'Contraste',
+  'Saturacao',
+  'Nitidez',
+  'Temperatura',
+  'Sombras',
+  'Desfoque',
+  'Texto',
+  'Logo',
+  'CTA Visual',
+  'Molduras',
+  'Ajustes IA',
+  'Filtros',
+  'Preparar para Anuncio',
+  'Preparar para Story',
+  'Preparar para Feed',
+];
 
 export function PhotoEditorStudioPage() {
   const studio = useStudioV2({ defaultType: 'photo-editor', defaultTitle: 'Editor de Fotos IA' });
+  const { pushToast } = useToast();
   const [activeTool, setActiveTool] = useState(tools[0]);
   const [openExport, setOpenExport] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState<string | null>(null);
   const [adjustments, setAdjustments] = useState({ brightness: 40, contrast: 55, saturation: 50, exposure: 45, temperature: 52, sharpness: 48, vignette: 8 });
 
   async function applyAiAction() {
     if (!studio.currentProject) return;
-    if (activeTool === 'Remover Fundo') {
-      await studioImageRemoveBackground({ project_id: studio.currentProject.id, options: { softness: 0.5 } });
-    } else if (activeTool === 'Retoque') {
-      await studioImageRetouch({ project_id: studio.currentProject.id, options: { detail: 0.7 } });
-    } else {
-      await studioImageEnhance({ project_id: studio.currentProject.id, options: adjustments });
+    try {
+      if (activeTool === 'Crop / Cortar') {
+        await studioImageRetouch({ project_id: studio.currentProject.id, options: { crop: '1:1', source: uploadedMedia } });
+      } else if (activeTool === 'Remover Fundo') {
+        await studioImageRemoveBackground({ project_id: studio.currentProject.id, options: { softness: 0.5 } });
+      } else if (activeTool === 'Ajustes IA') {
+        await studioImageRetouch({ project_id: studio.currentProject.id, options: { detail: 0.7 } });
+      } else {
+        await studioImageEnhance({ project_id: studio.currentProject.id, options: { ...adjustments, source: uploadedMedia, tool: activeTool } });
+      }
+      pushToast('Ajuste aplicado com sucesso.', 'success');
+      studio.setSaveState('dirty');
+    } catch {
+      pushToast('Falha ao aplicar ajuste da imagem.', 'error');
     }
-    studio.setSaveState('dirty');
   }
 
   return (
@@ -43,7 +73,23 @@ export function PhotoEditorStudioPage() {
               <div>
                 <p className="font-display text-2xl text-white">Imagem em foco</p>
                 <p className="mt-2 text-slate-300">Ferramenta ativa: {activeTool}</p>
-                <button type="button" onClick={() => void applyAiAction()} className="mt-4 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-ink">
+                <label className="mx-auto mt-4 block w-fit cursor-pointer rounded-xl border border-white/20 px-4 py-2 text-sm text-white" title="Faca upload da imagem para comecar">
+                  Upload de imagem
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      setUploadedMedia(file.name);
+                      studio.setSaveState('dirty');
+                      pushToast(`Upload concluido: ${file.name}.`, 'info');
+                    }}
+                  />
+                </label>
+                {uploadedMedia ? <p className="mt-2 text-xs text-cyan-100">Arquivo carregado: {uploadedMedia}</p> : <p className="mt-2 text-xs text-slate-400">Faca upload da sua imagem para comecar.</p>}
+                <button type="button" onClick={() => void applyAiAction()} className="mt-4 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-ink" title="Aplica ajuste usando a ferramenta ativa">
                   Aplicar preset IA
                 </button>
               </div>
@@ -68,7 +114,8 @@ export function PhotoEditorStudioPage() {
             <button type="button" className="w-full rounded-xl border border-white/20 px-3 py-2 text-sm text-white" onClick={() => void studio.saveVersion(`Photo ${new Date().toLocaleTimeString('pt-BR')}`, { canvas_data: { adjustments } })}>
               Save version
             </button>
-            <button type="button" className="w-full rounded-xl border border-white/20 px-3 py-2 text-sm text-white">Compare before/after</button>
+            <button type="button" className="w-full rounded-xl border border-white/20 px-3 py-2 text-sm text-white" title="Comparar resultado com original">Compare before/after</button>
+            <p className="text-xs text-slate-400">Fluxo recomendado: upload, ajuste, preview em tempo real, salvar e exportar.</p>
           </StudioInspectorPanel>
         )}
         bottom={(

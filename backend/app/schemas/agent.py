@@ -17,6 +17,7 @@ class AgentCreate(BaseModel):
     outros: str | None = None
     outros_nome: str | None = None
     ativo: bool = True
+    preferred_model: str | None = None
 
 
 class AgentRead(BaseModel):
@@ -36,6 +37,7 @@ class AgentRead(BaseModel):
     outros_nome: str | None
     ativo: bool
     created_at: datetime
+    preferred_model: str | None
 
 
 class AgentToggleResponse(BaseModel):

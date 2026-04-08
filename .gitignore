@@ -24,6 +24,8 @@ wheels/
 *.egg
 .pytest_cache/
 axi.db
+*.db
+*.db-journal
 .env
 .env.*
 !.env.example

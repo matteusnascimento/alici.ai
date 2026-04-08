@@ -151,3 +151,98 @@ class StudioExportRead(BaseModel):
     status: str
     metadata: dict[str, Any]
     created_at: datetime
+
+
+class StudioRecentProjectItem(BaseModel):
+    id: int
+    title: str
+    project_type: str
+    status: str
+    updated_at: datetime
+    thumbnail_url: str | None = None
+
+
+class StudioRecentExportItem(BaseModel):
+    id: int
+    project_id: int
+    project_title: str
+    file_name: str
+    export_type: str
+    source: str
+    file_url: str
+    created_at: datetime
+
+
+class StudioBrandSummary(BaseModel):
+    logos_count: int
+    templates_count: int
+    palettes_count: int
+    assets_count: int
+
+
+class StudioOverviewResponse(BaseModel):
+    recent_projects: list[StudioRecentProjectItem]
+    recent_exports: list[StudioRecentExportItem]
+    brand_summary: StudioBrandSummary
+    suggested_actions: list[dict[str, str]]
+
+
+class StudioCreativeCreateRequest(BaseModel):
+    title: str | None = None
+    prompt: str | None = None
+    template_id: int | None = None
+    upload_urls: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class StudioAdCreateRequest(BaseModel):
+    title: str | None = None
+    product: str
+    offer: str
+    audience: str
+    channel: str
+    prompt: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class StudioCaptionGenerateRequest(BaseModel):
+    project_id: int | None = None
+    campaign_context: str
+    channel: str = "instagram"
+    tone: str = "conversacional"
+    include_cta: bool = True
+    include_hashtags: bool = True
+    variations: int = Field(default=3, ge=1, le=6)
+
+
+class StudioTextGenerateRequest(BaseModel):
+    project_id: int | None = None
+    campaign_context: str
+    channel: str = "instagram"
+    tone: str = "persuasivo"
+    variations: int = Field(default=3, ge=1, le=6)
+
+
+class StudioAICreativeRequest(BaseModel):
+    project_id: int | None = None
+    action: str = "Campanha"
+    briefing: str
+
+
+class StudioPhotoEditRequest(BaseModel):
+    project_id: int | None = None
+    asset_url: str | None = None
+    adjustments: dict[str, Any] = Field(default_factory=dict)
+    actions: list[str] = Field(default_factory=list)
+
+
+class StudioBackgroundRemoveRequest(BaseModel):
+    project_id: int | None = None
+    asset_url: str | None = None
+    options: dict[str, Any] = Field(default_factory=dict)
+
+
+class StudioToolActionResponse(BaseModel):
+    project: StudioProjectRead
+    generation: StudioGenerateResponse | None = None
+    message: str

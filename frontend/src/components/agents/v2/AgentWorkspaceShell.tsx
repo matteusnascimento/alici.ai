@@ -2,8 +2,7 @@ import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
-  { key: 'channels', label: 'Conexoes do agente' },
-  { key: 'knowledge', label: 'Materiais e informacoes do agente' },
+  { key: 'knowledge', label: 'Materiais e informacoes' },
   { key: 'actions', label: 'Acoes permitidas' },
   { key: 'test', label: 'Teste sandbox' },
   { key: 'logs', label: 'Historico de atividade' },
