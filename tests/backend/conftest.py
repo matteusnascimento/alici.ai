@@ -11,7 +11,7 @@ os.environ.setdefault('SECRET_KEY', 'test-secret-key')
 os.environ['ENABLE_DEV_SEED_USER'] = 'true'
 os.environ.setdefault('DEV_SEED_PASSWORD', 'AXITestDev123!')
 # Chave fake para que _ensure_provider() nao rejeite sem chave; _post_json e mockado
-os.environ.setdefault('OPENAI_API_KEY', 'test-fake-openai-key-for-tests')
+os.environ.setdefault('OPENAI_API_KEY', 'test-openai-key')
 
 BACKEND_PATH = Path(__file__).resolve().parents[2] / 'backend'
 if str(BACKEND_PATH) not in sys.path:
@@ -53,7 +53,7 @@ def _fake_post_json(self: Any, endpoint: str, payload: dict) -> dict:
             "usage": {"total_tokens": 10},
         }
     if "/images/generations" in endpoint:
-        return {"data": [{"b64_json": "aW1hZ2VkYXRh"}]}
+        return {"data": [{"b64_json": "dGVzdC1pbWFnZQ=="}]}
     # /responses (padrão para chat, structured_extract, etc.)
     return {
         "output": [{"content": [{"type": "output_text", "text": "Resposta de teste da IA"}]}],
