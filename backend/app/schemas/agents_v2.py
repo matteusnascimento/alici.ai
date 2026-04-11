@@ -86,6 +86,20 @@ class AgentKnowledgeSourceResponse(BaseModel):
     status: str
 
 
+class AgentKnowledgeManualRequest(BaseModel):
+    title: str
+    content: str
+    tags: str | None = None
+    enabled: bool = True
+
+
+class AgentKnowledgeFaqRequest(BaseModel):
+    question: str
+    answer: str
+    tags: str | None = None
+    enabled: bool = True
+
+
 class AgentActionRequest(BaseModel):
     name: str
     action_type: str

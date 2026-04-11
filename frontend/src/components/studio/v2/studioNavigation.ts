@@ -32,7 +32,7 @@ export const studioNavItems: StudioNavItem[] = [
   { key: 'logos', label: 'Logos', route: '/app/studio/assets', section: 'brand' },
   { key: 'paletas', label: 'Paletas', route: '/app/studio/brand-kit', section: 'brand' },
   { key: 'templates', label: 'Templates', route: '/app/studio/templates', section: 'brand' },
-  { key: 'assets', label: 'Assets', route: '/app/studio/assets', section: 'brand' },
+  { key: 'assets', label: 'Assets', route: '/app/studio/media-library', section: 'brand' },
   { key: 'projects', label: 'Projetos', route: '/app/studio/projects', section: 'projects' },
   { key: 'campanhas', label: 'Campanhas', route: '/app/studio/campaign', section: 'projects' },
   { key: 'exportados', label: 'Exportados', route: '/app/studio/exports', section: 'projects' },

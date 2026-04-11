@@ -77,6 +77,48 @@ export function uploadAgentKnowledgeV2(agentId: number, payload: Record<string, 
   });
 }
 
+export function uploadAgentKnowledgeFileV2(
+  agentId: number,
+  payload: { file: File; title?: string; tags?: string; enabled?: boolean },
+) {
+  const formData = new FormData();
+  formData.append('file', payload.file);
+  if (payload.title) formData.append('title', payload.title);
+  if (payload.tags) formData.append('tags', payload.tags);
+  if (payload.enabled !== undefined) formData.append('enabled', String(payload.enabled));
+
+  return apiFetch<AgentKnowledgeSource>(`/agents/${agentId}/knowledge/upload-file`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export function createAgentManualKnowledgeV2(
+  agentId: number,
+  payload: { title: string; content: string; tags?: string; enabled?: boolean },
+) {
+  return apiFetch<AgentKnowledgeSource>(`/agents/${agentId}/knowledge/manual`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createAgentFaqKnowledgeV2(
+  agentId: number,
+  payload: { question: string; answer: string; tags?: string; enabled?: boolean },
+) {
+  return apiFetch<AgentKnowledgeSource>(`/agents/${agentId}/knowledge/faq`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAgentKnowledgeV2(agentId: number, sourceId: number) {
+  return apiFetch<{ deleted: boolean }>(`/agents/${agentId}/knowledge/${sourceId}`, {
+    method: 'DELETE',
+  });
+}
+
 export function listAgentActionsV2(agentId: number) {
   return apiFetch<AgentActionItem[]>(`/agents/${agentId}/actions`);
 }

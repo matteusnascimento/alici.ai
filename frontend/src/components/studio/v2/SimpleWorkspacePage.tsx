@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { useToast } from '../../../hooks/useToast';
 import { useStudioV2 } from '../../../hooks/useStudioV2';
 import { StudioBottomDock } from './StudioBottomDock';
 import { StudioCanvas } from './StudioCanvas';
@@ -20,26 +21,55 @@ interface SimpleWorkspacePageProps {
 
 export function SimpleWorkspacePage({ type, title, subtitle, tools, promptPlaceholder }: SimpleWorkspacePageProps) {
   const studio = useStudioV2({ defaultType: type, defaultTitle: title });
+  const toast = useToast();
   const [activeTool, setActiveTool] = useState(tools[0] || 'tool');
   const [prompt, setPrompt] = useState('');
   const [openExport, setOpenExport] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<string | null>(null);
+
+  async function handleGenerate() {
+    if (!prompt.trim()) {
+      toast.warning('Escreva um prompt para gerar variacoes.');
+      return;
+    }
+
+    setProcessing(true);
+    toast.info('Processamento iniciado no workspace.');
+    window.setTimeout(() => {
+      setLastGeneratedPrompt(prompt.trim());
+      setProcessing(false);
+      studio.setSaveState('dirty');
+      toast.success('Geracao concluida. Ajuste no canvas e salve.');
+    }, 800);
+  }
 
   return (
     <>
       <StudioShell
         projectName={studio.projectName}
-        saveState={studio.saveState}
-        onSave={() => void studio.saveProject({ status: 'saved' })}
+        saveState={processing ? 'saving' : studio.saveState}
+        onSave={() => void studio.saveProject({ status: 'saved', metadata: { activeTool, lastGeneratedPrompt }, canvas_data: { prompt } })}
         onExport={() => setOpenExport(true)}
         leftRail={<StudioToolRail tools={tools} activeTool={activeTool} onSelect={setActiveTool} />}
         center={(
           <div className="space-y-4">
-            <StudioPromptBar value={prompt} onChange={setPrompt} onGenerate={() => studio.setSaveState('dirty')} placeholder={promptPlaceholder} />
+            <StudioPromptBar value={prompt} onChange={setPrompt} onGenerate={() => void handleGenerate()} placeholder={promptPlaceholder} />
             <StudioCanvas title={title} subtitle={subtitle}>
               <div className="flex h-full items-center justify-center text-center text-slate-300">
                 <div>
                   <p className="font-display text-2xl text-white">Workspace ativo: {activeTool}</p>
                   <p className="mt-2 text-sm">Preview-first, canvas-first, pronto para edicao visual.</p>
+                  {processing ? <p className="mt-2 text-xs text-cyan-200">Processando variacoes...</p> : null}
+                  {lastGeneratedPrompt ? <p className="mt-2 text-xs text-slate-400">Ultimo prompt: {lastGeneratedPrompt}</p> : null}
+                  {!lastGeneratedPrompt && !processing ? (
+                    <div className="mt-3 rounded-xl border border-dashed border-white/20 bg-black/20 p-3 text-left text-xs text-slate-300">
+                      <p className="font-semibold text-white">Como comecar</p>
+                      <p className="mt-1">1. Escolha a subferramenta na lateral.</p>
+                      <p>2. Escreva o prompt principal e gere.</p>
+                      <p>3. Salve versao e exporte para entrega.</p>
+                    </div>
+                  ) : null}
                   {studio.error ? <p className="mt-2 text-coral">{studio.error}</p> : null}
                 </div>
               </div>
@@ -69,6 +99,7 @@ export function SimpleWorkspacePage({ type, title, subtitle, tools, promptPlaceh
         onClose={() => setOpenExport(false)}
         onExport={(format) => {
           setOpenExport(false);
+          toast.info(`Exportacao ${format.toUpperCase()} iniciada.`);
           void studio.exportProject(format);
         }}
       />

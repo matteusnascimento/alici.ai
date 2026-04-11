@@ -33,9 +33,10 @@ export function clearAuthToken() {
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const headers = new Headers(init.headers || {});
+  const isFormDataBody = typeof FormData !== 'undefined' && init.body instanceof FormData;
 
   // Set Content-Type only for requests that carry a body (avoid breaking multipart uploads)
-  if (init.body !== undefined && !headers.has('Content-Type')) {
+  if (init.body !== undefined && !isFormDataBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 

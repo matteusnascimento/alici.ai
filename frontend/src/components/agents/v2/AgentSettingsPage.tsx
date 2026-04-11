@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useAgentSettings } from '../../../hooks/agentsV2/useAgentSettings';
-import { AgentSettingsPanel } from './AgentSettingsPanel';
 import { AgentChannelsPage } from './AgentChannelsPage';
+import { AgentSettingsPanel } from './AgentSettingsPanel';
 
 type SettingsTab = 'geral' | 'prompt' | 'integracoes' | 'seguranca' | 'logs';
 
@@ -57,18 +57,14 @@ export function AgentSettingsPage() {
       {activeTab === 'seguranca' ? (
         <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
           <h2 className="text-lg font-semibold text-white">Seguranca</h2>
-          <p className="mt-2 text-sm text-slate-300">
-            Tokens e credenciais sensiveis nunca sao expostos no frontend.
-          </p>
+          <p className="mt-2 text-sm text-slate-300">Tokens e credenciais sensiveis nunca sao expostos no frontend.</p>
         </section>
       ) : null}
 
       {activeTab === 'logs' ? (
         <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
           <h2 className="text-lg font-semibold text-white">Logs</h2>
-          <p className="mt-2 text-sm text-slate-300">
-            Logs estruturados de integracoes estao disponiveis no backend para depuracao.
-          </p>
+          <p className="mt-2 text-sm text-slate-300">Logs estruturados de integracoes estao disponiveis no backend para depuracao.</p>
         </section>
       ) : null}
     </div>

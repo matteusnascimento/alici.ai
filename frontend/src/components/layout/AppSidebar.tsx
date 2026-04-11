@@ -62,13 +62,13 @@ export function AppSidebar({
         onMouseLeave={() => hoverCapable && setExpandedDesktop(false)}
         className={[
           'fixed left-0 top-0 z-30 hidden h-screen shrink-0 overflow-hidden rounded-r-[2rem] border-r border-white/10',
-          'bg-gradient-to-b from-storm/95 via-storm/80 to-ink/95 p-3 shadow-soft backdrop-blur lg:flex lg:flex-col',
+          'bg-gradient-to-b from-storm/95 via-storm/85 to-ink/95 px-3 py-4 shadow-soft backdrop-blur lg:flex lg:flex-col',
           'transition-[width] duration-300 ease-out',
-          expanded ? 'lg:w-[282px]' : 'lg:w-[88px]',
+          expanded ? 'lg:w-[284px]' : 'lg:w-[92px]',
         ].join(' ')}
       >
         <SidebarLogo expanded={expanded} />
-        <nav className="mt-6 flex flex-1 flex-col gap-2">
+        <nav className="mt-6 flex flex-1 flex-col gap-2.5 overflow-y-auto pb-3 pr-1">
           {items.map((item) => (
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
@@ -81,8 +81,8 @@ export function AppSidebar({
 
       <aside
         className={[
-          'fixed bottom-0 left-0 top-0 z-50 w-[300px] rounded-r-3xl border-r border-white/10',
-          'bg-gradient-to-b from-storm via-storm/90 to-ink p-4 shadow-soft transition-transform duration-300 lg:hidden',
+          'fixed bottom-0 left-0 top-0 z-50 w-[304px] rounded-r-3xl border-r border-white/10',
+          'bg-gradient-to-b from-storm via-storm/90 to-ink px-4 py-5 shadow-soft transition-transform duration-300 lg:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
@@ -98,7 +98,7 @@ export function AppSidebar({
           </button>
         </div>
         <SidebarLogo expanded />
-        <nav className="mt-5 flex flex-col gap-2">
+        <nav className="mt-5 flex flex-col gap-2.5 overflow-y-auto pb-2 pr-1">
           {items.map((item) => (
             <SidebarItem key={item.to} expanded onNavigate={onMobileClose} {...item} />
           ))}

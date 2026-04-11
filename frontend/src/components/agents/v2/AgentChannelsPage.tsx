@@ -4,13 +4,13 @@ import { useAgentChannels } from '../../../hooks/agentsV2/useAgentChannels';
 import { AgentChannelCard } from './AgentChannelCard';
 
 const CHANNEL_CATALOG: Array<{ type: string; title: string; description: string; icon: string }> = [
-  { type: 'whatsapp', title: 'WhatsApp', description: 'Atendimento e vendas por mensagens.', icon: 'W' },
-  { type: 'instagram', title: 'Instagram', description: 'DMs e comentarios com suporte contextual.', icon: 'I' },
-  { type: 'website_chat', title: 'Website Chat', description: 'Widget de chat no seu site.', icon: 'S' },
-  { type: 'email', title: 'Email', description: 'Respostas em caixas de entrada monitoradas.', icon: 'E' },
-  { type: 'crm', title: 'CRM', description: 'Sincronizacao de leads e atualizacoes.', icon: 'C' },
-  { type: 'api', title: 'API', description: 'Integracao com seus sistemas internos.', icon: 'A' },
-  { type: 'webhook', title: 'Webhook', description: 'Eventos em tempo real para automacoes.', icon: 'H' },
+  { type: 'whatsapp', title: 'WhatsApp', description: 'Atendimento e vendas por mensagens instantaneas.', icon: '💬' },
+  { type: 'instagram', title: 'Instagram', description: 'DMs e comentarios com suporte contextual.', icon: '📸' },
+  { type: 'website_chat', title: 'Website Chat', description: 'Widget de chat embeddavel no seu site.', icon: '🌐' },
+  { type: 'email', title: 'Email', description: 'Respostas em caixas de entrada monitoradas.', icon: '📧' },
+  { type: 'crm', title: 'CRM', description: 'Sincronizacao de leads e atualizacoes automatizadas.', icon: '🗂️' },
+  { type: 'api', title: 'API', description: 'Integracao com seus sistemas internos via REST.', icon: '⚡' },
+  { type: 'webhook', title: 'Webhook', description: 'Eventos em tempo real para automacoes externas.', icon: '🔗' },
 ];
 
 export function AgentChannelsPage() {
@@ -22,19 +22,42 @@ export function AgentChannelsPage() {
     return data.find((ch) => ch.channel_type === type);
   }
 
-  if (loading) return <p className="text-slate-300">Carregando integracoes...</p>;
-  if (error) return <p className="text-red-300">{error}</p>;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-16 animate-pulse rounded-3xl bg-white/5" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {CHANNEL_CATALOG.map((catalog) => (
+            <div key={catalog.type} className="h-40 animate-pulse rounded-2xl bg-white/5" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-rose-500/30 bg-rose-900/20 p-4 text-sm text-rose-300">
+        {error}
+      </div>
+    );
+  }
+
+  const connectedCount = data.filter((ch) => ch.status === 'connected').length;
 
   return (
     <div className="space-y-4">
       <header className="rounded-3xl border border-white/10 bg-white/5 p-4">
-        <h1 className="font-display text-2xl text-white">Configuracoes {'>'} Integracoes</h1>
-        <p className="mt-1 text-sm text-slate-300">Status em tempo real via backend para cada canal.</p>
+        <h1 className="font-display text-2xl text-white">Integracoes e Canais</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          {connectedCount} de {CHANNEL_CATALOG.length} canais conectados
+        </p>
       </header>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {CHANNEL_CATALOG.map((catalog) => {
           const channel = channelFor(catalog.type);
+          const isLoading = Boolean(actionLoading[catalog.type]);
           const channelData = channel ?? {
             id: 0,
             agent_id: agentId,
@@ -56,10 +79,10 @@ export function AgentChannelsPage() {
               key={catalog.type}
               channel={channelData}
               title={catalog.title}
-              icon={catalog.icon}
               description={catalog.description}
-              isLoading={Boolean(actionLoading[catalog.type])}
-              onConnect={(config) => connect(catalog.type, config || {})}
+              icon={catalog.icon}
+              isLoading={isLoading}
+              onConnect={(config) => connect(catalog.type, config)}
               onDisconnect={() => disconnect(catalog.type)}
               onSync={() => sync(catalog.type)}
               onTest={() => test(catalog.type).then(() => undefined)}

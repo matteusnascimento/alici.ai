@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { useStudioV2 } from '../../../hooks/useStudioV2';
 import { useToast } from '../../../hooks/useToast';
 import { studioAICreativeGenerate } from '../../../services/studio.service';
 import { StudioCanvas } from './StudioCanvas';
@@ -9,6 +10,7 @@ import { StudioShell } from './StudioShell';
 const creativeActions = ['Campanha', 'Headline', 'CTA', 'Legenda', 'Copy Promocional', 'Formato de Criativo'];
 
 export function AiCreativeStudioPage() {
+  const studio = useStudioV2({ defaultType: 'ai-creative', defaultTitle: 'IA Criativa' });
   const toast = useToast();
   const [briefing, setBriefing] = useState('Produto: consultoria para e-commerce local. Objetivo: gerar mais leads em 14 dias.');
   const [action, setAction] = useState(creativeActions[0]);
@@ -17,14 +19,22 @@ export function AiCreativeStudioPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function runCreativeAssistant() {
+    if (!briefing.trim()) {
+      toast.warning('Preencha o briefing antes de gerar.');
+      return;
+    }
+
     setLoading(true);
+    toast.info('Geracao criativa iniciada.');
     try {
       const response = await studioAICreativeGenerate({
+        project_id: studio.currentProject?.id,
         action,
         briefing,
       });
       setResult(response.result);
       setError(null);
+      studio.setSaveState('dirty');
       toast.success('Conteudo de IA criativa gerado com sucesso.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao executar IA criativa.');
@@ -36,10 +46,10 @@ export function AiCreativeStudioPage() {
 
   return (
     <StudioShell
-      projectName="IA Criativa"
-      saveState={loading ? 'saving' : 'saved'}
-      onSave={() => undefined}
-      onExport={() => undefined}
+      projectName={studio.projectName}
+      saveState={loading ? 'saving' : studio.saveState}
+      onSave={() => void studio.saveProject({ status: 'saved', metadata: { action, briefing }, canvas_data: { result } })}
+      onExport={() => void studio.exportProject('pdf')}
       center={(
         <StudioCanvas title="IA Criativa" subtitle="Transforme briefing em ideia, copy e estrutura de criativo sem expor chaves no frontend.">
           <div className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4">
@@ -49,7 +59,14 @@ export function AiCreativeStudioPage() {
             </button>
             {error ? <p className="text-sm text-coral">{error}</p> : null}
             {result ? <pre className="overflow-auto rounded-xl border border-white/10 bg-black/30 p-3 text-xs text-slate-200">{JSON.stringify(result, null, 2)}</pre> : null}
-            {!result && !loading ? <p className="text-xs text-slate-400">Descreva seu briefing e clique em executar para comecar.</p> : null}
+            {!result && !loading ? (
+              <div className="rounded-xl border border-dashed border-white/20 bg-black/20 p-3 text-xs text-slate-400">
+                <p className="font-semibold text-white">Sem geracao ainda</p>
+                <p className="mt-1">1. Defina acao e briefing.</p>
+                <p>2. Execute a IA e revise o resultado.</p>
+                <p>3. Salve e exporte para distribuir.</p>
+              </div>
+            ) : null}
           </div>
         </StudioCanvas>
       )}

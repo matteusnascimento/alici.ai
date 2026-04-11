@@ -20,7 +20,7 @@ export function PlatformShell() {
         <div
           className={[
             'min-w-0 flex-1 space-y-6 px-4 pb-4 pt-14 transition-[margin] duration-300 md:px-6 md:pb-6',
-            desktopSidebarExpanded ? 'lg:ml-[282px] lg:pt-6' : 'lg:ml-[88px] lg:pt-6',
+            desktopSidebarExpanded ? 'lg:ml-[284px] lg:pt-6' : 'lg:ml-[92px] lg:pt-6',
           ].join(' ')}
         >
           <Topbar />

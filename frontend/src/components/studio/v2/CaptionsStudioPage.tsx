@@ -25,7 +25,14 @@ export function CaptionsStudioPage({ mode = 'caption' }: CaptionsStudioPageProps
   const [status, setStatus] = useState<string | null>(null);
 
   async function handleGenerate() {
+    if (!campaignContext.trim()) {
+      pushToast('Informe um contexto de campanha antes de gerar.', 'warning');
+      return;
+    }
+
     setLoading(true);
+    setStatus('Processando IA...');
+    pushToast('Geracao iniciada. Aguarde o processamento.', 'info');
     try {
       const payload = {
         project_id: studio.currentProject?.id,
@@ -66,6 +73,14 @@ export function CaptionsStudioPage({ mode = 'caption' }: CaptionsStudioPageProps
               {loading ? 'Gerando copy...' : 'Gerar conteudo'}
             </button>
             {status ? <p className="text-xs text-cyan-100">{status}</p> : null}
+            {!result && !loading ? (
+              <div className="rounded-xl border border-dashed border-white/20 bg-black/20 p-3 text-xs text-slate-300">
+                <p className="font-semibold text-white">Fluxo sugerido</p>
+                <p className="mt-1">1. Defina contexto, canal, tom e variacoes.</p>
+                <p>2. Gere a primeira versao e refine no prompt.</p>
+                <p>3. Salve e exporte para manter historico do workspace.</p>
+              </div>
+            ) : null}
             <div className="space-y-2">
               {(result?.captions || []).map((caption, index) => (
                 <p key={`${caption}-${index}`} className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-slate-200">{caption}</p>

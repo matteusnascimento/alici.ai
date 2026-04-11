@@ -7,24 +7,56 @@ interface PlanCardProps {
 }
 
 export function PlanCard({ current, plans, onUpgrade }: PlanCardProps) {
+  const activePlanId = current?.plan_id;
+
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-      <h2 className="font-display text-2xl text-white">Subscription / Plan</h2>
-      <p className="mt-2 text-sm text-slate-300">
-        Atual: <span className="text-white">{current?.plan_name ?? 'free'}</span> ({current?.status ?? 'active'})
-      </p>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
+    <section className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-5 md:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="font-display text-2xl text-white md:text-3xl">Assinatura e planos</h2>
+          <p className="mt-2 text-sm text-slate-300">Sua base de cobranca com opcao de upgrade imediato.</p>
+        </div>
+        <div className="rounded-2xl border border-cyan/25 bg-cyan/10 px-4 py-3">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-cyan/90">Plano ativo</p>
+          <p className="mt-1 text-base font-semibold text-white">{current?.plan_name ?? 'Free'}</p>
+          <p className="text-xs text-slate-300">{current?.status ?? 'active'} • {current?.billing_cycle ?? 'monthly'}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
         {plans.map((plan) => (
-          <article key={plan.id} className="rounded-2xl border border-white/10 bg-ink/40 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-cyan">{plan.name}</p>
-            <p className="mt-2 font-display text-2xl text-white">R$ {plan.monthly_price.toFixed(0)}</p>
+          <article
+            key={plan.id}
+            className={`rounded-2xl border p-4 transition ${
+              activePlanId === plan.id ? 'border-cyan/35 bg-cyan/10' : 'border-white/10 bg-black/20 hover:border-white/25 hover:bg-white/[0.04]'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan">{plan.name}</p>
+                <p className="mt-2 font-display text-2xl text-white">R$ {plan.monthly_price.toFixed(0)}</p>
+                <p className="text-xs text-slate-300">por mes</p>
+              </div>
+              {activePlanId === plan.id ? (
+                <span className="rounded-full border border-cyan/35 bg-cyan/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan">Ativo</span>
+              ) : null}
+            </div>
+
+            <ul className="mt-3 space-y-1.5 text-xs text-slate-200">
+              {plan.features.slice(0, 3).map((feature) => (
+                <li key={feature}>• {feature}</li>
+              ))}
+            </ul>
+
+            {plan.yearly_price ? <p className="mt-2 text-xs text-slate-400">Anual: R$ {plan.yearly_price.toFixed(0)}</p> : null}
+
             <button
               type="button"
-              disabled={current?.plan_id === plan.id}
+              disabled={activePlanId === plan.id}
               onClick={() => onUpgrade(plan.id)}
-              className="mt-3 w-full rounded-xl border border-white/20 px-3 py-2 text-sm text-slate-100 disabled:opacity-50"
+              className="mt-4 w-full rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan/45 hover:text-cyan disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {current?.plan_id === plan.id ? 'Plano ativo' : 'Upgrade'}
+              {activePlanId === plan.id ? 'Plano ativo' : 'Fazer upgrade'}
             </button>
           </article>
         ))}

@@ -211,6 +211,23 @@ export function listStudioAssets() {
   return apiFetch<StudioAsset[]>('/studio/assets/list');
 }
 
+export function uploadStudioAsset(payload: {
+  file: File;
+  assetType?: string;
+  projectId?: number | null;
+}) {
+  const formData = new FormData();
+  formData.append('file', payload.file);
+  const params = new URLSearchParams();
+  if (payload.assetType) params.set('asset_type', payload.assetType);
+  if (typeof payload.projectId === 'number') params.set('project_id', String(payload.projectId));
+  const query = params.toString();
+  return apiFetch<StudioAsset>(`/studio/assets/upload${query ? `?${query}` : ''}`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export function deleteStudioAsset(assetId: number) {
   return apiFetch<{ deleted: boolean }>(`/studio/assets/delete/${assetId}`, { method: 'DELETE' });
 }

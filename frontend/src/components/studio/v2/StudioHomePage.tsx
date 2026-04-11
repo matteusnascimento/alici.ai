@@ -29,7 +29,7 @@ const primaryTools: Tool[] = [
   { id: 'brand-kit', name: 'Brand Kit', description: 'Logos, paletas, fontes, templates e assets reutilizaveis.', route: '/app/studio/brand-kit', category: 'Marca', icon: Palette },
   { id: 'projects', name: 'Projetos', description: 'Abrir, duplicar, renomear e organizar seus projetos.', route: '/app/studio/projects', category: 'Marca', icon: FolderOpen },
   { id: 'exports', name: 'Exportacoes', description: 'Historico de exportacoes com reabertura e novo download.', route: '/app/studio/exports', category: 'Marca', icon: Layers3 },
-  { id: 'campaign', name: 'Criar Campanha', description: 'Construa campanha completa a partir do briefing.', route: '/app/studio/campaign', category: 'Criacao', icon: Sparkles, status: 'soon' },
+  { id: 'campaign', name: 'Criar Campanha', description: 'Construa campanha completa a partir do briefing.', route: '/app/studio/campaign', category: 'Criacao', icon: Sparkles },
   { id: 'media-library', name: 'Biblioteca de Midia', description: 'Repositorio de imagens, videos e arquivos do Studio.', route: '/app/studio/media-library', category: 'Marca', icon: FolderOpen },
   { id: 'ai-creative', name: 'IA Criativa', description: 'Assistente para ideia, headline, CTA e formato de criativo.', route: '/app/studio/ai-creative', category: 'IA', icon: WandSparkles },
 ];

@@ -1,8 +1,10 @@
 import hashlib
 import hmac
 import json
+from pathlib import Path
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -50,6 +52,8 @@ from app.schemas.agents_v2 import (
     AgentConnectionRead,
     AgentConnectionUpdateRequest,
     AgentCreatedFlowResponse,
+    AgentKnowledgeFaqRequest,
+    AgentKnowledgeManualRequest,
     AgentKnowledgeSourceRequest,
     AgentKnowledgeSourceResponse,
     AgentOverviewResponse,
@@ -75,6 +79,9 @@ from app.services.agent_test_service import AgentTestService
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
+_KNOWLEDGE_ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".csv", ".json"}
+_KNOWLEDGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+
 
 def _agent_or_404(db: Session, user: User, agent_id: int) -> Agent:
     agent = db.query(Agent).filter(Agent.id == agent_id, Agent.user_id == user.id).first()
@@ -97,6 +104,35 @@ def _json_loads(value: str | None) -> dict:
 
 def _hash_key(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _knowledge_storage_dir() -> Path:
+    base_dir = Path(__file__).resolve().parents[3]
+    path = base_dir / "uploads" / "agent_knowledge"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _safe_filename(filename: str) -> str:
+    name = Path(filename or "material").name.strip() or "material"
+    return name.replace(" ", "_")
+
+
+def _extract_text_for_supported_files(ext: str, content: bytes) -> str:
+    if ext not in {".txt", ".csv", ".json"}:
+        return ""
+    for encoding in ("utf-8", "latin-1"):
+        try:
+            return content.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return ""
+
+
+def _parse_bool_form(value: str | None, default: bool = True) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "sim", "on"}
 
 
 @router.get("", response_model=list[AgentRead])
@@ -261,6 +297,97 @@ def upload_knowledge(
         "tipo": item.kind,
         "status": "Processado",
     }
+
+
+@router.post("/{agent_id}/knowledge/upload-file", response_model=AgentKnowledgeRead)
+async def upload_knowledge_file(
+    agent_id: int,
+    file: UploadFile = File(...),
+    title: str | None = Form(default=None),
+    tags: str | None = Form(default=None),
+    enabled: str | None = Form(default=None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentKnowledgeRead:
+    _agent_or_404(db, current_user, agent_id)
+    original_name = _safe_filename(file.filename or "material")
+    ext = Path(original_name).suffix.lower()
+    if ext not in _KNOWLEDGE_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Formato nao suportado. Use PDF, DOCX, TXT, CSV ou JSON.",
+        )
+
+    content_bytes = await file.read()
+    if not content_bytes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo vazio")
+    if len(content_bytes) > _KNOWLEDGE_UPLOAD_MAX_BYTES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo excede 10MB")
+
+    user_dir = _knowledge_storage_dir() / f"user_{current_user.id}" / f"agent_{agent_id}"
+    user_dir.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{uuid4().hex}{ext}"
+    file_path = user_dir / stored_name
+    file_path.write_bytes(content_bytes)
+
+    preview_text = _extract_text_for_supported_files(ext, content_bytes)[:6000]
+    metadata = {
+        "filename": original_name,
+        "stored_name": stored_name,
+        "size_bytes": len(content_bytes),
+        "content_type": file.content_type,
+        "storage": str(file_path.relative_to(_knowledge_storage_dir().parent)).replace("\\", "/"),
+        "preview": preview_text,
+    }
+
+    item = AgentKnowledgeService(db).add_source(
+        current_user,
+        agent_id,
+        {
+            "title": (title or Path(original_name).stem).strip() or "Material de arquivo",
+            "kind": f"file:{ext[1:]}",
+            "content": json.dumps(metadata, ensure_ascii=True),
+            "tags": tags,
+            "enabled": _parse_bool_form(enabled, default=True),
+        },
+    )
+    return AgentKnowledgeRead.model_validate(item)
+
+
+@router.post("/{agent_id}/knowledge/manual", response_model=AgentKnowledgeRead)
+def create_manual_knowledge(
+    agent_id: int,
+    payload: AgentKnowledgeManualRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentKnowledgeRead:
+    item = AgentKnowledgeService(db).create_manual_content(
+        current_user,
+        agent_id,
+        title=payload.title,
+        content=payload.content,
+        tags=payload.tags,
+        enabled=payload.enabled,
+    )
+    return AgentKnowledgeRead.model_validate(item)
+
+
+@router.post("/{agent_id}/knowledge/faq", response_model=AgentKnowledgeRead)
+def create_faq_knowledge(
+    agent_id: int,
+    payload: AgentKnowledgeFaqRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentKnowledgeRead:
+    item = AgentKnowledgeService(db).create_faq(
+        current_user,
+        agent_id,
+        question=payload.question,
+        answer=payload.answer,
+        tags=payload.tags,
+        enabled=payload.enabled,
+    )
+    return AgentKnowledgeRead.model_validate(item)
 
 
 @router.post("/{agent_id}/run-test")
@@ -587,16 +714,7 @@ def delete_knowledge_source(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    _agent_or_404(db, current_user, agent_id)
-    item = (
-        db.query(AgentKnowledge)
-        .filter(AgentKnowledge.id == source_id, AgentKnowledge.agent_id == agent_id, AgentKnowledge.user_id == current_user.id)
-        .first()
-    )
-    if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge source not found")
-    db.delete(item)
-    db.commit()
+    AgentKnowledgeService(db).delete_source(current_user, agent_id, source_id)
     return {"deleted": True}
 
 
@@ -1058,7 +1176,7 @@ def test_agent(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentTestResponse:
-    _agent_or_404(db, current_user, agent_id)
+    agent = _agent_or_404(db, current_user, agent_id)
     channel_id = f"test:{agent_id}:{payload.channel_type}"
     existing = (
         db.query(AgentChannel)
@@ -1085,20 +1203,30 @@ def test_agent(
         )
         db.commit()
 
+    was_active = bool(agent.ativo)
+    if not was_active:
+        agent.ativo = True
+        db.flush()
+
     try:
-        result = AgentRuntimeService.process_inbound_message(
-            db,
-            user_id=current_user.id,
-            channel_type=payload.channel_type,
-            channel_id=channel_id,
-            external_user_id=f"tester:{current_user.id}",
-            external_conversation_id=f"test-conv:{agent_id}",
-            text=payload.text,
-            metadata={"source": "agent-test"},
-            test_mode=True,
-        )
-    except AgentRuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        try:
+            result = AgentRuntimeService.process_inbound_message(
+                db,
+                user_id=current_user.id,
+                channel_type=payload.channel_type,
+                channel_id=channel_id,
+                external_user_id=f"tester:{current_user.id}",
+                external_conversation_id=f"test-conv:{agent_id}",
+                text=payload.text,
+                metadata={"source": "agent-test"},
+                test_mode=True,
+            )
+        except AgentRuntimeError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    finally:
+        if not was_active:
+            agent.ativo = False
+            db.commit()
 
     return AgentTestResponse(**result)
 

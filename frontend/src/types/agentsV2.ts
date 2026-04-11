@@ -104,10 +104,15 @@ export interface AgentConnectionActionResult {
 
 export interface AgentKnowledgeSource {
   id: number;
+  agent_id?: number;
   title: string;
   kind: string;
-  content?: string;
+  content: string;
+  tags?: string | null;
+  enabled?: boolean;
   status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AgentActionItem {
