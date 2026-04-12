@@ -5,7 +5,7 @@ import { useToast } from '../../../hooks/useToast';
 import { deleteStudioAsset, uploadStudioAsset } from '../../../services/studio.service';
 
 export function AssetsStudioPage() {
-  const studio = useStudioV2({ defaultType: 'assets', defaultTitle: 'Assets Studio' });
+  const studio = useStudioV2({ defaultType: 'assets', defaultTitle: 'Biblioteca' });
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -50,7 +50,7 @@ export function AssetsStudioPage() {
   return (
     <div className="space-y-4">
       <header className="rounded-3xl border border-white/10 bg-white/5 p-5">
-        <p className="text-xs uppercase tracking-[0.24em] text-cyan-300">Assets</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-cyan-300">Biblioteca</p>
         <h1 className="mt-2 font-display text-3xl text-white">Biblioteca visual de logos, produtos e midias</h1>
         <p className="mt-2 text-sm text-slate-300">Upload, organizacao e remocao com retorno visual imediato.</p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
