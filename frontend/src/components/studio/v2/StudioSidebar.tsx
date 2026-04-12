@@ -4,10 +4,11 @@ import { studioNavItems, studioSections } from './studioNavigation';
 
 const sectionDescriptions: Record<string, string> = {
   create: 'Comece novas pecas e formatos',
-  edit: 'Ajuste visual, recorte e melhorias',
-  content: 'Gere textos e conteudo rapido',
+  manage: 'Projetos, campanhas e exportacoes',
   brand: 'Mantenha identidade e ativos',
   projects: 'Acompanhe historico e entregas',
+  edit: 'Ajuste visual, recorte e melhorias',
+  content: 'Gere textos e conteudo rapido',
 };
 
 const itemDescriptions: Record<string, string> = {

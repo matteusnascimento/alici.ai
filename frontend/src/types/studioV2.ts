@@ -1,4 +1,4 @@
-export type StudioSection = 'create' | 'edit' | 'content' | 'brand' | 'projects';
+export type StudioSection = 'create' | 'manage' | 'brand' | 'projects' | 'edit' | 'content';
 
 export interface StudioNavItem {
   key: string;

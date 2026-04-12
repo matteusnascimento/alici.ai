@@ -1,193 +1,133 @@
-# Deploy Frontend no Render — Passo a Passo Exato
+# Deploy Frontend no Render
 
-## Estado Atual
+## Estrategia atual
 
-```
-Backend:  ✅ https://alici-ai.onrender.com (Web Service)
-Frontend: ❌ (não publicado — Static Site precisa ser criado)
-```
+O projeto hoje usa um unico servico no Render:
 
----
+- o frontend e buildado a partir de frontend/dist
+- os arquivos gerados sao copiados para backend/frontend_dist
+- o backend FastAPI serve esse frontend compilado no mesmo dominio
 
-## Pré-requisitos
+Em outras palavras: a aparencia de producao depende do build do frontend embutido no deploy do backend.
 
-- [ ] Repositório GitHub com código atualizado (✅ já feito em main)
-- [ ] Conta Render (você já tem)
-- [ ] render.yaml com serviço axi-frontend definido (✅ já existe)
+## Fonte de verdade
 
----
+A configuracao real de deploy esta em render.yaml.
 
-## Passo 1: Ir para o Render Dashboard
+Fluxo atual:
 
-1. Abra: https://dashboard.render.com
-2. Faça login com sua conta do GitHub
+1. Instala dependencias Python do backend
+2. Entra em frontend
+3. Executa npm install
+4. Executa npm run build
+5. Copia frontend/dist para backend/frontend_dist
+6. Roda migracoes
+7. Sobe o backend, que tambem entrega os arquivos do frontend
 
----
+## URL esperada em producao
 
-## Passo 2: Criar novo Static Site
+- App: https://alici-ai.onrender.com
+- API: https://alici-ai.onrender.com/api
+- Docs: https://alici-ai.onrender.com/docs
+- Health: https://alici-ai.onrender.com/health
 
-1. Clique em **`New +`** (canto superior direito)
-2. Escolha **`Static Site`**
+## Por que o visual pode diferir do VS Code
 
----
+1. Local usa Vite em modo dev
+2. Render usa build de producao compilado
+3. Se o deploy falhar, o Render pode continuar servindo arquivos antigos
+4. Se o navegador/CDN estiver com cache, a UI pode parecer desatualizada
 
-## Passo 3: Conectar repositório
+## Checklist exato para validar a mesma versao
 
-1. Escolha **`Deploy existing repository`**
-2. Procure por: `alici.ai`
-3. Clique em **`Connect`** (do lado direito do repo)
+### 1. GitHub
 
----
+Confirme que o commit desejado esta no main.
 
-## Passo 4: Configurar o serviço
+### 2. Build local
 
-### Name
-
-```
-axi-frontend
-```
-
-### Root Directory
-
-```
-frontend
-```
-
-### Build Command
+Rode:
 
 ```bash
-npm install && npm run build
+cd frontend
+npm run build
 ```
 
-### Publish Directory
+Se o build falhar, o Render nao vai publicar a mesma UI do local.
 
-```
-dist
-```
+### 3. Sync local de comparacao
 
-### (Opcional) Environment Variables
+Para simular o comportamento do Render localmente:
 
-Se quiser override, adicione:
-
-```
-VITE_API_URL = https://alici-ai.onrender.com/api
+```bash
+cd ..
+Remove-Item backend/frontend_dist/* -Recurse -Force
+Copy-Item frontend/dist/* backend/frontend_dist -Recurse -Force
 ```
 
-(Foi definido no render.yaml, mas pode confirmar aqui)
+### 4. Render
 
----
+No painel do Render:
 
-## Passo 5: Deploy
+1. Abra o servico axi-backend
+2. Clique em Manual Deploy
+3. Escolha Deploy latest commit
+4. Aguarde o build terminar sem erro
 
-1. Clique em **`Create Static Site`**
-2. Aguarde o build:
-   - npm install (30-60s)
-   - npm run build (10-20s)
-   - Upload para CDN (5-10s)
+### 5. Browser
 
----
+Depois do deploy:
 
-## Passo 6: Verificar
+1. Abra https://alici-ai.onrender.com
+2. Faça hard refresh com Ctrl + F5
+3. Se ainda aparecer a UI antiga, abra janela anonima
+4. Verifique se os assets JS/CSS carregados sao os mais recentes
 
-Quando terminar, você verá algo tipo:
+### 6. Validacao rapida de assets
 
-```
-✓ Your site is live at: https://axi-frontend.onrender.com
-```
+O nome dos arquivos em producao deve mudar quando o build muda.
 
----
+Exemplo local atual:
 
-## Passo 7: Testar (no browser)
+- index-BbrIrmU4.css
+- index-D8w_4kVi.js
 
-1. Abra: https://axi-frontend.onrender.com
-2. Você deve ver:
-   - Landing page (tela de login / signup)
-   - Dashboard (se já logado)
-   - Sem erro de CORS
-   - Sem erro 50x no console
+Se o Render estiver servindo outros nomes, ele ainda esta com build antigo.
 
----
+## Configuracao recomendada
 
-## Checklist de Validação
+### CORS
 
-- [ ] Frontend abre sem erro
-- [ ] Página de login carrega
-- [ ] Network tab mostra `/api/*` chamando `https://alici-ai.onrender.com/api`
-- [ ] Login funciona (cria usuário ou retorna token)
-- [ ] Dashboard carrega após login
-- [ ] `/health` do backend responde (teste em https://alici-ai.onrender.com/health)
+Como frontend e backend estao no mesmo dominio em producao, o CORS principal deve apontar para:
 
----
-
-## Troubleshooting
-
-### Build falhou com "npm command not found"
-
-❌ Problema: Node.js não está instalado
-
-✅ Fix: Render detecta `package.json` e instala automaticamente. Se falhar, cheque se há `package.json` na raiz de `frontend/`.
-
-### Site abre mas mostra 404
-
-❌ Problema: Root Directory não está correto
-
-✅ Fix: Vá para Settings > Root Directory, confirme: `frontend`
-
-### API retorna erro de CORS
-
-❌ Problema: Backend CORS_ALLOWED_ORIGINS não inclui frontend URL
-
-✅ Fix: Ir no backend Web Service → Settings → Environment → confirme:
-
-```
-CORS_ALLOWED_ORIGINS = https://axi-frontend.onrender.com
+```env
+CORS_ALLOWED_ORIGINS=https://alici-ai.onrender.com
 ```
 
-Se changed, clique Deploy → redeploy backend
+### API URL
 
-### Login não funciona
+No frontend, a API pode continuar relativa:
 
-❌ Problema: Frontend não consegue chegar na API
+```ts
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+```
 
-✅ Testes:
-1. Abra DevTools (F12)
-2. Vá em Network
-3. Tente fazer login
-4. Clique na requisição POST `/auth/login`
-5. Veja o URL completo que foi chamado
-6. Teste no postman: `curl -X POST https://alici-ai.onrender.com/api/auth/login ...`
+Isso evita diferencas entre dev e producao quando o frontend e servido pelo backend.
 
----
+## Diagnostico rapido quando Render estiver diferente
 
-## URLs Finais
+Se a aparencia do Render estiver diferente da do VS Code, cheque nesta ordem:
 
-| Serviço  | URL                                    |
-|----------|----------------------------------------|
-| Frontend | https://axi-frontend.onrender.com      |
-| Backend  | https://alici-ai.onrender.com          |
-| Docs API | https://alici-ai.onrender.com/docs     |
-| Health   | https://alici-ai.onrender.com/health   |
+1. O commit correto esta no GitHub?
+2. npm run build passa localmente?
+3. O deploy mais recente do Render terminou com sucesso?
+4. Os nomes dos assets em producao batem com o build novo?
+5. O navegador ainda esta usando cache?
 
----
+## Observacao importante
 
-## Próximos Passos (depois de validar)
+Este repositorio nao esta configurado hoje para um Static Site separado como estrategia principal. A documentacao anterior estava ambigua nesse ponto. O modelo atual e:
 
-1. ✅ Frontend e backend rodando
-2. ⏳ Setup de domínio customizado (ex: `axi.ai` → frontend, `api.axi.ai` → backend)
-3. ⏳ CI/CD automático no GitHub Actions
-4. ⏳ Monitoramento e alertas
-
----
-
-## Dúvidas Comuns
-
-**P: Por que separar frontend e backend?**  
-R: Escalabilidade, cache, CDN, deploy independente.
-
-**P: E o domínio principal (alici-ai.onrender.com)?**  
-R: Hoje aponta para backend. Quando subir frontend, você pode redirecionar para frontend ou usar API em subdomínio. Mais detalhes no final.
-
-**P: Preciso fazer algo no render.yaml?**  
-R: Não — ele já está atualizado (Commit 7e061ba). O render.yaml tem VITE_API_URL apontando para API.
-
----
+- backend web service
+- frontend buildado dentro do deploy do backend
+- frontend servido pelo FastAPI
