@@ -5,7 +5,7 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/utils/cn';
+import { cn } from '../../../../utils/cn';
 
 interface StudioLinkCardProps {
   id: string;

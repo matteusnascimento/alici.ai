@@ -121,14 +121,26 @@ export function AppRouter() {
             </Route>
             <Route path="studio">
               <Route index element={<StudioHomePage />} />
-              {/* CREATE TOOLS */}
-              <Route path="video-editor/*" element={<VideoEditorStudioPage />} />
-              <Route path="photo-editor/*" element={<PhotoEditorStudioPage />} />
-              <Route path="poster/*" element={<PosterStudioPage />} />
-              <Route path="story" element={<StoryStudioPage />} />
-              <Route path="story/new" element={<StoryStudioPage />} />
-              
-              {/* MANAGE TOOLS */}
+              <Route path="editor/video" element={<VideoEditorStudioPage />} />
+              <Route path="editor/video/:projectId" element={<VideoEditorStudioPage />} />
+
+              <Route path="tools/photo-editor" element={<PhotoEditorStudioPage />} />
+              <Route path="tools/remove-background" element={<RemoveBackgroundStudioPage />} />
+              <Route path="tools/ad" element={<PosterStudioPage />} />
+              <Route path="tools/story" element={<StoryStudioPage />} />
+              <Route path="tools/cta" element={<CaptionsStudioPage mode="cta" />} />
+              <Route path="tools/campaign" element={<CampaignWorkspacePage />} />
+              <Route path="tools/auto-cut" element={<SimpleWorkspacePage type="auto-cut" title="AutoCut" subtitle="Corte automatico de takes para versoes curtas e dinamicas." tools={["Deteccao", "Ritmo", "Highlights", "Saida"]} promptPlaceholder="Descreva o tipo de video, objetivo e ritmo ideal." />} />
+              <Route path="tools/avatar" element={<SimpleWorkspacePage type="avatar" title="Avatar IA" subtitle="Crie videos com avatar, voz e roteiro sintetico." tools={["Avatar", "Roteiro", "Voz", "Cena"]} promptPlaceholder="Defina avatar, mensagem, tom e contexto do video." />} />
+              <Route path="tools/enhance" element={<SimpleWorkspacePage type="enhance-image" title="Melhorar imagem" subtitle="Aprimore cor, nitidez e contraste com IA." tools={["Nitidez", "Cor", "Contraste", "Upscale"]} promptPlaceholder="Explique como a imagem deve ser melhorada." />} />
+
+              <Route path="video-editor/*" element={<Navigate replace to="/app/studio/editor/video" />} />
+              <Route path="photo-editor/*" element={<Navigate replace to="/app/studio/tools/photo-editor" />} />
+              <Route path="poster/*" element={<Navigate replace to="/app/studio/tools/ad" />} />
+              <Route path="story" element={<Navigate replace to="/app/studio/tools/story" />} />
+              <Route path="story/new" element={<Navigate replace to="/app/studio/tools/story" />} />
+              <Route path="ad-builder" element={<Navigate replace to="/app/studio/tools/ad" />} />
+
               <Route path="remove-background" element={<RemoveBackgroundStudioPage />} />
               <Route path="projects" element={<ProjectsStudioPage />} />
               <Route path="campaign/*" element={<CampaignWorkspacePage />} />

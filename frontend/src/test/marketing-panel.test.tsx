@@ -45,18 +45,37 @@ vi.mock('../services/studio.service', () => ({
   })),
 }));
 
+vi.mock('../hooks/useToast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  }),
+}));
+
 describe('MarketingPanel', () => {
-  it('renderiza cards principais do AXI Studio com rotas funcionais', async () => {
+  it('renderiza a nova home do AXI Studio com entrada simples, recentes e ferramentas por contexto', async () => {
     render(
       <MemoryRouter>
         <StudioHomePage />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText(/Editor de Video IA/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Iniciar criação/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Criar Story/i })).toHaveAttribute('href', '/app/studio/story');
-    expect(screen.getByText(/Biblioteca/i)).toBeInTheDocument();
+    // Hero actions
+    expect(await screen.findByRole('button', { name: /Novo projeto/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ver projetos/i })).toBeInTheDocument();
+
+    // Recent projects section
+    expect(screen.getByText(/Continuar/i)).toBeInTheDocument();
     expect(screen.getByText(/Poster de lancamento/i)).toBeInTheDocument();
+
+    // Category tools from studioHomeConfig
+    expect(screen.getByText(/Gerar video IA/i)).toBeInTheDocument();
+    expect(screen.getByText(/Criar story/i)).toBeInTheDocument();
+    expect(screen.getByText(/Editor de video/i)).toBeInTheDocument();
+
+    // Biblioteca section
+    expect(screen.getByText(/Biblioteca/i)).toBeInTheDocument();
   });
 });

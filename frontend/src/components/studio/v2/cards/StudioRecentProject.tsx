@@ -5,7 +5,8 @@
 import React from 'react';
 import { FileText, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/utils/cn';
+import { cn } from '../../../../utils/cn';
+import { resolveStudioProjectRoute } from '../config/studioHomeConfig';
 
 interface StudioRecentProjectProps {
   id: string;
@@ -52,15 +53,7 @@ export const StudioRecentProject: React.FC<StudioRecentProjectProps> = ({
 
   const handleOpen = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to editor with project key
-    const editorPath = {
-      video: `/app/studio/video-editor/${projectKey}`,
-      photo: `/app/studio/photo-editor/${projectKey}`,
-      poster: `/app/studio/poster/${projectKey}`,
-      story: `/app/studio/story/${projectKey}`,
-      default: `/app/studio/${projectKey}`,
-    };
-    navigate(editorPath[type as keyof typeof editorPath] || editorPath.default);
+    navigate(resolveStudioProjectRoute(type, projectKey));
   };
 
   return (
