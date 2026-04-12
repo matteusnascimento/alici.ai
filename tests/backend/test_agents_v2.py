@@ -250,3 +250,54 @@ def test_agent_connection_provider_validation_and_secret_safety(client, auth_hea
     # API nunca deve expor tokens secretos em texto puro
     assert 'access_token' not in body
     assert 'refresh_token' not in body
+
+
+def test_agent_channel_binding_flow_is_persisted(client, auth_headers):
+    agent_id = _create_agent(client, auth_headers)
+
+    connect = client.post(
+        f'/api/agents/{agent_id}/channels/connect',
+        headers=auth_headers,
+        json={
+            'provider': 'whatsapp',
+            'integration': {
+                'external_account_id': 'waba-123',
+                'external_account_name': 'Conta Comercial AXI',
+                'access_token': 'meta-token',
+            },
+            'endpoint': {
+                'external_channel_id': 'phone-number-id-001',
+                'channel_name': 'WhatsApp Vendas',
+                'phone_number_or_handle': '+55 11 99999-0000',
+            },
+            'fallback_enabled': False,
+        },
+    )
+    assert connect.status_code == 200
+    connected = connect.json()
+    assert connected['provider'] == 'whatsapp'
+    assert connected['status'] == 'pending_setup'
+    assert connected['external_account_name'] == 'Conta Comercial AXI'
+
+    list_response = client.get(f'/api/agents/{agent_id}/channels', headers=auth_headers)
+    assert list_response.status_code == 200
+    bindings = list_response.json()
+    assert len(bindings) == 1
+    assert bindings[0]['channel_name'] == 'WhatsApp Vendas'
+
+    test_response = client.post(
+        f'/api/agents/{agent_id}/channels/test',
+        headers=auth_headers,
+        json={'binding_id': connected['binding_id'], 'message': 'Teste interno de canal'},
+    )
+    assert test_response.status_code == 200
+    assert test_response.json()['success'] is True
+    assert test_response.json()['channel_binding_id'] == connected['binding_id']
+
+    disconnect = client.post(
+        f'/api/agents/{agent_id}/channels/disconnect',
+        headers=auth_headers,
+        json={'binding_id': connected['binding_id']},
+    )
+    assert disconnect.status_code == 200
+    assert disconnect.json()['status'] == 'disconnected'

@@ -18,9 +18,11 @@ import { useToast } from './useToast';
 interface UseStudioV2Options {
   defaultType: string;
   defaultTitle: string;
+  projectId?: number | null;
+  forceNew?: boolean;
 }
 
-export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
+export function useStudioV2({ defaultType, defaultTitle, projectId = null, forceNew = false }: UseStudioV2Options) {
   const { pushToast } = useToast();
   const [projects, setProjects] = useState<StudioProject[]>([]);
   const [assets, setAssets] = useState<StudioAsset[]>([]);
@@ -44,7 +46,10 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
       setAssets(loadedAssets);
       setTemplates(loadedTemplates);
 
-      let candidate = loadedProjects.find((item) => item.project_type === defaultType);
+      let candidate = projectId ? loadedProjects.find((item) => item.id === projectId) : null;
+      if (!candidate && !forceNew) {
+        candidate = loadedProjects.find((item) => item.project_type === defaultType);
+      }
       if (!candidate) {
         candidate = await createStudioProject({
           project_type: defaultType,
@@ -72,7 +77,7 @@ export function useStudioV2({ defaultType, defaultTitle }: UseStudioV2Options) {
 
   useEffect(() => {
     void ensureWorkspaceProject();
-  }, [defaultType, defaultTitle]);
+  }, [defaultType, defaultTitle, projectId, forceNew]);
 
   async function saveProject(patch: Record<string, unknown>) {
     if (!currentProject) return;

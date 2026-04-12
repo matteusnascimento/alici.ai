@@ -45,6 +45,11 @@ from app.schemas.agent_runtime import (
     WidgetSessionCreateResponse,
 )
 from app.schemas.agents_v2 import (
+    AgentChannelBindingActionResponse,
+    AgentChannelBindingConnectRequest,
+    AgentChannelBindingDisconnectRequest,
+    AgentChannelBindingRead,
+    AgentChannelBindingTestRequest,
     AgentChannelConnectRequest,
     AgentChannelStatusResponse,
     AgentConnectionActionResponse,
@@ -76,6 +81,7 @@ from app.services.agent_knowledge_service import AgentKnowledgeService
 from app.services.agent_logs_service import AgentLogsService
 from app.services.agent_setup_service import AgentSetupService
 from app.services.agent_test_service import AgentTestService
+from app.services.channel_integration_service import ChannelIntegrationService
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -281,6 +287,56 @@ def connect_channel(
         "status": "Conectado" if item.enabled else "Nao conectado",
         "conexao_do_agente": item.provider_name,
     }
+
+
+@router.get("/{agent_id}/channels", response_model=list[AgentChannelBindingRead])
+def list_agent_bound_channels(
+    agent_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[AgentChannelBindingRead]:
+    service = ChannelIntegrationService(db)
+    bindings = service.list_agent_channels(current_user, agent_id)
+    return [AgentChannelBindingRead(**service.serialize_binding(item)) for item in bindings]
+
+
+@router.post("/{agent_id}/channels/connect", response_model=AgentChannelBindingRead)
+def connect_agent_bound_channel(
+    agent_id: int,
+    payload: AgentChannelBindingConnectRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentChannelBindingRead:
+    service = ChannelIntegrationService(db)
+    binding = service.connect_agent_channel(current_user, agent_id, payload.model_dump())
+    fresh = service.list_agent_channels(current_user, agent_id)
+    current = next(item for item in fresh if item.id == binding.id)
+    return AgentChannelBindingRead(**service.serialize_binding(current))
+
+
+@router.post("/{agent_id}/channels/disconnect", response_model=AgentChannelBindingRead)
+def disconnect_agent_bound_channel(
+    agent_id: int,
+    payload: AgentChannelBindingDisconnectRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentChannelBindingRead:
+    service = ChannelIntegrationService(db)
+    binding = service.disconnect_agent_channel(current_user, agent_id, payload.binding_id)
+    refreshed = service.list_agent_channels(current_user, agent_id)
+    current = next(item for item in refreshed if item.id == binding.id)
+    return AgentChannelBindingRead(**service.serialize_binding(current))
+
+
+@router.post("/{agent_id}/channels/test", response_model=AgentChannelBindingActionResponse)
+def test_agent_bound_channel(
+    agent_id: int,
+    payload: AgentChannelBindingTestRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AgentChannelBindingActionResponse:
+    result = ChannelIntegrationService(db).test_agent_channel(current_user, agent_id, payload.model_dump())
+    return AgentChannelBindingActionResponse(**result)
 
 
 @router.post("/{agent_id}/upload-knowledge")
@@ -906,7 +962,7 @@ def import_agent_config(
     return AgentRead.model_validate(agent)
 
 
-@router.get("/{agent_id}/channels", response_model=list[AgentChannelRead])
+@router.get("/{agent_id}/channels/registry", response_model=list[AgentChannelRead])
 def list_agent_channels(agent_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[AgentChannelRead]:
     _agent_or_404(db, current_user, agent_id)
     items = (
@@ -934,7 +990,7 @@ def list_agent_channels(agent_id: int, current_user: User = Depends(get_current_
     ]
 
 
-@router.post("/{agent_id}/channels", response_model=AgentChannelRead)
+@router.post("/{agent_id}/channels/registry", response_model=AgentChannelRead)
 def create_agent_channel(
     agent_id: int,
     payload: AgentChannelCreate,
@@ -975,7 +1031,7 @@ def create_agent_channel(
     )
 
 
-@router.patch("/{agent_id}/channels/{channel_id}", response_model=AgentChannelRead)
+@router.patch("/{agent_id}/channels/registry/{channel_id}", response_model=AgentChannelRead)
 def update_agent_channel(
     agent_id: int,
     channel_id: int,

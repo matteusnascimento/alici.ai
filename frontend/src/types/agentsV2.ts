@@ -102,6 +102,48 @@ export interface AgentConnectionActionResult {
   channel_type: string;
 }
 
+export type ChannelProviderStatus = 'connected' | 'pending_setup' | 'auth_required' | 'error' | 'disconnected' | 'coming_soon';
+
+export interface ChannelProviderCatalogItem {
+  provider: string;
+  title: string;
+  description: string;
+  status: ChannelProviderStatus;
+  helper_text: string;
+  connected_accounts: number;
+  active_bindings: number;
+  supports_activation: boolean;
+}
+
+export interface AgentConnectedChannel {
+  binding_id: number;
+  agent_id: number;
+  channel_endpoint_id: number;
+  provider: string;
+  status: ChannelProviderStatus;
+  is_active: boolean;
+  fallback_enabled: boolean;
+  external_account_id: string | null;
+  external_account_name: string | null;
+  channel_name: string;
+  external_channel_id: string | null;
+  phone_number_or_handle: string | null;
+  webhook_status: string;
+  last_test_at: string | null;
+  last_test_status: string | null;
+  last_test_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentChannelBindingActionResult {
+  success: boolean;
+  message: string;
+  provider: string;
+  channel_binding_id: number;
+  data: Record<string, unknown>;
+}
+
 export interface AgentKnowledgeSource {
   id: number;
   agent_id?: number;

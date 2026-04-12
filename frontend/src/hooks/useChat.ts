@@ -55,6 +55,10 @@ export function useChat() {
         text,
         conversation_id: selectedConversationId ?? undefined,
       });
+      const assistantText = response.assistant_message?.text?.trim() || '';
+      if (!assistantText) {
+        throw new Error('A IA retornou resposta vazia. Tente novamente em instantes.');
+      }
       setConversations((current) => {
         const existing = current.find((item) => item.id === response.conversation.id);
         if (existing) {
@@ -66,7 +70,8 @@ export function useChat() {
       setMessages((current) => [...current, response.user_message, response.assistant_message]);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao enviar mensagem');
+      const message = err instanceof Error ? err.message : 'Falha ao enviar mensagem';
+      setError(message);
       throw err;
     } finally {
       setSending(false);

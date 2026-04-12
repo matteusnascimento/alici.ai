@@ -8,6 +8,7 @@ import { StudioCanvas } from './StudioCanvas';
 import { StudioExportModal } from './StudioExportModal';
 import { StudioInspectorPanel } from './StudioInspectorPanel';
 import { StudioShell } from './StudioShell';
+import { StudioToolContextPanel } from './StudioToolContextPanel';
 import { StudioToolRail } from './StudioToolRail';
 
 const tools = [
@@ -98,6 +99,7 @@ export function PhotoEditorStudioPage() {
         )}
         right={(
           <StudioInspectorPanel title="Propriedades contextuais">
+            <StudioToolContextPanel activeTool={activeTool} />
             {Object.entries(adjustments).map(([key, value]) => (
               <label key={key} className="block text-xs text-slate-300">
                 <span className="mb-1 block capitalize">{key}</span>

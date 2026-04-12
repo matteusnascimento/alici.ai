@@ -53,10 +53,10 @@ describe('MarketingPanel', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText(/Criar Poster/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Novo projeto/i })).toBeInTheDocument();
+    expect(await screen.findByText(/Editor de Video IA/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Iniciar criação/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Criar Story/i })).toHaveAttribute('href', '/app/studio/story');
-    expect(screen.getByText(/Biblioteca da marca/i)).toBeInTheDocument();
-    expect(screen.getByText(/poster.png/i)).toBeInTheDocument();
+    expect(screen.getByText(/Biblioteca/i)).toBeInTheDocument();
+    expect(screen.getByText(/Poster de lancamento/i)).toBeInTheDocument();
   });
 });

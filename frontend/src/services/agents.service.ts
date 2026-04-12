@@ -28,7 +28,7 @@ export function toggleAgent(agentId: number) {
 }
 
 export function listAgentChannels(agentId: number) {
-  return apiFetch<AgentChannel[]>(`/agents/${agentId}/channels`);
+  return apiFetch<AgentChannel[]>(`/agents/${agentId}/channels/registry`);
 }
 
 export function createAgentChannel(
@@ -45,7 +45,7 @@ export function createAgentChannel(
     api_key?: string;
   },
 ) {
-  return apiFetch<AgentChannel>(`/agents/${agentId}/channels`, {
+  return apiFetch<AgentChannel>(`/agents/${agentId}/channels/registry`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });

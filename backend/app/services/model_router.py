@@ -4,35 +4,67 @@ from app.core.config import settings
 
 
 class AIFunction(str, Enum):
-    CHAT = "chat"
-    CHAT_PREMIUM = "chat_premium"
-    MARKETING_COPY = "marketing_copy"
-    STRUCTURED_EXTRACTION = "structured_extraction"
-    IMAGE_ANALYSIS = "image_analysis"
+    CHAT = "chat_general"
+    CHAT_PREMIUM = "chat_support"
+    MARKETING_COPY = "prompt_generation"
+    STRUCTURED_EXTRACTION = "classification"
+    IMAGE_ANALYSIS = "vision_analysis"
     IMAGE_GENERATION = "image_generation"
-    IMAGE_EDIT = "image_edit"
-    AUDIO_TRANSCRIPTION = "audio_transcription"
-    AUDIO_TRANSCRIPTION_FAST = "audio_transcription_fast"
-    TEXT_TO_SPEECH = "text_to_speech"
+    IMAGE_EDIT = "image_generation"
+    AUDIO_TRANSCRIPTION = "transcription"
+    AUDIO_TRANSCRIPTION_FAST = "transcription"
+    TEXT_TO_SPEECH = "tool_reasoning"
     EMBEDDING = "embedding"
-    EMBEDDING_HIGH = "embedding_high"
+    EMBEDDING_HIGH = "embedding"
+    AGENT_RUNTIME = "agent_runtime"
+    SUMMARIZATION = "summarization"
+    KNOWLEDGE_QA = "knowledge_qa"
+    TOOL_REASONING = "tool_reasoning"
 
 
 MODEL_BY_FUNCTION = {
-    AIFunction.CHAT: settings.openai_model,
-    AIFunction.CHAT_PREMIUM: "gpt-5.4-mini",
-    AIFunction.MARKETING_COPY: settings.openai_model,
-    AIFunction.STRUCTURED_EXTRACTION: settings.openai_model,
-    AIFunction.IMAGE_ANALYSIS: settings.openai_model,
-    AIFunction.IMAGE_GENERATION: "gpt-image-1",
-    AIFunction.IMAGE_EDIT: "gpt-image-1",
-    AIFunction.AUDIO_TRANSCRIPTION: "gpt-4o-transcribe",
-    AIFunction.AUDIO_TRANSCRIPTION_FAST: "gpt-4o-mini-transcribe",
-    AIFunction.TEXT_TO_SPEECH: "gpt-4o-mini-tts",
-    AIFunction.EMBEDDING: "text-embedding-3-small",
-    AIFunction.EMBEDDING_HIGH: "text-embedding-3-large",
+    AIFunction.CHAT: settings.openai_model_chat_general or settings.openai_model,
+    AIFunction.CHAT_PREMIUM: settings.openai_model_support or settings.openai_model,
+    AIFunction.MARKETING_COPY: settings.openai_model_copy or settings.openai_model,
+    AIFunction.STRUCTURED_EXTRACTION: settings.openai_model_classifier or settings.openai_model,
+    AIFunction.IMAGE_ANALYSIS: settings.openai_model_vision or settings.openai_model,
+    AIFunction.IMAGE_GENERATION: settings.openai_image_model,
+    AIFunction.IMAGE_EDIT: settings.openai_image_model,
+    AIFunction.AUDIO_TRANSCRIPTION: settings.openai_model_transcription,
+    AIFunction.AUDIO_TRANSCRIPTION_FAST: settings.openai_model_transcription,
+    AIFunction.TEXT_TO_SPEECH: settings.openai_model_support or settings.openai_model,
+    AIFunction.EMBEDDING: settings.openai_model_embeddings,
+    AIFunction.EMBEDDING_HIGH: settings.openai_model_embeddings,
+    AIFunction.AGENT_RUNTIME: settings.openai_model_agent_runtime or settings.openai_model,
+    AIFunction.SUMMARIZATION: settings.openai_model_summarization or settings.openai_model,
+    AIFunction.KNOWLEDGE_QA: settings.openai_model_knowledge_qa or settings.openai_model,
+    AIFunction.TOOL_REASONING: settings.openai_model_support or settings.openai_model,
 }
 
 
 def get_model_for(function_name: AIFunction) -> str:
-    return MODEL_BY_FUNCTION[function_name]
+    return MODEL_BY_FUNCTION.get(function_name) or settings.openai_model_chat_general or settings.openai_model
+
+
+def get_model_for_task(task_name: str) -> str:
+    normalized = task_name.strip().lower()
+    task_aliases = {
+        "chat_general": AIFunction.CHAT,
+        "chat_support": AIFunction.CHAT_PREMIUM,
+        "support": AIFunction.CHAT_PREMIUM,
+        "prompt_generation": AIFunction.MARKETING_COPY,
+        "copy": AIFunction.MARKETING_COPY,
+        "agent_runtime": AIFunction.AGENT_RUNTIME,
+        "summarization": AIFunction.SUMMARIZATION,
+        "classification": AIFunction.STRUCTURED_EXTRACTION,
+        "knowledge_qa": AIFunction.KNOWLEDGE_QA,
+        "tool_reasoning": AIFunction.TOOL_REASONING,
+        "vision_analysis": AIFunction.IMAGE_ANALYSIS,
+        "image_generation": AIFunction.IMAGE_GENERATION,
+        "transcription": AIFunction.AUDIO_TRANSCRIPTION,
+        "embedding": AIFunction.EMBEDDING,
+    }
+    mapped = task_aliases.get(normalized)
+    if mapped is None:
+        return settings.openai_model_chat_general or settings.openai_model
+    return get_model_for(mapped)

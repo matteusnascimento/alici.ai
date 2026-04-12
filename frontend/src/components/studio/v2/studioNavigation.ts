@@ -1,40 +1,37 @@
 import type { StudioNavItem, StudioSection } from '../../../types/studioV2';
+import { CREATE_TOOLS, MANAGE_LINKS, LIBRARY_LINKS } from './config/studioToolsConfig';
 
 export const studioSections: Array<{ key: StudioSection; label: string }> = [
   { key: 'create', label: 'Create' },
-  { key: 'edit', label: 'Edit' },
-  { key: 'content', label: 'Content' },
-  { key: 'brand', label: 'Brand' },
+  { key: 'manage', label: 'Gerenciar' },
   { key: 'projects', label: 'Projects' },
+  { key: 'brand', label: 'Biblioteca' },
 ];
 
+/**
+ * Build studioNavItems from centralized config
+ * SINGLE SOURCE OF TRUTH: studioToolsConfig.ts
+ */
 export const studioNavItems: StudioNavItem[] = [
-  { key: 'poster', label: 'Poster com IA', route: '/app/studio/poster', section: 'create' },
-  { key: 'story', label: 'Story com IA', route: '/app/studio/story', section: 'create' },
-  { key: 'banner', label: 'Banner com IA', route: '/app/studio/banner', section: 'create' },
-  { key: 'ad', label: 'Anuncio com IA', route: '/app/studio/banner', section: 'create' },
-  { key: 'thumbnail', label: 'Thumbnail com IA', route: '/app/studio/banner', section: 'create' },
-  { key: 'video-create', label: 'Video com IA', route: '/app/studio/video-editor', section: 'create' },
-  { key: 'photo-editor', label: 'Editor de Fotos IA', route: '/app/studio/photo-editor', section: 'edit' },
-  { key: 'video-editor', label: 'Editor de Video IA', route: '/app/studio/video-editor', section: 'edit' },
-  { key: 'remove-bg', label: 'Remover Fundo', route: '/app/studio/remove-background', section: 'edit' },
-  { key: 'retouch', label: 'Retoque', route: '/app/studio/retouch', section: 'edit' },
-  { key: 'enhance', label: 'Aprimorar Imagem', route: '/app/studio/photo-editor', section: 'edit' },
-  { key: 'resize', label: 'Redimensionar', route: '/app/studio/photo-editor', section: 'edit' },
-  { key: 'filters', label: 'Filtros', route: '/app/studio/photo-editor', section: 'edit' },
-  { key: 'captions', label: 'Legendas Automaticas', route: '/app/studio/caption-generator', section: 'content' },
-  { key: 'ad-copy', label: 'Copy para Anuncio', route: '/app/studio/promo-copy', section: 'content' },
-  { key: 'cta', label: 'CTA Generator', route: '/app/studio/cta-generator', section: 'content' },
-  { key: 'headlines', label: 'Headlines', route: '/app/studio/ai-creative', section: 'content' },
-  { key: 'descricao', label: 'Descricao de Produto', route: '/app/studio/promo-copy', section: 'content' },
-  { key: 'roteiro', label: 'Roteiro de Video', route: '/app/studio/ai-creative', section: 'content' },
-  { key: 'brand-kit', label: 'Brand Kit', route: '/app/studio/brand-kit', section: 'brand' },
-  { key: 'logos', label: 'Logos', route: '/app/studio/assets', section: 'brand' },
-  { key: 'paletas', label: 'Paletas', route: '/app/studio/brand-kit', section: 'brand' },
-  { key: 'templates', label: 'Templates', route: '/app/studio/templates', section: 'brand' },
-  { key: 'assets', label: 'Assets', route: '/app/studio/media-library', section: 'brand' },
-  { key: 'projects', label: 'Projetos', route: '/app/studio/projects', section: 'projects' },
-  { key: 'campanhas', label: 'Campanhas', route: '/app/studio/campaign', section: 'projects' },
-  { key: 'exportados', label: 'Exportados', route: '/app/studio/exports', section: 'projects' },
-  { key: 'historico', label: 'Historico', route: '/app/studio/projects', section: 'projects' },
+  // CREATE section
+  ...CREATE_TOOLS.map(tool => ({
+    key: tool.id,
+    label: tool.title,
+    route: tool.path,
+    section: 'create' as const,
+  })),
+  // MANAGE section
+  ...MANAGE_LINKS.map(link => ({
+    key: link.id,
+    label: link.title,
+    route: link.path,
+    section: 'manage' as const,
+  })),
+  // LIBRARY section
+  ...LIBRARY_LINKS.map(link => ({
+    key: link.id,
+    label: link.title,
+    route: link.path,
+    section: 'brand' as const,
+  })),
 ];

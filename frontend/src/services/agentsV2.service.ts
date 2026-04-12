@@ -2,6 +2,8 @@ import { apiFetch } from './api';
 import type {
   AgentActionItem,
   AgentChannel,
+  AgentChannelBindingActionResult,
+  AgentConnectedChannel,
   AgentConnectionActionResult,
   AgentCreateFlowResponse,
   AgentKnowledgeSource,
@@ -11,6 +13,7 @@ import type {
   AgentSetupStatus,
   AgentSummary,
   AgentTestResult,
+  ChannelProviderCatalogItem,
 } from '../types/agentsV2';
 
 export function listAgentsV2() {
@@ -56,11 +59,11 @@ export function getAgentReadinessV2(agentId: number) {
 }
 
 export function listAgentChannelsV2(agentId: number) {
-  return apiFetch<AgentChannel[]>(`/agents/${agentId}/channels`);
+  return apiFetch<AgentChannel[]>(`/agents/${agentId}/channels/registry`);
 }
 
 export function connectAgentChannelV2(agentId: number, payload: Record<string, unknown>) {
-  return apiFetch<AgentChannel>(`/agents/${agentId}/connect-channel`, {
+  return apiFetch<AgentChannel>(`/agents/${agentId}/channels/registry`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -205,4 +208,51 @@ export function updateAgentSettingsV2(agentId: number, payload: Record<string, u
 
 export function getAgentMetricsV2(agentId: number) {
   return apiFetch<{ metrics: Record<string, unknown> }>(`/agents/${agentId}/metrics`);
+}
+
+export function listChannelProviderCatalog() {
+  return apiFetch<ChannelProviderCatalogItem[]>('/integrations');
+}
+
+export function getChannelProviderStatus(provider: string) {
+  return apiFetch<ChannelProviderCatalogItem>(`/integrations/${provider}/status`);
+}
+
+export function disconnectChannelProvider(provider: string) {
+  return apiFetch<ChannelProviderCatalogItem>(`/integrations/${provider}/disconnect`, {
+    method: 'POST',
+  });
+}
+
+export function listAgentBoundChannels(agentId: number) {
+  return apiFetch<AgentConnectedChannel[]>(`/agents/${agentId}/channels`);
+}
+
+export function connectAgentBoundChannel(
+  agentId: number,
+  payload: {
+    provider: string;
+    integration: Record<string, unknown>;
+    endpoint: Record<string, unknown>;
+    fallback_enabled?: boolean;
+  },
+) {
+  return apiFetch<AgentConnectedChannel>(`/agents/${agentId}/channels/connect`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function disconnectAgentBoundChannel(agentId: number, bindingId: number) {
+  return apiFetch<AgentConnectedChannel>(`/agents/${agentId}/channels/disconnect`, {
+    method: 'POST',
+    body: JSON.stringify({ binding_id: bindingId }),
+  });
+}
+
+export function testAgentBoundChannel(agentId: number, bindingId: number, message?: string) {
+  return apiFetch<AgentChannelBindingActionResult>(`/agents/${agentId}/channels/test`, {
+    method: 'POST',
+    body: JSON.stringify({ binding_id: bindingId, message }),
+  });
 }

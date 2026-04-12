@@ -4,7 +4,7 @@ from app.models.conversation import Conversation, Message
 from app.models.usage_log import UsageLog
 from app.models.user import User
 from app.schemas.chat import ChatSendRequest
-from app.services.ai_service import AIService, AIServiceError
+from app.services.ai_service import AIService
 
 
 # ---------------------------------------------------------------------------
@@ -20,20 +20,14 @@ class ChatService:
         conversation = self._resolve_conversation(user.id, payload)
         user_message = Message(conversation_id=conversation.id, role="user", text=payload.text)
         self.db.add(user_message)
-        try:
-            assistant_text = self.ai.generate_text(
-                system_prompt=(
-                    "Voce e a assistente AXI da plataforma Alici. "
-                    "Responda em pt-BR, com objetividade, clareza e foco em execucao."
-                ),
-                user_prompt=payload.text,
-                temperature=0.3,
-            )
-        except AIServiceError as exc:
-            if getattr(exc, "code", "") == "ai_not_configured":
-                assistant_text = "Recebi sua mensagem e vou continuar com suporte base enquanto a IA e configurada."
-            else:
-                raise
+        assistant_text = self.ai.generate_text(
+            system_prompt=(
+                "Voce e a assistente AXI da plataforma Alici. "
+                "Responda em pt-BR, com objetividade, clareza e foco em execucao."
+            ),
+            user_prompt=payload.text,
+            temperature=0.3,
+        )
         assistant_message = Message(conversation_id=conversation.id, role="assistant", text=assistant_text)
         self.db.add(assistant_message)
         self.db.add(UsageLog(user_id=user.id, metric="messages", quantity=2, source="chat"))

@@ -9,6 +9,7 @@ import { StudioInspectorPanel } from './StudioInspectorPanel';
 import { StudioPromptBar } from './StudioPromptBar';
 import { StudioShell } from './StudioShell';
 import { StudioTimeline } from './StudioTimeline';
+import { StudioToolContextPanel } from './StudioToolContextPanel';
 import { StudioToolRail } from './StudioToolRail';
 
 interface SimpleWorkspacePageProps {
@@ -78,6 +79,7 @@ export function SimpleWorkspacePage({ type, title, subtitle, tools, promptPlaceh
         )}
         right={(
           <StudioInspectorPanel title="Propriedades">
+            <StudioToolContextPanel activeTool={activeTool} />
             <label className="block text-xs text-slate-400">Ferramenta ativa</label>
             <input value={activeTool} readOnly className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
             <button type="button" className="w-full rounded-xl border border-cyan-300/40 px-3 py-2 text-sm text-cyan-100" onClick={() => void studio.duplicateProject()}>

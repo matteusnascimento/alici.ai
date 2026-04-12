@@ -13,6 +13,7 @@ import { StudioLayersPanel } from './StudioLayersPanel';
 import { StudioPromptBar } from './StudioPromptBar';
 import { StudioShell } from './StudioShell';
 import { StudioTemplatesPanel } from './StudioTemplatesPanel';
+import { StudioToolContextPanel } from './StudioToolContextPanel';
 import { StudioToolRail } from './StudioToolRail';
 import { StudioVariationStrip } from './StudioVariationStrip';
 
@@ -133,6 +134,7 @@ export function PosterStudioPage() {
         )}
         right={(
           <StudioInspectorPanel title="AI Poster Assistant">
+            <StudioToolContextPanel activeTool={activeTool} />
             <label className="text-xs text-slate-400">Objetivo</label>
             <input value={objective} onChange={(event) => setObjective(event.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
             <label className="text-xs text-slate-400">Publico</label>

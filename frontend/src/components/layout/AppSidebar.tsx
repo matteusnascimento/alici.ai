@@ -62,13 +62,13 @@ export function AppSidebar({
         onMouseLeave={() => hoverCapable && setExpandedDesktop(false)}
         className={[
           'fixed left-0 top-0 z-30 hidden h-screen shrink-0 overflow-hidden rounded-r-[2rem] border-r border-white/10',
-          'bg-gradient-to-b from-storm/95 via-storm/85 to-ink/95 px-3 py-4 shadow-soft backdrop-blur lg:flex lg:flex-col',
+          'bg-gradient-to-b from-storm/95 via-storm/85 to-ink/95 py-4 shadow-soft backdrop-blur lg:flex lg:flex-col',
           'transition-[width] duration-300 ease-out',
-          expanded ? 'lg:w-[284px]' : 'lg:w-[92px]',
+          expanded ? 'px-3 lg:w-[284px]' : 'px-0 lg:w-[92px]',
         ].join(' ')}
       >
         <SidebarLogo expanded={expanded} />
-        <nav className="mt-6 flex flex-1 flex-col gap-2.5 overflow-y-auto pb-3 pr-1">
+        <nav className={['mt-6 flex flex-1 flex-col overflow-y-auto pb-3', expanded ? 'gap-2.5 pr-1' : 'items-center gap-4 pr-0'].join(' ')}>
           {items.map((item) => (
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}

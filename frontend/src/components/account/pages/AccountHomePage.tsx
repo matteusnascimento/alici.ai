@@ -40,25 +40,25 @@ export function AccountHomePage() {
         <SettingsGroup title="Preferencias" subtitle="Idioma, aparencia e notificacoes para uso diario.">
           <SettingsRow to="/app/account/personalization" label="Personalization" description="Tema, idioma, voz, comportamento" />
           <SettingsRow to="/app/account/notifications" label="Notifications" description="Email, push, product updates" />
-          <SettingsRow to="/app/account/language" label="Language & Appearance" description="Idioma, modo e accent" />
+          <SettingsRow to="/app/account/language-appearance" label="Language & Appearance" description="Idioma, modo e accent" />
         </SettingsGroup>
 
         <SettingsGroup title="Seguranca e privacidade" subtitle="Controle de acesso, dados e historico da conta.">
-          <SettingsRow to="/app/account/data" label="Data Controls" description="Exportar dados e solicitacao de exclusao" />
+          <SettingsRow to="/app/account/data-controls" label="Data Controls" description="Exportar dados e solicitacao de exclusao" />
           <SettingsRow to="/app/account/security" label="Security" description="Senha e status de seguranca" />
-          <SettingsRow to="/app/account/chats" label="Archived Chats" description="Controle de conversas arquivadas" />
+          <SettingsRow to="/app/account/archived-chats" label="Archived Chats" description="Controle de conversas arquivadas" />
         </SettingsGroup>
 
         <SettingsGroup title="Integracoes e aplicativos" subtitle="Conecte canais e mantenha status operacional sob controle.">
-          <SettingsRow to="/app/account/apps" label="Applications" description="OpenAI, WhatsApp, Instagram e conectores" />
-          <SettingsRow to="/app/account/apps" label="Status das conexoes" description="Conferir saude e ultima sincronizacao" />
-          <SettingsRow to="/app/account/apps" label="Acoes rapidas" description="Conectar, pausar ou desconectar provedores" />
+          <SettingsRow to="/app/account/applications" label="Applications" description="OpenAI, WhatsApp, Instagram e conectores" />
+          <SettingsRow to="/app/account/applications/status" label="Status das conexoes" description="Conferir saude e ultima sincronizacao" />
+          <SettingsRow to="/app/account/applications/actions" label="Acoes rapidas" description="Conectar, pausar ou desconectar provedores" />
         </SettingsGroup>
 
         <SettingsGroup title="Suporte e legal" subtitle="Documentacao, suporte e diretrizes da plataforma.">
           <SettingsRow to="/app/account/help" label="Help Center" description="Ajuda, contatos e abertura de ticket" />
           <SettingsRow to="/app/account/legal" label="Legal" description="Termos de uso e politica de privacidade" />
-          <SettingsRow to="/app/account/help" label="Status da plataforma" description="Versao atual e informacoes operacionais" />
+          <SettingsRow to="/app/account/help/status" label="Status da plataforma" description="Versao atual e informacoes operacionais" />
         </SettingsGroup>
 
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#16111f] to-[#120f19] p-5">

@@ -40,12 +40,12 @@ class AIService:
         self._openai = OpenAIService() if self.provider == "openai" else None
 
     def is_configured(self) -> bool:
-        return self.provider == "openai" and bool(settings.openai_api_key)
+        return self.provider == "openai" and bool(settings.effective_openai_api_key)
 
     def _ensure_provider(self) -> None:
         if self.provider != "openai":
             raise AIConfigurationError(f"Unsupported AI provider: {self.provider}")
-        if not settings.openai_api_key:
+        if not settings.effective_openai_api_key:
             raise AIConfigurationError("OPENAI_API_KEY is not configured")
         if self._openai is None:
             self._openai = OpenAIService()
@@ -68,8 +68,8 @@ class AIService:
             return AIServiceError(
                 message,
                 user_message="Nao foi possivel executar a tarefa com IA no momento.",
-                status_code=503,
-                code="openai_request_failed",
+                status_code=getattr(exc, "status_code", 503),
+                code=getattr(exc, "error_type", "openai_request_failed"),
             )
         return AIServiceError(str(exc))
 
@@ -117,7 +117,12 @@ class AIService:
         )
         content = str(response.get("content") or "").strip()
         if not content:
-            raise AIServiceError("OpenAI returned empty content")
+            raise AIServiceError(
+                "OpenAI returned empty content",
+                user_message="A IA retornou uma resposta vazia. Tente novamente.",
+                status_code=502,
+                code="empty_response",
+            )
         return content
 
     def generate_structured_output(
@@ -170,7 +175,7 @@ class AIService:
             messages.extend(conversation_history[-10:])
         messages.append({"role": "user", "content": user_message})
 
-        model = preferred_model or self.default_model
+        model = preferred_model or self._model_for(AIFunction.AGENT_RUNTIME)
         return self.generate_text(
             user_prompt=user_message,
             system_prompt=system_prompt,
@@ -191,4 +196,7 @@ class AIService:
             "status": result.get("status", "error"),
             "model": result.get("model", self.default_model),
             "message": result.get("message", "Falha ao validar integracao de IA."),
+            "latency_ms": result.get("latency_ms"),
+            "error_type": result.get("error_type"),
+            "status_code": result.get("status_code"),
         }

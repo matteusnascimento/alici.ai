@@ -4,16 +4,61 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.schemas.integration import IntegrationRead, IntegrationTestRequest, IntegrationTestResponse
+from app.schemas.integration import (
+    IntegrationAccountCreateRequest,
+    IntegrationAccountRead,
+    IntegrationProviderRead,
+    IntegrationProviderStatusRead,
+    IntegrationTestRequest,
+    IntegrationTestResponse,
+)
 from app.services.ai_service import AIConfigurationError, AIService, AIServiceError
-from app.services.integration_service import IntegrationService
+from app.services.channel_integration_service import ChannelIntegrationService
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
 
-@router.get("", response_model=list[IntegrationRead])
-def list_integrations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[IntegrationRead]:
-    return IntegrationService(db).list_integrations(current_user)
+@router.get("", response_model=list[IntegrationProviderRead])
+def list_integrations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[IntegrationProviderRead]:
+    rows = ChannelIntegrationService(db).list_integrations(current_user)
+    return [IntegrationProviderRead(**item) for item in rows]
+
+
+@router.post("", response_model=IntegrationAccountRead)
+def create_integration(
+    payload: IntegrationAccountCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> IntegrationAccountRead:
+    account = ChannelIntegrationService(db).create_integration_account(current_user, payload.model_dump())
+    return IntegrationAccountRead(
+        id=account.id,
+        provider=account.provider,
+        external_account_id=account.external_account_id,
+        external_account_name=account.external_account_name,
+        status=account.status,
+        metadata=ChannelIntegrationService(db)._load_json(account.metadata_json),
+        created_at=account.created_at,
+        updated_at=account.updated_at,
+    )
+
+
+@router.get("/{provider}/status", response_model=IntegrationProviderStatusRead)
+def get_provider_status(
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> IntegrationProviderStatusRead:
+    return IntegrationProviderStatusRead(**ChannelIntegrationService(db).get_provider_status(current_user, provider))
+
+
+@router.post("/{provider}/disconnect", response_model=IntegrationProviderStatusRead)
+def disconnect_provider(
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> IntegrationProviderStatusRead:
+    return IntegrationProviderStatusRead(**ChannelIntegrationService(db).disconnect_provider(current_user, provider))
 
 
 def _run_openai_healthcheck() -> IntegrationTestResponse:
@@ -22,16 +67,31 @@ def _run_openai_healthcheck() -> IntegrationTestResponse:
         result = service.healthcheck()
         status = result.get("status", "error")
         model = result.get("model")
+        latency_ms = result.get("latency_ms")
+        error_type = result.get("error_type")
+        result_status_code = result.get("status_code")
         message = result.get("message", "Falha ao validar OpenAI")
         if status == "ok" and model:
             message = "OpenAI integration is working."
-        return IntegrationTestResponse(provider="openai", status=status, message=message, model=model)
+        return IntegrationTestResponse(
+            provider="openai",
+            status=status,
+            message=message,
+            model=model,
+            model_used=model,
+            latency_ms=latency_ms,
+            error_type=error_type,
+            status_code=result_status_code,
+        )
     except AIConfigurationError:
         return IntegrationTestResponse(
             provider="openai",
             status="warning",
             message="A chave da OpenAI nao foi encontrada no ambiente.",
             model=None,
+            model_used=None,
+            error_type="missing_api_key",
+            status_code=503,
         )
     except AIServiceError as exc:
         return IntegrationTestResponse(
@@ -39,6 +99,9 @@ def _run_openai_healthcheck() -> IntegrationTestResponse:
             status="error",
             message=exc.user_message,
             model=None,
+            model_used=None,
+            error_type=exc.code,
+            status_code=exc.status_code,
         )
 
 
@@ -61,7 +124,12 @@ def test_whatsapp(
     __: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> IntegrationTestResponse:
-    return IntegrationService(db).test_provider("whatsapp")
+    summary = ChannelIntegrationService(db).get_provider_status(__, "whatsapp")
+    return IntegrationTestResponse(
+        provider="whatsapp",
+        status=summary["status"],
+        message=summary["helper_text"],
+    )
 
 
 @router.post("/instagram/test", response_model=IntegrationTestResponse)
@@ -70,4 +138,9 @@ def test_instagram(
     __: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> IntegrationTestResponse:
-    return IntegrationService(db).test_provider("instagram")
+    summary = ChannelIntegrationService(db).get_provider_status(__, "instagram")
+    return IntegrationTestResponse(
+        provider="instagram",
+        status=summary["status"],
+        message=summary["helper_text"],
+    )

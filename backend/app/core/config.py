@@ -25,8 +25,21 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     default_ai_provider: str = "openai"
     openai_api_key: str = ""
+    openai_api_key_rotated: str = ""
     openai_model: str = "gpt-5.4-mini"
     openai_timeout_seconds: float = 30.0
+    openai_model_chat_general: str = "gpt-4o-mini"
+    openai_model_support: str = "gpt-4o-mini"
+    openai_model_copy: str = "gpt-4o-mini"
+    openai_model_agent_runtime: str = "gpt-4o-mini"
+    openai_model_summarization: str = "gpt-4o-mini"
+    openai_model_classifier: str = "gpt-4o-mini"
+    openai_model_knowledge_qa: str = "gpt-4o-mini"
+    openai_model_vision: str = "gpt-4o-mini"
+    openai_image_model: str = "gpt-image-1"
+    openai_model_transcription: str = "gpt-4o-transcribe"
+    openai_model_embeddings: str = "text-embedding-3-small"
+    database_url_rotated: str = ""
     cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
@@ -69,9 +82,15 @@ class Settings(BaseSettings):
 
     @property
     def sqlalchemy_database_url(self) -> str:
-        if self.database_url.startswith("postgresql://") and not self.database_url.startswith("postgresql+psycopg://"):
-            return self.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
-        return self.database_url
+        effective_database_url = self.database_url_rotated or self.database_url
+        if effective_database_url.startswith("postgresql://") and not effective_database_url.startswith("postgresql+psycopg://"):
+            return effective_database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return effective_database_url
+
+    @property
+    def effective_openai_api_key(self) -> str:
+        # During key rotation, OPENAI_API_KEY_ROTATED takes precedence.
+        return self.openai_api_key_rotated or self.openai_api_key
 
     @property
     def should_seed_dev_user(self) -> bool:

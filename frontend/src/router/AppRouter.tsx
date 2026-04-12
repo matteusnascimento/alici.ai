@@ -8,6 +8,8 @@ import { DashboardPanel } from '../components/platform/DashboardPanel';
 import { PlatformShell } from '../components/platform/PlatformShell';
 import { AccountShell } from '../components/account/AccountShell';
 import { AccountAppsPage } from '../components/account/pages/AccountAppsPage';
+import { AccountAppsActionsPage } from '../components/account/pages/AccountAppsActionsPage';
+import { AccountAppsStatusPage } from '../components/account/pages/AccountAppsStatusPage';
 import { AccountChatsPage } from '../components/account/pages/AccountChatsPage';
 import { AccountDataPage } from '../components/account/pages/AccountDataPage';
 import { AccountHelpPage } from '../components/account/pages/AccountHelpPage';
@@ -16,28 +18,25 @@ import { AccountLanguagePage } from '../components/account/pages/AccountLanguage
 import { AccountLegalPage } from '../components/account/pages/AccountLegalPage';
 import { AccountNotificationsPage } from '../components/account/pages/AccountNotificationsPage';
 import { AccountPersonalizationPage } from '../components/account/pages/AccountPersonalizationPage';
+import { AccountPlatformStatusPage } from '../components/account/pages/AccountPlatformStatusPage';
 import { AccountProfilePage } from '../components/account/pages/AccountProfilePage';
 import { AccountSecurityPage } from '../components/account/pages/AccountSecurityPage';
 import { AssetsStudioPage } from '../components/studio/v2/AssetsStudioPage';
 import { AiCreativeStudioPage } from '../components/studio/v2/AiCreativeStudioPage';
-import { AdBuilderStudioPage } from '../components/studio/v2/AdBuilderStudioPage';
 import { BannerStudioPage } from '../components/studio/v2/BannerStudioPage';
-import { CampaignStudioPage } from '../components/studio/v2/CampaignStudioPage';
 import { CaptionsStudioPage } from '../components/studio/v2/CaptionsStudioPage';
 import { BrandStudioPage } from '../components/studio/v2/BrandStudioPage';
-import { CtaGeneratorStudioPage } from '../components/studio/v2/CtaGeneratorStudioPage';
 import { ExportsStudioPage } from '../components/studio/v2/ExportsStudioPage';
-import { MediaLibraryStudioPage } from '../components/studio/v2/MediaLibraryStudioPage';
 import { PhotoEditorStudioPage } from '../components/studio/v2/PhotoEditorStudioPage';
 import { PosterStudioPage } from '../components/studio/v2/PosterStudioPage';
-import { PromoCopyStudioPage } from '../components/studio/v2/PromoCopyStudioPage';
 import { ProjectsStudioPage } from '../components/studio/v2/ProjectsStudioPage';
 import { RemoveBackgroundStudioPage } from '../components/studio/v2/RemoveBackgroundStudioPage';
-import { RetouchStudioPage } from '../components/studio/v2/RetouchStudioPage';
 import { StoryStudioPage } from '../components/studio/v2/StoryStudioPage';
 import { StudioHomePage } from '../components/studio/v2/StudioHomePage';
 import { TemplatesStudioPage } from '../components/studio/v2/TemplatesStudioPage';
 import { VideoEditorStudioPage } from '../components/studio/v2/VideoEditorStudioPage';
+import { SimpleWorkspacePage } from '../components/studio/v2/SimpleWorkspacePage';
+import { CampaignWorkspacePage } from '../components/studio/v2/CampaignWorkspacePage';
 import { useAuth } from '../hooks/useAuth';
 import { AgentActionsPage } from '../components/agents/v2/AgentActionsPage';
 import { AgentAnalyticsPage } from '../components/agents/v2/AgentAnalyticsPage';
@@ -122,52 +121,52 @@ export function AppRouter() {
             </Route>
             <Route path="studio">
               <Route index element={<StudioHomePage />} />
-              <Route path="poster" element={<PosterStudioPage />} />
-              <Route path="poster/new" element={<PosterStudioPage />} />
+              {/* CREATE TOOLS */}
+              <Route path="video-editor/*" element={<VideoEditorStudioPage />} />
+              <Route path="photo-editor/*" element={<PhotoEditorStudioPage />} />
+              <Route path="poster/*" element={<PosterStudioPage />} />
               <Route path="story" element={<StoryStudioPage />} />
               <Route path="story/new" element={<StoryStudioPage />} />
-              <Route path="ad-builder" element={<AdBuilderStudioPage />} />
-              <Route path="banner" element={<BannerStudioPage />} />
-              <Route path="ad/new" element={<BannerStudioPage />} />
-              <Route path="photo-editor" element={<PhotoEditorStudioPage />} />
-              <Route path="photo/edit" element={<PhotoEditorStudioPage />} />
-              <Route path="video-editor" element={<VideoEditorStudioPage />} />
-              <Route path="video/new" element={<VideoEditorStudioPage />} />
+              
+              {/* MANAGE TOOLS */}
               <Route path="remove-background" element={<RemoveBackgroundStudioPage />} />
-              <Route path="background-remove" element={<RemoveBackgroundStudioPage />} />
-              <Route path="retouch" element={<RetouchStudioPage />} />
-              <Route path="legendas" element={<CaptionsStudioPage />} />
-              <Route path="caption-generator" element={<CaptionsStudioPage />} />
-              <Route path="caption/new" element={<CaptionsStudioPage />} />
-              <Route path="cta-generator" element={<CtaGeneratorStudioPage />} />
-              <Route path="promo-copy" element={<PromoCopyStudioPage />} />
-              <Route path="brand-kit" element={<BrandStudioPage />} />
               <Route path="projects" element={<ProjectsStudioPage />} />
-              <Route path="brand" element={<BrandStudioPage />} />
+              <Route path="campaign/*" element={<CampaignWorkspacePage />} />
               <Route path="exports" element={<ExportsStudioPage />} />
-              <Route path="campaign" element={<CampaignStudioPage />} />
-              <Route path="media-library" element={<MediaLibraryStudioPage />} />
-              <Route path="ai-creative" element={<AiCreativeStudioPage />} />
-              <Route path="templates" element={<TemplatesStudioPage />} />
-              <Route path="assets" element={<AssetsStudioPage />} />
-              <Route path="ads" element={<BannerStudioPage />} />
-              <Route path="captions" element={<CaptionsStudioPage />} />
-              <Route path="library" element={<BrandStudioPage />} />
-              <Route path="cloud" element={<AssetsStudioPage />} />
+              
+              {/* LIBRARY - MANAGE */}
+              <Route path="brand-kit/*" element={<BrandStudioPage />} />
+              <Route path="templates/*" element={<TemplatesStudioPage />} />
+              <Route path="assets/*" element={<AssetsStudioPage />} />
+              <Route path="ai-creative/*" element={<AiCreativeStudioPage />} />
+              
+              {/* DEPRECATED - Redirects for backwards compatibility */}
+              <Route path="brand" element={<BrandStudioPage />} />
             </Route>
             <Route path="marketing/*" element={<LegacyStudioRedirect />} />
             <Route path="account" element={<AccountShell />}>
-              <Route index element={<AccountHomePage />} />
+              <Route index element={<Navigate replace to="overview" />} />
+              <Route path="overview" element={<AccountHomePage />} />
               <Route path="profile" element={<AccountProfilePage />} />
               <Route path="personalization" element={<AccountPersonalizationPage />} />
               <Route path="notifications" element={<AccountNotificationsPage />} />
-              <Route path="apps" element={<AccountAppsPage />} />
-              <Route path="data" element={<AccountDataPage />} />
+              <Route path="applications" element={<AccountAppsPage />} />
+              <Route path="applications/status" element={<AccountAppsStatusPage />} />
+              <Route path="applications/actions" element={<AccountAppsActionsPage />} />
+              <Route path="data-controls" element={<AccountDataPage />} />
               <Route path="security" element={<AccountSecurityPage />} />
-              <Route path="chats" element={<AccountChatsPage />} />
-              <Route path="language" element={<AccountLanguagePage />} />
+              <Route path="archived-chats" element={<AccountChatsPage />} />
+              <Route path="language-appearance" element={<AccountLanguagePage />} />
               <Route path="help" element={<AccountHelpPage />} />
+              <Route path="help/status" element={<AccountPlatformStatusPage />} />
               <Route path="legal" element={<AccountLegalPage />} />
+
+              <Route path="apps" element={<Navigate replace to="/app/account/applications" />} />
+              <Route path="apps/status" element={<Navigate replace to="/app/account/applications/status" />} />
+              <Route path="apps/actions" element={<Navigate replace to="/app/account/applications/actions" />} />
+              <Route path="data" element={<Navigate replace to="/app/account/data-controls" />} />
+              <Route path="chats" element={<Navigate replace to="/app/account/archived-chats" />} />
+              <Route path="language" element={<Navigate replace to="/app/account/language-appearance" />} />
             </Route>
           </Route>
         </Route>

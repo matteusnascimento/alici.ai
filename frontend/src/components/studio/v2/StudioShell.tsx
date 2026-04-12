@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 
-import { StudioSidebar } from './StudioSidebar';
 import { StudioTopbar } from './StudioTopbar';
 
 interface StudioShellProps {
@@ -18,19 +17,20 @@ interface StudioShellProps {
 
 export function StudioShell({ projectName, saveState, onSave, onExport, onDuplicate, onBackHome, center, right, bottom, leftRail }: StudioShellProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-28">
       <StudioTopbar projectName={projectName} saveState={saveState} onSave={onSave} onExport={onExport} onDuplicate={onDuplicate} onBackHome={onBackHome} />
-      <div className="grid gap-4 xl:grid-cols-[260px_1fr]">
-        <StudioSidebar />
-        <div className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-[72px_1fr_320px]">
-            <div>{leftRail}</div>
-            <div>{center}</div>
-            <div>{right}</div>
-          </div>
-          {bottom ? bottom : null}
+      <div className="space-y-4">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0">{center}</div>
+          <div className="min-w-0">{right}</div>
         </div>
+        {bottom ? bottom : null}
       </div>
+      {leftRail ? (
+        <div className="fixed bottom-3 left-4 right-4 z-20 xl:left-[max(1rem,calc((100vw-1400px)/2+1rem))] xl:right-[max(1rem,calc((100vw-1400px)/2+1rem))]">
+          {leftRail}
+        </div>
+      ) : null}
     </div>
   );
 }

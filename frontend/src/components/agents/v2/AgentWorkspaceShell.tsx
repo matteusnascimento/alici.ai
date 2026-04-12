@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
+
+import { getAgentOverviewV2 } from '../../../services/agentsV2.service';
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
@@ -13,6 +16,30 @@ const tabs = [
 export function AgentWorkspaceShell() {
   const params = useParams();
   const id = params.id;
+  const [agentName, setAgentName] = useState<string>('');
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    let mounted = true;
+    async function loadAgentName() {
+      try {
+        const data = await getAgentOverviewV2(Number(id));
+        if (mounted) {
+          setAgentName(data.agent?.nome?.trim() || 'Agente sem nome');
+        }
+      } catch {
+        if (mounted) {
+          setAgentName(`Agente ${id}`);
+        }
+      }
+    }
+    void loadAgentName();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   return (
     <div className="space-y-4">
@@ -20,7 +47,7 @@ export function AgentWorkspaceShell() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Workspace do agente</p>
-            <h1 className="font-display text-2xl text-white">Agente #{id}</h1>
+            <h1 className="font-display text-2xl text-white">{agentName || `Agente ${id}`}</h1>
           </div>
           <Link to="/app/agents" className="rounded-xl border border-white/20 bg-white/[0.04] px-3 py-2 text-sm text-slate-100 transition hover:border-cyan/50 hover:text-white">Voltar para agentes</Link>
         </div>

@@ -1,24 +1,41 @@
 import base64
 import json
+import logging
+import time
 from pathlib import Path
 from typing import Any
 
 import httpx
+from openai import APIConnectionError, APIError, APITimeoutError, AuthenticationError, OpenAI, RateLimitError
 
 from app.core.config import settings
 from app.services.model_router import AIFunction, get_model_for
 
 
 class OpenAIServiceError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, error_type: str = "openai_error", status_code: int = 503) -> None:
+        super().__init__(message)
+        self.error_type = error_type
+        self.status_code = status_code
+
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIService:
     def __init__(self) -> None:
-        self.api_key = settings.openai_api_key
+        self.api_key = settings.effective_openai_api_key
         self.default_model = settings.openai_model
         self.timeout_seconds = settings.openai_timeout_seconds
         self.base_url = "https://api.openai.com/v1"
+        self.client = OpenAI(api_key=self.api_key, timeout=self.timeout_seconds) if self.api_key else None
+
+        logger.info(
+            "openai.service.init api_key=%s model=%s timeout_seconds=%s",
+            "set" if self.api_key else "missing",
+            self.default_model,
+            self.timeout_seconds,
+        )
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -28,17 +45,43 @@ class OpenAIService:
 
     def _post_json(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         if not self.api_key:
-            raise OpenAIServiceError("OPENAI_API_KEY is not configured")
+            raise OpenAIServiceError("OPENAI_API_KEY is not configured", error_type="missing_api_key", status_code=503)
 
         try:
             with httpx.Client(timeout=self.timeout_seconds) as client:
                 response = client.post(f"{self.base_url}{endpoint}", json=payload, headers=self._headers())
                 response.raise_for_status()
         except httpx.TimeoutException as exc:
-            raise OpenAIServiceError("OpenAI request timed out") from exc
+            raise OpenAIServiceError("OpenAI request timed out", error_type="timeout", status_code=504) from exc
         except httpx.HTTPError as exc:
-            raise OpenAIServiceError(f"OpenAI request failed: {exc}") from exc
+            message = str(exc)
+            status_code = 502
+            if "401" in message or "403" in message:
+                status_code = 401
+            elif "429" in message:
+                status_code = 429
+            raise OpenAIServiceError(
+                f"OpenAI request failed: {message}",
+                error_type="http_error",
+                status_code=status_code,
+            ) from exc
         return response.json()
+
+    def _classify_openai_error(self, exc: Exception) -> OpenAIServiceError:
+        if isinstance(exc, OpenAIServiceError):
+            return exc
+        if isinstance(exc, AuthenticationError):
+            return OpenAIServiceError("OpenAI authentication failed", error_type="invalid_api_key", status_code=401)
+        if isinstance(exc, RateLimitError):
+            return OpenAIServiceError("OpenAI rate limit reached", error_type="rate_limit", status_code=429)
+        if isinstance(exc, APITimeoutError):
+            return OpenAIServiceError("OpenAI request timed out", error_type="timeout", status_code=504)
+        if isinstance(exc, APIConnectionError):
+            return OpenAIServiceError("OpenAI network connection error", error_type="network_error", status_code=503)
+        if isinstance(exc, APIError):
+            status = getattr(exc, "status_code", None) or 503
+            return OpenAIServiceError(f"OpenAI API error: {exc}", error_type="api_error", status_code=status)
+        return OpenAIServiceError(f"OpenAI request failed: {exc}", error_type="unknown_error", status_code=503)
 
     def _extract_output_text(self, data: dict[str, Any]) -> str:
         if data.get("output_text"):
@@ -53,41 +96,35 @@ class OpenAIService:
 
     def chat(self, prompt: str, system: str | None = None, premium: bool = False) -> dict[str, Any]:
         model = get_model_for(AIFunction.CHAT_PREMIUM if premium else AIFunction.CHAT)
-        input_items: list[dict[str, Any]] = []
+        messages: list[dict[str, Any]] = []
         if system:
-            input_items.append(
-                {
-                    "role": "system",
-                    "content": [{"type": "input_text", "text": system}],
-                }
-            )
-        input_items.append(
-            {
-                "role": "user",
-                "content": [{"type": "input_text", "text": prompt}],
-            }
-        )
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
 
-        data = self._post_json("/responses", {"model": model, "input": input_items})
+        result = self.send_chat_message(messages=messages, model=model)
         return {
-            "model": data.get("model", model),
-            "text": self._extract_output_text(data),
-            "raw": data,
+            "model": result.get("model", model),
+            "text": str(result.get("content") or "").strip(),
+            "raw": result.get("raw", {}),
+            "latency_ms": result.get("latency_ms"),
         }
 
     def marketing_copy(self, prompt: str) -> dict[str, Any]:
         model = get_model_for(AIFunction.MARKETING_COPY)
-        data = self._post_json(
-            "/responses",
-            {
-                "model": model,
-                "input": f"Crie uma copy de marketing profissional em pt-BR:\n\n{prompt}",
-            },
+        result = self.send_chat_message(
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Crie uma copy de marketing profissional em pt-BR:\n\n{prompt}",
+                }
+            ],
+            model=model,
+            temperature=0.4,
         )
         return {
-            "model": data.get("model", model),
-            "text": self._extract_output_text(data),
-            "raw": data,
+            "model": result.get("model", model),
+            "text": str(result.get("content") or "").strip(),
+            "raw": result.get("raw", {}),
         }
 
     def structured_extract(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
@@ -156,7 +193,7 @@ class OpenAIService:
 
     def transcribe_audio(self, audio_path: str, fast: bool = False) -> dict[str, Any]:
         if not self.api_key:
-            raise OpenAIServiceError("OPENAI_API_KEY is not configured")
+            raise OpenAIServiceError("OPENAI_API_KEY is not configured", error_type="missing_api_key", status_code=503)
 
         model = get_model_for(AIFunction.AUDIO_TRANSCRIPTION_FAST if fast else AIFunction.AUDIO_TRANSCRIPTION)
         path = Path(audio_path)
@@ -172,9 +209,9 @@ class OpenAIService:
                     )
                     response.raise_for_status()
         except httpx.TimeoutException as exc:
-            raise OpenAIServiceError("OpenAI transcription timed out") from exc
+            raise OpenAIServiceError("OpenAI transcription timed out", error_type="timeout", status_code=504) from exc
         except httpx.HTTPError as exc:
-            raise OpenAIServiceError(f"OpenAI request failed: {exc}") from exc
+            raise OpenAIServiceError(f"OpenAI request failed: {exc}", error_type="http_error", status_code=502) from exc
 
         data = response.json()
         return {
@@ -185,7 +222,7 @@ class OpenAIService:
 
     def text_to_speech(self, text: str, voice: str = "alloy", output_path: str = "speech.mp3") -> dict[str, Any]:
         if not self.api_key:
-            raise OpenAIServiceError("OPENAI_API_KEY is not configured")
+            raise OpenAIServiceError("OPENAI_API_KEY is not configured", error_type="missing_api_key", status_code=503)
 
         model = get_model_for(AIFunction.TEXT_TO_SPEECH)
         payload = {
@@ -203,9 +240,9 @@ class OpenAIService:
                 )
                 response.raise_for_status()
         except httpx.TimeoutException as exc:
-            raise OpenAIServiceError("OpenAI speech request timed out") from exc
+            raise OpenAIServiceError("OpenAI speech request timed out", error_type="timeout", status_code=504) from exc
         except httpx.HTTPError as exc:
-            raise OpenAIServiceError(f"OpenAI request failed: {exc}") from exc
+            raise OpenAIServiceError(f"OpenAI request failed: {exc}", error_type="http_error", status_code=502) from exc
 
         Path(output_path).write_bytes(response.content)
         return {
@@ -230,20 +267,25 @@ class OpenAIService:
         }
 
     def healthcheck(self) -> dict[str, Any]:
+        started = time.perf_counter()
         try:
             result = self.chat("Responda apenas: OK")
             return {
                 "status": "ok",
                 "model": result["model"],
                 "message": result.get("text", ""),
+                "latency_ms": round((time.perf_counter() - started) * 1000, 2),
             }
         except Exception as exc:
+            mapped = self._classify_openai_error(exc)
             return {
                 "status": "error",
-                "message": str(exc),
+                "message": str(mapped),
+                "error_type": mapped.error_type,
+                "status_code": mapped.status_code,
+                "latency_ms": round((time.perf_counter() - started) * 1000, 2),
             }
 
-    # Backward-compatible wrappers used in existing services/routes.
     def send_chat_message(
         self,
         messages: list[dict],
@@ -252,26 +294,60 @@ class OpenAIService:
         max_tokens: int | None = None,
     ) -> dict[str, Any]:
         if not messages:
-            raise OpenAIServiceError("messages cannot be empty")
+            raise OpenAIServiceError("messages cannot be empty", error_type="invalid_request", status_code=400)
+        if self.client is None:
+            raise OpenAIServiceError("OPENAI_API_KEY is not configured", error_type="missing_api_key", status_code=503)
 
-        payload = {
-            "model": model or self.default_model,
-            "messages": messages,
-            "temperature": temperature,
-        }
-        if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
+        selected_model = model or self.default_model
+        started = time.perf_counter()
+        input_length = sum(len(str(item.get("content") or "")) for item in messages)
+        logger.info(
+            "openai.chat.request function=chat_completion model=%s input_chars=%s",
+            selected_model,
+            input_length,
+        )
 
-        response = self._post_json("/chat/completions", payload)
+        try:
+            response = self.client.chat.completions.create(
+                model=selected_model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        except Exception as exc:
+            mapped = self._classify_openai_error(exc)
+            logger.error(
+                "openai.chat.error function=chat_completion model=%s error_type=%s status_code=%s message=%s",
+                selected_model,
+                mapped.error_type,
+                mapped.status_code,
+                str(mapped),
+            )
+            raise mapped from exc
+
+        latency_ms = round((time.perf_counter() - started) * 1000, 2)
         content = ""
-        choices = response.get("choices") or []
-        if choices:
-            content = choices[0].get("message", {}).get("content", "")
+        if response.choices:
+            content = str(response.choices[0].message.content or "").strip()
+        if not content:
+            logger.error(
+                "openai.chat.empty_response function=chat_completion model=%s latency_ms=%s",
+                selected_model,
+                latency_ms,
+            )
+            raise OpenAIServiceError("OpenAI returned empty content", error_type="empty_response", status_code=502)
+
+        logger.info(
+            "openai.chat.success function=chat_completion model=%s latency_ms=%s",
+            selected_model,
+            latency_ms,
+        )
         return {
             "content": content,
-            "model": response.get("model", model or self.default_model),
-            "usage": response.get("usage"),
-            "raw": response,
+            "model": response.model or selected_model,
+            "usage": response.usage.model_dump() if response.usage else None,
+            "raw": response.model_dump(),
+            "latency_ms": latency_ms,
         }
 
     def generate_marketing_copy(self, prompt: str) -> str:

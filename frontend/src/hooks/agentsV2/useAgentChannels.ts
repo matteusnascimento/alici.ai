@@ -1,31 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-  connectAgentProvider,
-  disconnectAgentProvider,
-  listAgentConnections,
-  syncAgentProvider,
-  testAgentProvider,
-  updateAgentProviderConfig,
+  connectAgentBoundChannel,
+  disconnectAgentBoundChannel,
+  listAgentBoundChannels,
+  listChannelProviderCatalog,
+  testAgentBoundChannel,
 } from '../../services/agentsV2.service';
-import type { AgentChannel, AgentConnectionActionResult } from '../../types/agentsV2';
+import type {
+  AgentChannelBindingActionResult,
+  AgentConnectedChannel,
+  ChannelProviderCatalogItem,
+} from '../../types/agentsV2';
 
 export function useAgentChannels(agentId: number) {
-  const [data, setData] = useState<AgentChannel[]>([]);
+  const [providers, setProviders] = useState<ChannelProviderCatalogItem[]>([]);
+  const [channels, setChannels] = useState<AgentConnectedChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Loading por provider para UX de botão individual
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
-  const setProviderLoading = (provider: string, value: boolean) =>
-    setActionLoading((prev) => ({ ...prev, [provider]: value }));
+  const setItemLoading = (key: string, value: boolean) =>
+    setActionLoading((prev) => ({ ...prev, [key]: value }));
 
   const reload = useCallback(async () => {
     if (!agentId) return;
     setLoading(true);
     try {
-      const result = await listAgentConnections(agentId);
-      setData(result);
+      const [catalog, bindings] = await Promise.all([listChannelProviderCatalog(), listAgentBoundChannels(agentId)]);
+      setProviders(catalog);
+      setChannels(bindings);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar conexões');
@@ -38,75 +42,68 @@ export function useAgentChannels(agentId: number) {
     void reload();
   }, [reload]);
 
-  function updateLocalChannel(updated: AgentChannel) {
-    setData((prev) =>
-      prev.map((ch) => (ch.channel_type === updated.channel_type ? updated : ch)),
-    );
+  function upsertLocalChannel(updated: AgentConnectedChannel) {
+    setChannels((prev) => {
+      const exists = prev.some((item) => item.binding_id === updated.binding_id);
+      if (!exists) {
+        return [updated, ...prev];
+      }
+      return prev.map((item) => (item.binding_id === updated.binding_id ? updated : item));
+    });
   }
 
-  async function connect(provider: string, config: Record<string, unknown> = {}) {
-    setProviderLoading(provider, true);
+  async function connect(payload: {
+    provider: string;
+    integration: Record<string, unknown>;
+    endpoint: Record<string, unknown>;
+    fallback_enabled?: boolean;
+  }) {
+    setItemLoading(`provider:${payload.provider}`, true);
     try {
-      const updated = await connectAgentProvider(agentId, provider, config);
-      updateLocalChannel(updated);
+      const updated = await connectAgentBoundChannel(agentId, payload);
+      upsertLocalChannel(updated);
+      const catalog = await listChannelProviderCatalog();
+      setProviders(catalog);
       return updated;
     } finally {
-      setProviderLoading(provider, false);
+      setItemLoading(`provider:${payload.provider}`, false);
     }
   }
 
-  async function disconnect(provider: string) {
-    setProviderLoading(provider, true);
+  async function disconnect(bindingId: number, provider: string) {
+    setItemLoading(`binding:${bindingId}`, true);
     try {
-      const updated = await disconnectAgentProvider(agentId, provider);
-      updateLocalChannel(updated);
+      const updated = await disconnectAgentBoundChannel(agentId, bindingId);
+      upsertLocalChannel(updated);
+      const catalog = await listChannelProviderCatalog();
+      setProviders(catalog);
       return updated;
     } finally {
-      setProviderLoading(provider, false);
+      setItemLoading(`binding:${bindingId}`, false);
     }
   }
 
-  async function sync(provider: string) {
-    setProviderLoading(provider, true);
+  async function test(bindingId: number, provider: string, message?: string): Promise<AgentChannelBindingActionResult> {
+    setItemLoading(`binding:${bindingId}`, true);
     try {
-      const updated = await syncAgentProvider(agentId, provider);
-      updateLocalChannel(updated);
-      return updated;
+      const result = await testAgentBoundChannel(agentId, bindingId, message);
+      const bindings = await listAgentBoundChannels(agentId);
+      setChannels(bindings);
+      return result;
     } finally {
-      setProviderLoading(provider, false);
-    }
-  }
-
-  async function test(provider: string): Promise<AgentConnectionActionResult> {
-    setProviderLoading(provider, true);
-    try {
-      return await testAgentProvider(agentId, provider);
-    } finally {
-      setProviderLoading(provider, false);
-    }
-  }
-
-  async function updateConfig(provider: string, payload: Record<string, unknown>) {
-    setProviderLoading(provider, true);
-    try {
-      const updated = await updateAgentProviderConfig(agentId, provider, payload);
-      updateLocalChannel(updated);
-      return updated;
-    } finally {
-      setProviderLoading(provider, false);
+      setItemLoading(`binding:${bindingId}`, false);
     }
   }
 
   return {
-    data,
+    providers,
+    channels,
     loading,
     error,
     actionLoading,
     reload,
     connect,
     disconnect,
-    sync,
     test,
-    updateConfig,
   };
 }

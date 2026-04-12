@@ -33,6 +33,7 @@ class Agent(Base):
 
     user = relationship("User", back_populates="agents")
     channels = relationship("AgentChannel", back_populates="agent", cascade="all, delete-orphan")
+    channel_bindings = relationship("AgentChannelBinding", back_populates="agent", cascade="all, delete-orphan")
     knowledge_items = relationship("AgentKnowledge", back_populates="agent", cascade="all, delete-orphan")
     actions = relationship("AgentAction", back_populates="agent", cascade="all, delete-orphan")
     runtime_conversations = relationship("AgentConversation", back_populates="agent", cascade="all, delete-orphan")

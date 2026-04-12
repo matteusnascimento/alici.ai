@@ -61,6 +61,25 @@ def _fake_post_json(self: Any, endpoint: str, payload: dict) -> dict:
     }
 
 
+def _fake_send_chat_message(
+    self: Any,
+    messages: list[dict],
+    model: str | None = None,
+    temperature: float = 0.2,
+    max_tokens: int | None = None,
+) -> dict:
+    return {
+        "content": "Resposta de teste da IA",
+        "model": model or "gpt-4o-mini",
+        "usage": {"total_tokens": 10},
+        "raw": {
+            "choices": [{"message": {"content": "Resposta de teste da IA"}}],
+            "model": model or "gpt-4o-mini",
+        },
+        "latency_ms": 12.5,
+    }
+
+
 @pytest.fixture(autouse=True)
 def mock_openai_network(monkeypatch):
     """Impede chamadas reais à API da OpenAI em todos os testes.
@@ -69,6 +88,7 @@ def mock_openai_network(monkeypatch):
     AIService.generate_text ou AIService.generate_structured_output via monkeypatch.
     """
     monkeypatch.setattr("app.services.openai_service.OpenAIService._post_json", _fake_post_json)
+    monkeypatch.setattr("app.services.openai_service.OpenAIService.send_chat_message", _fake_send_chat_message)
 
 
 @pytest.fixture(autouse=True)

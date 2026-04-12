@@ -1,34 +1,165 @@
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import type { ChannelProviderCatalogItem } from '../../../types/agentsV2';
 import { useAgentChannels } from '../../../hooks/agentsV2/useAgentChannels';
-import { AgentChannelCard } from './AgentChannelCard';
+import { CHANNEL_VISUALS } from './channelVisuals';
+import { ChannelStatusBadge } from './ChannelStatusBadge';
+import { ConnectChannelModal } from './ConnectChannelModal';
+import { ConnectedChannelCard } from './ConnectedChannelCard';
 
-const CHANNEL_CATALOG: Array<{ type: string; title: string; description: string; icon: string }> = [
-  { type: 'whatsapp', title: 'WhatsApp', description: 'Atendimento e vendas por mensagens instantaneas.', icon: '💬' },
-  { type: 'instagram', title: 'Instagram', description: 'DMs e comentarios com suporte contextual.', icon: '📸' },
-  { type: 'website_chat', title: 'Website Chat', description: 'Widget de chat embeddavel no seu site.', icon: '🌐' },
-  { type: 'email', title: 'Email', description: 'Respostas em caixas de entrada monitoradas.', icon: '📧' },
-  { type: 'crm', title: 'CRM', description: 'Sincronizacao de leads e atualizacoes automatizadas.', icon: '🗂️' },
-  { type: 'api', title: 'API', description: 'Integracao com seus sistemas internos via REST.', icon: '⚡' },
-  { type: 'webhook', title: 'Webhook', description: 'Eventos em tempo real para automacoes externas.', icon: '🔗' },
-];
+function providerDescription(provider: string): string {
+  const descriptions: Record<string, string> = {
+    whatsapp: 'Conecte sua conta do WhatsApp para responder clientes automaticamente.',
+    instagram: 'Responda DMs do Instagram com o agente, sem troca manual entre telas.',
+    website_chat: 'Adicione o chat no seu site e deixe o agente atender visitantes em tempo real.',
+    email: 'Use seu email para centralizar respostas recorrentes com apoio do agente.',
+    crm: 'Sincronize contatos e histórico para o agente responder com contexto de vendas.',
+    api: 'Integre sistemas internos via API para acionar o agente em fluxos customizados.',
+    webhook: 'Receba eventos e automatize respostas do agente conforme gatilhos do seu produto.',
+  };
+  return descriptions[provider] || 'Conecte este canal para o agente trabalhar com mais alcance.';
+}
+
+function sectionByProvider(provider: string): 'service' | 'advanced' {
+  if (['whatsapp', 'instagram', 'website_chat', 'email'].includes(provider)) {
+    return 'service';
+  }
+  return 'advanced';
+}
+
+function withDefaultProviders(items: ChannelProviderCatalogItem[]): ChannelProviderCatalogItem[] {
+  const defaults: ChannelProviderCatalogItem[] = [
+    {
+      provider: 'website_chat',
+      title: 'Website Chat',
+      description: 'Atendimento no site com widget do agente.',
+      status: 'coming_soon',
+      helper_text: 'Conecte o chat do site para responder visitantes automaticamente.',
+      connected_accounts: 0,
+      active_bindings: 0,
+      supports_activation: false,
+    },
+    {
+      provider: 'email',
+      title: 'Email',
+      description: 'Atendimento por email com apoio do agente.',
+      status: 'coming_soon',
+      helper_text: 'Conecte sua caixa de entrada para respostas operacionais.',
+      connected_accounts: 0,
+      active_bindings: 0,
+      supports_activation: false,
+    },
+    {
+      provider: 'crm',
+      title: 'CRM',
+      description: 'Sincronize contatos e contexto comercial.',
+      status: 'coming_soon',
+      helper_text: 'Conecte seu CRM para o agente atuar com contexto de vendas.',
+      connected_accounts: 0,
+      active_bindings: 0,
+      supports_activation: false,
+    },
+  ];
+
+  const existing = new Set(items.map((item) => item.provider));
+  const missing = defaults.filter((item) => !existing.has(item.provider));
+  return [...items, ...missing];
+}
+
+function ProviderCard({ item, onOpen }: { item: ChannelProviderCatalogItem; onOpen: () => void }) {
+  const visual = CHANNEL_VISUALS[item.provider] ?? CHANNEL_VISUALS.api;
+  const Icon = visual.icon;
+
+  return (
+    <article className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] p-5 transition hover:-translate-y-0.5 hover:border-cyan-300/45 hover:bg-white/[0.06]">
+      <div className={`pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-br ${visual.accent} opacity-85`} />
+      <div className="relative flex h-full flex-col gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-black/30 text-white">
+            <Icon size={18} />
+          </span>
+          <ChannelStatusBadge status={item.status} />
+        </div>
+
+        <div>
+          <h3 className="font-display text-xl text-white">{item.title}</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-300">{providerDescription(item.provider)}</p>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between">
+          <div className="text-xs text-slate-400">
+            <p>{item.connected_accounts} conta(s) conectada(s)</p>
+            <p>{item.active_bindings} canal(is) ativos</p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpen}
+            className="rounded-xl border border-white/20 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:border-cyan-300/45 hover:bg-cyan-400/10"
+          >
+            {item.status === 'connected' ? 'Gerenciar' : 'Conectar'}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export function AgentChannelsPage() {
   const params = useParams();
   const agentId = Number(params.id || 0);
-  const { data, loading, error, actionLoading, connect, disconnect, sync, test } = useAgentChannels(agentId);
+  const { providers, channels, loading, error, actionLoading, connect, disconnect, test } = useAgentChannels(agentId);
 
-  function channelFor(type: string) {
-    return data.find((ch) => ch.channel_type === type);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const groupedProviders = useMemo(() => {
+    const normalized = withDefaultProviders(providers);
+    const service = normalized.filter((item) => sectionByProvider(item.provider) === 'service');
+    const advanced = normalized.filter((item) => sectionByProvider(item.provider) === 'advanced');
+    return { service, advanced };
+  }, [providers]);
+
+  async function handleConnect(payload: {
+    provider: string;
+    integration: Record<string, unknown>;
+    endpoint: Record<string, unknown>;
+    fallback_enabled?: boolean;
+  }) {
+    try {
+      await connect(payload);
+      setFeedback({ ok: true, message: 'Canal conectado com sucesso.' });
+    } catch (err) {
+      setFeedback({ ok: false, message: err instanceof Error ? err.message : 'Falha ao conectar canal.' });
+      throw err;
+    }
+  }
+
+  async function handleDisconnect(bindingId: number, provider: string) {
+    try {
+      await disconnect(bindingId, provider);
+      setFeedback({ ok: true, message: 'Canal desconectado com sucesso.' });
+    } catch (err) {
+      setFeedback({ ok: false, message: err instanceof Error ? err.message : 'Falha ao desconectar canal.' });
+    }
+  }
+
+  async function handleTest(bindingId: number, provider: string) {
+    try {
+      const result = await test(bindingId, provider);
+      setFeedback({ ok: result.success, message: result.message });
+    } catch (err) {
+      setFeedback({ ok: false, message: err instanceof Error ? err.message : 'Falha ao testar canal.' });
+    }
   }
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-16 animate-pulse rounded-3xl bg-white/5" />
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {CHANNEL_CATALOG.map((catalog) => (
-            <div key={catalog.type} className="h-40 animate-pulse rounded-2xl bg-white/5" />
+        <div className="h-44 animate-pulse rounded-[32px] bg-white/5" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="h-44 animate-pulse rounded-[28px] bg-white/5" />
           ))}
         </div>
       </div>
@@ -36,60 +167,86 @@ export function AgentChannelsPage() {
   }
 
   if (error) {
-    return (
-      <div className="rounded-2xl border border-rose-500/30 bg-rose-900/20 p-4 text-sm text-rose-300">
-        {error}
-      </div>
-    );
+    return <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div>;
   }
 
-  const connectedCount = data.filter((ch) => ch.status === 'connected').length;
-
   return (
-    <div className="space-y-4">
-      <header className="rounded-3xl border border-white/10 bg-white/5 p-4">
-        <h1 className="font-display text-2xl text-white">Integracoes e Canais</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {connectedCount} de {CHANNEL_CATALOG.length} canais conectados
-        </p>
-      </header>
+    <div className="space-y-6">
+      <section className="rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.2),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-3xl">
+            <h1 className="font-display text-3xl text-white md:text-4xl">Onde seu agente vai trabalhar?</h1>
+            <p className="mt-3 text-sm leading-6 text-slate-300">Conecte canais para que seu agente atenda clientes automaticamente.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="rounded-2xl bg-cyan px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-105"
+          >
+            Conectar canal
+          </button>
+        </div>
+      </section>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {CHANNEL_CATALOG.map((catalog) => {
-          const channel = channelFor(catalog.type);
-          const isLoading = Boolean(actionLoading[catalog.type]);
-          const channelData = channel ?? {
-            id: 0,
-            agent_id: agentId,
-            channel_type: catalog.type,
-            status: 'disconnected',
-            is_enabled: false,
-            enabled: false,
-            provider_name: 'internal',
-            external_account_id: null,
-            webhook_url: null,
-            last_sync_at: null,
-            last_error: null,
-            created_at: '',
-            updated_at: '',
-          };
+      {feedback ? (
+        <div className={`rounded-2xl border px-4 py-3 text-sm ${feedback.ok ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100' : 'border-rose-400/20 bg-rose-500/10 text-rose-100'}`}>
+          {feedback.message}
+        </div>
+      ) : null}
 
-          return (
-            <AgentChannelCard
-              key={catalog.type}
-              channel={channelData}
-              title={catalog.title}
-              description={catalog.description}
-              icon={catalog.icon}
-              isLoading={isLoading}
-              onConnect={(config) => connect(catalog.type, config)}
-              onDisconnect={() => disconnect(catalog.type)}
-              onSync={() => sync(catalog.type)}
-              onTest={() => test(catalog.type).then(() => undefined)}
-            />
-          );
-        })}
-      </div>
+      <section className="space-y-3">
+        <h2 className="font-display text-2xl text-white">Canais de atendimento</h2>
+        <p className="text-sm text-slate-400">Escolha onde seu agente vai conversar com clientes no dia a dia.</p>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {groupedProviders.service.map((item) => (
+            <ProviderCard key={item.provider} item={item} onOpen={() => setModalOpen(true)} />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-2xl text-white">Integrações avançadas</h2>
+        <p className="text-sm text-slate-400">Conecte CRM, API e Webhook para fluxos mais avançados do produto.</p>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {groupedProviders.advanced.map((item) => (
+            <ProviderCard key={item.provider} item={item} onOpen={() => setModalOpen(true)} />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-2xl text-white">Conexões já ativas</h2>
+          <p className="text-sm text-slate-400">Acompanhe status e teste seus canais conectados.</p>
+        </div>
+
+        {channels.length > 0 ? (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {channels.map((channel) => (
+              <ConnectedChannelCard
+                key={channel.binding_id}
+                channel={channel}
+                isLoading={Boolean(actionLoading[`binding:${channel.binding_id}`])}
+                onTest={handleTest}
+                onDisconnect={handleDisconnect}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[28px] border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center text-slate-300">
+            Nenhum canal conectado ainda. Comece por WhatsApp, Instagram ou Website Chat.
+          </div>
+        )}
+      </section>
+
+      <ConnectChannelModal
+        open={modalOpen}
+        providers={providers}
+        channels={channels}
+        actionLoading={actionLoading}
+        onClose={() => setModalOpen(false)}
+        onConnect={handleConnect}
+      />
     </div>
   );
 }

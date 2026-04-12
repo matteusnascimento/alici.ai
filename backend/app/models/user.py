@@ -32,6 +32,7 @@ class User(Base):
     billing_events = relationship("BillingEvent", back_populates="user", cascade="all, delete-orphan")
     usage_logs = relationship("UsageLog", back_populates="user", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="user", cascade="all, delete-orphan")
+    integration_accounts = relationship("IntegrationAccount", back_populates="user", cascade="all, delete-orphan")
     marketing_projects = relationship("MarketingProject", back_populates="user", cascade="all, delete-orphan")
     media_projects = relationship("MediaProject", back_populates="user", cascade="all, delete-orphan")
     media_jobs = relationship("MediaJob", back_populates="user", cascade="all, delete-orphan")

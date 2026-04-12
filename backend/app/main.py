@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import (
+    ai,
     account,
     agents,
     auth,
@@ -22,6 +23,7 @@ from app.api.routes import (
     subscriptions,
     usage,
     users,
+    webhooks,
 )
 from app import models as _models  # noqa: F401
 from app.core.config import settings
@@ -63,6 +65,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(agents.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
@@ -74,6 +77,7 @@ app.include_router(subscriptions.router, prefix="/api")
 app.include_router(usage.router, prefix="/api")
 app.include_router(integrations.router, prefix="/api")
 app.include_router(studio.router, prefix="/api")
+app.include_router(webhooks.router, prefix="/api")
 app.include_router(health.router)
 
 

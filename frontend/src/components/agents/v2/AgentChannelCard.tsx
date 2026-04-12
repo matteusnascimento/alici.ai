@@ -1,18 +1,45 @@
 import { useState } from 'react';
 
-import type { AgentChannel } from '../../../types/agentsV2';
+import type { AgentChannel, AgentConnectionActionResult } from '../../../types/agentsV2';
 
 interface AgentChannelCardProps {
   channel: AgentChannel;
   title: string;
   description: string;
   icon?: string;
+  readiness: 'ready' | 'external-setup';
+  helper: string;
   isLoading: boolean;
-  onConnect: (config?: Record<string, unknown>) => Promise<unknown>;
+  onConnect: (config?: Record<string, unknown>) => Promise<AgentChannel>;
   onDisconnect: () => Promise<unknown>;
-  onSync: () => Promise<unknown>;
-  onTest: () => Promise<unknown>;
+  onSync: () => Promise<AgentChannel>;
+  onTest: () => Promise<AgentConnectionActionResult>;
+  onSaveConfig: (payload: Record<string, unknown>) => Promise<AgentChannel>;
 }
+
+const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; placeholder?: string; type?: string }>> = {
+  whatsapp: [
+    { key: 'phone_number_id', label: 'Phone Number ID' },
+    { key: 'business_account_id', label: 'Business Account ID' },
+    { key: 'access_token', label: 'Access Token', type: 'password' },
+  ],
+  instagram: [
+    { key: 'instagram_account_id', label: 'Instagram Account ID' },
+    { key: 'access_token', label: 'Access Token', type: 'password' },
+  ],
+  api: [{ key: 'api_url', label: 'API URL', placeholder: 'https://api.exemplo.com/agent' }],
+  webhook: [{ key: 'webhook_url', label: 'Webhook URL', placeholder: 'https://hooks.exemplo.com/agent' }],
+  email: [
+    { key: 'smtp_host', label: 'SMTP Host' },
+    { key: 'smtp_port', label: 'SMTP Port' },
+    { key: 'smtp_user', label: 'SMTP User' },
+    { key: 'smtp_password', label: 'SMTP Password', type: 'password' },
+  ],
+  crm: [
+    { key: 'crm_type', label: 'CRM Type', placeholder: 'hubspot | salesforce | pipedrive' },
+    { key: 'api_key', label: 'API Key', type: 'password' },
+  ],
+};
 
 const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
   connected: { label: 'Conectado', classes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
@@ -26,28 +53,37 @@ export function AgentChannelCard({
   title,
   description,
   icon,
+  readiness,
+  helper,
   isLoading,
   onConnect,
   onDisconnect,
   onSync,
   onTest,
+  onSaveConfig,
 }: AgentChannelCardProps) {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [showConfig, setShowConfig] = useState(false);
+  const [configValues, setConfigValues] = useState<Record<string, string>>({});
 
   const status = channel.status || 'disconnected';
   const statusCfg = STATUS_CONFIG[status] ?? STATUS_CONFIG['disconnected'];
   const isConnected = status === 'connected';
+  const configFields = PROVIDER_FIELDS[channel.channel_type] ?? [];
 
   function showToast(msg: string, ok: boolean) {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3500);
   }
 
-  async function handleConnect() {
+  async function handleConnect(config: Record<string, unknown> = {}) {
     try {
-      await onConnect();
-      showToast(`${title} - solicitacao de conexao enviada.`, true);
+      const updated = await onConnect(config);
+      if (updated.status === 'connected') {
+        showToast(`${title} conectado com sucesso.`, true);
+        return;
+      }
+      showToast(updated.last_error || `${title} exige configuracao externa adicional.`, false);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Falha ao conectar.', false);
     }
@@ -64,7 +100,11 @@ export function AgentChannelCard({
 
   async function handleSync() {
     try {
-      await onSync();
+      const updated = await onSync();
+      if (updated.last_error) {
+        showToast(updated.last_error, false);
+        return;
+      }
       showToast(`${title} sincronizado.`, true);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Falha ao sincronizar.', false);
@@ -73,10 +113,31 @@ export function AgentChannelCard({
 
   async function handleTest() {
     try {
-      await onTest();
-      showToast(`Teste de ${title} concluido.`, true);
+      const result = await onTest();
+      showToast(result.message || `Teste de ${title} concluido.`, result.success);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Falha no teste.', false);
+    }
+  }
+
+  async function handleSaveConfigAndMaybeConnect(connectAfterSave = false) {
+    try {
+      const payload: Record<string, unknown> = {
+        config: configValues,
+        enabled: true,
+      };
+      if (channel.channel_type === 'webhook' && configValues.webhook_url) {
+        payload.webhook_url = configValues.webhook_url;
+      }
+      await onSaveConfig(payload);
+      if (connectAfterSave) {
+        await handleConnect(configValues);
+      } else {
+        showToast(`Configuracao de ${title} salva.`, true);
+      }
+      setShowConfig(false);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao salvar configuracao.', false);
     }
   }
 
@@ -120,6 +181,9 @@ export function AgentChannelCard({
           {channel.last_error}
         </p>
       ) : null}
+      <div className={`rounded-xl border px-3 py-2 text-xs ${readiness === 'ready' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-amber-500/20 bg-amber-500/10 text-amber-200'}`}>
+        {helper}
+      </div>
 
       {/* Acoes */}
       <div className="flex flex-wrap gap-1.5">
@@ -148,7 +212,7 @@ export function AgentChannelCard({
             onClick={() => void handleConnect()}
             className="rounded-lg border border-cyan-300/40 px-2.5 py-1 text-xs text-cyan-100 hover:bg-cyan-500/10 disabled:opacity-40"
           >
-            {isLoading ? 'Conectando...' : 'Conectar'}
+            {isLoading ? 'Conectando...' : readiness === 'external-setup' ? 'Configurar e conectar' : 'Conectar'}
           </button>
         )}
 
@@ -188,10 +252,27 @@ export function AgentChannelCard({
             <p className="text-sm text-slate-300">
               Configure as credenciais e parametros de conexao para <strong className="text-white">{title}</strong>.
             </p>
-            <p className="mt-2 rounded-xl border border-amber-400/20 bg-amber-900/20 px-3 py-2 text-xs text-amber-200">
-              Para conectar, clique em <strong>Conectar</strong> apos configurar.
-              As credenciais ficam armazenadas com seguranca no servidor.
+            <p className={`mt-2 rounded-xl border px-3 py-2 text-xs ${readiness === 'external-setup' ? 'border-amber-400/20 bg-amber-900/20 text-amber-200' : 'border-emerald-400/20 bg-emerald-900/20 text-emerald-200'}`}>
+              {helper} As credenciais ficam armazenadas com seguranca no servidor.
             </p>
+            {configFields.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                {configFields.map((field) => (
+                  <label key={field.key} className="block text-xs text-slate-300">
+                    <span className="mb-1 block">{field.label}</span>
+                    <input
+                      type={field.type || 'text'}
+                      value={configValues[field.key] || ''}
+                      onChange={(event) => setConfigValues((current) => ({ ...current, [field.key]: event.target.value }))}
+                      placeholder={field.placeholder}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white"
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-xs text-slate-400">Este canal nao exige credenciais externas para iniciar.</p>
+            )}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
@@ -202,10 +283,17 @@ export function AgentChannelCard({
               </button>
               <button
                 type="button"
-                onClick={() => { setShowConfig(false); void handleConnect(); }}
+                onClick={() => void handleSaveConfigAndMaybeConnect(false)}
+                className="rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-100"
+              >
+                Salvar configuracao
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSaveConfigAndMaybeConnect(true)}
                 className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black"
               >
-                Conectar
+                Salvar e conectar
               </button>
             </div>
           </div>

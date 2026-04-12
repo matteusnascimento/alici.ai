@@ -9,6 +9,7 @@ import { StudioExportModal } from './StudioExportModal';
 import { StudioInspectorPanel } from './StudioInspectorPanel';
 import { StudioShell } from './StudioShell';
 import { StudioTimeline } from './StudioTimeline';
+import { StudioToolContextPanel } from './StudioToolContextPanel';
 import { StudioToolRail } from './StudioToolRail';
 
 const tools = ['Upload', 'AI Video', 'Cortes', 'Texto', 'Legendas', 'Audio', 'Voz IA', 'Transicoes', 'Filtros', 'Proporcao', 'Avatar IA', 'AI Media'];
@@ -60,6 +61,7 @@ export function VideoEditorStudioPage() {
         )}
         right={(
           <StudioInspectorPanel title="Propriedades do clipe">
+            <StudioToolContextPanel activeTool={activeTool} />
             <label className="text-xs text-slate-400">Prompt</label>
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} className="min-h-24 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
             <button type="button" className="w-full rounded-xl border border-cyan-300/40 px-3 py-2 text-sm text-cyan-100">Create vertical ad</button>

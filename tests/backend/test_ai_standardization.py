@@ -1,7 +1,7 @@
 import pytest
 
 from app.core.config import settings
-from app.services.ai_service import AIConfigurationError, AIService
+from app.services.ai_service import AIConfigurationError, AIService, AIServiceError
 
 
 def test_ai_service_uses_env_defaults(monkeypatch):
@@ -99,3 +99,40 @@ def test_studio_generation_route_uses_ai_service(client, auth_headers, monkeypat
 
     assert response.status_code == 200
     assert response.json()['result']['result'][0] == 'Headline premium 1'
+
+
+def test_ai_test_route_returns_health_data(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        AIService,
+        'healthcheck',
+        lambda self: {
+            'provider': 'openai',
+            'status': 'ok',
+            'model': 'gpt-4o-mini',
+            'message': 'OK',
+            'latency_ms': 10.2,
+        },
+    )
+
+    response = client.post('/api/ai/test', headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.json()['status'] == 'ok'
+    assert response.json()['model_used'] == 'gpt-4o-mini'
+
+
+def test_chat_route_no_silent_fallback_on_ai_error(client, auth_headers, monkeypatch):
+    def _raise_ai_error(self, **kwargs):
+        raise AIServiceError(
+            'OpenAI rate limit reached',
+            user_message='Servico de IA temporariamente indisponivel. Tente novamente.',
+            status_code=429,
+            code='rate_limit',
+        )
+
+    monkeypatch.setattr(AIService, 'generate_text', _raise_ai_error)
+
+    response = client.post('/api/chat/send', headers=auth_headers, json={'text': 'Quero ajuda com chat'})
+
+    assert response.status_code == 429
+    assert response.json()['detail'] == 'Servico de IA temporariamente indisponivel. Tente novamente.'

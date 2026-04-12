@@ -241,3 +241,62 @@ class AgentConnectionActionResponse(BaseModel):
     message: str
     data: dict[str, Any] = Field(default_factory=dict)
     channel_type: str
+
+
+class AgentChannelIntegrationPayload(BaseModel):
+    external_account_id: str | None = None
+    external_account_name: str | None = None
+    access_token: str | None = None
+    refresh_token: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentChannelEndpointPayload(BaseModel):
+    external_channel_id: str | None = None
+    channel_name: str | None = None
+    phone_number_or_handle: str | None = None
+
+
+class AgentChannelBindingConnectRequest(BaseModel):
+    provider: str
+    integration: AgentChannelIntegrationPayload
+    endpoint: AgentChannelEndpointPayload
+    fallback_enabled: bool = False
+
+
+class AgentChannelBindingDisconnectRequest(BaseModel):
+    binding_id: int
+
+
+class AgentChannelBindingTestRequest(BaseModel):
+    binding_id: int
+    message: str | None = None
+
+
+class AgentChannelBindingRead(BaseModel):
+    binding_id: int
+    agent_id: int
+    channel_endpoint_id: int
+    provider: str
+    status: str
+    is_active: bool
+    fallback_enabled: bool
+    external_account_id: str | None
+    external_account_name: str | None
+    channel_name: str
+    external_channel_id: str | None
+    phone_number_or_handle: str | None
+    webhook_status: str
+    last_test_at: datetime | None
+    last_test_status: str | None
+    last_test_message: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AgentChannelBindingActionResponse(BaseModel):
+    success: bool
+    message: str
+    provider: str
+    channel_binding_id: int
+    data: dict[str, Any] = Field(default_factory=dict)
