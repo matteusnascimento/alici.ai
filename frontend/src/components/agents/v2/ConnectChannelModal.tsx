@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { ChannelProviderCatalogItem, AgentConnectedChannel } from '../../../types/agentsV2';
+import type { ChannelProviderCatalogItem, AgentConnectedChannel, ChannelIntegrationAccount } from '../../../types/agentsV2';
 import { ChannelProviderCard } from './ChannelProviderCard';
 import { ChannelStatusBadge } from './ChannelStatusBadge';
 
 interface ConnectChannelModalProps {
   open: boolean;
   providers: ChannelProviderCatalogItem[];
+  accounts: ChannelIntegrationAccount[];
   channels: AgentConnectedChannel[];
   actionLoading: Record<string, boolean>;
   onClose: () => void;
@@ -26,7 +27,7 @@ const DEFAULT_FORM: Record<string, string> = {
   phone_number_or_handle: '',
 };
 
-export function ConnectChannelModal({ open, providers, channels, actionLoading, onClose, onConnect }: ConnectChannelModalProps) {
+export function ConnectChannelModal({ open, providers, accounts, channels, actionLoading, onClose, onConnect }: ConnectChannelModalProps) {
   const activatableProviders = providers.filter((item) => item.supports_activation);
   const [selectedProvider, setSelectedProvider] = useState<string>('whatsapp');
   const [form, setForm] = useState<Record<string, string>>(DEFAULT_FORM);
@@ -49,7 +50,16 @@ export function ConnectChannelModal({ open, providers, channels, actionLoading, 
   }
 
   const selected = providers.find((item) => item.provider === selectedProvider) ?? activatableProviders[0] ?? providers[0];
+  const providerAccounts = selected ? accounts.filter((account) => account.provider === selected.provider) : [];
   const isLoading = selected ? Boolean(actionLoading[`provider:${selected.provider}`]) : false;
+
+  function applyAccount(account: ChannelIntegrationAccount) {
+    setForm((current) => ({
+      ...current,
+      external_account_id: account.external_account_id || current.external_account_id,
+      external_account_name: account.external_account_name || current.external_account_name,
+    }));
+  }
 
   async function handleSubmit() {
     if (!selected) return;
@@ -150,6 +160,24 @@ export function ConnectChannelModal({ open, providers, channels, actionLoading, 
                 </div>
 
                 <div className="grid gap-4">
+                  {providerAccounts.length > 0 ? (
+                    <div className="rounded-2xl border border-cyan-300/20 bg-cyan-500/8 p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-cyan-100/80">Contas conectadas disponiveis</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {providerAccounts.slice(0, 4).map((account) => (
+                          <button
+                            key={account.id}
+                            type="button"
+                            onClick={() => applyAccount(account)}
+                            className="rounded-xl border border-cyan-300/30 bg-black/20 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-500/15"
+                          >
+                            {account.external_account_name || account.external_account_id || `Conta ${account.id}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
                   <label className="block">
                     <span className="mb-2 block text-xs uppercase tracking-[0.16em] text-slate-400">Nome da conta</span>
                     <input

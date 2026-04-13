@@ -54,6 +54,22 @@ class Settings(BaseSettings):
     database_url_rotated: str = ""
     cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_publishable_key: str = ""
+    stripe_price_pro_monthly: str = ""
+    stripe_price_pro_yearly: str = ""
+    stripe_price_business_monthly: str = ""
+    stripe_price_business_yearly: str = ""
+    app_base_url: str = "http://localhost:5173"
+    stripe_success_url: str = ""
+    stripe_cancel_url: str = ""
+
+    # Meta channels (WhatsApp/Instagram)
+    meta_app_secret: str = ""
+    meta_webhook_verify_token: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
 
     @field_validator("cors_allowed_origins", mode="before")

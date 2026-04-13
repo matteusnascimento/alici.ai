@@ -4,6 +4,7 @@ import type {
   AgentChannelBindingActionResult,
   AgentConnectedChannel,
   AgentCreateFlowResponse,
+  ChannelIntegrationAccount,
   AgentKnowledgeSource,
   AgentOverview,
   AgentReadinessStatus,
@@ -157,6 +158,10 @@ export function listChannelProviderCatalog() {
 
 export function getChannelProviderStatus(provider: string) {
   return apiFetch<ChannelProviderCatalogItem>(`/integrations/${provider}/status`);
+}
+
+export function listChannelIntegrationAccounts() {
+  return apiFetch<ChannelIntegrationAccount[]>('/integrations/accounts');
 }
 
 export function disconnectChannelProvider(provider: string) {

@@ -184,6 +184,7 @@ class AgentRuntimeService:
                 system_prompt="\n\n".join(system_parts),
                 user_prompt=inbound_text,
                 temperature=0.4,
+                function_name="chat",
             )
         except AIServiceError as exc:
             # Permite rodar sandbox/testes locais sem depender de chave real de IA.

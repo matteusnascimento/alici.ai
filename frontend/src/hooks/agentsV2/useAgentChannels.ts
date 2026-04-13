@@ -4,17 +4,20 @@ import {
   connectAgentBoundChannel,
   disconnectAgentBoundChannel,
   listAgentBoundChannels,
+  listChannelIntegrationAccounts,
   listChannelProviderCatalog,
   testAgentBoundChannel,
 } from '../../services/agentsV2.service';
 import type {
   AgentChannelBindingActionResult,
   AgentConnectedChannel,
+  ChannelIntegrationAccount,
   ChannelProviderCatalogItem,
 } from '../../types/agentsV2';
 
 export function useAgentChannels(agentId: number) {
   const [providers, setProviders] = useState<ChannelProviderCatalogItem[]>([]);
+  const [accounts, setAccounts] = useState<ChannelIntegrationAccount[]>([]);
   const [channels, setChannels] = useState<AgentConnectedChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +30,14 @@ export function useAgentChannels(agentId: number) {
     if (!agentId) return;
     setLoading(true);
     try {
-      const [catalog, bindings] = await Promise.all([listChannelProviderCatalog(), listAgentBoundChannels(agentId)]);
+      const [catalog, bindings, accountRows] = await Promise.all([
+        listChannelProviderCatalog(),
+        listAgentBoundChannels(agentId),
+        listChannelIntegrationAccounts(),
+      ]);
       setProviders(catalog);
       setChannels(bindings);
+      setAccounts(accountRows);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar conexões');
@@ -62,8 +70,9 @@ export function useAgentChannels(agentId: number) {
     try {
       const updated = await connectAgentBoundChannel(agentId, payload);
       upsertLocalChannel(updated);
-      const catalog = await listChannelProviderCatalog();
+      const [catalog, accountRows] = await Promise.all([listChannelProviderCatalog(), listChannelIntegrationAccounts()]);
       setProviders(catalog);
+      setAccounts(accountRows);
       return updated;
     } finally {
       setItemLoading(`provider:${payload.provider}`, false);
@@ -75,8 +84,9 @@ export function useAgentChannels(agentId: number) {
     try {
       const updated = await disconnectAgentBoundChannel(agentId, bindingId);
       upsertLocalChannel(updated);
-      const catalog = await listChannelProviderCatalog();
+      const [catalog, accountRows] = await Promise.all([listChannelProviderCatalog(), listChannelIntegrationAccounts()]);
       setProviders(catalog);
+      setAccounts(accountRows);
       return updated;
     } finally {
       setItemLoading(`binding:${bindingId}`, false);
@@ -97,6 +107,7 @@ export function useAgentChannels(agentId: number) {
 
   return {
     providers,
+    accounts,
     channels,
     loading,
     error,

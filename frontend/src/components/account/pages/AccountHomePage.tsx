@@ -1,29 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { getAccountProfile, getAccountSubscription, logoutAccount } from '../../../services/account.service';
-import { getSubscriptionPlans } from '../../../services/subscription.service';
+import { getAccountProfile, logoutAccount } from '../../../services/account.service';
 import type { AccountProfile } from '../../../types/account';
-import type { BillingPlan, CurrentSubscription } from '../../../types/billing';
 import { LogoutButton } from '../LogoutButton';
 import { PlanCard } from '../PlanCard';
 import { ProfileCard } from '../ProfileCard';
 import { SettingsGroup } from '../SettingsGroup';
 import { SettingsRow } from '../SettingsRow';
 import { useAuth } from '../../../hooks/useAuth';
+import { useBilling } from '../../../hooks/useBilling';
 
 export function AccountHomePage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { plans, current, startCheckout, openPortal } = useBilling();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
-  const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
-  const [plans, setPlans] = useState<BillingPlan[]>([]);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
-    void Promise.all([getAccountProfile(), getAccountSubscription(), getSubscriptionPlans()]).then(([profileData, subData, plansData]) => {
+    void Promise.all([getAccountProfile()]).then(([profileData]) => {
       setProfile(profileData);
-      setSubscription(subData);
-      setPlans(plansData);
     });
   }, []);
 
@@ -34,7 +31,18 @@ export function AccountHomePage() {
   return (
     <div className="space-y-5">
       <ProfileCard profile={profile} onEdit={() => navigate('/app/account/profile')} />
-      <PlanCard current={subscription} plans={plans} onUpgrade={(planId) => navigate('/app/account/profile', { state: { upgradePlanId: planId } })} />
+      <PlanCard
+        current={current}
+        plans={plans}
+        billingCycle={billingCycle}
+        onBillingCycleChange={setBillingCycle}
+        onUpgrade={(planId, cycle) => {
+          void startCheckout(planId, cycle);
+        }}
+        onOpenPortal={() => {
+          void openPortal();
+        }}
+      />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <SettingsGroup title="Preferencias" subtitle="Idioma, aparencia e notificacoes para uso diario.">
@@ -71,7 +79,7 @@ export function AccountHomePage() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
               <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Plano em uso</p>
-              <p className="mt-1 text-sm text-slate-100">{subscription?.plan_name ?? profile.plan}</p>
+              <p className="mt-1 text-sm text-slate-100">{current?.plan_name ?? profile.plan}</p>
             </div>
           </div>
           <div className="mt-4">

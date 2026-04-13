@@ -3,10 +3,20 @@ import type { BillingPlan, CurrentSubscription } from '../../types/billing';
 interface PlanCardProps {
   current: CurrentSubscription | null;
   plans: BillingPlan[];
-  onUpgrade: (planId: string) => void;
+  billingCycle: 'monthly' | 'yearly';
+  onBillingCycleChange: (cycle: 'monthly' | 'yearly') => void;
+  onUpgrade: (planId: string, billingCycle: 'monthly' | 'yearly') => void;
+  onOpenPortal?: () => void;
 }
 
-export function PlanCard({ current, plans, onUpgrade }: PlanCardProps) {
+export function PlanCard({
+  current,
+  plans,
+  billingCycle,
+  onBillingCycleChange,
+  onUpgrade,
+  onOpenPortal,
+}: PlanCardProps) {
   const activePlanId = current?.plan_id;
 
   return (
@@ -23,6 +33,34 @@ export function PlanCard({ current, plans, onUpgrade }: PlanCardProps) {
         </div>
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl border border-white/15 bg-black/20 p-1 text-xs">
+          <button
+            type="button"
+            onClick={() => onBillingCycleChange('monthly')}
+            className={`rounded-lg px-3 py-1.5 transition ${billingCycle === 'monthly' ? 'bg-cyan/20 text-cyan' : 'text-slate-300 hover:text-white'}`}
+          >
+            Mensal
+          </button>
+          <button
+            type="button"
+            onClick={() => onBillingCycleChange('yearly')}
+            className={`rounded-lg px-3 py-1.5 transition ${billingCycle === 'yearly' ? 'bg-cyan/20 text-cyan' : 'text-slate-300 hover:text-white'}`}
+          >
+            Anual
+          </button>
+        </div>
+        {onOpenPortal ? (
+          <button
+            type="button"
+            onClick={onOpenPortal}
+            className="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:border-cyan/45 hover:text-cyan"
+          >
+            Gerenciar assinatura
+          </button>
+        ) : null}
+      </div>
+
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {plans.map((plan) => (
           <article
@@ -34,8 +72,10 @@ export function PlanCard({ current, plans, onUpgrade }: PlanCardProps) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan">{plan.name}</p>
-                <p className="mt-2 font-display text-2xl text-white">R$ {plan.monthly_price.toFixed(0)}</p>
-                <p className="text-xs text-slate-300">por mes</p>
+                <p className="mt-2 font-display text-2xl text-white">
+                  R$ {(billingCycle === 'yearly' ? plan.yearly_price ?? plan.monthly_price : plan.monthly_price).toFixed(0)}
+                </p>
+                <p className="text-xs text-slate-300">{billingCycle === 'yearly' ? 'por ano' : 'por mes'}</p>
               </div>
               {activePlanId === plan.id ? (
                 <span className="rounded-full border border-cyan/35 bg-cyan/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan">Ativo</span>
@@ -53,7 +93,7 @@ export function PlanCard({ current, plans, onUpgrade }: PlanCardProps) {
             <button
               type="button"
               disabled={activePlanId === plan.id}
-              onClick={() => onUpgrade(plan.id)}
+              onClick={() => onUpgrade(plan.id, billingCycle)}
               className="mt-4 w-full rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan/45 hover:text-cyan disabled:cursor-not-allowed disabled:opacity-50"
             >
               {activePlanId === plan.id ? 'Plano ativo' : 'Fazer upgrade'}

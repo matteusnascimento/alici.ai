@@ -26,10 +26,15 @@ class CurrentSubscriptionResponse(BaseModel):
     monthly_price: float
     yearly_price: float | None = None
     auto_renew: bool
+    cancel_at_period_end: bool = False
     started_at: datetime | None = None
+    next_renewal_at: datetime | None = None
+    provider: str | None = None
+    stripe_customer_id: str | None = None
 
 
 class UpgradeRequest(BaseModel):
+    """Mantido para compatibilidade interna/administrativa. Fluxo principal usa /billing/checkout."""
     plan_id: str
     billing_cycle: str = "monthly"
 
@@ -39,6 +44,29 @@ class UpgradeResponse(BaseModel):
     subscription: CurrentSubscriptionResponse
 
 
+# ── Checkout Stripe ─────────────────────────────────────────
+class CheckoutRequest(BaseModel):
+    plan_id: str
+    billing_cycle: str = "monthly"
+
+
+class CheckoutResponse(BaseModel):
+    checkout_url: str
+    session_id: str
+
+
+# ── Portal Stripe ────────────────────────────────────────────
+class PortalResponse(BaseModel):
+    portal_url: str
+
+
+# ── Cancel / Resume ──────────────────────────────────────────
+class SubscriptionActionResponse(BaseModel):
+    message: str
+    subscription: CurrentSubscriptionResponse
+
+
+# ── Usage ────────────────────────────────────────────────────
 class BillingUsageItem(BaseModel):
     metric: str
     used: int
@@ -49,12 +77,15 @@ class BillingUsageResponse(BaseModel):
     items: list[BillingUsageItem]
 
 
+# ── History ──────────────────────────────────────────────────
 class BillingHistoryItem(BaseModel):
     id: int
     event_type: str
     amount: float
     currency: str
     description: str | None = None
+    stripe_event_id: str | None = None
+    status: str | None = None
     created_at: datetime
 
 

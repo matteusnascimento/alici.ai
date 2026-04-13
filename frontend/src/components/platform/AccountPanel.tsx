@@ -5,8 +5,9 @@ import { useSettings } from '../../hooks/useSettings';
 
 export function AccountPanel() {
   const { account, loading, saving, error, saveProfile, saveSettings } = useSettings();
-  const { plans, current, usage, upgrading, upgrade } = useBilling();
+  const { plans, current, usage, upgrading, startCheckout, openPortal, cancel, resume } = useBilling();
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [profile, setProfile] = useState({ name: '', username: '', email: '', phone: '' });
   const [settings, setLocalSettings] = useState({
     background_conversation: true,
@@ -98,9 +99,72 @@ export function AccountPanel() {
       <section className="panel-base xl:col-span-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="font-display text-2xl text-white">Assinatura</h3>
-          <p className="text-sm text-slate-300">
-            Plano atual: <span className="font-semibold text-white">{current?.plan_name ?? account?.profile.plan ?? 'free'}</span>
-          </p>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
+            <p>
+              Plano atual: <span className="font-semibold text-white">{current?.plan_name ?? account?.profile.plan ?? 'free'}</span>
+            </p>
+            {current?.next_renewal_at ? <p>• Renova em: {new Date(current.next_renewal_at).toLocaleDateString('pt-BR')}</p> : null}
+            {current?.cancel_at_period_end ? <p className="text-amber-300">• Cancelamento ao fim do período</p> : null}
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-xl border border-white/15 bg-black/20 p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setBillingCycle('monthly')}
+              className={`rounded-lg px-3 py-1.5 transition ${billingCycle === 'monthly' ? 'bg-cyan/20 text-cyan' : 'text-slate-300 hover:text-white'}`}
+            >
+              Mensal
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingCycle('yearly')}
+              className={`rounded-lg px-3 py-1.5 transition ${billingCycle === 'yearly' ? 'bg-cyan/20 text-cyan' : 'text-slate-300 hover:text-white'}`}
+            >
+              Anual
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void openPortal();
+            }}
+            className="rounded-2xl border border-white/20 px-4 py-2 text-xs font-semibold text-slate-100 transition hover:border-cyan/45 hover:text-cyan"
+          >
+            Gerenciar assinatura
+          </button>
+          {current?.cancel_at_period_end ? (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const message = await resume();
+                  setUpgradeMessage(message);
+                } catch {
+                  setUpgradeMessage(null);
+                }
+              }}
+              className="rounded-2xl border border-emerald-400/30 px-4 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-300/60"
+            >
+              Reativar assinatura
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const message = await cancel();
+                  setUpgradeMessage(message);
+                } catch {
+                  setUpgradeMessage(null);
+                }
+              }}
+              className="rounded-2xl border border-amber-400/30 px-4 py-2 text-xs font-semibold text-amber-300 transition hover:border-amber-300/60"
+            >
+              Cancelar no fim do período
+            </button>
+          )}
         </div>
 
         {usage ? (
@@ -121,8 +185,8 @@ export function AccountPanel() {
             <article key={plan.id} className="rounded-3xl border border-white/10 bg-white/5 p-5">
               <p className="text-sm uppercase tracking-[0.2em] text-cyan">{plan.name}</p>
               <p className="mt-3 font-display text-3xl text-white">
-                R$ {plan.monthly_price.toFixed(0)}
-                <span className="text-sm text-slate-300">/mes</span>
+                R$ {(billingCycle === 'yearly' ? plan.yearly_price ?? plan.monthly_price : plan.monthly_price).toFixed(0)}
+                <span className="text-sm text-slate-300">/{billingCycle === 'yearly' ? 'ano' : 'mes'}</span>
               </p>
               <ul className="mt-4 space-y-2 text-sm text-slate-200">
                 {plan.features.slice(0, 3).map((feature) => (
@@ -134,7 +198,8 @@ export function AccountPanel() {
                 disabled={upgrading || current?.plan_id === plan.id}
                 onClick={async () => {
                   try {
-                    const message = await upgrade(plan.id, 'monthly');
+                    await startCheckout(plan.id, billingCycle);
+                    const message = 'Redirecionando para checkout seguro...';
                     setUpgradeMessage(message);
                   } catch {
                     setUpgradeMessage(null);

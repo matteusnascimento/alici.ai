@@ -34,5 +34,25 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o-mini
-
+      # ── Stripe ─────────────────────────────────────────────────────
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_PRO_YEARLY
+        sync: false
+      - key: STRIPE_PRICE_BUSINESS_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_BUSINESS_YEARLY
+        sync: false
+      - key: APP_BASE_URL
+        value: https://alici-ai.onrender.com
+      - key: STRIPE_SUCCESS_URL
+        value: https://alici-ai.onrender.com/app/billing/success?session_id={CHECKOUT_SESSION_ID}
+      - key: STRIPE_CANCEL_URL
+        value: https://alici-ai.onrender.com/app/billing/cancel
 

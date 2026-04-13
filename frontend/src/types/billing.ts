@@ -21,7 +21,11 @@ export interface CurrentSubscription {
   monthly_price: number;
   yearly_price: number | null;
   auto_renew: boolean;
+  cancel_at_period_end: boolean;
   started_at: string | null;
+  next_renewal_at: string | null;
+  provider: string | null;
+  stripe_customer_id: string | null;
 }
 
 export interface UpgradePayload {
@@ -30,6 +34,25 @@ export interface UpgradePayload {
 }
 
 export interface UpgradeResponse {
+  message: string;
+  subscription: CurrentSubscription;
+}
+
+export interface CheckoutPayload {
+  plan_id: string;
+  billing_cycle: 'monthly' | 'yearly';
+}
+
+export interface CheckoutResponse {
+  checkout_url: string;
+  session_id: string;
+}
+
+export interface PortalResponse {
+  portal_url: string;
+}
+
+export interface SubscriptionActionResponse {
   message: string;
   subscription: CurrentSubscription;
 }

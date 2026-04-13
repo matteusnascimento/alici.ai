@@ -38,6 +38,7 @@ class ChatService:
                     ),
                     user_prompt=payload.text,
                     temperature=0.3,
+                    function_name="chat",
                 )
             except AIServiceError:
                 raise

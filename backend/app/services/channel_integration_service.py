@@ -12,6 +12,7 @@ from app.integrations.channel_adapters import ChannelAdapters
 from app.models.agent import Agent
 from app.models.agent_channel import AgentChannel
 from app.models.agent_channel_binding import AgentChannelBinding
+from app.models.channel_message import ChannelMessage
 from app.models.channel_endpoint import ChannelEndpoint
 from app.models.channel_webhook_event import ChannelWebhookEvent
 from app.models.integration_account import IntegrationAccount
@@ -74,12 +75,23 @@ class ChannelIntegrationService:
         return data if isinstance(data, dict) else {}
 
     def _derive_account_status(self, provider: str, payload: dict[str, Any]) -> str:
+        metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+        token_invalid = bool(metadata.get("token_invalid"))
+        runtime_error = bool(metadata.get("runtime_error"))
+        webhook_verified = bool(metadata.get("webhook_verified"))
+
         if provider in COMING_SOON_PROVIDERS:
             return "coming_soon"
+        if token_invalid:
+            return "auth_required"
+        if runtime_error:
+            return "error"
         if not payload.get("access_token"):
             return "auth_required"
         if not payload.get("external_account_id") and not payload.get("external_account_name"):
             return "error"
+        if webhook_verified:
+            return "connected"
         return "pending_setup"
 
     def _derive_binding_status(self, provider: str, account: IntegrationAccount, endpoint: ChannelEndpoint) -> str:
@@ -94,6 +106,18 @@ class ChannelIntegrationService:
         if endpoint.webhook_status == "active" and account.status == "connected":
             return "connected"
         return "pending_setup"
+
+    def _serialize_account(self, account: IntegrationAccount) -> dict[str, Any]:
+        return {
+            "id": account.id,
+            "provider": account.provider,
+            "external_account_id": account.external_account_id,
+            "external_account_name": account.external_account_name,
+            "status": account.status,
+            "metadata": self._load_json(account.metadata_json),
+            "created_at": account.created_at,
+            "updated_at": account.updated_at,
+        }
 
     def _upsert_integration_account(self, user: User, provider: str, payload: dict[str, Any]) -> IntegrationAccount:
         external_account_id = payload.get("external_account_id")
@@ -234,6 +258,14 @@ class ChannelIntegrationService:
         self.db.refresh(account)
         return account
 
+    def list_accounts(self, user: User) -> list[IntegrationAccount]:
+        return (
+            self.db.query(IntegrationAccount)
+            .filter(IntegrationAccount.user_id == user.id)
+            .order_by(IntegrationAccount.updated_at.desc(), IntegrationAccount.id.desc())
+            .all()
+        )
+
     def get_provider_status(self, user: User, provider: str) -> dict[str, Any]:
         normalized = self._validate_provider(provider, allow_coming_soon=True)
         if normalized in COMING_SOON_PROVIDERS:
@@ -312,9 +344,24 @@ class ChannelIntegrationService:
 
     def connect_agent_channel(self, user: User, agent_id: int, payload: dict[str, Any]) -> AgentChannelBinding:
         self._agent_or_404(user, agent_id)
-        provider = self._validate_provider(str(payload.get("provider") or ""))
+        provider = self._validate_provider(str(payload.get("provider") or payload.get("provider_key") or ""))
         integration_payload = payload.get("integration") or {}
         endpoint_payload = payload.get("endpoint") or {}
+
+        if not integration_payload:
+            integration_payload = {
+                "external_account_id": payload.get("integration_account_id") or payload.get("account_id") or payload.get("external_account_id"),
+                "external_account_name": payload.get("external_account_name"),
+                "access_token": payload.get("access_token"),
+                "refresh_token": payload.get("refresh_token"),
+                "metadata": payload.get("metadata") or {},
+            }
+        if not endpoint_payload:
+            endpoint_payload = {
+                "external_channel_id": payload.get("channel_endpoint_id") or payload.get("endpoint_id") or payload.get("external_channel_id"),
+                "channel_name": payload.get("channel_name"),
+                "phone_number_or_handle": payload.get("phone_number_or_handle"),
+            }
 
         if not integration_payload.get("external_account_name") and not integration_payload.get("external_account_id"):
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Informe a conta conectada.")
@@ -395,10 +442,24 @@ class ChannelIntegrationService:
         endpoint = binding.channel_endpoint
         account = endpoint.integration_account
         binding.last_test_at = datetime.now(tz=timezone.utc)
+        test_message = self._create_channel_message(
+            user_id=user.id,
+            agent_id=agent_id,
+            provider=binding.provider,
+            direction="internal_test",
+            external_message_id=None,
+            endpoint_id=endpoint.id,
+            binding_id=binding.id,
+            payload_summary={"source": "channel_internal_test", "message": payload.get("message")},
+            status="processing",
+            error_message=None,
+        )
 
         if not binding.is_active:
             binding.last_test_status = "error"
             binding.last_test_message = "Canal esta desconectado do agente."
+            test_message.status = "error"
+            test_message.error_message = binding.last_test_message
             self.db.commit()
             return {
                 "success": False,
@@ -433,6 +494,7 @@ class ChannelIntegrationService:
                 if binding.status == "pending_setup"
                 else "Teste interno concluido com sucesso."
             )
+            test_message.status = "ok"
             self.db.commit()
             return {
                 "success": True,
@@ -444,6 +506,8 @@ class ChannelIntegrationService:
         except AgentRuntimeError as exc:
             binding.last_test_status = "error"
             binding.last_test_message = str(exc)
+            test_message.status = "error"
+            test_message.error_message = str(exc)
             self.db.commit()
             return {
                 "success": False,
@@ -504,6 +568,36 @@ class ChannelIntegrationService:
         self.db.flush()
         return event
 
+    def _create_channel_message(
+        self,
+        *,
+        user_id: int,
+        agent_id: int | None,
+        provider: str,
+        direction: str,
+        external_message_id: str | None,
+        endpoint_id: int | None,
+        binding_id: int | None,
+        payload_summary: dict[str, Any],
+        status: str,
+        error_message: str | None,
+    ) -> ChannelMessage:
+        message = ChannelMessage(
+            user_id=user_id,
+            agent_id=agent_id,
+            provider=provider,
+            direction=direction,
+            external_message_id=external_message_id,
+            endpoint_id=endpoint_id,
+            binding_id=binding_id,
+            payload_summary=self._dump_json(payload_summary),
+            status=status,
+            error_message=error_message,
+        )
+        self.db.add(message)
+        self.db.flush()
+        return message
+
     def process_meta_webhook(self, provider: str, payload: dict[str, Any]) -> dict[str, Any]:
         normalized = self._validate_provider(provider)
         normalized_payload = (
@@ -511,7 +605,7 @@ class ChannelIntegrationService:
             if normalized == "whatsapp"
             else ChannelAdapters.normalize_instagram(payload)
         )
-        event = self.record_webhook_event(normalized, normalized_payload, event_type="message_received")
+        event = self.record_webhook_event(normalized, normalized_payload, event_type=normalized_payload.get("event_type") or "message_received")
         endpoint = self._find_endpoint_for_provider_channel(normalized, normalized_payload["channel_id"])
         if not endpoint:
             event.error_message = "Channel endpoint not found"
@@ -531,6 +625,40 @@ class ChannelIntegrationService:
         binding.status = "connected"
         self._sync_legacy_agent_channel(account.user, binding.agent_id, binding, endpoint, account)
 
+        external_message_id = str(
+            normalized_payload.get("external_message_id")
+            or normalized_payload.get("external_conversation_id")
+            or ""
+        )
+        channel_message = self._create_channel_message(
+            user_id=account.user_id,
+            agent_id=binding.agent_id,
+            provider=normalized,
+            direction="inbound",
+            external_message_id=external_message_id or None,
+            endpoint_id=endpoint.id,
+            binding_id=binding.id,
+            payload_summary={
+                "channel_id": normalized_payload.get("channel_id"),
+                "external_user_id": normalized_payload.get("external_user_id"),
+                "text": normalized_payload.get("text"),
+                "event_type": normalized_payload.get("event_type"),
+            },
+            status="processing",
+            error_message=None,
+        )
+
+        event_type = str(normalized_payload.get("event_type") or "message_received")
+        if event_type == "status_update" or not str(normalized_payload.get("text") or "").strip():
+            event.processed = True
+            channel_message.status = "ok"
+            self.db.commit()
+            return {
+                "status": "accepted",
+                "provider": normalized,
+                "event_type": event_type,
+            }
+
         try:
             result = AgentRuntimeService.process_inbound_message(
                 self.db,
@@ -543,10 +671,13 @@ class ChannelIntegrationService:
                 metadata=normalized_payload["metadata"],
             )
             event.processed = True
+            channel_message.status = "ok"
             self.db.commit()
             return result
         except AgentRuntimeError as exc:
             event.error_message = str(exc)
             binding.status = "error"
+            channel_message.status = "error"
+            channel_message.error_message = str(exc)
             self.db.commit()
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

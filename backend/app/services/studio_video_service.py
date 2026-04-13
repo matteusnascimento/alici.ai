@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any
 
 from app.services.ai_service import AIService
-from app.services.model_router import AIFunction
 
 
 class StudioVideoService:
@@ -39,7 +38,7 @@ class StudioVideoService:
                 "additionalProperties": False,
             },
             system_prompt="Gere 3 legendas de video em pt-BR com gancho, beneficio e CTA. Retorne apenas JSON valido.",
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="caption_generator",
         )
         return {
             "operation": "video-captions",
@@ -69,7 +68,7 @@ class StudioVideoService:
             system_prompt="Escreva um roteiro curto de voiceover em pt-BR para video comercial, com abertura forte e CTA final.",
             user_prompt=prompt,
             temperature=0.5,
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="ad_copy_generator",
         )
         return {
             "operation": "video-voiceover",

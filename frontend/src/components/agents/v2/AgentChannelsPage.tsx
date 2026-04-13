@@ -67,7 +67,7 @@ function ProviderCard({ item, onOpen }: { item: ChannelProviderCatalogItem; onOp
 export function AgentChannelsPage() {
   const params = useParams();
   const agentId = Number(params.id || 0);
-  const { providers, channels, loading, error, actionLoading, connect, disconnect, test } = useAgentChannels(agentId);
+  const { providers, accounts, channels, loading, error, actionLoading, connect, disconnect, test } = useAgentChannels(agentId);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
@@ -202,6 +202,7 @@ export function AgentChannelsPage() {
       <ConnectChannelModal
         open={modalOpen}
         providers={providers}
+        accounts={accounts}
         channels={channels}
         actionLoading={actionLoading}
         onClose={() => setModalOpen(false)}

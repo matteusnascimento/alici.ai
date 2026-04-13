@@ -1,4 +1,5 @@
 from app.models.agent import Agent
+from app.models.ai_request_log import AIRequestLog
 from app.models.agent_channel_binding import AgentChannelBinding
 from app.models.agent_action import AgentAction
 from app.models.agent_channel import AgentChannel
@@ -13,6 +14,7 @@ from app.models.agent_test_message import AgentTestMessage
 from app.models.billing_event import BillingEvent
 from app.models.brand_asset import BrandAsset
 from app.models.channel_endpoint import ChannelEndpoint
+from app.models.channel_message import ChannelMessage
 from app.models.channel_webhook_event import ChannelWebhookEvent
 from app.models.conversation import Conversation, Message
 from app.models.creative_generation import CreativeGeneration
@@ -35,6 +37,7 @@ from app.models.widget_session import WidgetSession
 
 __all__ = [
 	"Agent",
+	"AIRequestLog",
 	"AgentChannelBinding",
 	"AgentAction",
 	"AgentChannel",
@@ -49,6 +52,7 @@ __all__ = [
 	"BillingEvent",
 	"BrandAsset",
 	"ChannelEndpoint",
+	"ChannelMessage",
 	"ChannelWebhookEvent",
 	"Conversation",
 	"CreativeGeneration",

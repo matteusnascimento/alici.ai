@@ -72,6 +72,7 @@ from app.schemas.agents_v2 import (
     AgentsTemplateRead,
 )
 from app.services.agent_service import AgentService
+from app.services.billing_service import BillingService
 from app.services.agent_runtime_service import AgentRuntimeError, AgentRuntimeService
 from app.services.agent_activation_service import AgentActivationService
 from app.services.agent_action_service import AgentActionService
@@ -152,6 +153,7 @@ def create_agent(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentRead:
+    BillingService(db).check_limit(current_user, "agents")
     agent = AgentService(db).create_agent(current_user, payload)
     return AgentRead.model_validate(agent)
 

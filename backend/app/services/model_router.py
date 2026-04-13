@@ -1,6 +1,7 @@
 from enum import Enum
 
 from app.core.config import settings
+from app.services.ai.model_router import get_model_for_task as get_model_for_task_central
 
 
 class AIFunction(str, Enum):
@@ -47,24 +48,4 @@ def get_model_for(function_name: AIFunction) -> str:
 
 
 def get_model_for_task(task_name: str) -> str:
-    normalized = task_name.strip().lower()
-    task_aliases = {
-        "chat_general": AIFunction.CHAT,
-        "chat_support": AIFunction.CHAT_PREMIUM,
-        "support": AIFunction.CHAT_PREMIUM,
-        "prompt_generation": AIFunction.MARKETING_COPY,
-        "copy": AIFunction.MARKETING_COPY,
-        "agent_runtime": AIFunction.AGENT_RUNTIME,
-        "summarization": AIFunction.SUMMARIZATION,
-        "classification": AIFunction.STRUCTURED_EXTRACTION,
-        "knowledge_qa": AIFunction.KNOWLEDGE_QA,
-        "tool_reasoning": AIFunction.TOOL_REASONING,
-        "vision_analysis": AIFunction.IMAGE_ANALYSIS,
-        "image_generation": AIFunction.IMAGE_GENERATION,
-        "transcription": AIFunction.AUDIO_TRANSCRIPTION,
-        "embedding": AIFunction.EMBEDDING,
-    }
-    mapped = task_aliases.get(normalized)
-    if mapped is None:
-        return settings.openai_model_chat_general or settings.openai_model
-    return get_model_for(mapped)
+    return get_model_for_task_central(task_name)

@@ -115,6 +115,17 @@ export interface ChannelProviderCatalogItem {
   supports_activation: boolean;
 }
 
+export interface ChannelIntegrationAccount {
+  id: number;
+  provider: string;
+  external_account_id: string | null;
+  external_account_name: string | null;
+  status: ChannelProviderStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AgentConnectedChannel {
   binding_id: number;
   agent_id: number;

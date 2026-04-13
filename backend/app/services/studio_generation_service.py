@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from app.models.studio_generation import StudioGeneration
 from app.services.ai_service import AIService
-from app.services.model_router import AIFunction
 
 
 class StudioGenerationService:
@@ -72,7 +71,7 @@ class StudioGenerationService:
                 "Crie 4 variacoes de poster em pt-BR para anuncios premium. "
                 "Cada variacao precisa de headline curta, CTA forte e style descritivo."
             ),
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="ad_copy_generator",
         )
         return {
             "kind": "poster",
@@ -99,7 +98,7 @@ class StudioGenerationService:
             prompt=f"Modo: {mode}\nBriefing: {prompt}",
             schema=schema,
             system_prompt="Gere 3 variacoes de texto em pt-BR para o modo solicitado. Retorne apenas JSON valido.",
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="social_post_generator",
         )
         return {
             "mode": mode,
@@ -122,7 +121,7 @@ class StudioGenerationService:
             prompt=prompt,
             schema=schema,
             system_prompt="Crie uma direcao visual de marca em pt-BR com posicionamento, paleta e tipografia. Retorne apenas JSON valido.",
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="product_description_generator",
         )
         generated["prompt"] = prompt
         return generated

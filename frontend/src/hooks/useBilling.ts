@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 
-import { getBillingPlans, getBillingUsage, getCurrentSubscription, upgradeSubscription } from '../services/billing.service';
+import {
+  cancelSubscription,
+  createCheckoutSession,
+  createPortalSession,
+  getBillingPlans,
+  getBillingUsage,
+  getCurrentSubscription,
+  resumeSubscription,
+  upgradeSubscription,
+} from '../services/billing.service';
 import type { BillingPlan, BillingUsage, CurrentSubscription } from '../types/billing';
 
 export function useBilling() {
@@ -34,6 +43,7 @@ export function useBilling() {
     void loadBilling();
   }, []);
 
+  /** @deprecated Fluxo legado/admin. Use startCheckout() para fluxo Stripe real. */
   async function upgrade(planId: string, billingCycle: 'monthly' | 'yearly' = 'monthly') {
     setUpgrading(true);
     try {
@@ -51,6 +61,65 @@ export function useBilling() {
     }
   }
 
+  /** Inicia Stripe Checkout Session real. Redireciona o browser para o Stripe. */
+  async function startCheckout(planId: string, billingCycle: 'monthly' | 'yearly' = 'monthly') {
+    setUpgrading(true);
+    try {
+      const response = await createCheckoutSession({ plan_id: planId, billing_cycle: billingCycle });
+      window.location.href = response.checkout_url;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao iniciar checkout';
+      setError(message);
+      throw err;
+    } finally {
+      setUpgrading(false);
+    }
+  }
+
+  /** Abre o Stripe Billing Portal para gerenciar assinatura. */
+  async function openPortal() {
+    try {
+      const response = await createPortalSession();
+      window.location.href = response.portal_url;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao abrir portal';
+      setError(message);
+      throw err;
+    }
+  }
+
+  async function cancel() {
+    setUpgrading(true);
+    try {
+      const response = await cancelSubscription();
+      setCurrent(response.subscription);
+      setError(null);
+      return response.message;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao cancelar';
+      setError(message);
+      throw err;
+    } finally {
+      setUpgrading(false);
+    }
+  }
+
+  async function resume() {
+    setUpgrading(true);
+    try {
+      const response = await resumeSubscription();
+      setCurrent(response.subscription);
+      setError(null);
+      return response.message;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao reativar';
+      setError(message);
+      throw err;
+    } finally {
+      setUpgrading(false);
+    }
+  }
+
   return {
     plans,
     current,
@@ -59,6 +128,10 @@ export function useBilling() {
     upgrading,
     error,
     upgrade,
+    startCheckout,
+    openPortal,
+    cancel,
+    resume,
     reload: loadBilling,
   };
 }

@@ -21,6 +21,8 @@ import { AccountPersonalizationPage } from '../components/account/pages/AccountP
 import { AccountPlatformStatusPage } from '../components/account/pages/AccountPlatformStatusPage';
 import { AccountProfilePage } from '../components/account/pages/AccountProfilePage';
 import { AccountSecurityPage } from '../components/account/pages/AccountSecurityPage';
+import { BillingCancelPage } from '../components/account/pages/BillingCancelPage';
+import { BillingSuccessPage } from '../components/account/pages/BillingSuccessPage';
 import { AssetsStudioPage } from '../components/studio/v2/AssetsStudioPage';
 import { AiCreativeStudioPage } from '../components/studio/v2/AiCreativeStudioPage';
 import { BannerStudioPage } from '../components/studio/v2/BannerStudioPage';
@@ -157,6 +159,8 @@ export function AppRouter() {
               <Route path="brief" element={<MarketingBriefPage />} />
             </Route>
             <Route path="integrations" element={<IntegrationsPage />} />
+            <Route path="billing/success" element={<BillingSuccessPage />} />
+            <Route path="billing/cancel" element={<BillingCancelPage />} />
             <Route path="account" element={<AccountShell />}>
               <Route index element={<Navigate replace to="overview" />} />
               <Route path="overview" element={<AccountHomePage />} />

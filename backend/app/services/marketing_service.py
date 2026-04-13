@@ -17,7 +17,6 @@ from app.schemas.marketing import (
     MarketingTool,
 )
 from app.services.ai_service import AIService
-from app.services.model_router import AIFunction
 
 
 class MarketingService:
@@ -58,7 +57,7 @@ class MarketingService:
                 "Gere uma campanha de marketing completa em pt-BR. "
                 "Retorne somente JSON valido com campanha, copy_text, cta, ad_structure e creative_suggestion."
             ),
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="ad_copy_generator",
         )
         return MarketingCampaignResponse(**result)
 
@@ -67,7 +66,7 @@ class MarketingService:
             system_prompt="Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final.",
             user_prompt=f"Contexto: {prompt.strip()}",
             temperature=0.5,
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="ad_copy_generator",
         )
         return MarketingCopyResponse(copy_text=copy_text)
 
@@ -76,7 +75,7 @@ class MarketingService:
             system_prompt="You write premium prompts for image generation models. Return only one concise prompt in English.",
             user_prompt=f"Create a premium ad image prompt for this context: {prompt.strip() or 'high-conversion SaaS campaign'}",
             temperature=0.5,
-            function_name=AIFunction.MARKETING_COPY,
+            function_name="social_post_generator",
         )
         return MarketingImagePromptResponse(prompt=prompt_text)
 

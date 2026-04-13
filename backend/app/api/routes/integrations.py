@@ -32,35 +32,14 @@ def create_integration(
 ) -> IntegrationAccountRead:
     svc = ChannelIntegrationService(db)
     account = svc.create_integration_account(current_user, payload.model_dump())
-    return IntegrationAccountRead(
-        id=account.id,
-        provider=account.provider,
-        external_account_id=account.external_account_id,
-        external_account_name=account.external_account_name,
-        status=account.status,
-        metadata=svc._load_json(account.metadata_json),
-        created_at=account.created_at,
-        updated_at=account.updated_at,
-    )
+    return IntegrationAccountRead(**svc._serialize_account(account))
 
 
 @router.get("/accounts", response_model=list[IntegrationAccountRead])
 def list_accounts(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[IntegrationAccountRead]:
     svc = ChannelIntegrationService(db)
     accounts = svc.list_accounts(current_user)
-    return [
-        IntegrationAccountRead(
-            id=a.id,
-            provider=a.provider,
-            external_account_id=a.external_account_id,
-            external_account_name=a.external_account_name,
-            status=a.status,
-            metadata=svc._load_json(a.metadata_json),
-            created_at=a.created_at,
-            updated_at=a.updated_at,
-        )
-        for a in accounts
-    ]
+    return [IntegrationAccountRead(**svc._serialize_account(a)) for a in accounts]
 
 
 @router.get("/{provider}/status", response_model=IntegrationProviderStatusRead)
