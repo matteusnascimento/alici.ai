@@ -1,4 +1,11 @@
-# Python
+# ── Secrets & Credentials ───────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Python ──────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,9 +14,7 @@ __pycache__/
 env/
 venv/
 ENV/
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -23,21 +28,17 @@ wheels/
 .installed.cfg
 *.egg
 .pytest_cache/
-axi.db
-*.db
-*.db-journal
-.env
-.env.*
-!.env.example
 
-# Node
+# ── Local databases ──────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ── Frontend: build, cache & generated configs ───────────────────────
 node_modules/
-npm-debug.log
-yarn-error.log
 dist/
 build/
-
-# TypeScript build artifacts
 *.tsbuildinfo
 *.d.ts.map
 frontend/vite.config.d.ts
@@ -45,10 +46,18 @@ frontend/vite.config.js
 frontend/tailwind.config.d.ts
 frontend/tailwind.config.js
 
-# IDE
+# ── Backend: generated & user-content artifacts ──────────────────────
+backend/frontend_dist/
+backend/exports/
+backend/uploads/
+
+# ── OS / Editor ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-.DS_Store
+npm-debug.log
+yarn-error.log
