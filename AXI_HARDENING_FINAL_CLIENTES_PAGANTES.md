@@ -106,3 +106,47 @@ Condição para liberar pagantes sem ressalva:
 2. Reexecutar smoke staging e confirmar `POST /api/chat/send` = 200 (ou erro de IA controlado sem traceback).
 
 Após essa condição, o sistema fica apto para operação com clientes pagantes com risco residual baixo e controles de regressão adequados.
+
+## Adendo de deploy e smoke (2026-04-12)
+
+### Ações executadas
+- Verificação de pendências de git em `main` e validação de testes antes de publicação.
+- Testes locais executados antes do push:
+  - `pytest tests/backend -q` -> 42 passed
+  - `npm run test` (frontend) -> 10 arquivos / 18 testes passed
+- Commits publicados em `main`:
+  - `e15c071` (hardening final + migração + ajustes)
+  - `510a8d8` (remoção de artefato gerado)
+- Push realizado com sucesso para `origin/main`.
+
+### Evidência de staging após push
+Smoke reexecutado duas vezes em `https://alici-ai.onrender.com` com usuário novo em cada rodada:
+- `GET /health` -> 200
+- `POST /api/auth/register` -> 200
+- `POST /api/auth/login` -> 200
+- `GET /api/user/me` -> 200
+- `GET /api/account/profile` -> 200
+- `POST /api/chat/send` -> 500
+
+Detalhe do erro atual no staging:
+- Ainda retorna traceback técnico com `psycopg.errors.UndefinedColumn: column "title" of relation "conversations" does not exist`.
+- Isso indica que o ambiente em execução ainda não aplicou a migração corretiva `c4d5e6f7a8b9_fix_conversations_title_drift.py`.
+
+### Tentativa de migração manual
+- Tentativa local de `alembic upgrade head` apontando para o banco remoto via configuração do backend: falhou por erro de autenticação no PostgreSQL (`password authentication failed`).
+- Sem acesso válido ao banco e sem token/API do Render no ambiente local, não foi possível consultar logs de deploy/build/start/migration pelo painel/CLI diretamente a partir deste terminal.
+
+### Status final deste ciclo
+- Código no `main`: atualizado e publicado.
+- Staging Render: ainda bloqueado por drift de schema (`conversations.title` ausente).
+
+### Ação necessária para desbloqueio
+Executar no ambiente Render (Shell/Job do serviço) com credenciais ativas do próprio runtime:
+1. `cd /opt/render/project/src/backend`
+2. `alembic upgrade head`
+3. Confirmar `alembic current` contendo `c4d5e6f7a8b9`
+4. Reexecutar smoke e validar `POST /api/chat/send` sem erro de schema.
+
+## Veredito atualizado
+- Não aprovado sem ressalvas neste momento.
+- Bloqueio exato: migração `c4d5e6f7a8b9` ainda não aplicada no banco do staging em execução.
