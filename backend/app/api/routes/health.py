@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import APIRouter
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 router = APIRouter(tags=["health"])
 
@@ -15,6 +15,11 @@ def root():
     if INDEX_FILE.exists():
         return FileResponse(INDEX_FILE)
     return {"status": "ok", "service": "alici-ai", "docs": "/docs"}
+
+
+@router.head("/", include_in_schema=False)
+def root_head():
+    return Response(status_code=200)
 
 
 @router.get("/health")
