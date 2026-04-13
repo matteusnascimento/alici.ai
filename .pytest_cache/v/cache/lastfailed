@@ -1,0 +1,3 @@
+{
+  "tests/backend/test_agents_v2.py::test_create_alias_rejects_wrong_method": true
+}
