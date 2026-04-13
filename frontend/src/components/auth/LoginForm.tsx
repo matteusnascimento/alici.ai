@@ -1,10 +1,11 @@
 import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/useAuth';
 
 export function LoginForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +15,8 @@ export function LoginForm() {
     event.preventDefault();
     try {
       await login({ email, password });
-      navigate('/app/dashboard');
+      const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+      navigate(from || '/app/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao autenticar');
     }

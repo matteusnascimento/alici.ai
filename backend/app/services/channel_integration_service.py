@@ -19,7 +19,7 @@ from app.models.user import User
 from app.services.agent_runtime_service import AgentRuntimeError, AgentRuntimeService
 
 ACTIVE_PROVIDERS = frozenset({"whatsapp", "instagram"})
-COMING_SOON_PROVIDERS = frozenset({"telegram", "slack", "discord", "website_chat", "api", "webhook"})
+COMING_SOON_PROVIDERS = frozenset()
 SUPPORTED_PROVIDERS = ACTIVE_PROVIDERS | COMING_SOON_PROVIDERS
 
 PROVIDER_CATALOG: dict[str, dict[str, str | bool]] = {
@@ -34,42 +34,6 @@ PROVIDER_CATALOG: dict[str, dict[str, str | bool]] = {
         "description": "Resposta automatica para mensagens do Instagram.",
         "helper": "Base real pronta para vinculo com o agente. A ativacao oficial Meta ainda depende da autenticacao externa.",
         "supports_activation": True,
-    },
-    "telegram": {
-        "title": "Telegram",
-        "description": "Bot conversacional no Telegram.",
-        "helper": "Estrutura visual pronta. Provider operacional entra na etapa seguinte.",
-        "supports_activation": False,
-    },
-    "slack": {
-        "title": "Slack",
-        "description": "Atendimento interno e operacional em times.",
-        "helper": "Estrutura visual pronta. Provider operacional entra na etapa seguinte.",
-        "supports_activation": False,
-    },
-    "discord": {
-        "title": "Discord",
-        "description": "Interacao comunitaria e suporte em servidores.",
-        "helper": "Estrutura visual pronta. Provider operacional entra na etapa seguinte.",
-        "supports_activation": False,
-    },
-    "website_chat": {
-        "title": "Web Chat",
-        "description": "Widget de chat para site e landing page.",
-        "helper": "Provider existente no produto, mas fora do escopo deste fluxo de autenticacao externa.",
-        "supports_activation": False,
-    },
-    "api": {
-        "title": "API / Webhook",
-        "description": "Integracao programatica com sistemas externos.",
-        "helper": "Provider existente no produto, mas fora do escopo deste fluxo de autenticacao externa.",
-        "supports_activation": False,
-    },
-    "webhook": {
-        "title": "Webhook",
-        "description": "Eventos em tempo real para automacoes externas.",
-        "helper": "Provider existente no produto, mas fora do escopo deste fluxo de autenticacao externa.",
-        "supports_activation": False,
     },
 }
 

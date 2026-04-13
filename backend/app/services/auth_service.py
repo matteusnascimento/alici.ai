@@ -26,7 +26,10 @@ class AuthService:
         _validate_password(payload.password)
         existing_user = self.db.query(User).filter((User.email == payload.email) | (User.username == payload.username)).first()
         if existing_user:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email or username already in use")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este email ou nome de usuario ja esta em uso. Tente outro ou faca login.",
+            )
 
         user = User(
             name=payload.name,
@@ -92,6 +95,9 @@ class AuthService:
                 self.db.refresh(user)
 
         if not user or not verify_password(payload.password, user.password_hash):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email ou senha invalidos. Confira os dados e tente novamente.",
+            )
         token = create_access_token(str(user.id))
         return token, user

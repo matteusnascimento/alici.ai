@@ -100,6 +100,21 @@ def test_new_user_plan_is_free(client):
     assert response.json()['user']['plan'] == 'free'
 
 
+def test_register_duplicate_returns_friendly_conflict(client):
+    payload = {
+        'name': 'Ana Silva',
+        'username': 'ana',
+        'email': 'ana@example.com',
+        'password': 'Senha123',
+    }
+    first = client.post('/api/auth/register', json=payload)
+    assert first.status_code == 200
+
+    duplicate = client.post('/api/auth/register', json=payload)
+    assert duplicate.status_code == 409
+    assert 'ja esta em uso' in duplicate.json().get('detail', '').lower()
+
+
 def test_profile_update_cannot_change_plan(client):
     register_response = client.post(
         '/api/auth/register',

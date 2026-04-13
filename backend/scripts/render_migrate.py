@@ -37,10 +37,12 @@ def main() -> int:
     has_alembic_version = "alembic_version" in tables
 
     if not has_alembic_version and tables:
-        print("Banco existente sem alembic_version; aplicando stamp head.", flush=True)
-        code = run(["alembic", "stamp", "head"])
-        if code != 0:
-            return code
+        print(
+            "Banco existente sem alembic_version detectado. Abortando para evitar drift silencioso de schema. "
+            "Execute baseline/migracao manual antes do deploy.",
+            flush=True,
+        )
+        return 1
 
     print("Executando alembic upgrade head.", flush=True)
     return run(["alembic", "upgrade", "head"])

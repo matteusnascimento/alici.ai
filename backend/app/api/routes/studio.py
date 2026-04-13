@@ -559,10 +559,17 @@ async def upload_asset(
 ) -> StudioAssetRead:
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
+
     service = StudioAssetService(db)
-    asset = service.create_asset(
+    asset = service.create_asset_from_upload(
         current_user,
         name=file.filename,
+        content=content,
+        content_type=file.content_type,
         asset_type=asset_type,
         project_id=project_id,
         metadata={"content_type": file.content_type},

@@ -46,6 +46,15 @@ class MarketingProjectRead(BaseModel):
     created_at: str
 
 
+class MarketingProjectUpdate(BaseModel):
+    name: str | None = None
+    audience: str | None = None
+    objective: str | None = None
+    offer: str | None = None
+    tone: str | None = None
+    notes: str | None = None
+
+
 class MarketingCopyRequest(BaseModel):
     prompt: str
 

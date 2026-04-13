@@ -6,8 +6,6 @@ import {
   Layers3,
   Megaphone,
   MessageSquareQuote,
-  Scissors,
-  Sparkles,
   Wand2,
   type LucideIcon,
 } from 'lucide-react';
@@ -102,13 +100,6 @@ export const STUDIO_HOME_CATEGORIES: StudioHomeCategory[] = [
         icon: ImageUp,
         path: '/app/studio/tools/photo-editor',
       },
-      {
-        id: 'autocut',
-        title: 'AutoCut',
-        description: 'Corte automatico de takes para versoes curtas.',
-        icon: Scissors,
-        path: '/app/studio/tools/auto-cut',
-      },
     ],
   },
   {
@@ -122,20 +113,6 @@ export const STUDIO_HOME_CATEGORIES: StudioHomeCategory[] = [
         description: 'Recorte rapido para produto, avatar ou criativo.',
         icon: Wand2,
         path: '/app/studio/tools/remove-background',
-      },
-      {
-        id: 'avatar-ia',
-        title: 'Avatar IA',
-        description: 'Experimente apresentacao com avatar e voz sintetica.',
-        icon: Sparkles,
-        path: '/app/studio/tools/avatar',
-      },
-      {
-        id: 'enhance-image',
-        title: 'Melhorar imagem',
-        description: 'Aprimore nitidez, cor e contraste com IA.',
-        icon: Sparkles,
-        path: '/app/studio/tools/enhance',
       },
     ],
   },
@@ -151,13 +128,6 @@ export const STUDIO_HOME_CATEGORIES: StudioHomeCategory[] = [
         icon: MessageSquareQuote,
         path: '/app/studio/tools/cta',
       },
-      {
-        id: 'create-campaign',
-        title: 'Criar campanha',
-        description: 'Organize briefing, variacoes e distribuicao.',
-        icon: Captions,
-        path: '/app/studio/tools/campaign',
-      },
     ],
   },
 ];
@@ -167,7 +137,6 @@ export function resolveStudioProjectRoute(projectType: string, projectId: number
   if (normalized.includes('video')) return `/app/studio/editor/video/${projectId}`;
   if (normalized.includes('photo')) return `/app/studio/tools/photo-editor`;
   if (normalized.includes('story')) return '/app/studio/tools/story';
-  if (normalized.includes('campaign')) return '/app/studio/tools/campaign';
   if (normalized.includes('cta')) return '/app/studio/tools/cta';
   return '/app/studio/projects';
 }

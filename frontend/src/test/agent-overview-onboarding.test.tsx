@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -120,7 +119,8 @@ describe('AgentOverviewPage onboarding', () => {
     const activateButton = screen.getByRole('button', { name: /Ativar agente/i });
     expect(activateButton).toBeDisabled();
 
-    await userEvent.click(screen.getAllByRole('link', { name: /Conectar canais/i })[0]);
+    const connectLink = screen.getAllByRole('link', { name: /Conectar canais/i })[0];
+    expect(connectLink).toHaveAttribute('href', '/app/agents/10/channels');
   });
 
   it('mostra estado de loading', async () => {

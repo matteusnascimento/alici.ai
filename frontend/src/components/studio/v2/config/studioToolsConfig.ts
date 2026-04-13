@@ -135,16 +135,6 @@ export const MANAGE_LINKS: StudioNavLink[] = [
     color: 'from-slate-400 to-slate-600',
   },
   {
-    id: 'campaigns',
-    title: 'Campanhas',
-    description: 'Gerencie campanhas de marketing',
-    icon: Zap,
-    path: '/app/studio/campaign',
-    section: 'manage',
-    type: 'navigation',
-    color: 'from-blue-400 to-blue-600',
-  },
-  {
     id: 'exports',
     title: 'Exportações',
     description: 'Histórico de arquivos exportados',

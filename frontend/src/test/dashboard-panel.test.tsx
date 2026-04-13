@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 vi.mock('../hooks/useDashboard', () => ({
@@ -21,12 +22,34 @@ vi.mock('../hooks/useDashboard', () => ({
   }),
 }));
 
+vi.mock('../services/dashboard.service', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('../services/dashboard.service')>();
+  return {
+    ...orig,
+    getDashboardOverview: () => Promise.resolve({ total_messages: 0, total_agents: 0, active_agents: 0, current_plan: 'free' }),
+    getDashboardUsage: () => Promise.resolve({ messages_used: 0, messages_limit: 100, agents_used: 0, agents_limit: 3 }),
+  };
+});
+
+vi.mock('../services/marketing.service', () => ({
+  listProjects: () => Promise.resolve([]),
+}));
+
+vi.mock('../services/integrations.service', () => ({
+  listChannelIntegrations: () => Promise.resolve([]),
+}));
+
 import { DashboardPanel } from '../components/platform/DashboardPanel';
 
 describe('DashboardPanel', () => {
-  it('renderiza metricas do dashboard', () => {
-    render(<DashboardPanel />);
+  it('renderiza metricas do dashboard', async () => {
+    render(
+      <MemoryRouter>
+        <DashboardPanel />
+      </MemoryRouter>,
+    );
     expect(screen.getByText(/Mensagens/i)).toBeInTheDocument();
     expect(screen.getByText(/Receita/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Plano atual/i)).toBeInTheDocument();
   });
 });

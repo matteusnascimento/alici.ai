@@ -1,4 +1,4 @@
-import { Bot, ChartColumnBig, LayoutDashboard, Megaphone, Menu, Settings2, X } from 'lucide-react';
+import { Bot, ChartColumnBig, LayoutDashboard, Link2, Megaphone, Menu, Settings2, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { SidebarItem } from './SidebarItem';
@@ -16,6 +16,8 @@ const items = [
   { label: 'Alici Chat', to: '/app/chat', icon: Bot },
   { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
   { label: 'AXI Studio', to: '/app/studio', icon: Megaphone },
+  { label: 'Marketing', to: '/app/marketing', icon: Sparkles },
+  { label: 'Integrações', to: '/app/integrations', icon: Link2 },
   { label: 'Conta AXI', to: '/app/account', icon: Settings2 },
 ];
 

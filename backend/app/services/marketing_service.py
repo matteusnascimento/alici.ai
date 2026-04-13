@@ -1,6 +1,7 @@
 from datetime import UTC
 import json
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.marketing_project import MarketingProject
@@ -12,6 +13,7 @@ from app.schemas.marketing import (
     MarketingImagePromptResponse,
     MarketingProjectCreate,
     MarketingProjectRead,
+    MarketingProjectUpdate,
     MarketingTool,
 )
 from app.services.ai_service import AIService
@@ -140,3 +142,65 @@ class MarketingService:
             )
             for item in projects
         ]
+
+    def get_project(self, user: User, project_id: int) -> MarketingProjectRead:
+        project = self.db.query(MarketingProject).filter(
+            MarketingProject.id == project_id, MarketingProject.user_id == user.id
+        ).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        return MarketingProjectRead(
+            id=project.id,
+            name=project.name,
+            audience=project.audience,
+            objective=project.objective,
+            offer=project.offer,
+            tone=project.tone,
+            notes=project.notes,
+            created_at=project.created_at.astimezone(UTC).isoformat() if project.created_at else "",
+        )
+
+    def update_project(self, user: User, project_id: int, payload: MarketingProjectUpdate) -> MarketingProjectRead:
+        project = self.db.query(MarketingProject).filter(
+            MarketingProject.id == project_id, MarketingProject.user_id == user.id
+        ).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        for field, value in payload.model_dump(exclude_none=True).items():
+            setattr(project, field, value)
+        self.db.commit()
+        self.db.refresh(project)
+        return MarketingProjectRead(
+            id=project.id,
+            name=project.name,
+            audience=project.audience,
+            objective=project.objective,
+            offer=project.offer,
+            tone=project.tone,
+            notes=project.notes,
+            created_at=project.created_at.astimezone(UTC).isoformat() if project.created_at else "",
+        )
+
+    def delete_project(self, user: User, project_id: int) -> None:
+        project = self.db.query(MarketingProject).filter(
+            MarketingProject.id == project_id, MarketingProject.user_id == user.id
+        ).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        self.db.delete(project)
+        self.db.commit()
+
+    def generate_for_project(self, user: User, project_id: int) -> MarketingCampaignResponse:
+        project = self.db.query(MarketingProject).filter(
+            MarketingProject.id == project_id, MarketingProject.user_id == user.id
+        ).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        req = MarketingCampaignRequest(
+            company_name=project.name,
+            audience=project.audience,
+            objective=project.objective,
+            offer=project.offer,
+            tone=project.tone,
+        )
+        return self.generate(req)

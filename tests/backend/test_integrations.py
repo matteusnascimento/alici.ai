@@ -2,7 +2,7 @@ def test_integrations_endpoints(client, auth_headers):
     list_response = client.get('/api/integrations', headers=auth_headers)
     assert list_response.status_code == 200
     providers = {item['provider'] for item in list_response.json()}
-    assert {'whatsapp', 'instagram', 'telegram', 'slack', 'discord', 'website_chat', 'api', 'webhook'}.issubset(providers)
+    assert providers == {'whatsapp', 'instagram'}
 
     whatsapp_card = next(item for item in list_response.json() if item['provider'] == 'whatsapp')
     assert whatsapp_card['status'] == 'disconnected'

@@ -1,32 +1,44 @@
 import warnings
 import json
+from urllib.parse import urlparse
 from functools import lru_cache
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _INSECURE_KEYS = {"change-me", "secret", "changeme", "dev", "development", "troque-esta-chave-por-uma-chave-forte"}
-_REQUIRED_IN_ALL_ENVS = ("secret_key", "database_url")
+_LOCAL_SQLITE_FALLBACK = "sqlite:///./axi.db"
+
+
+def _is_valid_database_url(value: str) -> bool:
+    raw = (value or "").strip()
+    if not raw:
+        return False
+    if raw.startswith("sqlite"):
+        return True
+
+    parsed = urlparse(raw)
+    return parsed.scheme in {"postgresql", "postgresql+psycopg"} and bool(parsed.netloc)
 
 
 class Settings(BaseSettings):
     app_name: str = "AXI Platform"
     app_env: str = "development"
     debug: bool = True
-    database_url: str
+    database_url: str = _LOCAL_SQLITE_FALLBACK
     enable_dev_seed_user: bool = True
     dev_seed_name: str = "AXI Dev"
     dev_seed_username: str = "devaxi"
     dev_seed_email: str = "dev@axi-platform.com"
     dev_seed_phone: str = "11990000000"
     dev_seed_password: str = ""
-    secret_key: str
+    secret_key: str = "change-me-local-dev-secret"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
     default_ai_provider: str = "openai"
     openai_api_key: str = ""
     openai_api_key_rotated: str = ""
-    openai_model: str = "gpt-5.4-mini"
+    openai_model: str = "gpt-4o-mini"
     openai_timeout_seconds: float = 30.0
     openai_model_chat_general: str = "gpt-4o-mini"
     openai_model_support: str = "gpt-4o-mini"
@@ -61,10 +73,18 @@ class Settings(BaseSettings):
 
     def __init__(self, **data):
         super().__init__(**data)
-        missing_required = [key.upper() for key in _REQUIRED_IN_ALL_ENVS if not getattr(self, key, "")]
-        if missing_required:
-            joined = ", ".join(missing_required)
-            raise ValueError(f"Missing required environment variable(s): {joined}")
+
+        raw_database_url = (self.database_url or "").strip()
+        if not _is_valid_database_url(raw_database_url):
+            if self.app_env.lower() == "production":
+                raise ValueError("Invalid DATABASE_URL for production environment")
+            warnings.warn(
+                "Invalid DATABASE_URL detected in local environment. Falling back to SQLite.",
+                RuntimeWarning,
+            )
+            object.__setattr__(self, "database_url", _LOCAL_SQLITE_FALLBACK)
+        elif raw_database_url != self.database_url:
+            object.__setattr__(self, "database_url", raw_database_url)
 
         if self.app_env != "development" and self.secret_key.lower() in _INSECURE_KEYS:
             raise ValueError(
@@ -97,7 +117,7 @@ class Settings(BaseSettings):
         return (
             self.enable_dev_seed_user
             and self.app_env.lower() != "production"
-            and self.database_url.startswith("sqlite")
+            and self.sqlalchemy_database_url.startswith("sqlite")
         )
 
 

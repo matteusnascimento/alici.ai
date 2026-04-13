@@ -279,14 +279,10 @@ def connect_channel(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentChannelStatusResponse:
-    item = AgentChannelService(db).connect_channel(current_user, agent_id, payload.model_dump())
-    return {
-        "id": item.id,
-        "channel_type": item.channel_type,
-        "channel_id": item.channel_id,
-        "status": "Conectado" if item.enabled else "Nao conectado",
-        "conexao_do_agente": item.provider_name,
-    }
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Endpoint legado removido. Use /agents/{agent_id}/channels/connect com agent_channel_bindings.",
+    )
 
 
 @router.get("/{agent_id}/channels", response_model=list[AgentChannelBindingRead])
@@ -463,7 +459,8 @@ def run_test(
 def agent_overview(agent_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> AgentOverviewResponse:
     agent = _agent_or_404(db, current_user, agent_id)
     analytics = AgentAnalyticsService(db).overview_metrics(current_user, agent_id)
-    channels = AgentChannelService(db).list_channels(current_user, agent_id)
+    binding_service = ChannelIntegrationService(db)
+    channels = binding_service.list_agent_channels(current_user, agent_id)
     logs = AgentLogsService(db).list_logs(current_user, agent_id)[:8]
     setup = AgentSetupService(db).get_setup_status(current_user, agent_id)
 
@@ -485,8 +482,8 @@ def agent_overview(agent_id: int, current_user: User = Depends(get_current_user)
         },
         canais_ativos=[
             {
-                "channel_type": item.channel_type,
-                "status": "Conectado" if item.enabled else "Nao conectado",
+                "channel_type": item.provider,
+                "status": "Conectado" if item.is_active else "Nao conectado",
             }
             for item in channels
         ],
@@ -964,30 +961,10 @@ def import_agent_config(
 
 @router.get("/{agent_id}/channels/registry", response_model=list[AgentChannelRead])
 def list_agent_channels(agent_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[AgentChannelRead]:
-    _agent_or_404(db, current_user, agent_id)
-    items = (
-        db.query(AgentChannel)
-        .filter(AgentChannel.user_id == current_user.id, AgentChannel.agent_id == agent_id)
-        .order_by(AgentChannel.created_at.desc())
-        .all()
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Endpoint legado removido. Use /agents/{agent_id}/channels.",
     )
-    return [
-        AgentChannelRead(
-            id=item.id,
-            agent_id=item.agent_id,
-            channel_type=item.channel_type,
-            provider_name=item.provider_name,
-            external_account_id=item.external_account_id,
-            channel_id=item.channel_id,
-            credential_ref=item.credential_ref,
-            enabled=item.enabled,
-            test_mode=item.test_mode,
-            config=_json_loads(item.config_json),
-            created_at=item.created_at,
-            updated_at=item.updated_at,
-        )
-        for item in items
-    ]
 
 
 @router.post("/{agent_id}/channels/registry", response_model=AgentChannelRead)
@@ -997,37 +974,9 @@ def create_agent_channel(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentChannelRead:
-    _agent_or_404(db, current_user, agent_id)
-    api_key = payload.api_key or AgentRuntimeService.build_channel_api_key(current_user.id, agent_id, payload.channel_id)
-    channel = AgentChannel(
-        user_id=current_user.id,
-        agent_id=agent_id,
-        channel_type=payload.channel_type,
-        provider_name=payload.provider_name,
-        external_account_id=payload.external_account_id,
-        channel_id=payload.channel_id,
-        credential_ref=payload.credential_ref,
-        api_key_hash=_hash_key(api_key),
-        enabled=payload.enabled,
-        test_mode=payload.test_mode,
-        config_json=json.dumps(payload.config, ensure_ascii=True),
-    )
-    db.add(channel)
-    db.commit()
-    db.refresh(channel)
-    return AgentChannelRead(
-        id=channel.id,
-        agent_id=channel.agent_id,
-        channel_type=channel.channel_type,
-        provider_name=channel.provider_name,
-        external_account_id=channel.external_account_id,
-        channel_id=channel.channel_id,
-        credential_ref=channel.credential_ref,
-        enabled=channel.enabled,
-        test_mode=channel.test_mode,
-        config=_json_loads(channel.config_json),
-        created_at=channel.created_at,
-        updated_at=channel.updated_at,
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Endpoint legado removido. Use /agents/{agent_id}/channels/connect.",
     )
 
 
@@ -1039,41 +988,9 @@ def update_agent_channel(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentChannelRead:
-    _agent_or_404(db, current_user, agent_id)
-    channel = (
-        db.query(AgentChannel)
-        .filter(AgentChannel.id == channel_id, AgentChannel.user_id == current_user.id, AgentChannel.agent_id == agent_id)
-        .first()
-    )
-    if not channel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found")
-
-    data = payload.model_dump(exclude_unset=True)
-    if "config" in data:
-        channel.config_json = json.dumps(data.pop("config") or {}, ensure_ascii=True)
-    if "api_key" in data and data["api_key"]:
-        channel.api_key_hash = _hash_key(data.pop("api_key"))
-    else:
-        data.pop("api_key", None)
-
-    for key, value in data.items():
-        setattr(channel, key, value)
-
-    db.commit()
-    db.refresh(channel)
-    return AgentChannelRead(
-        id=channel.id,
-        agent_id=channel.agent_id,
-        channel_type=channel.channel_type,
-        provider_name=channel.provider_name,
-        external_account_id=channel.external_account_id,
-        channel_id=channel.channel_id,
-        credential_ref=channel.credential_ref,
-        enabled=channel.enabled,
-        test_mode=channel.test_mode,
-        config=_json_loads(channel.config_json),
-        created_at=channel.created_at,
-        updated_at=channel.updated_at,
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Endpoint legado removido. Use /agents/{agent_id}/channels/disconnect e /channels/connect.",
     )
 
 
@@ -1468,15 +1385,21 @@ async def webhook_instagram(request: Request, db: Session = Depends(get_db)) -> 
 # Connections API — gerencia integrações por provider
 # =============================================================================
 
+def _mark_connections_deprecated(response: Response) -> None:
+    response.headers["Deprecation"] = "true"
+    response.headers["X-API-Deprecated"] = "connections"
+    response.headers["X-API-Replacement"] = "Use /agents/{agent_id}/channels* endpoints"
+
 @router.get("/{agent_id}/connections", response_model=list[AgentConnectionRead])
 def list_connections(
     agent_id: int,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[AgentConnectionRead]:
-    """Retorna todas as conexões do agente (cria registros padrão se necessário)."""
-    channels = AgentChannelService(db).get_connections(current_user, agent_id)
-    return [AgentConnectionRead.from_orm(ch) for ch in channels]
+    _mark_connections_deprecated(response)
+    rows = AgentChannelService(db).get_connections(current_user, agent_id)
+    return [AgentConnectionRead.from_orm(item) for item in rows]
 
 
 @router.post("/{agent_id}/connections/{provider}/connect", response_model=AgentConnectionRead)
@@ -1484,48 +1407,57 @@ def connect_provider(
     agent_id: int,
     provider: str,
     payload: AgentConnectionConnectRequest,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentConnectionRead:
-    """Conecta o agente a um provider externo."""
-    channel = AgentChannelService(db).connect_provider(current_user, agent_id, provider, payload.config)
-    return AgentConnectionRead.from_orm(channel)
+    _mark_connections_deprecated(response)
+    item = AgentChannelService(db).connect_provider(current_user, agent_id, provider, payload.config or {})
+    return AgentConnectionRead.from_orm(item)
 
 
 @router.post("/{agent_id}/connections/{provider}/disconnect", response_model=AgentConnectionRead)
 def disconnect_provider(
     agent_id: int,
     provider: str,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentConnectionRead:
-    """Desconecta o agente de um provider."""
-    channel = AgentChannelService(db).disconnect_provider(current_user, agent_id, provider)
-    return AgentConnectionRead.from_orm(channel)
+    _mark_connections_deprecated(response)
+    item = AgentChannelService(db).disconnect_provider(current_user, agent_id, provider)
+    return AgentConnectionRead.from_orm(item)
 
 
 @router.post("/{agent_id}/connections/{provider}/sync", response_model=AgentConnectionRead)
 def sync_provider(
     agent_id: int,
     provider: str,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentConnectionRead:
-    """Sincroniza dados com o provider."""
-    channel = AgentChannelService(db).sync_provider(current_user, agent_id, provider)
-    return AgentConnectionRead.from_orm(channel)
+    _mark_connections_deprecated(response)
+    item = AgentChannelService(db).sync_provider(current_user, agent_id, provider)
+    return AgentConnectionRead.from_orm(item)
 
 
 @router.post("/{agent_id}/connections/{provider}/test", response_model=AgentConnectionActionResponse)
 def test_provider(
     agent_id: int,
     provider: str,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentConnectionActionResponse:
-    """Testa a conexão com o provider sem sincronização completa."""
+    _mark_connections_deprecated(response)
     result = AgentChannelService(db).test_provider(current_user, agent_id, provider)
-    return AgentConnectionActionResponse(**result)
+    return AgentConnectionActionResponse(
+        success=bool(result.get("success")),
+        message=str(result.get("message") or "Teste de conexao executado."),
+        data=result.get("data") or {},
+        channel_type=str(result.get("channel_type") or provider),
+    )
 
 
 @router.put("/{agent_id}/connections/{provider}", response_model=AgentConnectionRead)
@@ -1533,11 +1465,10 @@ def update_provider_config(
     agent_id: int,
     provider: str,
     payload: AgentConnectionUpdateRequest,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentConnectionRead:
-    """Atualiza configurações de um provider."""
-    channel = AgentChannelService(db).update_provider_config(
-        current_user, agent_id, provider, payload.model_dump(exclude_none=True)
-    )
-    return AgentConnectionRead.from_orm(channel)
+    _mark_connections_deprecated(response)
+    item = AgentChannelService(db).update_provider_config(current_user, agent_id, provider, payload.model_dump(exclude_none=True))
+    return AgentConnectionRead.from_orm(item)

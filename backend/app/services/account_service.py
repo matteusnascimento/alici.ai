@@ -36,11 +36,14 @@ class AccountService:
             .first()
         )
         if conflict:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email or username already in use")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este email ou nome de usuario ja esta em uso.",
+            )
 
         phone = payload.phone.strip() if payload.phone else None
         if phone and len(phone) < 8:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Phone must contain at least 8 digits")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Telefone deve ter pelo menos 8 digitos")
 
         user.name = payload.name
         user.username = payload.username
@@ -116,16 +119,16 @@ class AccountService:
 
     def change_password(self, user: User, payload: AccountSecurityChangePassword) -> AccountActionResponse:
         if payload.new_password != payload.confirm_password:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password confirmation does not match")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Confirmacao de senha nao confere")
         if payload.current_password == payload.new_password:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="New password must be different")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A nova senha deve ser diferente da atual")
         if not verify_password(payload.current_password, user.password_hash):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is invalid")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha atual invalida")
 
         user.password_hash = get_password_hash(payload.new_password)
         self.db.commit()
         self.db.refresh(user)
-        return AccountActionResponse(message="Password updated successfully")
+        return AccountActionResponse(message="Senha atualizada com sucesso")
 
     def security_summary(self, user: User) -> AccountSecuritySummary:
         settings = self._get_settings(user)
@@ -151,13 +154,15 @@ class AccountService:
         )
 
     def request_data_export(self, user: User) -> AccountActionResponse:
-        return AccountActionResponse(message=f"Export request queued for {user.email}")
+        return AccountActionResponse(message=f"Solicitacao de exportacao registrada para {user.email}")
 
     def request_account_deletion(self, user: User) -> AccountActionResponse:
-        return AccountActionResponse(message=f"Deletion request received for {user.email}. We will contact you for confirmation.")
+        return AccountActionResponse(
+            message=f"Solicitacao de exclusao recebida para {user.email}. Entraremos em contato para confirmacao."
+        )
 
     def logout(self) -> AccountActionResponse:
-        return AccountActionResponse(message="Logged out successfully")
+        return AccountActionResponse(message="Sessao encerrada com sucesso")
 
     def _get_settings(self, user: User) -> UserSettings:
         settings = self.db.query(UserSettings).filter(UserSettings.user_id == user.id).first()

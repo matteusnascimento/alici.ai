@@ -9,6 +9,35 @@ export type MarketingSectionId =
   | 'templates'
   | 'analytics';
 
+export interface MarketingProject {
+  id: number;
+  name: string;
+  audience: string;
+  objective: string;
+  offer: string;
+  tone: string;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface MarketingProjectCreate {
+  name: string;
+  audience: string;
+  objective: string;
+  offer: string;
+  tone?: string;
+  notes?: string;
+}
+
+export interface MarketingProjectUpdate {
+  name?: string;
+  audience?: string;
+  objective?: string;
+  offer?: string;
+  tone?: string;
+  notes?: string;
+}
+
 export interface MarketingTemplateProfile {
   businessName: string;
   marketSegment: string;

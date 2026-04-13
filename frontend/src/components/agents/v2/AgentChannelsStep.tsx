@@ -3,7 +3,7 @@ interface AgentChannelsStepProps {
   onToggle: (channel: string) => void;
 }
 
-const channels = ['WhatsApp', 'Instagram', 'WebsiteChat', 'Email', 'CRM', 'API', 'Webhook'];
+const channels = ['WhatsApp', 'Instagram', 'WebsiteChat', 'API', 'Webhook'];
 
 export function AgentChannelsStep({ selected, onToggle }: AgentChannelsStepProps) {
   return (

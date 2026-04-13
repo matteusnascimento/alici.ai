@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentCreateWizard } from '../components/agents/v2/AgentCreateWizard';
 import { AgentsMainPage } from '../components/agents/v2/AgentsMainPage';
@@ -12,12 +12,15 @@ const createAgentV2Mock = vi.fn();
 vi.mock('../services/agentsV2.service', () => ({
   listAgentsV2: (...args: unknown[]) => listAgentsV2Mock(...args),
   createAgentV2: (...args: unknown[]) => createAgentV2Mock(...args),
+  connectAgentBoundChannel: vi.fn(),
   activateAgentV2: vi.fn(),
   duplicateAgentV2: vi.fn(),
   pauseAgentV2: vi.fn(),
 }));
 
 describe('Agents v2 flow', () => {
+  const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
   beforeEach(() => {
     vi.clearAllMocks();
     listAgentsV2Mock.mockResolvedValue([]);
@@ -47,6 +50,10 @@ describe('Agents v2 flow', () => {
         checklist: [],
       },
     });
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   it('renderiza loading e estado vazio na lista de agentes', async () => {
@@ -90,6 +97,7 @@ describe('Agents v2 flow', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Responder clientes/i }));
     await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Criar agente/i }));
 
     await waitFor(() => {
       expect(createAgentV2Mock).toHaveBeenCalledTimes(1);
@@ -120,6 +128,7 @@ describe('Agents v2 flow', () => {
     await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     await userEvent.click(screen.getByRole('button', { name: /Responder clientes/i }));
     await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Criar agente/i }));
 
     expect(await screen.findByRole('button', { name: /Criando.../i })).toBeInTheDocument();
 
@@ -149,6 +158,8 @@ describe('Agents v2 flow', () => {
         checklist: [],
       },
     });
+
+    expect(await screen.findByText(/Overview carregada/i)).toBeInTheDocument();
   });
 
   it('mostra erro amigavel quando submit falha', async () => {
@@ -166,6 +177,7 @@ describe('Agents v2 flow', () => {
     await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     await userEvent.click(screen.getByRole('button', { name: /Responder clientes/i }));
     await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Criar agente/i }));
 
     expect(await screen.findByText(/Nao foi possivel concluir a criacao do agente/i)).toBeInTheDocument();
   });

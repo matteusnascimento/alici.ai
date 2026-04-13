@@ -5,15 +5,13 @@ import { AgentIdentityStep } from './AgentIdentityStep';
 import { AgentObjectiveStep } from './AgentObjectiveStep';
 import { AgentStepLayout } from './AgentStepLayout';
 import { AgentChannelsStep } from './AgentChannelsStep';
-import { createAgentV2, updateAgentProviderConfig } from '../../../services/agentsV2.service';
+import { connectAgentBoundChannel, createAgentV2 } from '../../../services/agentsV2.service';
 import { ApiError } from '../../../services/api';
 
 const providerMap: Record<string, string> = {
   WhatsApp: 'whatsapp',
   Instagram: 'instagram',
   WebsiteChat: 'website_chat',
-  Email: 'email',
-  CRM: 'crm',
   API: 'api',
   Webhook: 'webhook',
 };
@@ -39,11 +37,6 @@ export function AgentCreateWizard() {
 
     if (step === 2 && objectives.length === 0) {
       setValidationError('Selecione ao menos um objetivo operacional.');
-      return;
-    }
-
-    if (step === 3 && channels.length === 0) {
-      setValidationError('Selecione ao menos um canal na etapa Canais e Integracoes.');
       return;
     }
 
@@ -77,9 +70,15 @@ export function AgentCreateWizard() {
         channels.map(async (channelName) => {
           const provider = providerMap[channelName];
           if (!provider) return;
-          await updateAgentProviderConfig(created.agent.id, provider, {
-            enabled: true,
-            config: {},
+          await connectAgentBoundChannel(created.agent.id, {
+            provider,
+            integration: {
+              external_account_name: `${provider}-account`,
+              metadata: { source: 'agent_create_wizard' },
+            },
+            endpoint: {
+              channel_name: `${provider}-channel`,
+            },
           });
         }),
       );

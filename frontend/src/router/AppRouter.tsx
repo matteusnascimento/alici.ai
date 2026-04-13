@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
@@ -35,8 +35,6 @@ import { StoryStudioPage } from '../components/studio/v2/StoryStudioPage';
 import { StudioHomePage } from '../components/studio/v2/StudioHomePage';
 import { TemplatesStudioPage } from '../components/studio/v2/TemplatesStudioPage';
 import { VideoEditorStudioPage } from '../components/studio/v2/VideoEditorStudioPage';
-import { SimpleWorkspacePage } from '../components/studio/v2/SimpleWorkspacePage';
-import { CampaignWorkspacePage } from '../components/studio/v2/CampaignWorkspacePage';
 import { useAuth } from '../hooks/useAuth';
 import { AgentActionsPage } from '../components/agents/v2/AgentActionsPage';
 import { AgentAnalyticsPage } from '../components/agents/v2/AgentAnalyticsPage';
@@ -51,6 +49,13 @@ import { AgentTestPage } from '../components/agents/v2/AgentTestPage';
 import { AgentsMainPage } from '../components/agents/v2/AgentsMainPage';
 import { AgentsShell } from '../components/agents/v2/AgentsShell';
 import { AgentWorkspaceShell } from '../components/agents/v2/AgentWorkspaceShell';
+
+import { MarketingShell } from '../components/marketing/MarketingShell';
+import { MarketingProjectsPage } from '../components/marketing/MarketingProjectsPage';
+import { MarketingCampaignPage } from '../components/marketing/MarketingCampaignPage';
+import { MarketingCopyPage } from '../components/marketing/MarketingCopyPage';
+import { MarketingBriefPage } from '../components/marketing/MarketingBriefPage';
+import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -69,12 +74,6 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: st
       </section>
     </main>
   );
-}
-
-function LegacyStudioRedirect() {
-  const location = useLocation();
-  const suffix = location.pathname.replace('/app/marketing', '');
-  return <Navigate replace to={`/app/studio${suffix}${location.search}`} />;
 }
 
 export function AppRouter() {
@@ -129,21 +128,17 @@ export function AppRouter() {
               <Route path="tools/ad" element={<PosterStudioPage />} />
               <Route path="tools/story" element={<StoryStudioPage />} />
               <Route path="tools/cta" element={<CaptionsStudioPage mode="cta" />} />
-              <Route path="tools/campaign" element={<CampaignWorkspacePage />} />
-              <Route path="tools/auto-cut" element={<SimpleWorkspacePage type="auto-cut" title="AutoCut" subtitle="Corte automatico de takes para versoes curtas e dinamicas." tools={["Deteccao", "Ritmo", "Highlights", "Saida"]} promptPlaceholder="Descreva o tipo de video, objetivo e ritmo ideal." />} />
-              <Route path="tools/avatar" element={<SimpleWorkspacePage type="avatar" title="Avatar IA" subtitle="Crie videos com avatar, voz e roteiro sintetico." tools={["Avatar", "Roteiro", "Voz", "Cena"]} promptPlaceholder="Defina avatar, mensagem, tom e contexto do video." />} />
-              <Route path="tools/enhance" element={<SimpleWorkspacePage type="enhance-image" title="Melhorar imagem" subtitle="Aprimore cor, nitidez e contraste com IA." tools={["Nitidez", "Cor", "Contraste", "Upscale"]} promptPlaceholder="Explique como a imagem deve ser melhorada." />} />
 
               <Route path="video-editor/*" element={<Navigate replace to="/app/studio/editor/video" />} />
               <Route path="photo-editor/*" element={<Navigate replace to="/app/studio/tools/photo-editor" />} />
               <Route path="poster/*" element={<Navigate replace to="/app/studio/tools/ad" />} />
+              <Route path="banner" element={<Navigate replace to="/app/studio/tools/ad" />} />
               <Route path="story" element={<Navigate replace to="/app/studio/tools/story" />} />
               <Route path="story/new" element={<Navigate replace to="/app/studio/tools/story" />} />
               <Route path="ad-builder" element={<Navigate replace to="/app/studio/tools/ad" />} />
 
               <Route path="remove-background" element={<RemoveBackgroundStudioPage />} />
               <Route path="projects" element={<ProjectsStudioPage />} />
-              <Route path="campaign/*" element={<CampaignWorkspacePage />} />
               <Route path="exports" element={<ExportsStudioPage />} />
               
               {/* LIBRARY - MANAGE */}
@@ -155,7 +150,13 @@ export function AppRouter() {
               {/* DEPRECATED - Redirects for backwards compatibility */}
               <Route path="brand" element={<BrandStudioPage />} />
             </Route>
-            <Route path="marketing/*" element={<LegacyStudioRedirect />} />
+            <Route path="marketing" element={<MarketingShell />}>
+              <Route index element={<MarketingProjectsPage />} />
+              <Route path="campaign" element={<MarketingCampaignPage />} />
+              <Route path="copy" element={<MarketingCopyPage />} />
+              <Route path="brief" element={<MarketingBriefPage />} />
+            </Route>
+            <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="account" element={<AccountShell />}>
               <Route index element={<Navigate replace to="overview" />} />
               <Route path="overview" element={<AccountHomePage />} />

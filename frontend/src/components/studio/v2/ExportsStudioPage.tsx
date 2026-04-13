@@ -6,13 +6,18 @@ import { listStudioRecentExports } from '../../../services/studio.service';
 import type { StudioRecentExportItem } from '../../../types/studioV2';
 
 const routeBySource: Record<string, string> = {
-  poster: '/app/studio/poster/new',
-  story: '/app/studio/story/new',
-  ad: '/app/studio/ad/new',
-  banner: '/app/studio/ad/new',
-  video: '/app/studio/video/new',
-  'photo-edit': '/app/studio/photo/edit',
-  'background-remove': '/app/studio/background-remove',
+  poster: '/app/studio/tools/ad',
+  story: '/app/studio/tools/story',
+  ad: '/app/studio/tools/ad',
+  'ad-builder': '/app/studio/tools/ad',
+  banner: '/app/studio/tools/ad',
+  video: '/app/studio/editor/video',
+  'video-editor': '/app/studio/editor/video',
+  'photo-edit': '/app/studio/tools/photo-editor',
+  'photo-editor': '/app/studio/tools/photo-editor',
+  'background-remove': '/app/studio/tools/remove-background',
+  campaign: '/app/studio/tools/campaign',
+  cta: '/app/studio/tools/cta',
 };
 
 export function ExportsStudioPage() {

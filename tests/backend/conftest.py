@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import text
+
 # Use um arquivo por processo para evitar lock compartilhado no Windows.
 TEST_DB = Path(__file__).resolve().parent / f"test_axi_{os.getpid()}.db"
 os.environ['DATABASE_URL'] = f"sqlite:///{TEST_DB.as_posix()}"
@@ -95,8 +97,18 @@ def mock_openai_network(monkeypatch):
 def reset_database():
     from app.services.dev_seed_service import DevSeedService
 
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    # Limpa dados sem recriar schema a cada teste, reduzindo custo e lock no SQLite.
+    with engine.begin() as connection:
+        connection.execute(text("PRAGMA foreign_keys=OFF"))
+        for table in reversed(Base.metadata.sorted_tables):
+            connection.execute(table.delete())
+        try:
+            connection.execute(text("DELETE FROM sqlite_sequence"))
+        except Exception:
+            # sqlite_sequence pode nao existir quando nenhuma tabela usa AUTOINCREMENT.
+            pass
+        connection.execute(text("PRAGMA foreign_keys=ON"))
+
     db = SessionLocal()
     try:
         DevSeedService(db).ensure_local_dev_user()

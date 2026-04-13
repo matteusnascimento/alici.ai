@@ -13,8 +13,6 @@ function providerDescription(provider: string): string {
     whatsapp: 'Conecte sua conta do WhatsApp para responder clientes automaticamente.',
     instagram: 'Responda DMs do Instagram com o agente, sem troca manual entre telas.',
     website_chat: 'Adicione o chat no seu site e deixe o agente atender visitantes em tempo real.',
-    email: 'Use seu email para centralizar respostas recorrentes com apoio do agente.',
-    crm: 'Sincronize contatos e histórico para o agente responder com contexto de vendas.',
     api: 'Integre sistemas internos via API para acionar o agente em fluxos customizados.',
     webhook: 'Receba eventos e automatize respostas do agente conforme gatilhos do seu produto.',
   };
@@ -22,49 +20,10 @@ function providerDescription(provider: string): string {
 }
 
 function sectionByProvider(provider: string): 'service' | 'advanced' {
-  if (['whatsapp', 'instagram', 'website_chat', 'email'].includes(provider)) {
+  if (['whatsapp', 'instagram'].includes(provider)) {
     return 'service';
   }
   return 'advanced';
-}
-
-function withDefaultProviders(items: ChannelProviderCatalogItem[]): ChannelProviderCatalogItem[] {
-  const defaults: ChannelProviderCatalogItem[] = [
-    {
-      provider: 'website_chat',
-      title: 'Website Chat',
-      description: 'Atendimento no site com widget do agente.',
-      status: 'coming_soon',
-      helper_text: 'Conecte o chat do site para responder visitantes automaticamente.',
-      connected_accounts: 0,
-      active_bindings: 0,
-      supports_activation: false,
-    },
-    {
-      provider: 'email',
-      title: 'Email',
-      description: 'Atendimento por email com apoio do agente.',
-      status: 'coming_soon',
-      helper_text: 'Conecte sua caixa de entrada para respostas operacionais.',
-      connected_accounts: 0,
-      active_bindings: 0,
-      supports_activation: false,
-    },
-    {
-      provider: 'crm',
-      title: 'CRM',
-      description: 'Sincronize contatos e contexto comercial.',
-      status: 'coming_soon',
-      helper_text: 'Conecte seu CRM para o agente atuar com contexto de vendas.',
-      connected_accounts: 0,
-      active_bindings: 0,
-      supports_activation: false,
-    },
-  ];
-
-  const existing = new Set(items.map((item) => item.provider));
-  const missing = defaults.filter((item) => !existing.has(item.provider));
-  return [...items, ...missing];
 }
 
 function ProviderCard({ item, onOpen }: { item: ChannelProviderCatalogItem; onOpen: () => void }) {
@@ -114,9 +73,8 @@ export function AgentChannelsPage() {
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   const groupedProviders = useMemo(() => {
-    const normalized = withDefaultProviders(providers);
-    const service = normalized.filter((item) => sectionByProvider(item.provider) === 'service');
-    const advanced = normalized.filter((item) => sectionByProvider(item.provider) === 'advanced');
+    const service = providers.filter((item) => sectionByProvider(item.provider) === 'service');
+    const advanced = providers.filter((item) => sectionByProvider(item.provider) === 'advanced');
     return { service, advanced };
   }, [providers]);
 
@@ -204,15 +162,17 @@ export function AgentChannelsPage() {
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="font-display text-2xl text-white">Integrações avançadas</h2>
-        <p className="text-sm text-slate-400">Conecte CRM, API e Webhook para fluxos mais avançados do produto.</p>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {groupedProviders.advanced.map((item) => (
-            <ProviderCard key={item.provider} item={item} onOpen={() => setModalOpen(true)} />
-          ))}
-        </div>
-      </section>
+      {groupedProviders.advanced.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="font-display text-2xl text-white">Integrações avançadas</h2>
+          <p className="text-sm text-slate-400">Conecte canais avançados disponíveis para este workspace.</p>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {groupedProviders.advanced.map((item) => (
+              <ProviderCard key={item.provider} item={item} onOpen={() => setModalOpen(true)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="space-y-4">
         <div>
@@ -234,7 +194,7 @@ export function AgentChannelsPage() {
           </div>
         ) : (
           <div className="rounded-[28px] border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center text-slate-300">
-            Nenhum canal conectado ainda. Comece por WhatsApp, Instagram ou Website Chat.
+            Nenhum canal conectado ainda. Comece por WhatsApp ou Instagram.
           </div>
         )}
       </section>
