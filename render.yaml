@@ -9,13 +9,16 @@ services:
     name: axi-backend
     runtime: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt && cd ../frontend && npm install && npm run build && cd ../backend && rm -rf frontend_dist && mkdir -p frontend_dist && cp -r ../frontend/dist/* frontend_dist/ && python scripts/render_migrate.py
+    healthCheckPath: /health
+    buildCommand: pip install -r requirements.txt && cd ../frontend && npm install && npm run build && cd ../backend && rm -rf frontend_dist && mkdir -p frontend_dist && cp -r ../frontend/dist/. frontend_dist/ && python scripts/render_migrate.py
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: APP_ENV
         value: production
       - key: PYTHON_VERSION
         value: 3.11.11
+      - key: NODE_VERSION
+        value: "20"
       - key: DATABASE_URL
         fromDatabase:
           name: axi-db
