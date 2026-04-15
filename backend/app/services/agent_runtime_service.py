@@ -26,6 +26,17 @@ class AgentRuntimeError(Exception):
 
 
 class AgentRuntimeService:
+    _STAGE_ORDER = {
+        "novo_lead": 0,
+        "em_conversa": 1,
+        "interesse_alto": 2,
+        "proposta_enviada": 3,
+        "aguardando_resposta": 4,
+        "recuperacao": 5,
+        "fechado": 6,
+        "perdido": 7,
+    }
+
     @staticmethod
     def _json_loads(value: str | None) -> dict[str, Any]:
         if not value:
@@ -68,6 +79,7 @@ class AgentRuntimeService:
         external_user_id: str,
         external_conversation_id: str,
         channel_id: str,
+        lead_source: str | None = None,
     ) -> AgentConversation:
         conversation = (
             db.query(AgentConversation)
@@ -88,10 +100,129 @@ class AgentRuntimeService:
             external_user_id=external_user_id,
             external_conversation_id=external_conversation_id,
             status="active",
+            sales_stage="novo_lead",
+            lead_source=lead_source,
         )
         db.add(conversation)
         db.flush()
         return conversation
+
+    @staticmethod
+    def _extract_number(payload: dict[str, Any], keys: tuple[str, ...]) -> float:
+        for key in keys:
+            value = payload.get(key)
+            if isinstance(value, (int, float)):
+                return float(value)
+            if isinstance(value, str):
+                cleaned = value.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+                try:
+                    return float(cleaned)
+                except Exception:
+                    continue
+        return 0.0
+
+    @staticmethod
+    def _coerce_stage(stage: str | None) -> str | None:
+        if not stage:
+            return None
+        normalized = stage.strip().lower().replace("-", "_").replace(" ", "_")
+        aliases = {
+            "active": "em_conversa",
+            "active_ai": "em_conversa",
+            "in_conversation": "em_conversa",
+            "high_interest": "interesse_alto",
+            "interest_high": "interesse_alto",
+            "proposal": "proposta_enviada",
+            "proposal_sent": "proposta_enviada",
+            "awaiting_response": "aguardando_resposta",
+            "recovery": "recuperacao",
+            "reactivated": "recuperacao",
+            "closed": "fechado",
+            "closed_won": "fechado",
+            "won": "fechado",
+            "reservation_closed": "fechado",
+            "booked": "fechado",
+            "lost": "perdido",
+            "closed_lost": "perdido",
+        }
+        mapped = aliases.get(normalized, normalized)
+        if mapped in AgentRuntimeService._STAGE_ORDER:
+            return mapped
+        return None
+
+    @staticmethod
+    def _max_stage(current: str | None, candidate: str | None) -> str:
+        current_stage = AgentRuntimeService._coerce_stage(current) or "novo_lead"
+        candidate_stage = AgentRuntimeService._coerce_stage(candidate)
+        if not candidate_stage:
+            return current_stage
+        current_rank = AgentRuntimeService._STAGE_ORDER.get(current_stage, 0)
+        candidate_rank = AgentRuntimeService._STAGE_ORDER.get(candidate_stage, 0)
+        return candidate_stage if candidate_rank > current_rank else current_stage
+
+    @staticmethod
+    def _apply_commercial_state(
+        conversation: AgentConversation,
+        *,
+        inbound_text: str,
+        metadata: dict[str, Any],
+        actions: list[dict[str, Any]],
+    ) -> None:
+        source = metadata.get("source") or metadata.get("campaign") or metadata.get("origem")
+        if isinstance(source, str) and source.strip():
+            conversation.lead_source = source.strip()
+
+        if bool(metadata.get("is_remarketing")):
+            conversation.is_remarketing = True
+            conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "recuperacao")
+
+        stage_from_metadata = metadata.get("sales_stage") or metadata.get("stage") or metadata.get("status")
+        if isinstance(stage_from_metadata, str):
+            conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, stage_from_metadata)
+
+        reservation_value = AgentRuntimeService._extract_number(
+            metadata,
+            ("reservation_value", "booking_value", "sale_value", "amount", "valor_reserva", "revenue"),
+        )
+
+        lowered_text = inbound_text.lower()
+        if any(term in lowered_text for term in ("proposta", "orcamento", "orçamento")):
+            conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "proposta_enviada")
+        if any(term in lowered_text for term in ("fechar", "fechou", "reserva confirmada", "pago", "pagamento")):
+            conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "fechado")
+
+        for action in actions:
+            action_type = str(action.get("type") or "").strip().lower()
+            if action_type in {"save_lead", "qualify_lead"}:
+                conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "interesse_alto")
+            if action_type in {"send_email", "crm_event", "create_task"}:
+                conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "proposta_enviada")
+            if action_type in {"transfer_human", "schedule_callback"}:
+                conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "aguardando_resposta")
+
+            action_source = action.get("source") or action.get("campaign")
+            if isinstance(action_source, str) and action_source.strip():
+                conversation.lead_source = action_source.strip()
+
+            action_value = AgentRuntimeService._extract_number(
+                action,
+                ("reservation_value", "booking_value", "sale_value", "amount", "revenue"),
+            )
+            reservation_value = max(reservation_value, action_value)
+
+            if action_type in {"remarketing", "recover_lead", "reactivate_lead"}:
+                conversation.is_remarketing = True
+                conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "recuperacao")
+
+        if reservation_value > 0:
+            conversation.reservation_value = reservation_value
+            conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "fechado")
+
+        if any(term in (conversation.lead_source or "").lower() for term in ("remarketing", "reativ")):
+            conversation.is_remarketing = True
+
+        if conversation.status == "handoff_human":
+            conversation.sales_stage = AgentRuntimeService._max_stage(conversation.sales_stage, "aguardando_resposta")
 
     @staticmethod
     def _save_message(
@@ -215,12 +346,18 @@ class AgentRuntimeService:
             if not should_run:
                 continue
 
+            config = AgentRuntimeService._json_loads(action.config_json)
+
             result = {
                 "action_id": action.id,
                 "name": action.name,
                 "type": action.action_type,
                 "status": "executed",
             }
+            for key in ("amount", "reservation_value", "booking_value", "sale_value", "source", "campaign"):
+                value = config.get(key)
+                if value is not None:
+                    result[key] = value
             executed.append(result)
 
         return executed
@@ -249,6 +386,7 @@ class AgentRuntimeService:
             external_user_id=external_user_id,
             external_conversation_id=external_conversation_id,
             channel_id=channel_id,
+            lead_source=(metadata.get("source") if isinstance(metadata.get("source"), str) else None),
         )
 
         AgentRuntimeService._save_message(
@@ -266,6 +404,13 @@ class AgentRuntimeService:
 
         if any(a["type"] == "transfer_human" for a in executed_actions) or "transferir" in response_text.lower():
             conversation.status = "handoff_human"
+
+        AgentRuntimeService._apply_commercial_state(
+            conversation,
+            inbound_text=text,
+            metadata=metadata,
+            actions=executed_actions,
+        )
 
         AgentRuntimeService._save_message(
             db,

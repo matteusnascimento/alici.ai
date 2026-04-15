@@ -1,4 +1,4 @@
-import { Bot, ChartColumnBig, LayoutDashboard, Link2, Megaphone, Menu, Settings2, Sparkles, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, ChartColumnBig, LayoutDashboard, Link2, Megaphone, Menu, Settings2, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { SidebarItem } from './SidebarItem';
@@ -13,6 +13,7 @@ interface AppSidebarProps {
 
 const items = [
   { label: 'Dashboard', to: '/app/dashboard', icon: LayoutDashboard },
+  { label: 'Revenue', to: '/app/revenue', icon: BadgeDollarSign },
   { label: 'Alici Chat', to: '/app/chat', icon: Bot },
   { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
   { label: 'AXI Studio', to: '/app/studio', icon: Megaphone },

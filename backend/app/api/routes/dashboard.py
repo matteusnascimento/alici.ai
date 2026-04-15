@@ -7,8 +7,10 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.dashboard import DashboardMetrics, DashboardOverview, DashboardStats, DashboardUsage
+from app.schemas.revenue import RevenueIntelligenceSnapshot, RevenueSeriesResponse
 from app.services.ai_service import AIService, AIServiceError
 from app.services.dashboard_service import DashboardService
+from app.services.revenue_service import RevenueService
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -31,6 +33,25 @@ def get_usage(current_user: User = Depends(get_current_user), db: Session = Depe
 @router.get("/metrics", response_model=DashboardMetrics)
 def get_metrics(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> DashboardMetrics:
     return DashboardService(db).get_metrics(current_user)
+
+
+@router.get("/revenue-intelligence", response_model=RevenueIntelligenceSnapshot)
+def get_revenue_intelligence(
+    days: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RevenueIntelligenceSnapshot:
+    return RevenueService(db).get_snapshot(current_user, days=days)
+
+
+@router.get("/revenue-series", response_model=RevenueSeriesResponse)
+def get_revenue_series(
+    days: int = 30,
+    granularity: str = "daily",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RevenueSeriesResponse:
+    return RevenueService(db).get_revenue_series(current_user, days=days, granularity=granularity)
 
 
 @router.get("/insights", response_model=dict[str, Any])

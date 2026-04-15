@@ -20,6 +20,7 @@ class SchemaSyncService:
             self._sync_users_table(conn)
             self._sync_user_settings_table(conn)
             self._sync_subscriptions_table(conn)
+            self._sync_agent_conversations_table(conn)
             self._sync_media_tables(conn)
 
     def _sync_users_table(self, conn) -> None:
@@ -160,6 +161,26 @@ class SchemaSyncService:
             )
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_media_jobs_user_id ON media_jobs (user_id)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_media_jobs_project_id ON media_jobs (project_id)"))
+
+    def _sync_agent_conversations_table(self, conn) -> None:
+        table_exists = conn.execute(text("select to_regclass('public.agent_conversations')")).scalar()
+        if not table_exists:
+            return
+
+        columns = self._get_table_columns(conn, "agent_conversations")
+        missing_columns = {
+            "sales_stage": "VARCHAR(40) NOT NULL DEFAULT 'novo_lead'",
+            "reservation_value": "DOUBLE PRECISION",
+            "lead_source": "VARCHAR(160)",
+            "is_remarketing": "BOOLEAN NOT NULL DEFAULT false",
+        }
+        for col, definition in missing_columns.items():
+            if col not in columns:
+                conn.execute(text(f"ALTER TABLE agent_conversations ADD COLUMN {col} {definition}"))
+
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_conversations_sales_stage ON agent_conversations (sales_stage)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_conversations_lead_source ON agent_conversations (lead_source)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_conversations_is_remarketing ON agent_conversations (is_remarketing)"))
 
     def _get_table_columns(self, conn, table_name: str) -> set[str]:
         rows = conn.execute(

@@ -58,6 +58,7 @@ import { MarketingCampaignPage } from '../components/marketing/MarketingCampaign
 import { MarketingCopyPage } from '../components/marketing/MarketingCopyPage';
 import { MarketingBriefPage } from '../components/marketing/MarketingBriefPage';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
+import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -103,6 +104,7 @@ export function AppRouter() {
           <Route element={<PlatformShell />} path="/app">
             <Route element={<Navigate replace to="/app/dashboard" />} index />
             <Route element={<DashboardPanel />} path="dashboard" />
+            <Route element={<RevenueIntelligencePage />} path="revenue" />
             <Route element={<ChatPanel />} path="chat" />
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
