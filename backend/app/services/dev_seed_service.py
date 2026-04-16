@@ -40,6 +40,8 @@ class DevSeedService:
                     monthly_price=0.0,
                     yearly_price=0.0,
                     billing_cycle="monthly",
+                    currency="BRL",
+                    provider="stripe",
                 )
             )
         else:

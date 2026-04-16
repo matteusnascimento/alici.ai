@@ -24,6 +24,16 @@ class AIServiceError(RuntimeError):
         self.status_code = status_code
         self.code = code
 
+    @property
+    def is_retryable_platform_issue(self) -> bool:
+        return self.status_code in {429, 503, 504} or self.code in {
+            "rate_limit",
+            "timeout",
+            "network_error",
+            "ai_not_configured",
+            "openai_request_failed",
+        }
+
 
 class AIConfigurationError(AIServiceError):
     def __init__(self, message: str) -> None:
@@ -82,12 +92,25 @@ class AIService:
         if "OPENAI_API_KEY" in message:
             return AIConfigurationError(message)
         status_code = getattr(exc, "status_code", 503)
-        code = getattr(exc, "code", "openai_request_failed")
-        if hasattr(exc, "code") and getattr(exc, "code") == "missing_api_key":
+        code = getattr(exc, "code", None) or getattr(exc, "error_type", None) or "openai_request_failed"
+        if code == "missing_api_key":
             return AIConfigurationError(message)
+
+        user_message = "Nao foi possivel executar a tarefa com IA no momento."
+        if code == "rate_limit" or status_code == 429:
+            user_message = "A IA atingiu o limite temporario de uso. O sistema entrou em modo seguro por alguns instantes."
+            code = "rate_limit"
+            status_code = 429
+        elif code in {"timeout", "network_error"} or status_code == 504:
+            user_message = "A IA demorou para responder. O sistema pode operar com resposta reduzida temporariamente."
+        elif code == "invalid_api_key" or status_code == 401:
+            user_message = "A autenticacao da integracao de IA falhou."
+        elif code == "http_error" and status_code >= 500:
+            user_message = "A IA ficou indisponivel temporariamente."
+
         return AIServiceError(
             message,
-            user_message="Nao foi possivel executar a tarefa com IA no momento.",
+            user_message=user_message,
             status_code=status_code,
             code=code,
         )

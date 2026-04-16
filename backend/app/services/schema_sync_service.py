@@ -9,19 +9,99 @@ class SchemaSyncService:
         self.engine = engine
 
     def apply_startup_fixes(self) -> None:
-        if self.engine.url.get_backend_name() != "postgresql":
-            return
-
+        backend = self.engine.url.get_backend_name()
         with self.engine.begin() as conn:
-            table_exists = conn.execute(text("select to_regclass('public.users')")).scalar()
-            if not table_exists:
+            if backend == "postgresql":
+                table_exists = conn.execute(text("select to_regclass('public.users')")).scalar()
+                if not table_exists:
+                    return
+
+                self._sync_users_table(conn)
+                self._sync_user_settings_table(conn)
+                self._sync_subscriptions_table(conn)
+                self._sync_agent_conversations_table(conn)
+                self._sync_media_tables(conn)
                 return
 
-            self._sync_users_table(conn)
-            self._sync_user_settings_table(conn)
-            self._sync_subscriptions_table(conn)
-            self._sync_agent_conversations_table(conn)
-            self._sync_media_tables(conn)
+            if backend == "sqlite":
+                self._sync_users_table_sqlite(conn)
+                self._sync_user_settings_table_sqlite(conn)
+                self._sync_subscriptions_table_sqlite(conn)
+
+    def _sync_users_table_sqlite(self, conn) -> None:
+        columns = self._get_table_columns_sqlite(conn, "users")
+        if not columns:
+            return
+
+        if "username" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN username VARCHAR(50)"))
+        if "phone" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR(30)"))
+        if "avatar_url" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(512)"))
+        if "bio" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN bio TEXT"))
+        if "updated_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN updated_at DATETIME"))
+
+    def _sync_user_settings_table_sqlite(self, conn) -> None:
+        columns = self._get_table_columns_sqlite(conn, "user_settings")
+        if not columns:
+            return
+
+        expected_columns = {
+            "theme_mode": "VARCHAR(20) DEFAULT 'dark'",
+            "accent_color": "VARCHAR(30) DEFAULT 'cyan'",
+            "haptic_feedback": "BOOLEAN DEFAULT 0",
+            "notifications_enabled": "BOOLEAN DEFAULT 1",
+            "email_notifications": "BOOLEAN DEFAULT 1",
+            "push_notifications": "BOOLEAN DEFAULT 1",
+            "product_updates": "BOOLEAN DEFAULT 1",
+            "marketing_notifications": "BOOLEAN DEFAULT 0",
+            "security_alerts": "BOOLEAN DEFAULT 1",
+            "archived_chat_visibility": "BOOLEAN DEFAULT 1",
+        }
+        for column_name, column_type in expected_columns.items():
+            if column_name not in columns:
+                conn.execute(text(f"ALTER TABLE user_settings ADD COLUMN {column_name} {column_type}"))
+
+    def _sync_subscriptions_table_sqlite(self, conn) -> None:
+        columns = self._get_table_columns_sqlite(conn, "subscriptions")
+        if not columns:
+            return
+
+        missing_columns = {
+            "plan_id": "VARCHAR(40) NOT NULL DEFAULT 'free'",
+            "monthly_price": "FLOAT NOT NULL DEFAULT 0.0",
+            "yearly_price": "FLOAT",
+            "billing_cycle": "VARCHAR(20) NOT NULL DEFAULT 'monthly'",
+            "currency": "VARCHAR(10) NOT NULL DEFAULT 'BRL'",
+            "provider": "VARCHAR(40) NOT NULL DEFAULT 'stripe'",
+            "stripe_customer_id": "VARCHAR(100)",
+            "stripe_subscription_id": "VARCHAR(100)",
+            "stripe_price_id": "VARCHAR(100)",
+            "cancel_at_period_end": "BOOLEAN NOT NULL DEFAULT 0",
+            "last_checkout_session_id": "VARCHAR(100)",
+            "last_invoice_id": "VARCHAR(100)",
+            "external_status": "VARCHAR(40)",
+            "metadata_json": "TEXT",
+            "trial_ends_at": "DATETIME",
+            "current_period_start": "DATETIME",
+            "current_period_end": "DATETIME",
+            "auto_renew": "BOOLEAN NOT NULL DEFAULT 1",
+            "seats": "INTEGER NOT NULL DEFAULT 1",
+            "updated_at": "DATETIME",
+        }
+        for col, definition in missing_columns.items():
+            if col not in columns:
+                conn.execute(text(f"ALTER TABLE subscriptions ADD COLUMN {col} {definition}"))
+
+    def _get_table_columns_sqlite(self, conn, table_name: str) -> set[str]:
+        try:
+            rows = conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
+        except Exception:
+            return set()
+        return {row[1] for row in rows}
 
     def _sync_users_table(self, conn) -> None:
         rename_map = {

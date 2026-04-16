@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.schemas.dashboard import DashboardMetrics, DashboardOverview, DashboardStats, DashboardUsage
+from app.schemas.dashboard import DashboardAIHealth, DashboardAIMetrics, DashboardMetrics, DashboardOverview, DashboardStats, DashboardUsage
 from app.schemas.revenue import RevenueIntelligenceSnapshot, RevenueSeriesResponse
 from app.services.ai_service import AIService, AIServiceError
 from app.services.dashboard_service import DashboardService
@@ -33,6 +33,20 @@ def get_usage(current_user: User = Depends(get_current_user), db: Session = Depe
 @router.get("/metrics", response_model=DashboardMetrics)
 def get_metrics(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> DashboardMetrics:
     return DashboardService(db).get_metrics(current_user)
+
+
+@router.get("/ai-health", response_model=DashboardAIHealth)
+def get_ai_health(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> DashboardAIHealth:
+    return DashboardService(db).get_ai_health(current_user)
+
+
+@router.get("/ai-metrics", response_model=DashboardAIMetrics)
+def get_ai_metrics(
+    window: str = "24h",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DashboardAIMetrics:
+    return DashboardService(db).get_ai_metrics(current_user, window=window)
 
 
 @router.get("/revenue-intelligence", response_model=RevenueIntelligenceSnapshot)

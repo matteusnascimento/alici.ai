@@ -37,3 +37,23 @@ class DashboardMetricItem(BaseModel):
 
 class DashboardMetrics(BaseModel):
     items: list[DashboardMetricItem]
+
+
+class DashboardAIHealth(BaseModel):
+    provider: str
+    status: str
+    model: str
+    latency_ms: float
+    error_type: str | None = None
+    status_code: int | None = None
+
+
+class DashboardAIMetrics(BaseModel):
+    window: str
+    total_requests: int
+    success_requests: int
+    error_requests: int
+    rate_limit_429: int
+    avg_latency_ms: float
+    trend: list[UsageBar]
+    trend_429: list[UsageBar]

@@ -52,6 +52,8 @@ class AuthService:
                 monthly_price=0.0,
                 yearly_price=0.0,
                 billing_cycle="monthly",
+                currency="BRL",
+                provider="stripe",
             )
         )
         self.db.commit()
@@ -89,6 +91,8 @@ class AuthService:
                         monthly_price=0.0,
                         yearly_price=0.0,
                         billing_cycle="monthly",
+                        currency="BRL",
+                        provider="stripe",
                     )
                 )
                 self.db.commit()

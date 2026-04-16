@@ -126,6 +126,15 @@ def client():
 
 
 @pytest.fixture
+def db_session():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@pytest.fixture
 def auth_headers(client: TestClient):
     payload = {
         'name': 'Ana Silva',

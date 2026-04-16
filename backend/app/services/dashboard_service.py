@@ -1,12 +1,25 @@
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.agent import Agent
+from app.models.ai_request_log import AIRequestLog
 from app.models.conversation import Message
 from app.models.subscription import Subscription
 from app.models.usage_log import UsageLog
 from app.models.user import User
-from app.schemas.dashboard import DashboardMetricItem, DashboardMetrics, DashboardOverview, DashboardStats, DashboardUsage, UsageBar
+from app.schemas.dashboard import (
+    DashboardAIHealth,
+    DashboardAIMetrics,
+    DashboardMetricItem,
+    DashboardMetrics,
+    DashboardOverview,
+    DashboardStats,
+    DashboardUsage,
+    UsageBar,
+)
+from app.services.openai_service import OpenAIService
 
 
 class DashboardService:
@@ -108,3 +121,99 @@ class DashboardService:
             DashboardMetricItem(key="quotes", value=float(stats.quotes)),
         ]
         return DashboardMetrics(items=items)
+
+    def get_ai_health(self, user: User) -> DashboardAIHealth:
+        result = OpenAIService().healthcheck()
+        status = str(result.get("status") or "error")
+        model = str(result.get("model") or "gpt-4o-mini")
+        return DashboardAIHealth(
+            provider="openai",
+            status=status,
+            model=model,
+            latency_ms=float(result.get("latency_ms") or 0.0),
+            error_type=result.get("error_type"),
+            status_code=result.get("status_code"),
+        )
+
+    @staticmethod
+    def _window_to_timedelta(window: str) -> timedelta:
+        normalized = (window or "24h").strip().lower()
+        if normalized == "7d":
+            return timedelta(days=7)
+        if normalized == "30d":
+            return timedelta(days=30)
+        return timedelta(hours=24)
+
+    @staticmethod
+    def _window_label(window: str) -> str:
+        normalized = (window or "24h").strip().lower()
+        return normalized if normalized in {"24h", "7d", "30d"} else "24h"
+
+    def get_ai_metrics(self, user: User, window: str = "24h") -> DashboardAIMetrics:
+        window_label = self._window_label(window)
+        start = datetime.now(UTC) - self._window_to_timedelta(window_label)
+        base_query = self.db.query(AIRequestLog).filter(
+            AIRequestLog.created_at >= start,
+            (AIRequestLog.user_id == user.id) | (AIRequestLog.user_id.is_(None)),
+        )
+
+        total_requests = base_query.count()
+        success_requests = base_query.filter(AIRequestLog.status == "success").count()
+        error_requests = base_query.filter(AIRequestLog.status == "error").count()
+        rate_limit_requests = base_query.filter(AIRequestLog.status_code == 429).count()
+
+        avg_latency = (
+            self.db.query(func.avg(AIRequestLog.latency_ms))
+            .filter(
+                AIRequestLog.created_at >= start,
+                (AIRequestLog.user_id == user.id) | (AIRequestLog.user_id.is_(None)),
+            )
+            .scalar()
+            or 0
+        )
+
+        # Tendência diária de erros e 429 no período selecionado.
+        trend_errors_by_day: dict[str, int] = {}
+        trend_429_by_day: dict[str, int] = {}
+
+        rows = (
+            self.db.query(AIRequestLog.created_at, AIRequestLog.status, AIRequestLog.status_code)
+            .filter(
+                AIRequestLog.created_at >= start,
+                (AIRequestLog.user_id == user.id) | (AIRequestLog.user_id.is_(None)),
+            )
+            .all()
+        )
+        for created_at, status, status_code in rows:
+            if created_at is None:
+                continue
+            day_key = created_at.date().isoformat()
+            if status == "error":
+                trend_errors_by_day[day_key] = trend_errors_by_day.get(day_key, 0) + 1
+            if status_code == 429:
+                trend_429_by_day[day_key] = trend_429_by_day.get(day_key, 0) + 1
+
+        if window_label == "24h":
+            day_range = [datetime.now(UTC).date()]
+        else:
+            total_days = 7 if window_label == "7d" else 30
+            base_date = datetime.now(UTC).date()
+            day_range = [base_date - timedelta(days=i) for i in range(total_days - 1, -1, -1)]
+
+        trend = []
+        trend_429 = []
+        for day in day_range:
+            key = day.isoformat()
+            trend.append(UsageBar(label=day.strftime("%d/%m"), value=int(trend_errors_by_day.get(key, 0))))
+            trend_429.append(UsageBar(label=day.strftime("%d/%m"), value=int(trend_429_by_day.get(key, 0))))
+
+        return DashboardAIMetrics(
+            window=window_label,
+            total_requests=int(total_requests),
+            success_requests=int(success_requests),
+            error_requests=int(error_requests),
+            rate_limit_429=int(rate_limit_requests),
+            avg_latency_ms=float(avg_latency),
+            trend=trend,
+            trend_429=trend_429,
+        )

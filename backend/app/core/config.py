@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     stripe_price_pro_yearly: str = ""
     stripe_price_business_monthly: str = ""
     stripe_price_business_yearly: str = ""
+    stripe_price_test: str = ""
     app_base_url: str = "http://localhost:5173"
     stripe_success_url: str = ""
     stripe_cancel_url: str = ""

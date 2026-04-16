@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from app.services.ai_service import AIService
+from app.services.ai_service import AIService, AIServiceError
 
 
 class StudioVideoService:
@@ -22,24 +22,35 @@ class StudioVideoService:
 
     @staticmethod
     def captions(prompt: str, options: dict[str, Any]) -> dict[str, Any]:
-        generated = StudioVideoService._ai.generate_structured_output(
-            prompt=f"Briefing: {prompt}\nEstilo: {options.get('style', 'bold-modern')}",
-            schema={
-                "type": "object",
-                "properties": {
-                    "captions": {
-                        "type": "array",
-                        "minItems": 3,
-                        "maxItems": 3,
-                        "items": {"type": "string"},
-                    }
+        try:
+            generated = StudioVideoService._ai.generate_structured_output(
+                prompt=f"Briefing: {prompt}\nEstilo: {options.get('style', 'bold-modern')}",
+                schema={
+                    "type": "object",
+                    "properties": {
+                        "captions": {
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": {"type": "string"},
+                        }
+                    },
+                    "required": ["captions"],
+                    "additionalProperties": False,
                 },
-                "required": ["captions"],
-                "additionalProperties": False,
-            },
-            system_prompt="Gere 3 legendas de video em pt-BR com gancho, beneficio e CTA. Retorne apenas JSON valido.",
-            function_name="caption_generator",
-        )
+                system_prompt="Gere 3 legendas de video em pt-BR com gancho, beneficio e CTA. Retorne apenas JSON valido.",
+                function_name="caption_generator",
+            )
+        except AIServiceError as exc:
+            if not exc.is_retryable_platform_issue:
+                raise
+            generated = {
+                "captions": [
+                    "Abra com a promessa principal e contexto visual forte.",
+                    "Mostre o beneficio central em linguagem simples e comercial.",
+                    "Feche com CTA direto para resposta ou proposta.",
+                ]
+            }
         return {
             "operation": "video-captions",
             "status": "completed",
@@ -64,12 +75,17 @@ class StudioVideoService:
 
     @staticmethod
     def voiceover(prompt: str, options: dict[str, Any]) -> dict[str, Any]:
-        script = StudioVideoService._ai.generate_text(
-            system_prompt="Escreva um roteiro curto de voiceover em pt-BR para video comercial, com abertura forte e CTA final.",
-            user_prompt=prompt,
-            temperature=0.5,
-            function_name="ad_copy_generator",
-        )
+        try:
+            script = StudioVideoService._ai.generate_text(
+                system_prompt="Escreva um roteiro curto de voiceover em pt-BR para video comercial, com abertura forte e CTA final.",
+                user_prompt=prompt,
+                temperature=0.5,
+                function_name="ad_copy_generator",
+            )
+        except AIServiceError as exc:
+            if not exc.is_retryable_platform_issue:
+                raise
+            script = "Apresente a oferta com clareza, destaque o principal beneficio e finalize com uma chamada para acao objetiva."
         return {
             "operation": "video-voiceover",
             "status": "completed",

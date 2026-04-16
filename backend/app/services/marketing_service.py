@@ -17,6 +17,7 @@ from app.schemas.marketing import (
     MarketingTool,
 )
 from app.services.ai_service import AIService
+from app.services.ai_service import AIServiceError
 
 
 class MarketingService:
@@ -31,6 +32,30 @@ class MarketingService:
             MarketingTool(id="campaign", name="Campaign Planner", description="Estrutura campanha completa em texto."),
         ]
 
+    @staticmethod
+    def _can_fallback(exc: AIServiceError) -> bool:
+        return exc.is_retryable_platform_issue
+
+    @staticmethod
+    def _campaign_fallback(payload: MarketingCampaignRequest) -> MarketingCampaignResponse:
+        return MarketingCampaignResponse(
+            campaign=f"Campanha base para {payload.company_name}",
+            copy_text=(
+                f"{payload.offer} para {payload.audience}. Destaque a proposta principal e convide o lead a falar com o time."
+            ),
+            cta="Fale com nossa equipe e receba sua proposta personalizada.",
+            ad_structure="Gancho inicial, beneficio central, prova rapida e CTA final.",
+            creative_suggestion=f"Visual limpo com foco em {payload.offer} e linguagem {payload.tone}.",
+        )
+
+    @staticmethod
+    def _copy_fallback(prompt: str) -> MarketingCopyResponse:
+        return MarketingCopyResponse(copy_text=f"Mensagem base: {prompt.strip() or 'Apresente a oferta com clareza e CTA final.'}")
+
+    @staticmethod
+    def _image_prompt_fallback(prompt: str) -> MarketingImagePromptResponse:
+        return MarketingImagePromptResponse(prompt=f"Premium marketing visual, clean layout, strong offer focus, context: {prompt.strip() or 'campaign creative'}")
+
     def generate(self, payload: MarketingCampaignRequest) -> MarketingCampaignResponse:
         schema = {
             "type": "object",
@@ -44,39 +69,54 @@ class MarketingService:
             "required": ["campaign", "copy_text", "cta", "ad_structure", "creative_suggestion"],
             "additionalProperties": False,
         }
-        result = self.ai.generate_structured_output(
-            prompt=(
-                f"Empresa: {payload.company_name}\n"
-                f"Publico: {payload.audience}\n"
-                f"Objetivo: {payload.objective}\n"
-                f"Oferta: {payload.offer}\n"
-                f"Tom: {payload.tone}"
-            ),
-            schema=schema,
-            system_prompt=(
-                "Gere uma campanha de marketing completa em pt-BR. "
-                "Retorne somente JSON valido com campanha, copy_text, cta, ad_structure e creative_suggestion."
-            ),
-            function_name="ad_copy_generator",
-        )
+        try:
+            result = self.ai.generate_structured_output(
+                prompt=(
+                    f"Empresa: {payload.company_name}\n"
+                    f"Publico: {payload.audience}\n"
+                    f"Objetivo: {payload.objective}\n"
+                    f"Oferta: {payload.offer}\n"
+                    f"Tom: {payload.tone}"
+                ),
+                schema=schema,
+                system_prompt=(
+                    "Gere uma campanha de marketing completa em pt-BR. "
+                    "Retorne somente JSON valido com campanha, copy_text, cta, ad_structure e creative_suggestion."
+                ),
+                function_name="ad_copy_generator",
+            )
+        except AIServiceError as exc:
+            if self._can_fallback(exc):
+                return self._campaign_fallback(payload)
+            raise
         return MarketingCampaignResponse(**result)
 
     def generate_copy(self, prompt: str) -> MarketingCopyResponse:
-        copy_text = self.ai.generate_text(
-            system_prompt="Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final.",
-            user_prompt=f"Contexto: {prompt.strip()}",
-            temperature=0.5,
-            function_name="ad_copy_generator",
-        )
+        try:
+            copy_text = self.ai.generate_text(
+                system_prompt="Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final.",
+                user_prompt=f"Contexto: {prompt.strip()}",
+                temperature=0.5,
+                function_name="ad_copy_generator",
+            )
+        except AIServiceError as exc:
+            if self._can_fallback(exc):
+                return self._copy_fallback(prompt)
+            raise
         return MarketingCopyResponse(copy_text=copy_text)
 
     def generate_image_prompt(self, prompt: str) -> MarketingImagePromptResponse:
-        prompt_text = self.ai.generate_text(
-            system_prompt="You write premium prompts for image generation models. Return only one concise prompt in English.",
-            user_prompt=f"Create a premium ad image prompt for this context: {prompt.strip() or 'high-conversion SaaS campaign'}",
-            temperature=0.5,
-            function_name="social_post_generator",
-        )
+        try:
+            prompt_text = self.ai.generate_text(
+                system_prompt="You write premium prompts for image generation models. Return only one concise prompt in English.",
+                user_prompt=f"Create a premium ad image prompt for this context: {prompt.strip() or 'high-conversion SaaS campaign'}",
+                temperature=0.5,
+                function_name="social_post_generator",
+            )
+        except AIServiceError as exc:
+            if self._can_fallback(exc):
+                return self._image_prompt_fallback(prompt)
+            raise
         return MarketingImagePromptResponse(prompt=prompt_text)
 
     def _parse_campaign_block(self, text: str) -> dict | None:

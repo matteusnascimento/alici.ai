@@ -10,7 +10,7 @@ services:
     runtime: python
     rootDir: backend
     healthCheckPath: /health
-    buildCommand: pip install -r requirements.txt && cd ../frontend && npm install && npm run build && cd ../backend && rm -rf frontend_dist && mkdir -p frontend_dist && cp -r ../frontend/dist/. frontend_dist/ && python scripts/render_migrate.py
+    buildCommand: pip install -r requirements.txt && cd ../frontend && npm ci && npm run build && test -f dist/index.html && cd ../backend && rm -rf frontend_dist && cp -r ../frontend/dist frontend_dist && python scripts/render_migrate.py
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: APP_ENV
@@ -18,7 +18,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.11
       - key: NODE_VERSION
-        value: "20"
+        value: "20.19.0"
       - key: DATABASE_URL
         fromDatabase:
           name: axi-db
@@ -45,13 +45,15 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: STRIPE_PRICE_PRO_MONTHLY
-        sync: false
+        value: price_1TMbAr1R77fHca3oJBUrTAwx
       - key: STRIPE_PRICE_PRO_YEARLY
-        sync: false
+        value: price_1TMbC01R77fHca3o8gGdQ077
       - key: STRIPE_PRICE_BUSINESS_MONTHLY
-        sync: false
+        value: price_1TMc9Z1R77fHca3oiD7SvEAG
       - key: STRIPE_PRICE_BUSINESS_YEARLY
-        sync: false
+        value: price_1TMcAH1R77fHca3oc3TrPQRu
+      - key: STRIPE_PRICE_TEST
+        value: price_1TMXGJ1R77fHca3oXmx5gtZy
       - key: APP_BASE_URL
         value: https://alici-ai.onrender.com
       - key: STRIPE_SUCCESS_URL

@@ -5,9 +5,11 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.chat import ChatSendRequest, ChatSendResponse, ChatUploadResponse, ConversationRead, MessageRead
+from app.schemas.openai_responses import AIToolRegistry, OpenAIResponsesOutput
 from app.services.ai_service import AIServiceError
 from app.services.billing_service import BillingService
 from app.services.chat_service import ChatService
+from app.services.openai_responses_service import OpenAIResponsesError
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -72,3 +74,104 @@ async def upload_chat_file(
         content_type=file.content_type,
         message="Arquivo recebido com sucesso.",
     )
+
+
+# ────────────────────────────────────────────────────────────────────
+# Novas rotas para OpenAI Responses API
+# ────────────────────────────────────────────────────────────────────
+
+
+@router.post("/responses", response_model=OpenAIResponsesOutput)
+def send_message_with_responses_api(
+    payload: ChatSendRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> OpenAIResponsesOutput:
+    """
+    Envia uma mensagem usando OpenAI Responses API.
+    Suporta context injection, multi-turno e tool calling.
+    """
+    billing = BillingService(db)
+    billing.check_limit(current_user, "messages")
+    try:
+        conversation, user_message, assistant_message = ChatService(db).send(
+            current_user,
+            payload,
+            use_responses_api=True,
+        )
+    except OpenAIResponsesError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    except AIServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
+
+    billing.log_usage(current_user.id, "messages", source="chat_responses_api")
+
+    return OpenAIResponsesOutput(
+        output_text=assistant_message.text,
+        conversation_id=conversation.id,
+        message_id=assistant_message.id,
+    )
+
+
+@router.post("/agent-respond", response_model=OpenAIResponsesOutput)
+def send_message_to_agent(
+    payload: ChatSendRequest,
+    agent_name: str = "sales",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> OpenAIResponsesOutput:
+    """
+    Envia uma mensagem para um agente especializado.
+    O agente combina instruções base + contexto especializado.
+    
+    Agentes disponíveis: sales, support, operations
+    """
+    if agent_name not in ["sales", "support", "operations"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Agente '{agent_name}' não encontrado. Disponíveis: sales, support, operations",
+        )
+
+    billing = BillingService(db)
+    billing.check_limit(current_user, "messages")
+    try:
+        conversation, user_message, assistant_message = ChatService(db).send(
+            current_user,
+            payload,
+            use_responses_api=True,
+            agent_name=agent_name,
+        )
+    except OpenAIResponsesError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    except AIServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
+
+    billing.log_usage(current_user.id, "messages", source=f"chat_agent_{agent_name}")
+
+    return OpenAIResponsesOutput(
+        output_text=assistant_message.text,
+        conversation_id=conversation.id,
+        message_id=assistant_message.id,
+    )
+
+
+@router.get("/tools", tags=["tools"])
+def list_available_tools(_: User = Depends(get_current_user)) -> dict[str, list[dict]]:
+    """Lista todas as ferramentas disponíveis para a IA executar."""
+    tools = []
+    for tool in AIToolRegistry.list_all_tools():
+        tools.append({
+            "name": tool.name,
+            "description": tool.description,
+            "parameters": [
+                {
+                    "name": param.name,
+                    "type": param.type,
+                    "description": param.description,
+                    "required": param.required,
+                }
+                for param in tool.parameters
+            ],
+        })
+
+    return {"tools": tools}

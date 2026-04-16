@@ -45,8 +45,8 @@ class BillingService:
         },
         "pro": {
             "name": "Pro",
-            "monthly_price": 197.0,
-            "yearly_price": 1970.0,
+            "monthly_price": 397.0,
+            "yearly_price": 3970.0,
             "features": ["Automacao multiagente", "Marketing Studio completo", "Prioridade de suporte"],
             "limits": {"messages": 5000, "agents": 10},
             "stripe_price_monthly_env": "stripe_price_pro_monthly",
@@ -54,8 +54,8 @@ class BillingService:
         },
         "business": {
             "name": "Business",
-            "monthly_price": 597.0,
-            "yearly_price": 5970.0,
+            "monthly_price": 697.0,
+            "yearly_price": 6970.0,
             "features": ["Multiusuarios", "Integracoes avancadas", "SLAs empresariais"],
             "limits": {"messages": 50000, "agents": 100},
             "stripe_price_monthly_env": "stripe_price_business_monthly",
@@ -418,6 +418,8 @@ class BillingService:
             yearly_price=config["yearly_price"],
             billing_cycle="monthly",
             status="active",
+            currency="BRL",
+            provider="stripe",
         )
         self.db.add(subscription)
         self.db.commit()

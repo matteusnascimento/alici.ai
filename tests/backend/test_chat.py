@@ -1,3 +1,6 @@
+from app.services.ai_service import AIService, AIServiceError
+
+
 def test_chat_send_and_messages(client, auth_headers):
     send_response = client.post('/api/chat/send', headers=auth_headers, json={'text': 'Quero ajuda com marketing'})
 
@@ -28,3 +31,16 @@ def test_chat_send_and_messages(client, auth_headers):
     )
     assert upload_response.status_code == 200
     assert upload_response.json()['filename'] == 'brief.txt'
+
+
+def test_chat_send_falls_back_when_openai_rate_limited(client, auth_headers, monkeypatch):
+    def _raise_rate_limit(self, **kwargs):
+        raise AIServiceError('OpenAI rate limit reached', user_message='rate', status_code=429, code='rate_limit')
+
+    monkeypatch.setattr(AIService, 'generate_text', _raise_rate_limit)
+
+    send_response = client.post('/api/chat/send', headers=auth_headers, json={'text': 'Quero ajuda urgente'})
+
+    assert send_response.status_code == 200
+    body = send_response.json()
+    assert 'modo seguro' in body['assistant_message']['text'].lower()
