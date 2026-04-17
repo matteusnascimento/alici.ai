@@ -1,9 +1,31 @@
-import { ExternalLink, Pause, Play, Settings2, TestTube2 } from 'lucide-react';
+import { Calendar, ExternalLink, Globe2, Pause, Play, Settings2, TestTube2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { AgentSummary } from '../../../types/agentsV2';
 import { AgentStatusBadge } from './AgentStatusBadge';
+
+interface AgentCardProps {
+  agent: AgentSummary;
+  onToggle: (agent: AgentSummary) => void;
+  onDuplicate: (agent: AgentSummary) => void;
+  onArchive: (agent: AgentSummary) => void;
+  onDelete: (agent: AgentSummary) => void;
+}
+
+function formatRelativeDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    const diff = Date.now() - d.getTime();
+    const days = Math.floor(diff / 86_400_000);
+    if (days === 0) return 'hoje';
+    if (days === 1) return 'ontem';
+    if (days < 30) return `há ${days} dias`;
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  } catch {
+    return '';
+  }
+}
 
 interface AgentCardProps {
   agent: AgentSummary;
@@ -98,6 +120,20 @@ export function AgentCard({ agent, onToggle, onDuplicate, onArchive, onDelete }:
         <span className="text-xs text-slate-400">
           {agent.ativo ? 'Operando agora' : 'Pausado — aguardando ativacao'}
         </span>
+      </div>
+
+      {/* Meta row */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {agent.linguagem && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-400">
+            <Globe2 size={10} className="text-cyan-400" /> {agent.linguagem}
+          </span>
+        )}
+        {agent.created_at && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-400">
+            <Calendar size={10} className="text-slate-500" /> {formatRelativeDate(agent.created_at)}
+          </span>
+        )}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
