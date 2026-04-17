@@ -5,7 +5,7 @@ export interface User {
   email: string;
   phone: string | null;
   plan: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface LoginInput {

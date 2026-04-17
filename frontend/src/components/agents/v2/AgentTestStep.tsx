@@ -19,6 +19,8 @@ const scenarios = [
 ];
 
 export function AgentTestStep({ onRunScenario, result }: AgentTestStepProps) {
+  const safeActions = Array.isArray(result?.actions) ? result.actions : [];
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
@@ -35,7 +37,7 @@ export function AgentTestStep({ onRunScenario, result }: AgentTestStepProps) {
         <div className="rounded-2xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-cyan-100">
           <p>Fonte usada: {result.source}</p>
           <p className="mt-1">Nota de decisao: {result.confidence_note}</p>
-          <p className="mt-1">Acoes acionadas: {result.actions.length}</p>
+          <p className="mt-1">Acoes acionadas: {safeActions.length}</p>
         </div>
       ) : null}
     </div>

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { RevenueIntelligenceSnapshot, RevenueSeriesResponse } from '../../services/revenue.service';
 import { getRevenueIntelligence, getRevenueSeries } from '../../services/revenue.service';
+import { normalizeRevenueSnapshot, normalizeRevenueSeries } from '../../utils/dataHelpers';
 
 const periodOptions = [7, 30, 90] as const;
 
@@ -82,8 +83,8 @@ export function RevenueIntelligencePage() {
           getRevenueSeries(days, granularity),
         ]);
         if (!cancelled) {
-          setSnapshot(snapshotData);
-          setSeries(seriesData);
+          setSnapshot(normalizeRevenueSnapshot(snapshotData));
+          setSeries(normalizeRevenueSeries(seriesData));
         }
       } catch (err) {
         if (!cancelled) {
@@ -182,7 +183,7 @@ export function RevenueIntelligencePage() {
             <p className="text-xs uppercase tracking-[0.2em] text-cyan">Meta mensal</p>
             <p className="mt-1 font-display text-2xl text-white">{formatCurrency(25000)}</p>
             <p className="text-xs text-slate-300">
-              {Math.min(100, Math.round(((snapshot?.summary.receita_total ?? 0) / 25000) * 100))}% atingido
+              {Math.min(100, Math.round(((snapshot?.summary?.receita_total ?? 0) / 25000) * 100))}% atingido
             </p>
           </div>
         </header>

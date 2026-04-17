@@ -12,7 +12,7 @@ export function useAgentsList() {
     setLoading(true);
     try {
       const result = await listAgentsV2();
-      setData(result);
+      setData(Array.isArray(result) ? result : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar agentes');

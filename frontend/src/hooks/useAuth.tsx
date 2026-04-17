@@ -25,13 +25,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function bootstrap() {
       const token = getAuthToken();
       if (!token) {
+        if (import.meta.env.DEV) console.log('[Auth] Nenhum token encontrado, redirecionando para login.');
         setReady(true);
         return;
       }
       try {
+        if (import.meta.env.DEV) console.log('[Auth] Token encontrado, carregando usuário...');
         const me = await getMe();
         setUser(me);
-      } catch {
+        if (import.meta.env.DEV) console.log('[Auth] Usuário autenticado:', me.email);
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[Auth] Falha ao carregar /auth/me — limpando token:', err);
         clearAuthToken();
         setUser(null);
       } finally {

@@ -16,7 +16,9 @@ export function MarketingBriefPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listProjects().then(setProjects).catch(() => {});
+    listProjects()
+      .then((rows) => setProjects(Array.isArray(rows) ? rows : []))
+      .catch(() => setProjects([]));
   }, []);
 
   const selectedProject = projects.find((p) => p.id === selectedId);
@@ -39,7 +41,10 @@ export function MarketingBriefPage() {
         budget_range: '',
         call_to_action: '',
       });
-      setResult(r);
+      setResult({
+        ...r,
+        cta_suggestions: Array.isArray(r?.cta_suggestions) ? r.cta_suggestions : [],
+      });
     } catch {
       setError('Erro ao gerar briefing.');
     } finally {

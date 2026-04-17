@@ -14,7 +14,7 @@ import { useBilling } from '../../../hooks/useBilling';
 export function AccountHomePage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { plans, current, startCheckout, openPortal } = useBilling();
+  const { plans, current, startCheckout, openPortal, error: billingError } = useBilling();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -43,6 +43,9 @@ export function AccountHomePage() {
           void openPortal();
         }}
       />
+      {billingError ? (
+        <p className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{billingError}</p>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <SettingsGroup title="Preferencias" subtitle="Idioma, aparencia e notificacoes para uso diario.">

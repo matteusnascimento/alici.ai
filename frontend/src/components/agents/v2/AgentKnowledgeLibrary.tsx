@@ -16,6 +16,8 @@ function formatKind(kind: string) {
 }
 
 export function AgentKnowledgeLibrary({ items, deletingId = null, onDelete }: AgentKnowledgeLibraryProps) {
+  const safeItems = Array.isArray(items) ? items : [];
+
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-soft">
       <div className="flex items-center justify-between gap-3">
@@ -23,11 +25,11 @@ export function AgentKnowledgeLibrary({ items, deletingId = null, onDelete }: Ag
           <h2 className="font-display text-lg text-white">Biblioteca do agente</h2>
           <p className="mt-1 text-sm text-slate-300">Materiais cadastrados para respostas e contexto da IA.</p>
         </div>
-        <span className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">{items.length} itens</span>
+        <span className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">{safeItems.length} itens</span>
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {items.map((item) => (
+        {safeItems.map((item) => (
           <article key={item.id} className="rounded-2xl border border-white/10 bg-gradient-to-b from-black/30 to-black/15 p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -52,7 +54,7 @@ export function AgentKnowledgeLibrary({ items, deletingId = null, onDelete }: Ag
             </div>
           </article>
         ))}
-        {items.length === 0 ? (
+        {safeItems.length === 0 ? (
           <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-4 text-sm text-slate-400">Sem materiais cadastrados.</p>
         ) : null}
       </div>

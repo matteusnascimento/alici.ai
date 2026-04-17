@@ -28,12 +28,15 @@ export function useBilling() {
         getCurrentSubscription(),
         getBillingUsage(),
       ]);
-      setPlans(plansResult);
+      setPlans(Array.isArray(plansResult) ? plansResult : []);
       setCurrent(currentResult);
       setUsage(usageResult);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar billing');
+      setPlans([]);
+      setCurrent(null);
+      setUsage(null);
     } finally {
       setLoading(false);
     }
@@ -64,9 +67,16 @@ export function useBilling() {
   /** Inicia Stripe Checkout Session real. Redireciona o browser para o Stripe. */
   async function startCheckout(planId: string, billingCycle: 'monthly' | 'yearly' = 'monthly') {
     setUpgrading(true);
+    setError(null);
     try {
+      if (planId === 'free') {
+        throw new Error('O plano Free nao requer checkout. Escolha Pro ou Business para upgrade.');
+      }
       const response = await createCheckoutSession({ plan_id: planId, billing_cycle: billingCycle });
-      window.location.href = response.checkout_url;
+      if (!response.checkout_url) {
+        throw new Error('Checkout nao retornou URL de redirecionamento.');
+      }
+      window.location.assign(response.checkout_url);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao iniciar checkout';
       setError(message);
@@ -78,9 +88,13 @@ export function useBilling() {
 
   /** Abre o Stripe Billing Portal para gerenciar assinatura. */
   async function openPortal() {
+    setError(null);
     try {
       const response = await createPortalSession();
-      window.location.href = response.portal_url;
+      if (!response.portal_url) {
+        throw new Error('Portal nao retornou URL de redirecionamento.');
+      }
+      window.location.assign(response.portal_url);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao abrir portal';
       setError(message);

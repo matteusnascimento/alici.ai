@@ -26,7 +26,9 @@ export function MarketingCopyPage() {
   const [copied, setCopied] = useState<number | null>(null);
 
   useEffect(() => {
-    listProjects().then(setProjects).catch(() => {});
+    listProjects()
+      .then((rows) => setProjects(Array.isArray(rows) ? rows : []))
+      .catch(() => setProjects([]));
   }, []);
 
   async function handleGenerate(e: React.FormEvent) {
@@ -37,7 +39,12 @@ export function MarketingCopyPage() {
     setResult(null);
     try {
       const r = await generateCopy(selectedProjectId, context, copyType);
-      setResult(r);
+      setResult({
+        copies: Array.isArray(r?.copies) ? r.copies : [],
+        cta: r?.cta ?? '',
+        hook: r?.hook ?? '',
+        hashtags: Array.isArray(r?.hashtags) ? r.hashtags : [],
+      });
     } catch {
       setError('Erro ao gerar copy. Verifique a configuração de IA.');
     } finally {

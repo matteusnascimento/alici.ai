@@ -8,6 +8,8 @@ import {
   listIntegrationAccounts,
 } from '../../services/integrations.service';
 
+const DEV = import.meta.env.DEV;
+
 const PROVIDER_ICONS: Record<string, string> = {
   whatsapp: '💬',
   instagram: '📸',
@@ -26,17 +28,50 @@ const PROVIDER_FIELDS: Record<string, { key: string; label: string; type: string
   ],
 };
 
-function StatusBadge({ status }: { status: string }) {
-  const connected = status === 'connected' || status === 'active';
+type NormalizedStatus = 'connected' | 'pending' | 'disconnected';
+
+/**
+ * Fonte única de verdade para o status de conexão de um provedor.
+ * - connected: conta com status connected/active
+ * - pending: conta existe mas aguarda verificação de webhook (pending_setup/auth_required)
+ * - disconnected: nenhuma conta ou todas desconectadas
+ */
+function normalizeStatus(provider: IntegrationProvider, providerAccounts: IntegrationAccount[]): NormalizedStatus {
+  const connectedAccounts = providerAccounts.filter((a) => a.status === 'connected' || a.status === 'active');
+  const pendingAccounts = providerAccounts.filter((a) => a.status === 'pending_setup' || a.status === 'auth_required');
+
+  if (DEV) {
+    console.debug(`[Integrations] ${provider.provider}`, {
+      provider_status: provider.status,
+      accounts_total: providerAccounts.length,
+      accounts_connected: connectedAccounts.length,
+      accounts_pending: pendingAccounts.length,
+    });
+  }
+
+  if (connectedAccounts.length > 0) return 'connected';
+  if (pendingAccounts.length > 0) return 'pending';
+  return 'disconnected';
+}
+
+function StatusBadge({ status }: { status: NormalizedStatus }) {
+  if (status === 'connected') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-green-500/15 text-green-400">
+        <CheckCircle2 size={11} /> Conectado
+      </span>
+    );
+  }
+  if (status === 'pending') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-500/15 text-yellow-400">
+        <Loader2 size={11} className="animate-spin" /> Configurando
+      </span>
+    );
+  }
   return (
-    <span
-      className={[
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-        connected ? 'bg-green-500/15 text-green-400' : 'bg-slate-500/15 text-slate-400',
-      ].join(' ')}
-    >
-      {connected ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-      {connected ? 'Conectado' : 'Desconectado'}
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-slate-500/15 text-slate-400">
+      <XCircle size={11} /> Desconectado
     </span>
   );
 }
@@ -55,16 +90,24 @@ export function IntegrationsPage() {
     setLoading(true);
     try {
       const [p, a] = await Promise.all([listChannelIntegrations(), listIntegrationAccounts()]);
-      setProviders(p);
-      setAccounts(a);
+      const safeProviders = Array.isArray(p) ? p : [];
+      const safeAccounts = Array.isArray(a) ? a : [];
+      if (DEV) {
+        console.debug('[Integrations] reload — providers:', safeProviders, 'accounts:', safeAccounts);
+      }
+      setProviders(safeProviders);
+      setAccounts(safeAccounts);
+      setError(null);
     } catch {
       setError('Erro ao carregar integrações');
+      setProviders([]);
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { void reload(); }, []);
 
   async function handleConnect(e: React.FormEvent, provider: string) {
     e.preventDefault();
@@ -93,11 +136,25 @@ export function IntegrationsPage() {
     if (!confirm(`Desconectar ${provider}?`)) return;
     setDisconnecting(provider);
     setError(null);
+
+    // Update otimista: marca contas do provedor como desconectadas antes do reload
+    setAccounts((current) =>
+      current.map((a) =>
+        a.provider === provider ? { ...a, status: 'disconnected' } : a,
+      ),
+    );
+
     try {
-      await disconnectProvider(provider);
+      const result = await disconnectProvider(provider);
+      if (DEV) {
+        console.debug(`[Integrations] disconnect ${provider} — resposta:`, result);
+      }
       await reload();
-    } catch {
-      setError(`Erro ao desconectar ${provider}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : `Erro ao desconectar ${provider}`;
+      setError(msg);
+      // Reverte o update otimista em caso de erro
+      await reload();
     } finally {
       setDisconnecting(null);
     }
@@ -131,7 +188,9 @@ export function IntegrationsPage() {
         {providers.map((provider) => {
           const icon = PROVIDER_ICONS[provider.provider] ?? '🔗';
           const providerAccounts = accounts.filter((a) => a.provider === provider.provider);
-          const isConnected = provider.connected_accounts > 0 || provider.status === 'connected';
+          // Fonte única de verdade — derivada das contas reais no banco
+          const connStatus = normalizeStatus(provider, providerAccounts);
+          const isConnected = connStatus !== 'disconnected';
           const fields = PROVIDER_FIELDS[provider.provider] ?? [];
 
           return (
@@ -147,31 +206,36 @@ export function IntegrationsPage() {
                     <p className="text-xs text-slate-400">{provider.description}</p>
                   </div>
                 </div>
-                <StatusBadge status={isConnected ? 'connected' : 'disconnected'} />
+                <StatusBadge status={connStatus} />
               </div>
 
               <p className="text-xs text-slate-500">{provider.helper_text}</p>
 
               {providerAccounts.length > 0 && (
                 <div className="space-y-2">
-                  {providerAccounts.map((acc) => (
-                    <div
-                      key={acc.id}
-                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
-                    >
-                      <div>
-                        <p className="text-xs text-white">{acc.external_account_name ?? acc.external_account_id ?? `Conta #${acc.id}`}</p>
-                        <p className="text-xs text-slate-500">{acc.status}</p>
+                  {providerAccounts.map((acc) => {
+                    const accConnected = acc.status === 'connected' || acc.status === 'active';
+                    return (
+                      <div
+                        key={acc.id}
+                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                      >
+                        <div>
+                          <p className="text-xs text-white">{acc.external_account_name ?? acc.external_account_id ?? `Conta #${acc.id}`}</p>
+                          <p className={`text-xs ${accConnected ? 'text-green-400' : acc.status === 'pending_setup' ? 'text-yellow-400' : 'text-slate-500'}`}>
+                            {accConnected ? 'ativa' : acc.status === 'pending_setup' ? 'aguardando webhook' : 'desconectada'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
               <div className="flex gap-2">
                 {isConnected ? (
                   <button
-                    onClick={() => handleDisconnect(provider.provider)}
+                    onClick={() => void handleDisconnect(provider.provider)}
                     disabled={disconnecting === provider.provider}
                     className="flex items-center gap-1.5 rounded-xl border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 disabled:opacity-50"
                   >
@@ -198,7 +262,7 @@ export function IntegrationsPage() {
               </div>
 
               {showFormFor === provider.provider && fields.length > 0 && (
-                <form onSubmit={(e) => handleConnect(e, provider.provider)} className="space-y-2">
+                <form onSubmit={(e) => void handleConnect(e, provider.provider)} className="space-y-2">
                   {fields.map((f) => (
                     <input
                       key={f.key}

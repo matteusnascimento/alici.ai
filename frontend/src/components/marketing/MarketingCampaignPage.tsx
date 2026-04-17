@@ -32,7 +32,10 @@ export function MarketingCampaignPage() {
     setResult(null);
     try {
       const r = await generateCampaign(form);
-      setResult(r);
+      setResult({
+        ...r,
+        cta_suggestions: Array.isArray(r?.cta_suggestions) ? r.cta_suggestions : [],
+      });
     } catch {
       setError('Erro ao gerar campanha. Verifique as configurações de IA.');
     } finally {

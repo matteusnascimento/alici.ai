@@ -5,6 +5,8 @@ interface ImportMetaEnv {
 	readonly VITE_SHOW_DEV_LOGIN_HINT?: string;
 	readonly VITE_DEV_LOGIN_EMAIL?: string;
 	readonly VITE_DEV_LOGIN_PASSWORD?: string;
+	readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
+	readonly VITE_STRIPE_PRICING_TABLE_ID?: string;
 }
 
 interface ImportMeta {

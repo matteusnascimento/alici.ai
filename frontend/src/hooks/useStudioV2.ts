@@ -42,13 +42,17 @@ export function useStudioV2({ defaultType, defaultTitle, projectId = null, force
         listStudioAssets(),
         listStudioTemplates(),
       ]);
-      setProjects(loadedProjects);
-      setAssets(loadedAssets);
-      setTemplates(loadedTemplates);
+      const safeProjects = Array.isArray(loadedProjects) ? loadedProjects : [];
+      const safeAssets = Array.isArray(loadedAssets) ? loadedAssets : [];
+      const safeTemplates = Array.isArray(loadedTemplates) ? loadedTemplates : [];
 
-      let candidate = projectId ? loadedProjects.find((item) => item.id === projectId) : null;
+      setProjects(safeProjects);
+      setAssets(safeAssets);
+      setTemplates(safeTemplates);
+
+      let candidate = projectId ? safeProjects.find((item) => item.id === projectId) : null;
       if (!candidate && !forceNew) {
-        candidate = loadedProjects.find((item) => item.project_type === defaultType);
+        candidate = safeProjects.find((item) => item.project_type === defaultType);
       }
       if (!candidate) {
         candidate = await createStudioProject({
@@ -65,10 +69,14 @@ export function useStudioV2({ defaultType, defaultTitle, projectId = null, force
 
       setCurrentProject(candidate);
       const loadedVersions = await listStudioVersions(candidate.id);
-      setVersions(loadedVersions);
+      setVersions(Array.isArray(loadedVersions) ? loadedVersions : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar Studio');
+      setProjects([]);
+      setAssets([]);
+      setTemplates([]);
+      setVersions([]);
       pushToast('Falha ao carregar workspace do Studio.', 'error');
     } finally {
       setLoading(false);
@@ -103,7 +111,7 @@ export function useStudioV2({ defaultType, defaultTitle, projectId = null, force
       setProjects((current) => [duplicate, ...current]);
       setCurrentProject(duplicate);
       const loadedVersions = await listStudioVersions(duplicate.id);
-      setVersions(loadedVersions);
+      setVersions(Array.isArray(loadedVersions) ? loadedVersions : []);
       setError(null);
       pushToast('Projeto duplicado com sucesso.', 'success');
     } catch (err) {

@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { AppSidebar } from '../layout/AppSidebar';
 import { Topbar } from './Topbar';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 export function PlatformShell() {
   const location = useLocation();
@@ -30,7 +31,9 @@ export function PlatformShell() {
           ].join(' ')}
         >
           {inStudioEditorMode ? null : <Topbar />}
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </div>
     </main>

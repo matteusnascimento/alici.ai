@@ -11,7 +11,7 @@ export function useAgentLogs(agentId: number, filter: string) {
     setLoading(true);
     try {
       const result = await listAgentLogsV2(agentId, filter === 'all' ? undefined : filter);
-      setData(result);
+      setData(Array.isArray(result) ? result : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar logs');

@@ -1,4 +1,5 @@
 import type { BillingPlan, CurrentSubscription } from '../../types/billing';
+import { StripePricingTable } from '../billing/StripePricingTable';
 
 interface PlanCardProps {
   current: CurrentSubscription | null;
@@ -59,6 +60,18 @@ export function PlanCard({
             Gerenciar assinatura
           </button>
         ) : null}
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Checkout oficial Stripe</p>
+        <p className="mt-1 text-sm text-slate-300">Use a tabela oficial para upgrade imediato. O checkout manual segue disponivel abaixo.</p>
+        <div className="mt-4">
+          <StripePricingTable />
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Checkout manual (fallback)</p>
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">

@@ -94,10 +94,10 @@ def send_message_with_responses_api(
     billing = BillingService(db)
     billing.check_limit(current_user, "messages")
     try:
+        payload.use_responses_api = True
         conversation, user_message, assistant_message = ChatService(db).send(
             current_user,
             payload,
-            use_responses_api=True,
         )
     except OpenAIResponsesError as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
@@ -135,11 +135,11 @@ def send_message_to_agent(
     billing = BillingService(db)
     billing.check_limit(current_user, "messages")
     try:
+        payload.agent_name = agent_name
+        payload.use_responses_api = True
         conversation, user_message, assistant_message = ChatService(db).send(
             current_user,
             payload,
-            use_responses_api=True,
-            agent_name=agent_name,
         )
     except OpenAIResponsesError as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc

@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict
 class ChatSendRequest(BaseModel):
     text: str
     conversation_id: int | None = None
+    agent_name: str | None = None
+    use_responses_api: bool | None = None
 
 
 class ChatUploadResponse(BaseModel):

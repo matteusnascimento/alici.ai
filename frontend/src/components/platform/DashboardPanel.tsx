@@ -52,6 +52,12 @@ export function DashboardPanel() {
     getDashboardAIMetrics(aiWindow).then(setAIMetrics).catch(() => {});
   }, [aiWindow]);
 
+  const usageBars = Array.isArray(stats?.usage_bars) ? stats.usage_bars : [];
+  const aiTrend = Array.isArray(aiMetrics?.trend) ? aiMetrics.trend : [];
+  const aiTrend429 = Array.isArray(aiMetrics?.trend_429) ? aiMetrics.trend_429 : [];
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const safeIntegrations = Array.isArray(integrations) ? integrations : [];
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -165,13 +171,13 @@ export function DashboardPanel() {
               <p className="mt-2 text-sm font-semibold text-white">{aiMetrics?.rate_limit_429 ?? 0}</p>
             </article>
           </div>
-          {aiMetrics && aiMetrics.trend.length > 0 ? (
+          {aiMetrics && aiTrend.length > 0 ? (
             <div className="grid gap-3 lg:grid-cols-2">
               <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.1em] text-slate-400">Tendencia de erros</p>
                 <div className="mt-3 flex items-end gap-2 overflow-x-auto">
-                  {aiMetrics.trend.map((point) => {
-                    const maxValue = Math.max(...aiMetrics.trend.map((item) => item.value), 1);
+                  {aiTrend.map((point) => {
+                    const maxValue = Math.max(...aiTrend.map((item) => item.value), 1);
                     const pct = Math.max(8, Math.round((point.value / maxValue) * 100));
                     return (
                       <div key={`err-${point.label}`} className="min-w-[40px] text-center">
@@ -187,8 +193,8 @@ export function DashboardPanel() {
               <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.1em] text-slate-400">Tendencia de 429</p>
                 <div className="mt-3 flex items-end gap-2 overflow-x-auto">
-                  {aiMetrics.trend_429.map((point) => {
-                    const maxValue = Math.max(...aiMetrics.trend_429.map((item) => item.value), 1);
+                  {aiTrend429.map((point) => {
+                    const maxValue = Math.max(...aiTrend429.map((item) => item.value), 1);
                     const pct = Math.max(8, Math.round((point.value / maxValue) * 100));
                     return (
                       <div key={`429-${point.label}`} className="min-w-[40px] text-center">
@@ -210,11 +216,11 @@ export function DashboardPanel() {
       )}
 
       {/* Weekly bars */}
-      {stats && stats.usage_bars.length > 0 && (
+      {stats && usageBars.length > 0 && (
         <section className="panel-base xl:col-span-2">
           <p className="text-sm uppercase tracking-[0.3em] text-cyan">Atividade semanal</p>
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
-            {stats.usage_bars.map((bar) => (
+            {usageBars.map((bar) => (
               <article key={bar.label} className="rounded-3xl border border-white/10 bg-white/5 p-4 text-center">
                 <div className="mx-auto flex h-32 w-12 items-end rounded-full bg-white/5 p-2">
                   <div
@@ -252,11 +258,11 @@ export function DashboardPanel() {
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-cyan" />
             <p className="font-semibold text-white text-sm">Marketing</p>
-            <span className="ml-auto text-xs text-slate-500">{projects.length} projetos</span>
+            <span className="ml-auto text-xs text-slate-500">{safeProjects.length} projetos</span>
           </div>
-          {projects.length > 0 ? (
+          {safeProjects.length > 0 ? (
             <ul className="space-y-1">
-              {projects.map((p) => (
+              {safeProjects.map((p) => (
                 <li key={p.id} className="truncate text-xs text-slate-300">{p.name}</li>
               ))}
             </ul>
@@ -278,7 +284,7 @@ export function DashboardPanel() {
             <p className="font-semibold text-white text-sm">Integrações</p>
           </div>
           <div className="space-y-1">
-            {integrations.map((p) => (
+            {safeIntegrations.map((p) => (
               <div key={p.provider} className="flex items-center justify-between text-xs">
                 <span className="text-slate-300 capitalize">{p.provider}</span>
                 <span className={p.connected_accounts > 0 ? 'text-green-400' : 'text-slate-500'}>
@@ -286,7 +292,7 @@ export function DashboardPanel() {
                 </span>
               </div>
             ))}
-            {integrations.length === 0 && <p className="text-xs text-slate-500">Nenhuma integração</p>}
+            {safeIntegrations.length === 0 && <p className="text-xs text-slate-500">Nenhuma integração</p>}
           </div>
           <Link
             to="/app/integrations"

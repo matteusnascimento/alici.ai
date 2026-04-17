@@ -14,7 +14,12 @@ class AgentService:
         self.db = db
 
     def list_agents(self, user: User) -> list[Agent]:
-        return self.db.query(Agent).filter(Agent.user_id == user.id).order_by(Agent.created_at.desc()).all()
+        return (
+            self.db.query(Agent)
+            .filter(Agent.user_id == user.id, Agent.archived.is_(False))
+            .order_by(Agent.created_at.desc())
+            .all()
+        )
 
     def create_agent(self, user: User, payload: AgentCreate) -> Agent:
         payload_data = payload.model_dump()

@@ -40,15 +40,18 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     db_core.ensure_database_connection()
+    backend_name = db_core.engine.url.get_backend_name()
 
-    # In production, schema changes must come from migrations only.
-    if settings.app_env.lower() != "production":
+    # Em SQLite local, aplicamos sync de compatibilidade sempre.
+    # Em produção (PostgreSQL), mudanças de schema devem vir de migrations.
+    if backend_name == "sqlite" or settings.app_env.lower() != "production":
         db_core.Base.metadata.create_all(bind=db_core.engine)
         SchemaSyncService(db_core.engine).apply_startup_fixes()
 
     db = db_core.SessionLocal()
     try:
-        DevSeedService(db).ensure_local_dev_user()
+        if settings.should_seed_dev_user:
+            DevSeedService(db).ensure_local_dev_user()
     finally:
         db.close()
     yield

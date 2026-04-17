@@ -4,7 +4,8 @@ from app.models.conversation import Conversation, Message
 from app.models.usage_log import UsageLog
 from app.models.user import User
 from app.schemas.chat import ChatSendRequest
-from app.schemas.openai_responses import ConversationMessage
+from app.schemas.openai_responses import AIToolRegistry, ConversationMessage
+from app.services.ai.model_router import get_model_for_task
 from app.services.ai_service import AIService, AIServiceError
 from app.services.openai_responses_service import OpenAIResponsesService, OpenAIResponsesError
 from app.services.tool_executor import ToolExecutor
@@ -38,6 +39,45 @@ class ChatService:
             "Seu chat continua operacional em modo seguro enquanto a plataforma se recupera."
         )
 
+    @staticmethod
+    def _resolve_reason_from_status(status_code: int | None) -> str:
+        if status_code == 429:
+            return "rate_limit"
+        if status_code == 401:
+            return "ai_not_configured"
+        return "ai_unavailable"
+
+    @staticmethod
+    def _resolve_task(agent_name: str | None) -> str:
+        if not agent_name:
+            return "chat"
+        normalized = agent_name.strip().lower()
+        if normalized == "support":
+            return "chat_support"
+        if normalized in {"sales", "operations"}:
+            return "agent_runtime"
+        return "chat"
+
+    def _resolve_instructions(self, agent_name: str | None = None) -> str:
+        base = (
+            "Voce e a assistente AXI da plataforma Alici. "
+            "Responda em pt-BR, com objetividade, clareza e foco em execucao."
+        )
+        if not agent_name:
+            return base
+
+        normalized = agent_name.strip().lower()
+        specializations = {
+            "sales": "Voce e especialista em vendas, proposta e conversao.",
+            "support": "Voce e especialista em suporte ao cliente e resolucao de incidentes.",
+            "operations": "Voce e especialista em operacoes, processos e metricas.",
+        }
+        return f"{base} {specializations.get(normalized, '')}".strip()
+
+    @staticmethod
+    def _build_tools_schema() -> list[dict]:
+        return [tool.to_json_schema() for tool in AIToolRegistry.list_all_tools()]
+
     def send(self, user: User, payload: ChatSendRequest, use_responses_api: bool = True, agent_name: str | None = None) -> tuple[Conversation, Message, Message]:
         """
         Envia uma mensagem de chat.
@@ -55,31 +95,26 @@ class ChatService:
         user_message = Message(conversation_id=conversation.id, role="user", text=payload.text)
         self.db.add(user_message)
 
+        selected_agent = payload.agent_name or agent_name
+        selected_task = self._resolve_task(selected_agent)
+        selected_model = get_model_for_task(selected_task)
+        selected_instructions = self._resolve_instructions(selected_agent)
+        should_use_responses_api = payload.use_responses_api if payload.use_responses_api is not None else use_responses_api
+
         # Tenta Responses API se disponível e habilitado
         assistant_text = None
-        if use_responses_api and self.openai_responses.is_configured():
+        if should_use_responses_api and self.openai_responses.is_configured():
             try:
                 # Constrói histórico da conversa
                 history = self._build_conversation_history(conversation.id)
-                
-                # Instrução base (personalizável por agente)
-                instructions = self._build_instructions(agent_name)
-                
+
                 # Gera resposta via Responses API
-                if agent_name:
-                    response = self.openai_responses.generate_agent_response(
-                        agent_name=agent_name,
-                        agent_prompt=f"Voce e um agente especializado em {agent_name}.",
-                        user_message=payload.text,
-                        company_context={"user_id": user.id},
-                        conversation_history=history,
-                    )
-                else:
-                    response = self.openai_responses.generate_response(
-                        user_message=payload.text,
-                        instructions=instructions,
-                        conversation_history=history,
-                    )
+                response = self.openai_responses.generate_response(
+                    user_message=payload.text,
+                    instructions=selected_instructions,
+                    conversation_history=history,
+                    tools=self._build_tools_schema(),
+                )
                 
                 assistant_text = response.output_text
                 
@@ -99,7 +134,7 @@ class ChatService:
             except OpenAIResponsesError as exc:
                 # Fall back para AIService em caso de erro
                 if exc.status_code in (401, 429, 503, 504):
-                    assistant_text = self._fallback_response(exc.status_code)
+                    assistant_text = self._fallback_response(self._resolve_reason_from_status(exc.status_code))
                 else:
                     raise AIServiceError(
                         str(exc),
@@ -114,13 +149,11 @@ class ChatService:
             else:
                 try:
                     assistant_text = self.ai.generate_text(
-                        system_prompt=(
-                            "Voce e a assistente AXI da plataforma Alici. "
-                            "Responda em pt-BR, com objetividade, clareza e foco em execucao."
-                        ),
+                        system_prompt=selected_instructions,
                         user_prompt=payload.text,
                         temperature=0.3,
-                        function_name="chat",
+                        model=selected_model,
+                        function_name=selected_task,
                     )
                 except AIServiceError as exc:
                     if exc.is_retryable_platform_issue:
@@ -210,17 +243,17 @@ class ChatService:
 
     @staticmethod
     def _build_instructions(agent_name: str | None = None) -> str:
-        """Constrói as instruções do sistema para a IA."""
+        """Compatibilidade com chamadas legadas."""
         base_instructions = (
             "Voce e a assistente AXI da plataforma Alici. "
             "Responda em pt-BR, com objetividade, clareza e foco em execucao."
         )
-        
+
         if agent_name == "sales":
             return base_instructions + " Voce e especialista em vendas e propostas comerciais."
-        elif agent_name == "support":
+        if agent_name == "support":
             return base_instructions + " Voce e especialista em suporte ao cliente."
-        elif agent_name == "operations":
+        if agent_name == "operations":
             return base_instructions + " Voce e especialista em operacoes e metricas."
-        
+
         return base_instructions

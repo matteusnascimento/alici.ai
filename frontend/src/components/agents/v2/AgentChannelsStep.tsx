@@ -3,7 +3,7 @@ interface AgentChannelsStepProps {
   onToggle: (channel: string) => void;
 }
 
-const channels = ['WhatsApp', 'Instagram', 'WebsiteChat', 'API', 'Webhook'];
+const channels = ['WhatsApp', 'Instagram', 'WebsiteChat', 'Telegram', 'API', 'Webhook', 'Nenhum por enquanto'];
 
 export function AgentChannelsStep({ selected, onToggle }: AgentChannelsStepProps) {
   return (
@@ -24,7 +24,7 @@ export function AgentChannelsStep({ selected, onToggle }: AgentChannelsStepProps
             <div key={channel} className="rounded-2xl border border-white/15 bg-white/5 p-3">
               <p className="font-semibold text-white">{channel}</p>
               <p className="mt-1 text-xs text-slate-300">Conexao em etapa guiada.</p>
-              <button type="button" className="mt-2 rounded-lg border border-cyan-300/40 px-3 py-1 text-xs text-cyan-100">Conectar</button>
+              <button type="button" className="mt-2 rounded-lg border border-cyan-300/40 px-3 py-1 text-xs text-cyan-100">Configurar depois</button>
             </div>
           ))}
         </div>

@@ -8,7 +8,7 @@ export function AccountAppsPage() {
   const [integrations, setIntegrations] = useState<AccountIntegration[]>([]);
 
   useEffect(() => {
-    void getAccountIntegrations().then(setIntegrations);
+    void getAccountIntegrations().then((data) => setIntegrations(Array.isArray(data) ? data : []));
   }, []);
 
   return (

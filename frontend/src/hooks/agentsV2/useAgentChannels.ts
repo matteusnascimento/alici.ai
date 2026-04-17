@@ -35,12 +35,15 @@ export function useAgentChannels(agentId: number) {
         listAgentBoundChannels(agentId),
         listChannelIntegrationAccounts(),
       ]);
-      setProviders(catalog);
-      setChannels(bindings);
-      setAccounts(accountRows);
+      setProviders(Array.isArray(catalog) ? catalog : []);
+      setChannels(Array.isArray(bindings) ? bindings : []);
+      setAccounts(Array.isArray(accountRows) ? accountRows : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar conexões');
+      setProviders([]);
+      setChannels([]);
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -71,8 +74,8 @@ export function useAgentChannels(agentId: number) {
       const updated = await connectAgentBoundChannel(agentId, payload);
       upsertLocalChannel(updated);
       const [catalog, accountRows] = await Promise.all([listChannelProviderCatalog(), listChannelIntegrationAccounts()]);
-      setProviders(catalog);
-      setAccounts(accountRows);
+      setProviders(Array.isArray(catalog) ? catalog : []);
+      setAccounts(Array.isArray(accountRows) ? accountRows : []);
       return updated;
     } finally {
       setItemLoading(`provider:${payload.provider}`, false);
@@ -85,8 +88,8 @@ export function useAgentChannels(agentId: number) {
       const updated = await disconnectAgentBoundChannel(agentId, bindingId);
       upsertLocalChannel(updated);
       const [catalog, accountRows] = await Promise.all([listChannelProviderCatalog(), listChannelIntegrationAccounts()]);
-      setProviders(catalog);
-      setAccounts(accountRows);
+      setProviders(Array.isArray(catalog) ? catalog : []);
+      setAccounts(Array.isArray(accountRows) ? accountRows : []);
       return updated;
     } finally {
       setItemLoading(`binding:${bindingId}`, false);
@@ -98,7 +101,7 @@ export function useAgentChannels(agentId: number) {
     try {
       const result = await testAgentBoundChannel(agentId, bindingId, message);
       const bindings = await listAgentBoundChannels(agentId);
-      setChannels(bindings);
+      setChannels(Array.isArray(bindings) ? bindings : []);
       return result;
     } finally {
       setItemLoading(`binding:${bindingId}`, false);

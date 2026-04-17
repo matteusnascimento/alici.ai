@@ -37,6 +37,14 @@ export function duplicateAgentV2(agentId: number) {
   return apiFetch<AgentSummary>(`/agents/${agentId}/duplicate`, { method: 'POST' });
 }
 
+export function archiveAgentV2(agentId: number) {
+  return apiFetch<AgentSummary>(`/agents/${agentId}/archive`, { method: 'POST' });
+}
+
+export function deleteAgentV2(agentId: number) {
+  return apiFetch<unknown>(`/agents/${agentId}`, { method: 'DELETE' });
+}
+
 export function activateAgentV2(agentId: number) {
   return apiFetch<AgentSummary>(`/agents/${agentId}/activate`, { method: 'POST' });
 }

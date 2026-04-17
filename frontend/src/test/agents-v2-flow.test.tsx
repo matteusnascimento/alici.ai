@@ -14,12 +14,34 @@ vi.mock('../services/agentsV2.service', () => ({
   createAgentV2: (...args: unknown[]) => createAgentV2Mock(...args),
   connectAgentBoundChannel: vi.fn(),
   activateAgentV2: vi.fn(),
+  archiveAgentV2: vi.fn(),
+  deleteAgentV2: vi.fn(),
   duplicateAgentV2: vi.fn(),
   pauseAgentV2: vi.fn(),
 }));
 
 describe('Agents v2 flow', () => {
   const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+  async function goToPublishStep() {
+    await userEvent.type(screen.getAllByRole('textbox')[0], 'Agente Orion');
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+
+    await userEvent.click(screen.getByRole('button', { name: /Responder clientes/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+
+    await userEvent.click(screen.getByRole('button', { name: /WhatsApp/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+
+    await userEvent.click(screen.getByRole('button', { name: /Upload de arquivos/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+
+    await userEvent.click(screen.getByRole('button', { name: /Responder perguntas/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+
+    await userEvent.type(screen.getByPlaceholderText(/Qual o valor da hospedagem/i), 'Qual o valor?');
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -92,12 +114,8 @@ describe('Agents v2 flow', () => {
       </MemoryRouter>,
     );
 
-    await userEvent.type(screen.getAllByRole('textbox')[0], 'Agente Orion');
-    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-
-    await userEvent.click(screen.getByRole('button', { name: /Responder clientes/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Criar agente/i }));
+    await goToPublishStep();
+    await userEvent.click(screen.getByRole('button', { name: /Publicar agente/i }));
 
     await waitFor(() => {
       expect(createAgentV2Mock).toHaveBeenCalledTimes(1);
@@ -124,13 +142,10 @@ describe('Agents v2 flow', () => {
       </MemoryRouter>,
     );
 
-    await userEvent.type(screen.getAllByRole('textbox')[0], 'Agente Orion');
-    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Responder clientes/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Criar agente/i }));
+    await goToPublishStep();
+    await userEvent.click(screen.getByRole('button', { name: /Publicar agente/i }));
 
-    expect(await screen.findByRole('button', { name: /Criando.../i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Publicando.../i })).toBeInTheDocument();
 
     resolveCreate({
       agent: {
@@ -173,11 +188,8 @@ describe('Agents v2 flow', () => {
       </MemoryRouter>,
     );
 
-    await userEvent.type(screen.getAllByRole('textbox')[0], 'Agente Orion');
-    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Responder clientes/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Criar agente/i }));
+    await goToPublishStep();
+    await userEvent.click(screen.getByRole('button', { name: /Publicar agente/i }));
 
     expect(await screen.findByText(/Nao foi possivel concluir a criacao do agente/i)).toBeInTheDocument();
   });

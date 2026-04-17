@@ -14,7 +14,8 @@ export function useChat() {
   async function loadConversations() {
     setLoading(true);
     try {
-      const list = await getConversations();
+      const raw = await getConversations();
+      const list = Array.isArray(raw) ? raw : [];
       setConversations(list);
       if (!selectedConversationId && list[0]) {
         setSelectedConversationId(list[0].id);
@@ -39,7 +40,7 @@ export function useChat() {
       }
       try {
         const list = await getConversationMessages(selectedConversationId);
-        setMessages(list);
+        setMessages(Array.isArray(list) ? list : []);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Falha ao carregar mensagens');

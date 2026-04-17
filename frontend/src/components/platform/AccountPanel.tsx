@@ -5,7 +5,7 @@ import { useSettings } from '../../hooks/useSettings';
 
 export function AccountPanel() {
   const { account, loading, saving, error, saveProfile, saveSettings } = useSettings();
-  const { plans, current, usage, upgrading, startCheckout, openPortal, cancel, resume } = useBilling();
+  const { plans, current, usage, upgrading, startCheckout, openPortal, cancel, resume, error: billingError } = useBilling();
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [profile, setProfile] = useState({ name: '', username: '', email: '', phone: '' });
@@ -213,6 +213,7 @@ export function AccountPanel() {
           ))}
         </div>
         {upgradeMessage ? <p className="mt-4 text-sm text-cyan">{upgradeMessage}</p> : null}
+        {billingError ? <p className="mt-2 text-sm text-rose-200">{billingError}</p> : null}
       </section>
     </div>
   );

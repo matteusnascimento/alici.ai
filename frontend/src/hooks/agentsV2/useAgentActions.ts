@@ -12,7 +12,7 @@ export function useAgentActions(agentId: number) {
     setLoading(true);
     try {
       const result = await listAgentActionsV2(agentId);
-      setData(result);
+      setData(Array.isArray(result) ? result : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar acoes');

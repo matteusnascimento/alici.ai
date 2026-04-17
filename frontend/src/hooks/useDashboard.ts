@@ -12,10 +12,14 @@ export function useDashboard() {
     setLoading(true);
     try {
       const result = await getDashboardStats();
-      setStats(result);
+      setStats({
+        ...result,
+        usage_bars: Array.isArray(result?.usage_bars) ? result.usage_bars : [],
+      });
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dashboard');
+      setStats(null);
     } finally {
       setLoading(false);
     }

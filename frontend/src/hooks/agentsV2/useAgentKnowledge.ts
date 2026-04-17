@@ -19,7 +19,7 @@ export function useAgentKnowledge(agentId: number) {
     setLoading(true);
     try {
       const result = await listAgentKnowledgeV2(agentId);
-      setData(result);
+      setData(Array.isArray(result) ? result : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar materiais');
