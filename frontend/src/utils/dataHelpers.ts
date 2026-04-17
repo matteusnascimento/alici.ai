@@ -57,9 +57,9 @@ export function ensureArray<T>(value: unknown, fieldName?: string): T[] {
  * Garante que um valor é objeto. Mescla com fallback para garantir campos obrigatórios.
  * Se value for null/undefined/primitivo, retorna o fallback integralmente.
  */
-export function ensureObject<T extends Record<string, unknown>>(value: unknown, fallback: T, fieldName?: string): T {
+export function ensureObject<T extends object>(value: unknown, fallback: T, fieldName?: string): T {
   if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
-    return { ...fallback, ...(value as Record<string, unknown>) } as T;
+    return { ...fallback, ...(value as Partial<T>) };
   }
   if (DEV && value !== undefined) {
     console.warn(`[dataHelpers] ensureObject${fieldName ? ` (${fieldName})` : ''}: esperava objeto, recebeu`, typeof value, value);

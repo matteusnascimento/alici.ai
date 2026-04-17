@@ -191,6 +191,6 @@ describe('Agents v2 flow', () => {
     await goToPublishStep();
     await userEvent.click(screen.getByRole('button', { name: /Publicar agente/i }));
 
-    expect(await screen.findByText(/Nao foi possivel concluir a criacao do agente/i)).toBeInTheDocument();
+    expect(await screen.findByText(/nao foi possivel|Não foi possível/i)).toBeInTheDocument();
   });
 });

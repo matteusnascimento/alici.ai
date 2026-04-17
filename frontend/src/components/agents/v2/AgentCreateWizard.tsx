@@ -138,18 +138,25 @@ export function AgentCreateWizard() {
         },
       });
     } catch (err) {
+      let errorMsg = 'Não foi possível concluir a criação do agente. Tente novamente em instantes.';
+      
       if (err instanceof ApiError) {
-        if (err.status === 405) {
-          setValidationError('Nao foi possivel concluir a criacao do agente. Tente novamente em instantes.');
+        // Priorize a mensagem de erro do backend se disponível
+        if (err.message && err.message.length > 0 && err.message !== 'Unknown error') {
+          errorMsg = err.message;
+        } else if (err.status === 405) {
+          errorMsg = 'Operação não permitida. Verifique suas permissões.';
         } else if (err.status === 422) {
-          setValidationError('Encontramos um problema ao salvar o objetivo do agente. Revise os dados e tente novamente.');
-        } else {
-          setValidationError('Nao foi possivel concluir a criacao do agente. Tente novamente em instantes.');
+          errorMsg = 'Dados inválidos. Verifique: nome, função, objetivo e linguagem.';
+        } else if (err.status === 429) {
+          errorMsg = 'Limite de agentes atingido. Atualize seu plano.';
+        } else if (err.status === 500) {
+          errorMsg = 'Erro interno do servidor. Tente novamente em instantes.';
         }
-      } else {
-        setValidationError('Nao foi possivel concluir a criacao do agente. Tente novamente em instantes.');
       }
-      console.error(err);
+      
+      setValidationError(errorMsg);
+      console.error('[AgentCreateWizard] Erro ao criar agente:', err);
     } finally {
       setSaving(false);
     }

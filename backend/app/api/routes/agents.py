@@ -153,9 +153,23 @@ def create_agent(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentRead:
-    BillingService(db).check_limit(current_user, "agents")
-    agent = AgentService(db).create_agent(current_user, payload)
-    return AgentRead.model_validate(agent)
+    try:
+        BillingService(db).check_limit(current_user, "agents")
+        agent = AgentService(db).create_agent(current_user, payload)
+        return AgentRead.model_validate(agent)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Dados inválidos: {str(e)}"
+        )
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao criar agente: {error_msg}"
+        )
 
 
 @router.get("/{agent_id}", response_model=AgentRead)

@@ -14,6 +14,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -52,7 +53,7 @@ interface BriefModel {
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
-const TABS: { id: TabId; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
+const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: 'overview', label: 'Visão Geral', icon: LayoutGrid },
   { id: 'campaign', label: 'Campanha', icon: Megaphone },
   { id: 'copy', label: 'Copy IA', icon: Sparkles },
