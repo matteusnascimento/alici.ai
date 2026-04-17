@@ -1,5 +1,6 @@
 import type { AccountProfile } from '../../types/account';
 import type { CurrentSubscription } from '../../types/billing';
+import { buildInitialsSafe } from '../../utils/dataHelpers';
 
 interface AccountHeaderProps {
   title: string;
@@ -8,18 +9,8 @@ interface AccountHeaderProps {
   subscription?: CurrentSubscription | null;
 }
 
-function buildInitials(name: string | undefined) {
-  if (!name) return 'AX';
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 export function AccountHeader({ title, subtitle, profile, subscription }: AccountHeaderProps) {
-  const initials = buildInitials(profile?.name);
+  const initials = buildInitialsSafe(profile?.name);
 
   return (
     <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#0b1a2b] via-[#0d1f34] to-[#091524] p-5 md:p-7">

@@ -29,8 +29,12 @@ export function useBilling() {
         getBillingUsage(),
       ]);
       setPlans(Array.isArray(plansResult) ? plansResult : []);
-      setCurrent(currentResult);
-      setUsage(usageResult);
+      setCurrent(currentResult ?? null);
+      setUsage(
+        usageResult
+          ? { ...usageResult, items: Array.isArray(usageResult.items) ? usageResult.items : [] }
+          : null,
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar billing');

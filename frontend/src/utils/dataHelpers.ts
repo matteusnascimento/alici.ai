@@ -7,6 +7,43 @@
 
 const DEV = import.meta.env.DEV;
 
+// ─── Shorthands seguros (use estes nos componentes) ───────────────────────────
+
+/** Converte qualquer valor para string. Retorna fallback (default '') se não for string. */
+export function safeString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  return fallback;
+}
+
+/** Garante array. Retorna [] para undefined/null/não-array. */
+export function safeArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+/**
+ * Faz split de forma segura. Nunca lança erro se value for undefined/null.
+ * @example safeSplit(user.name) // ['Joao', 'Silva']
+ * @example safeSplit(user.email, '@') // ['joao', 'gmail.com']
+ */
+export function safeSplit(value: unknown, separator = ' '): string[] {
+  if (!value || typeof value !== 'string') return [];
+  return value.split(separator).filter(Boolean);
+}
+
+/**
+ * Gera iniciais a partir de um nome. Retorna fallback (default 'AX') se vazio.
+ * @example buildInitialsSafe('Joao Silva') // 'JS'
+ */
+export function buildInitialsSafe(name: unknown, fallback = 'AX'): string {
+  const parts = safeSplit(name);
+  if (parts.length === 0) return fallback;
+  return parts
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 /** Garante que um valor é array. Retorna [] para qualquer outro tipo. */
 export function ensureArray<T>(value: unknown, fieldName?: string): T[] {
   if (Array.isArray(value)) return value as T[];

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+﻿import { FormEvent, useEffect, useState } from 'react';
 
 import { useBilling } from '../../hooks/useBilling';
 import { useSettings } from '../../hooks/useSettings';
@@ -22,10 +22,10 @@ export function AccountPanel() {
   useEffect(() => {
     if (account) {
       setProfile({
-        name: account.profile.name,
-        username: account.profile.username,
-        email: account.profile.email,
-        phone: account.profile.phone || '',
+        name: account.profile?.name ?? '',
+        username: account.profile?.username ?? '',
+        email: account.profile?.email ?? '',
+        phone: account.profile?.phone ?? '',
       });
       setLocalSettings(account.settings);
     }
@@ -58,7 +58,13 @@ export function AccountPanel() {
           ].map(([key, label]) => (
             <div key={key}>
               <label className="mb-2 block text-sm text-slate-300">{label}</label>
-              <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-cyan" type={key === 'email' ? 'email' : 'text'} value={profile[key as keyof typeof profile]} onChange={(event) => setProfile((current) => ({ ...current, [key]: event.target.value }))} required={key !== 'phone'} />
+              <input
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-cyan"
+                type={key === 'email' ? 'email' : 'text'}
+                value={profile[key as keyof typeof profile]}
+                onChange={(event) => setProfile((current) => ({ ...current, [key]: event.target.value }))}
+                required={key !== 'phone'}
+              />
             </div>
           ))}
           <button className="rounded-2xl bg-sand px-4 py-3 font-semibold text-ink transition hover:bg-white disabled:opacity-60" disabled={saving} type="submit">
@@ -66,8 +72,9 @@ export function AccountPanel() {
           </button>
         </form>
       </section>
+
       <section className="panel-base">
-        <h3 className="font-display text-2xl text-white">Configurações AXI</h3>
+        <h3 className="font-display text-2xl text-white">Configuracoes AXI</h3>
         <form className="mt-6 space-y-4" onSubmit={handleSettingsSubmit}>
           {[
             ['background_conversation', 'Background conversation'],
@@ -78,7 +85,11 @@ export function AccountPanel() {
           ].map(([key, label]) => (
             <label key={key} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white">
               <span>{label}</span>
-              <input checked={settings[key as keyof typeof settings] as boolean} onChange={(event) => setLocalSettings((current) => ({ ...current, [key]: event.target.checked }))} type="checkbox" />
+              <input
+                checked={settings[key as keyof typeof settings] as boolean}
+                onChange={(event) => setLocalSettings((current) => ({ ...current, [key]: event.target.checked }))}
+                type="checkbox"
+              />
             </label>
           ))}
           {[
@@ -87,24 +98,29 @@ export function AccountPanel() {
           ].map(([key, label]) => (
             <div key={key}>
               <label className="mb-2 block text-sm text-slate-300">{label}</label>
-              <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-cyan" value={settings[key as keyof typeof settings] as string} onChange={(event) => setLocalSettings((current) => ({ ...current, [key]: event.target.value }))} />
+              <input
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-cyan"
+                value={settings[key as keyof typeof settings] as string}
+                onChange={(event) => setLocalSettings((current) => ({ ...current, [key]: event.target.value }))}
+              />
             </div>
           ))}
           <button className="rounded-2xl bg-sand px-4 py-3 font-semibold text-ink transition hover:bg-white disabled:opacity-60" disabled={saving} type="submit">
-            Salvar configurações
+            Salvar configuracoes
           </button>
         </form>
         {error ? <p className="mt-4 text-sm text-coral">{error}</p> : null}
       </section>
+
       <section className="panel-base xl:col-span-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="font-display text-2xl text-white">Assinatura</h3>
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
             <p>
-              Plano atual: <span className="font-semibold text-white">{current?.plan_name ?? account?.profile.plan ?? 'free'}</span>
+              Plano atual: <span className="font-semibold text-white">{current?.plan_name ?? account?.profile?.plan ?? 'free'}</span>
             </p>
-            {current?.next_renewal_at ? <p>• Renova em: {new Date(current.next_renewal_at).toLocaleDateString('pt-BR')}</p> : null}
-            {current?.cancel_at_period_end ? <p className="text-amber-300">• Cancelamento ao fim do período</p> : null}
+            {current?.next_renewal_at ? <p>Renova em: {new Date(current.next_renewal_at).toLocaleDateString('pt-BR')}</p> : null}
+            {current?.cancel_at_period_end ? <p className="text-amber-300">Cancelamento ao fim do periodo</p> : null}
           </div>
         </div>
 
@@ -127,9 +143,7 @@ export function AccountPanel() {
           </div>
           <button
             type="button"
-            onClick={() => {
-              void openPortal();
-            }}
+            onClick={() => void openPortal()}
             className="rounded-2xl border border-white/20 px-4 py-2 text-xs font-semibold text-slate-100 transition hover:border-cyan/45 hover:text-cyan"
           >
             Gerenciar assinatura
@@ -162,12 +176,12 @@ export function AccountPanel() {
               }}
               className="rounded-2xl border border-amber-400/30 px-4 py-2 text-xs font-semibold text-amber-300 transition hover:border-amber-300/60"
             >
-              Cancelar no fim do período
+              Cancelar no fim do periodo
             </button>
           )}
         </div>
 
-        {usage ? (
+        {usage && Array.isArray(usage.items) && usage.items.length > 0 ? (
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {usage.items.map((item) => (
               <article key={item.metric} className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -199,8 +213,7 @@ export function AccountPanel() {
                 onClick={async () => {
                   try {
                     await startCheckout(plan.id, billingCycle);
-                    const message = 'Redirecionando para checkout seguro...';
-                    setUpgradeMessage(message);
+                    setUpgradeMessage('Redirecionando para checkout seguro...');
                   } catch {
                     setUpgradeMessage(null);
                   }
@@ -212,6 +225,7 @@ export function AccountPanel() {
             </article>
           ))}
         </div>
+
         {upgradeMessage ? <p className="mt-4 text-sm text-cyan">{upgradeMessage}</p> : null}
         {billingError ? <p className="mt-2 text-sm text-rose-200">{billingError}</p> : null}
       </section>

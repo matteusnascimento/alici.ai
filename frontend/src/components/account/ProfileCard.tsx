@@ -1,4 +1,5 @@
 import type { AccountProfile } from '../../types/account';
+import { buildInitialsSafe } from '../../utils/dataHelpers';
 
 interface ProfileCardProps {
   profile: AccountProfile;
@@ -6,12 +7,7 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({ profile, onEdit }: ProfileCardProps) {
-  const initials = profile.name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = buildInitialsSafe(profile?.name);
 
   return (
     <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#0c1c2e] via-[#0d1a2b] to-[#091322] p-5 md:p-6">

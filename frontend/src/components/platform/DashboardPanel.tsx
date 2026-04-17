@@ -44,8 +44,8 @@ export function DashboardPanel() {
     getDashboardOverview().then(setOverview).catch(() => {});
     getDashboardUsage().then(setUsage).catch(() => {});
     getDashboardAIHealth().then(setAIHealth).catch(() => {});
-    listProjects().then((p) => setProjects(p.slice(0, 3))).catch(() => {});
-    listChannelIntegrations().then(setIntegrations).catch(() => {});
+    listProjects().then((p) => setProjects(Array.isArray(p) ? p.slice(0, 3) : [])).catch(() => {});
+    listChannelIntegrations().then((p) => setIntegrations(Array.isArray(p) ? p : [])).catch(() => {});
   }, []);
 
   useEffect(() => {

@@ -54,9 +54,7 @@ import { AgentWorkspaceShell } from '../components/agents/v2/AgentWorkspaceShell
 
 import { MarketingShell } from '../components/marketing/MarketingShell';
 import { MarketingProjectsPage } from '../components/marketing/MarketingProjectsPage';
-import { MarketingCampaignPage } from '../components/marketing/MarketingCampaignPage';
-import { MarketingCopyPage } from '../components/marketing/MarketingCopyPage';
-import { MarketingBriefPage } from '../components/marketing/MarketingBriefPage';
+import { MarketingProjectWorkspace } from '../components/marketing/MarketingProjectWorkspace';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
 
@@ -156,9 +154,7 @@ export function AppRouter() {
             </Route>
             <Route path="marketing" element={<MarketingShell />}>
               <Route index element={<MarketingProjectsPage />} />
-              <Route path="campaign" element={<MarketingCampaignPage />} />
-              <Route path="copy" element={<MarketingCopyPage />} />
-              <Route path="brief" element={<MarketingBriefPage />} />
+              <Route path="projects/:projectId" element={<MarketingProjectWorkspace />} />
             </Route>
             <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="billing/success" element={<BillingSuccessPage />} />
