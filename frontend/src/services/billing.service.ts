@@ -1,5 +1,6 @@
 import { apiFetch } from './api';
 import type {
+  BillingHistory,
   BillingPlan,
   BillingUsage,
   CheckoutPayload,
@@ -50,4 +51,8 @@ export function cancelSubscription() {
 
 export function resumeSubscription() {
   return apiFetch<SubscriptionActionResponse>('/billing/resume', { method: 'POST' });
+}
+
+export function getBillingHistory() {
+  return apiFetch<BillingHistory>('/billing/history');
 }

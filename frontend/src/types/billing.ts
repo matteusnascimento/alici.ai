@@ -66,3 +66,18 @@ export interface BillingUsageItem {
 export interface BillingUsage {
   items: BillingUsageItem[];
 }
+
+export interface BillingHistoryItem {
+  id: number;
+  event_type: string;
+  amount: number;
+  currency: string;
+  description: string | null;
+  stripe_event_id: string | null;
+  status: string | null;
+  created_at: string;
+}
+
+export interface BillingHistory {
+  events: BillingHistoryItem[];
+}

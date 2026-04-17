@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Zap } from 'lucide-react';
+import { Check, Receipt, Zap } from 'lucide-react';
 
 import { logoutAccount } from '../../../services/account.service';
 import { LogoutButton } from '../LogoutButton';
@@ -72,7 +72,7 @@ function StatusBadge({ status, label }: StatusBadgeProps) {
 export function AccountHomePage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { plans, current, usage, startCheckout, openPortal, cancel, resume, error: billingError } = useBilling();
+  const { plans, current, usage, history, startCheckout, openPortal, cancel, resume, error: billingError } = useBilling();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   const isOnFreePlan = !current || current.plan_id === 'free';
@@ -199,6 +199,42 @@ export function AccountHomePage() {
         onUpgrade={(planId, cycle) => void startCheckout(planId, cycle)}
         onOpenPortal={() => void openPortal()}
       />
+
+      {/* ── BILLING HISTORY ───────────────────────────────────────────────── */}
+      {history && Array.isArray(history.events) && history.events.length > 0 && (
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Receipt size={16} className="text-slate-400" />
+            <h2 className="font-display text-xl text-white">Histórico de cobrança</h2>
+          </div>
+          <div className="space-y-2">
+            {history.events.slice(0, 5).map((event) => (
+              <div key={event.id} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/5 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-slate-200">{event.description ?? event.event_type}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {new Date(event.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="ml-4 flex shrink-0 items-center gap-3">
+                  {event.amount > 0 && (
+                    <span className="text-sm font-semibold text-white">
+                      {event.currency} {event.amount.toFixed(2)}
+                    </span>
+                  )}
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                    event.status === 'succeeded' ? 'bg-emerald-500/15 text-emerald-300' :
+                    event.status === 'failed' ? 'bg-rose-500/15 text-rose-300' :
+                    'bg-slate-500/15 text-slate-300'
+                  }`}>
+                    {event.status ?? 'info'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── SETTINGS (Denser Grid) ────────────────────────────────────────── */}
       <div className="space-y-4">

@@ -4,18 +4,20 @@ import {
   cancelSubscription,
   createCheckoutSession,
   createPortalSession,
+  getBillingHistory,
   getBillingPlans,
   getBillingUsage,
   getCurrentSubscription,
   resumeSubscription,
   upgradeSubscription,
 } from '../services/billing.service';
-import type { BillingPlan, BillingUsage, CurrentSubscription } from '../types/billing';
+import type { BillingHistory, BillingPlan, BillingUsage, CurrentSubscription } from '../types/billing';
 
 export function useBilling() {
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [current, setCurrent] = useState<CurrentSubscription | null>(null);
   const [usage, setUsage] = useState<BillingUsage | null>(null);
+  const [history, setHistory] = useState<BillingHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +25,11 @@ export function useBilling() {
   async function loadBilling() {
     setLoading(true);
     try {
-      const [plansResult, currentResult, usageResult] = await Promise.all([
+      const [plansResult, currentResult, usageResult, historyResult] = await Promise.all([
         getBillingPlans(),
         getCurrentSubscription(),
         getBillingUsage(),
+        getBillingHistory(),
       ]);
       setPlans(Array.isArray(plansResult) ? plansResult : []);
       setCurrent(currentResult ?? null);
@@ -35,12 +38,18 @@ export function useBilling() {
           ? { ...usageResult, items: Array.isArray(usageResult.items) ? usageResult.items : [] }
           : null,
       );
+      setHistory(
+        historyResult
+          ? { ...historyResult, events: Array.isArray(historyResult.events) ? historyResult.events : [] }
+          : null,
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar billing');
       setPlans([]);
       setCurrent(null);
       setUsage(null);
+      setHistory(null);
     } finally {
       setLoading(false);
     }
@@ -142,6 +151,7 @@ export function useBilling() {
     plans,
     current,
     usage,
+    history,
     loading,
     upgrading,
     error,
