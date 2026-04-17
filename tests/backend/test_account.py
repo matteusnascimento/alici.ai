@@ -134,3 +134,42 @@ def test_account_security_integrations_and_privacy_actions(client, auth_headers)
     logout_response = client.post('/api/account/logout', headers=auth_headers)
     assert logout_response.status_code == 200
     assert 'sessao encerrada com sucesso' in logout_response.json().get('message', '').lower()
+
+
+def test_account_avatar_upload(client, auth_headers):
+    """Test avatar upload endpoint"""
+    from io import BytesIO
+
+    # Criar dados PNG simples (1x1 pixel válido)
+    png_data = (
+        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
+        b'\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00'
+        b'\x00\x01\x01\x00\x05\x18\r\n\x1b\x00\x00\x00\x00IEND\xaeB`\x82'
+    )
+
+    # Upload com tipo MIME correto
+    response = client.post(
+        '/api/account/upload-avatar',
+        headers=auth_headers,
+        files={'file': ('avatar.png', BytesIO(png_data), 'image/png')},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert 'avatar_url' in data
+    assert data['avatar_url'].startswith('/uploads/avatars/')
+
+    # Tentar upload com tipo de arquivo inválido
+    invalid_response = client.post(
+        '/api/account/upload-avatar',
+        headers=auth_headers,
+        files={'file': ('document.pdf', BytesIO(b'PDF content'), 'application/pdf')},
+    )
+    assert invalid_response.status_code == 400
+    assert 'permitido' in invalid_response.json().get('detail', '').lower()
+
+    # Tentar upload sem arquivo
+    empty_response = client.post(
+        '/api/account/upload-avatar',
+        headers=auth_headers,
+    )
+    assert empty_response.status_code == 422  # Unprocessable Entity
