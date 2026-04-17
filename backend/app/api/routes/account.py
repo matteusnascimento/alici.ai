@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlalchemy.orm import Session
+import os
+import uuid
+from pathlib import Path
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -149,3 +152,43 @@ def account_legal(_: User = Depends(get_current_user)) -> AccountLegalInfo:
 def account_logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> AccountActionResponse:
     _ = current_user
     return AccountService(db).logout()
+
+
+@router.post("/upload-avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Upload avatar image e retorna a URL"""
+    if not file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo sem nome")
+    
+    # Validar tipo de arquivo
+    allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tipo de arquivo não permitido")
+    
+    # Validar tamanho (máx 5MB)
+    max_size = 5 * 1024 * 1024
+    contents = await file.read()
+    if len(contents) > max_size:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo muito grande (máx 5MB)")
+    
+    # Criar diretório se não existir
+    upload_dir = Path("backend/uploads/avatars")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Gerar nome único
+    ext = Path(file.filename).suffix
+    filename = f"{current_user.id}_{uuid.uuid4()}{ext}"
+    filepath = upload_dir / filename
+    
+    # Salvar arquivo
+    with open(filepath, "wb") as f:
+        f.write(contents)
+    
+    # Retornar URL relativa
+    avatar_url = f"/uploads/avatars/{filename}"
+    
+    return {"avatar_url": avatar_url}
