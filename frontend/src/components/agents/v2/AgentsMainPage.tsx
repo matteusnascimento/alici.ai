@@ -97,9 +97,17 @@ export function AgentsMainPage() {
     await handleDuplicate(agents[0]);
   }
 
+  const activeCount = agents.filter((a) => a.ativo).length;
+  const pausedCount = agents.filter((a) => !a.ativo).length;
+
   return (
     <div className="space-y-4">
-      <AgentsHeader onDuplicateTop={handleDuplicateTop} />
+      <AgentsHeader
+        onDuplicateTop={handleDuplicateTop}
+        totalAgents={agents.length}
+        activeAgents={activeCount}
+        pausedAgents={pausedCount}
+      />
       <AgentsFiltersBar search={search} status={statusFilter} onSearch={setSearch} onStatus={setStatusFilter} />
       {feedback ? <p className="rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100">{feedback}</p> : null}
       {loading ? <p className="text-slate-300">Carregando agentes...</p> : null}

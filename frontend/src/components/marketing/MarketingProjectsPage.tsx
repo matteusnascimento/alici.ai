@@ -341,6 +341,20 @@ export function MarketingProjectsPage() {
       </section>
 
       <section className="space-y-3">
+        {/* KPI strip — aparece quando há projetos */}
+        {projects.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-2xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200">
+              <Megaphone size={13} className="text-cyan-300" />
+              {projects.length} {projects.length === 1 ? 'projeto' : 'projetos'}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-200">
+              <Sparkles size={13} className="text-emerald-300" />
+              Ativos
+            </span>
+          </div>
+        )}
+
         <h2 className="text-sm uppercase tracking-[0.25em] text-slate-400">Projetos ativos ({projects.length})</h2>
         {projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-cyan-300/20 bg-[linear-gradient(160deg,rgba(8,24,48,0.8),rgba(4,18,33,0.85))] py-14 text-center">
@@ -358,39 +372,49 @@ export function MarketingProjectsPage() {
             </button>
           </div>
         ) : (
-          projects.map((p) => (
-            <div
-              key={p.id}
-              className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 transition hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-white/10"
-            >
-              <div className="space-y-1">
-                <p className="font-semibold text-white">{p.name}</p>
-                <p className="text-xs text-slate-300">{p.objective} · {p.audience}</p>
-                <p className="text-xs text-slate-400">Oferta: {p.offer} · Tom: {p.tone}</p>
-                {p.notes ? <p className="text-xs italic text-slate-400">{p.notes}</p> : null}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {projects.map((p) => (
+              <div
+                key={p.id}
+                className="group flex flex-col justify-between rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(7,14,32,0.95),rgba(10,24,48,0.9))] p-5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 hover:border-cyan-300/25 hover:shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-semibold leading-snug text-white">{p.name}</p>
+                    <span className="shrink-0 rounded-full border border-cyan-300/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-cyan-200">
+                      {p.tone}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">{p.objective}</p>
+                  <p className="text-xs text-slate-400">Público: {p.audience}</p>
+                  <p className="text-xs text-slate-400">Oferta: {p.offer}</p>
+                  {p.notes ? <p className="text-xs italic text-slate-500">{p.notes}</p> : null}
+                </div>
+                <div className="mt-4 flex items-center gap-2 border-t border-white/10 pt-3">
+                  <button
+                    onClick={() => navigate(`/app/marketing/copy?project=${p.id}`)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-cyan/30 bg-cyan/5 px-3 py-1.5 text-xs font-semibold text-cyan transition hover:bg-cyan/15"
+                  >
+                    <Sparkles size={11} /> Gerar Copy
+                  </button>
+                  <button
+                    onClick={() => navigate(`/app/marketing/campaign?project=${p.id}`)}
+                    className="rounded-lg border border-white/15 p-1.5 text-slate-300 transition hover:bg-white/10"
+                    title="Editar"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="ml-auto rounded-lg border border-rose-500/30 p-1.5 text-rose-300 transition hover:bg-rose-500/10"
+                    title="Remover"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigate(`/app/marketing/copy?project=${p.id}`)}
-                  className="rounded-lg border border-cyan/30 px-3 py-1.5 text-xs text-cyan hover:bg-cyan/10"
-                >
-                  Gerar Copy
-                </button>
-                <button
-                  onClick={() => navigate(`/app/marketing/campaign?project=${p.id}`)}
-                  className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5"
-                >
-                  <Pencil size={12} />
-                </button>
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  className="rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/10"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </section>
     </div>
