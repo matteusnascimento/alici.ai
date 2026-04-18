@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -38,6 +40,7 @@ class AuthService:
             phone=payload.phone,
             password_hash=get_password_hash(payload.password),
             plan="free",
+            last_login_at=datetime.now(timezone.utc),
         )
         self.db.add(user)
         self.db.flush()
@@ -79,6 +82,7 @@ class AuthService:
                     phone=settings.dev_seed_phone,
                     password_hash=get_password_hash(settings.dev_seed_password),
                     plan="free",
+                    last_login_at=datetime.now(timezone.utc),
                 )
                 self.db.add(user)
                 self.db.flush()
@@ -103,5 +107,8 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email ou senha invalidos. Confira os dados e tente novamente.",
             )
+        user.last_login_at = datetime.now(timezone.utc)
+        self.db.commit()
+        self.db.refresh(user)
         token = create_access_token(str(user.id))
         return token, user

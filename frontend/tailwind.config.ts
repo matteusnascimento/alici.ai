@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#08111f',
-        storm: '#11243b',
+        ink: 'rgb(var(--axi-ink-rgb) / <alpha-value>)',
+        storm: 'rgb(var(--axi-storm-rgb) / <alpha-value>)',
         cyan: '#6ee7f9',
         sand: '#f3ece1',
         gold: '#d8b56b',

@@ -2,6 +2,10 @@ def test_account_profile_and_preferences_flow(client, auth_headers):
     profile_response = client.get('/api/account/profile', headers=auth_headers)
     assert profile_response.status_code == 200
     assert profile_response.json()['email'] == 'ana@example.com'
+    assert profile_response.json()['status'] == 'ativa'
+    assert profile_response.json()['email_verified'] is False
+    assert profile_response.json()['last_login_at'] is not None
+    assert profile_response.json()['language'] == 'pt-BR'
 
     updated_profile = {
         'name': 'Ana Souza',
@@ -10,10 +14,18 @@ def test_account_profile_and_preferences_flow(client, auth_headers):
         'phone': '11988887777',
         'avatar_url': 'https://cdn.axi.app/avatar.png',
         'bio': 'Especialista em atendimento.',
+        'company': 'AXI Labs',
+        'job_title': 'Head de Operacoes',
+        'timezone': 'America/Sao_Paulo',
+        'language': 'en-US',
     }
     update_response = client.put('/api/account/profile', headers=auth_headers, json=updated_profile)
     assert update_response.status_code == 200
     assert update_response.json()['username'] == 'ana.souza'
+    assert update_response.json()['company'] == 'AXI Labs'
+    assert update_response.json()['job_title'] == 'Head de Operacoes'
+    assert update_response.json()['timezone'] == 'America/Sao_Paulo'
+    assert update_response.json()['language'] == 'en-US'
 
     preferences_payload = {
         'language': 'pt-BR',
@@ -66,6 +78,10 @@ def test_account_profile_conflict_and_phone_validation(client, auth_headers):
             'phone': '11999999999',
             'avatar_url': None,
             'bio': None,
+            'company': None,
+            'job_title': None,
+            'timezone': None,
+            'language': None,
         },
     )
     assert conflict_response.status_code == 409
@@ -81,6 +97,10 @@ def test_account_profile_conflict_and_phone_validation(client, auth_headers):
             'phone': '1234567',
             'avatar_url': None,
             'bio': None,
+            'company': None,
+            'job_title': None,
+            'timezone': None,
+            'language': None,
         },
     )
     assert phone_response.status_code == 422
@@ -134,6 +154,48 @@ def test_account_security_integrations_and_privacy_actions(client, auth_headers)
     logout_response = client.post('/api/account/logout', headers=auth_headers)
     assert logout_response.status_code == 200
     assert 'sessao encerrada com sucesso' in logout_response.json().get('message', '').lower()
+
+
+def test_account_email_and_phone_verification_flow(client, auth_headers):
+    email_request_response = client.post('/api/account/profile/verify-email/request', headers=auth_headers)
+    assert email_request_response.status_code == 200
+    email_payload = email_request_response.json()
+    assert email_payload['channel'] == 'email'
+    assert email_payload['preview_code']
+
+    invalid_email_confirm = client.post(
+        '/api/account/profile/verify-email/confirm',
+        headers=auth_headers,
+        json={'code': '000000'},
+    )
+    assert invalid_email_confirm.status_code == 401
+
+    valid_email_confirm = client.post(
+        '/api/account/profile/verify-email/confirm',
+        headers=auth_headers,
+        json={'code': email_payload['preview_code']},
+    )
+    assert valid_email_confirm.status_code == 200
+    assert 'email verificado com sucesso' in valid_email_confirm.json().get('message', '').lower()
+
+    phone_request_response = client.post('/api/account/profile/verify-phone/request', headers=auth_headers)
+    assert phone_request_response.status_code == 200
+    phone_payload = phone_request_response.json()
+    assert phone_payload['channel'] == 'phone'
+    assert phone_payload['preview_code']
+
+    valid_phone_confirm = client.post(
+        '/api/account/profile/verify-phone/confirm',
+        headers=auth_headers,
+        json={'code': phone_payload['preview_code']},
+    )
+    assert valid_phone_confirm.status_code == 200
+    assert 'telefone verificado com sucesso' in valid_phone_confirm.json().get('message', '').lower()
+
+    profile_response = client.get('/api/account/profile', headers=auth_headers)
+    assert profile_response.status_code == 200
+    assert profile_response.json()['email_verified'] is True
+    assert profile_response.json()['phone_verified'] is True
 
 
 def test_account_avatar_upload(client, auth_headers):

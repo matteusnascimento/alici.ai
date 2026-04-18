@@ -6,7 +6,17 @@ export interface AccountProfile {
   phone: string | null;
   avatar_url: string | null;
   bio: string | null;
+  company: string | null;
+  job_title: string | null;
+  timezone: string | null;
+  language: string;
+  email_verified: boolean;
+  phone_verified: boolean;
+  status: string;
   plan: string;
+  created_at: string;
+  updated_at: string | null;
+  last_login_at: string | null;
 }
 
 export interface AccountProfileUpdate {
@@ -16,6 +26,10 @@ export interface AccountProfileUpdate {
   phone: string | null;
   avatar_url: string | null;
   bio: string | null;
+  company: string | null;
+  job_title: string | null;
+  timezone: string | null;
+  language: string | null;
 }
 
 export interface AccountPreferences {
@@ -91,4 +105,16 @@ export interface AccountLegalInfo {
 
 export interface AccountActionResponse {
   message: string;
+}
+
+export interface AccountVerificationChallenge {
+  channel: string;
+  destination: string;
+  expires_at: string;
+  message: string;
+  preview_code: string | null;
+}
+
+export interface AccountVerificationConfirmPayload {
+  code: string;
 }

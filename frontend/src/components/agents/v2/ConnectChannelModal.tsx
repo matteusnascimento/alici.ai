@@ -94,9 +94,9 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/70">Conectar canal</p>
-                <h2 className="mt-2 font-display text-3xl text-white">Grid de conectividade do agente</h2>
+                <h2 className="mt-2 font-display text-3xl text-white">Escolha por onde o agente vai atender</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                  Escolha um provider, salve a conta real e vincule o endpoint ao agente atual. A autenticacao oficial Meta continua sinalizada com honestidade.
+                  Selecione um canal, preencha os dados da conta e vincule ao agente. Você pode conectar vários canais ao mesmo agente.
                 </p>
               </div>
               <button type="button" onClick={onClose} className="rounded-2xl border border-white/12 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/5">
@@ -119,10 +119,10 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
             <div className="mt-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Canais ja vinculados</h3>
-                  <p className="mt-1 text-sm text-slate-400">Esses cards ja estao conectados ao agente atual e podem ser testados na tela principal.</p>
+                  <h3 className="text-lg font-semibold text-white">Canais já vinculados</h3>
+                  <p className="mt-1 text-sm text-slate-400">Estes canais já estão ativos neste agente.</p>
                 </div>
-                <span className="rounded-full border border-white/12 px-3 py-1 text-xs text-slate-300">{channels.length} vinculo(s)</span>
+                <span className="rounded-full border border-white/12 px-3 py-1 text-xs text-slate-300">{channels.length} vínculo(s)</span>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 {channels.length > 0 ? (
@@ -139,7 +139,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                   ))
                 ) : (
                   <div className="rounded-2xl border border-dashed border-white/12 bg-black/20 px-4 py-6 text-sm text-slate-400">
-                    Nenhum canal vinculado ainda. Use o grid acima para criar o primeiro vinculo real deste agente.
+                    Nenhum canal vinculado ainda. Use o painel ao lado para criar o primeiro vínculo.
                   </div>
                 )}
               </div>
@@ -162,7 +162,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                 <div className="grid gap-4">
                   {providerAccounts.length > 0 ? (
                     <div className="rounded-2xl border border-cyan-300/20 bg-cyan-500/8 p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-cyan-100/80">Contas conectadas disponiveis</p>
+                      <p className="text-xs uppercase tracking-[0.16em] text-cyan-100/80">Contas disponíveis — clique para pré-preencher</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {providerAccounts.slice(0, 4).map((account) => (
                           <button
@@ -204,7 +204,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                       type="password"
                       value={form.access_token}
                       onChange={(event) => setForm((current) => ({ ...current, access_token: event.target.value }))}
-                      placeholder="Opcional agora, necessario para ativacao oficial"
+                      placeholder="Opcional — necessário para ativação oficial com Meta"
                       className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300/40"
                     />
                   </label>
@@ -214,7 +214,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                     <input
                       value={form.channel_name}
                       onChange={(event) => setForm((current) => ({ ...current, channel_name: event.target.value }))}
-                      placeholder={selected.provider === 'instagram' ? 'Inbox principal' : 'Numero comercial principal'}
+                      placeholder={selected.provider === 'instagram' ? 'Inbox principal' : 'Número comercial principal'}
                       className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300/40"
                     />
                   </label>
@@ -243,7 +243,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                 </div>
 
                 <div className="rounded-2xl border border-amber-300/20 bg-amber-500/8 px-4 py-3 text-sm leading-6 text-amber-100">
-                  O vinculo e a persistencia sao reais. Se o token oficial ainda nao estiver configurado, o AXI salva tudo como pronto para ativacao oficial sem fingir conexao Meta concluida.
+                  O vínculo é real e salvo no banco. Se o token oficial ainda não estiver configurado, o canal fica salvo como <strong>pronto para ativação</strong>, sem simular conexão completa com a Meta.
                 </div>
 
                 {feedback ? <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{feedback}</div> : null}
@@ -258,7 +258,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                     onClick={() => void handleSubmit()}
                     className="rounded-2xl bg-cyan px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-105 disabled:opacity-50"
                   >
-                    {isLoading ? 'Salvando vinculo...' : 'Salvar e vincular ao agente'}
+                    {isLoading ? 'Salvando...' : 'Vincular ao agente'}
                   </button>
                 </div>
               </div>

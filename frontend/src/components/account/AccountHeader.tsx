@@ -11,6 +11,7 @@ interface AccountHeaderProps {
 
 export function AccountHeader({ title, subtitle, profile, subscription }: AccountHeaderProps) {
   const initials = buildInitialsSafe(profile?.name);
+  const lastLogin = profile?.last_login_at ? new Date(profile.last_login_at).toLocaleString('pt-BR') : 'Sem acesso recente';
 
   return (
     <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#0b1a2b] via-[#0d1f34] to-[#091524] p-5 md:p-7">
@@ -34,6 +35,9 @@ export function AccountHeader({ title, subtitle, profile, subscription }: Accoun
             <div>
               <p className="text-sm font-semibold text-white">{profile?.name ?? 'Sua conta AXI'}</p>
               <p className="text-xs text-slate-300">{profile?.email ?? 'Conta autenticada'}</p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                {[profile?.job_title, profile?.company].filter(Boolean).join(' · ') || 'Identidade profissional em configuração'}
+              </p>
             </div>
           </div>
           <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2">
@@ -44,6 +48,18 @@ export function AccountHeader({ title, subtitle, profile, subscription }: Accoun
             <span className="rounded-full border border-cyan/40 bg-cyan/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan">
               {subscription?.status ?? 'active'}
             </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Último acesso</p>
+              <p className="mt-1 text-xs text-slate-200">{lastLogin}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Confiança da conta</p>
+              <p className="mt-1 text-xs text-slate-200">
+                {profile?.email_verified ? 'Email ok' : 'Email pendente'} · {profile?.phone_verified ? 'Telefone ok' : 'Telefone pendente'}
+              </p>
+            </div>
           </div>
         </section>
       </div>

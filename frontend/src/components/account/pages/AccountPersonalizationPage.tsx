@@ -1,23 +1,24 @@
 import { useEffect, useState } from 'react';
 
-import { getAccountPreferences, updateAccountPreferences } from '../../../services/settingsAccount.service';
 import { useToast } from '../../../hooks/useToast';
+import { useTheme } from '../../../contexts/ThemeContext';
 import type { AccountPreferences } from '../../../types/account';
 import { PreferencesForm } from '../PreferencesForm';
 
 export function AccountPersonalizationPage() {
   const toast = useToast();
-  const [prefs, setPrefs] = useState<AccountPreferences | null>(null);
+  const { preferences, isLoading, savePreferences } = useTheme();
+  const [prefs, setPrefs] = useState<AccountPreferences | null>(preferences);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
-    void getAccountPreferences().then(setPrefs);
-  }, []);
+    setPrefs(preferences);
+  }, [preferences]);
 
-  if (!prefs) {
-    return <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-slate-300">Carregando preferencias...</div>;
+  if (isLoading || !prefs) {
+    return <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-slate-300">Carregando preferências...</div>;
   }
 
   return (
@@ -29,7 +30,8 @@ export function AccountPersonalizationPage() {
         setSaveStatus('idle');
         setSaveMessage('');
         try {
-          setPrefs(await updateAccountPreferences(prefs));
+          const updated = await savePreferences(prefs);
+          setPrefs(updated);
           setSaveStatus('success');
           setSaveMessage('Alterações salvas com sucesso.');
           toast.success('Preferências atualizadas com sucesso.');

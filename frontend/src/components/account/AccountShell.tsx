@@ -67,33 +67,21 @@ function SidebarItem({ icon: Icon, label, subtitle, active, to, onNavigate, emph
 
 const sections = [
   {
-    title: 'Visao geral',
+    title: 'Conta AXI',
     links: [
-      { to: '/app/account/overview', label: 'Overview', subtitle: 'Resumo da conta e atalhos', icon: Home },
-      { to: '/app/account/profile', label: 'Profile', subtitle: 'Dados pessoais e identidade', icon: User },
+      { to: '/app/account/overview', label: 'Visão geral', subtitle: 'Resumo da conta e do plano', icon: Home },
+      { to: '/app/account/profile', label: 'Perfil', subtitle: 'Dados pessoais e identidade', icon: User },
+      { to: '/app/account/personalization', label: 'Preferências', subtitle: 'Tema, idioma e experiência', icon: Palette },
+      { to: '/app/account/security', label: 'Segurança', subtitle: 'Senha e proteção da conta', icon: Shield },
+      { to: '/app/account/applications', label: 'Integrações', subtitle: 'Apps e conexões ativas', icon: Puzzle },
     ],
   },
   {
-    title: 'Assinatura e preferencias',
+    title: 'Suporte e dados',
     links: [
-      { to: '/app/account/personalization', label: 'Personalization', subtitle: 'Tema, idioma e experiencia', icon: Palette },
-      { to: '/app/account/notifications', label: 'Notifications', subtitle: 'Alertas e comunicacoes', icon: Bell },
-      { to: '/app/account/language-appearance', label: 'Language & Appearance', subtitle: 'Idioma, contraste e cor', icon: Languages },
-    ],
-  },
-  {
-    title: 'Seguranca e dados',
-    links: [
-      { to: '/app/account/security', label: 'Security', subtitle: 'Senha e protecao da conta', icon: Shield },
-      { to: '/app/account/data-controls', label: 'Data Controls', subtitle: 'Exportacao e privacidade', icon: Database },
-      { to: '/app/account/archived-chats', label: 'Archived Chats', subtitle: 'Conversas salvas', icon: Archive },
-    ],
-  },
-  {
-    title: 'Apps e suporte',
-    links: [
-      { to: '/app/account/applications', label: 'Applications', subtitle: 'Apps e integracoes conectadas', icon: Puzzle },
-      { to: '/app/account/help', label: 'Help', subtitle: 'Ajuda e suporte', icon: CircleHelp },
+      { to: '/app/account/notifications', label: 'Notificações', subtitle: 'Alertas e comunicações', icon: Bell },
+      { to: '/app/account/data-controls', label: 'Privacidade', subtitle: 'Exportação e exclusão de dados', icon: Database },
+      { to: '/app/account/help', label: 'Ajuda', subtitle: 'Suporte e central de ajuda', icon: CircleHelp },
       { to: '/app/account/legal', label: 'Legal', subtitle: 'Termos e privacidade', icon: Scale },
     ],
   },

@@ -22,6 +22,8 @@ from app.schemas.account import (
     AccountPrivacyRead,
     AccountProfileRead,
     AccountProfileUpdate,
+    AccountVerificationChallenge,
+    AccountVerificationConfirm,
     AccountSecurityChangePassword,
     AccountSecuritySummary,
 )
@@ -44,6 +46,40 @@ def account_profile_update(
     db: Session = Depends(get_db),
 ) -> AccountProfileRead:
     return AccountService(db).update_profile(current_user, payload)
+
+
+@router.post("/profile/verify-email/request", response_model=AccountVerificationChallenge)
+def account_request_email_verification(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AccountVerificationChallenge:
+    return AccountService(db).request_email_verification(current_user)
+
+
+@router.post("/profile/verify-email/confirm", response_model=AccountActionResponse)
+def account_confirm_email_verification(
+    payload: AccountVerificationConfirm,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AccountActionResponse:
+    return AccountService(db).confirm_email_verification(current_user, payload)
+
+
+@router.post("/profile/verify-phone/request", response_model=AccountVerificationChallenge)
+def account_request_phone_verification(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AccountVerificationChallenge:
+    return AccountService(db).request_phone_verification(current_user)
+
+
+@router.post("/profile/verify-phone/confirm", response_model=AccountActionResponse)
+def account_confirm_phone_verification(
+    payload: AccountVerificationConfirm,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AccountActionResponse:
+    return AccountService(db).confirm_phone_verification(current_user, payload)
 
 
 @router.get("/preferences", response_model=AccountPreferencesRead)

@@ -22,8 +22,8 @@ export function SidebarItem({ label, to, icon: Icon, expanded, onNavigate }: Sid
           'group relative flex items-center text-sm transition-all',
           expanded ? 'h-14 rounded-2xl border px-3 gap-3 justify-start' : 'mx-auto h-14 w-14 items-center justify-center rounded-2xl border p-0',
           isActive
-            ? 'border-cyan/45 bg-cyan/10 text-white shadow-[inset_0_0_24px_rgba(110,231,249,0.12)]'
-            : 'border-transparent bg-white/[0.03] text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
+            ? 'border-cyan/45 bg-cyan/10 text-[var(--text-primary)] shadow-[inset_0_0_24px_rgba(110,231,249,0.12)]'
+            : 'border-transparent bg-white/[0.03] text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--text-primary)]',
         )
       }
     >

@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Receipt, Zap } from 'lucide-react';
+import { Check, Mail, Receipt, Shield, Smartphone, Sparkles, UserCircle2, Zap } from 'lucide-react';
 
-import { logoutAccount } from '../../../services/account.service';
+import { getAccountProfile, logoutAccount } from '../../../services/account.service';
 import { LogoutButton } from '../LogoutButton';
 import { PlanCard } from '../PlanCard';
 import { SettingsRow } from '../SettingsRow';
 import { useAuth } from '../../../hooks/useAuth';
 import { useBilling } from '../../../hooks/useBilling';
+import type { AccountProfile } from '../../../types/account';
 
 // ── Inline sub-components ─────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ export function AccountHomePage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { plans, current, usage, history, startCheckout, openPortal, cancel, resume, error: billingError } = useBilling();
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   const isOnFreePlan = !current || current.plan_id === 'free';
@@ -80,6 +82,23 @@ export function AccountHomePage() {
     ? Math.max(...usage.items.map(item => item.limit > 0 ? Math.round((item.used / item.limit) * 100) : 0))
     : 0;
   const urgentUpgrade = usageRate >= 80;
+
+  useEffect(() => {
+    void getAccountProfile().then(setProfile).catch(() => setProfile(null));
+  }, []);
+
+  const profileCompletionChecks = [
+    Boolean(profile?.avatar_url),
+    Boolean(profile?.bio && profile.bio.trim().length >= 20),
+    Boolean(profile?.company),
+    Boolean(profile?.job_title),
+    Boolean(profile?.timezone),
+    Boolean(profile?.email_verified),
+    Boolean(profile?.phone_verified),
+  ];
+  const profileCompletion = profile
+    ? Math.round((profileCompletionChecks.filter(Boolean).length / profileCompletionChecks.length) * 100)
+    : 0;
 
   return (
     <div className="space-y-5">
@@ -236,35 +255,93 @@ export function AccountHomePage() {
         </section>
       )}
 
-      {/* ── SETTINGS (Denser Grid) ────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <h2 className="font-display text-xl text-white">Configurações</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <SettingsSection title="Conta e perfil">
-            <SettingsRow to="/app/account/profile" label="Perfil" description="Nome, foto, username e contato" />
-            <SettingsRow to="/app/account/security" label="Segurança" description="Senha e status de segurança" />
-            <SettingsRow to="/app/account/data-controls" label="Dados e privacidade" description="Exportar dados e solicitar exclusão" />
-          </SettingsSection>
-
-          <SettingsSection title="Preferências">
-            <SettingsRow to="/app/account/personalization" label="Personalização" description="Tema, idioma, voz e comportamento" />
-            <SettingsRow to="/app/account/notifications" label="Notificações" description="Email, push e atualizações do produto" />
-            <SettingsRow to="/app/account/language-appearance" label="Idioma e aparência" description="Idioma, modo e accent visual" />
-          </SettingsSection>
-
-          <SettingsSection title="Integrações">
-            <SettingsRow to="/app/account/applications" label="Aplicativos" description="OpenAI, WhatsApp, Instagram e conectores" />
-            <SettingsRow to="/app/account/applications/status" label="Status das conexões" description="Saúde e última sincronização" />
-            <SettingsRow to="/app/account/archived-chats" label="Conversas arquivadas" description="Histórico e controle de sessões" />
-          </SettingsSection>
-
-          <SettingsSection title="Suporte e legal">
-            <SettingsRow to="/app/account/help" label="Central de ajuda" description="Ajuda, contatos e abertura de ticket" />
-            <SettingsRow to="/app/account/help/status" label="Status da plataforma" description="Versão atual e informações operacionais" />
-            <SettingsRow to="/app/account/legal" label="Legal" description="Termos de uso e política de privacidade" />
-          </SettingsSection>
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <h2 className="font-display text-xl text-white">Arquitetura da conta consolidada</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              A navegação principal da Conta AXI foi reduzida para um único eixo: visão geral, perfil, preferências, segurança e integrações.
+              Configurações paralelas de idioma e aparência foram incorporadas ao fluxo único de preferências.
+            </p>
+          </div>
+          <div className="grid w-full gap-3 sm:grid-cols-2 lg:max-w-xl">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 text-cyan">
+                <Sparkles size={16} />
+                <p className="text-sm font-semibold text-white">Preferências globais</p>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-400">Tema, idioma e cor passam a responder a um único estado global com persistência no backend.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 text-emerald-300">
+                <Check size={16} />
+                <p className="text-sm font-semibold text-white">Fluxo unificado</p>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-400">Idioma e aparência duplicados foram redirecionados para a mesma página de preferências.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 text-slate-300">
+                <Shield size={16} />
+                <p className="text-sm font-semibold text-white">Menos ruído</p>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-400">A tela de visão geral deixa de replicar o menu lateral como segunda navegação concorrente.</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {profile ? (
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-5">
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+            <div>
+              <h2 className="font-display text-xl text-white">Identidade da conta</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {profile.name} usa a AXI como {profile.job_title || 'perfil em configuração'}{profile.company ? ` em ${profile.company}` : ''}.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="flex items-center gap-2 text-slate-300"><UserCircle2 size={15} /><span className="text-xs uppercase tracking-[0.14em]">Perfil</span></div>
+                  <p className="mt-2 text-sm text-white">@{profile.username}</p>
+                  <p className="mt-1 text-xs text-slate-500">{profile.language} · {profile.timezone || 'Fuso pendente'}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="flex items-center gap-2 text-slate-300"><Mail size={15} /><span className="text-xs uppercase tracking-[0.14em]">Verificação</span></div>
+                  <p className="mt-2 text-sm text-white">{profile.email_verified ? 'Email validado' : 'Email pendente'}</p>
+                  <p className="mt-1 text-xs text-slate-500">{profile.phone_verified ? 'Telefone validado' : 'Telefone pendente'}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-cyan/20 bg-cyan/5 p-5">
+              <p className="text-xs uppercase tracking-[0.16em] text-cyan">Saúde do perfil</p>
+              <p className="mt-2 font-display text-3xl text-white">{profileCompletion}%</p>
+              <p className="mt-1 text-sm text-slate-300">Perfil concluído</p>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-cyan" style={{ width: `${profileCompletion}%` }} />
+              </div>
+              <div className="mt-4 space-y-2 text-xs text-slate-300">
+                <div className="flex items-center justify-between"><span>Empresa e cargo</span><span>{profile.company && profile.job_title ? 'OK' : 'Pendente'}</span></div>
+                <div className="flex items-center justify-between"><span>Bio e avatar</span><span>{profile.bio && profile.avatar_url ? 'OK' : 'Pendente'}</span></div>
+                <div className="flex items-center justify-between"><span>Verificações</span><span>{profile.email_verified && profile.phone_verified ? 'OK' : 'Pendente'}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 text-emerald-300"><Mail size={15} /><span className="text-xs uppercase tracking-[0.14em]">Email</span></div>
+              <p className="mt-2 text-sm text-white">{profile.email_verified ? 'Verificado' : 'Ação necessária'}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 text-amber-300"><Smartphone size={15} /><span className="text-xs uppercase tracking-[0.14em]">Telefone</span></div>
+              <p className="mt-2 text-sm text-white">{profile.phone_verified ? 'Verificado' : 'Ação necessária'}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 text-cyan"><Shield size={15} /><span className="text-xs uppercase tracking-[0.14em]">Último acesso</span></div>
+              <p className="mt-2 text-sm text-white">{profile.last_login_at ? new Date(profile.last_login_at).toLocaleString('pt-BR') : 'Sem registro'}</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* ── SESSION ───────────────────────────────────────────────────────── */}
       <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#16111f] to-[#120f19] p-5">

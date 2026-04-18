@@ -13,7 +13,17 @@ class AccountProfileRead(BaseModel):
     phone: str | None
     avatar_url: str | None = None
     bio: str | None = None
+    company: str | None = None
+    job_title: str | None = None
+    timezone: str | None = None
+    language: str
+    email_verified: bool
+    phone_verified: bool
+    status: str
     plan: str
+    created_at: datetime
+    updated_at: datetime | None = None
+    last_login_at: datetime | None = None
 
 
 class AccountProfileUpdate(BaseModel):
@@ -23,6 +33,10 @@ class AccountProfileUpdate(BaseModel):
     phone: str | None = None
     avatar_url: str | None = None
     bio: str | None = Field(default=None, max_length=500)
+    company: str | None = Field(default=None, max_length=140)
+    job_title: str | None = Field(default=None, max_length=140)
+    timezone: str | None = Field(default=None, max_length=60)
+    language: str | None = Field(default=None, max_length=20)
 
 
 class AccountPreferencesRead(BaseModel):
@@ -100,6 +114,18 @@ class AccountSecuritySummary(BaseModel):
 
 class AccountActionResponse(BaseModel):
     message: str
+
+
+class AccountVerificationChallenge(BaseModel):
+    channel: str
+    destination: str
+    expires_at: datetime
+    message: str
+    preview_code: str | None = None
+
+
+class AccountVerificationConfirm(BaseModel):
+    code: str = Field(min_length=4, max_length=12)
 
 
 class AccountSubscriptionView(BaseModel):

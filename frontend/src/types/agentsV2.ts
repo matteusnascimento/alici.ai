@@ -200,6 +200,10 @@ export interface AgentSettings {
     instrucoes_principais_do_agente?: string | null;
     modelo?: string | null;
     temperature?: string | null;
+    status?: string | null;
+    modo_resposta?: string | null;
+    nivel_auditoria?: string | null;
+    restricoes_conteudo?: string | null;
     opcoes_avancadas?: Record<string, unknown>;
   };
 }

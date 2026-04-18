@@ -44,14 +44,14 @@ export function ConnectedChannelCard({ channel, isLoading, onTest, onDisconnect 
             <dd className="mt-1 text-white">{channel.webhook_status}</dd>
           </div>
           <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3">
-            <dt className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Ultima atualizacao</dt>
+            <dt className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Última atualização</dt>
             <dd className="mt-1 text-white">{new Date(channel.updated_at).toLocaleString('pt-BR')}</dd>
           </div>
         </dl>
 
         {channel.last_test_message ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-slate-300">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Ultimo teste</div>
+            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Último teste</div>
             <p className="mt-1">{channel.last_test_message}</p>
             {channel.last_test_at ? <p className="mt-1 text-xs text-slate-500">{new Date(channel.last_test_at).toLocaleString('pt-BR')}</p> : null}
           </div>
@@ -64,13 +64,13 @@ export function ConnectedChannelCard({ channel, isLoading, onTest, onDisconnect 
             onClick={() => void onTest(channel.binding_id, channel.provider)}
             className="inline-flex items-center rounded-2xl border border-cyan-300/25 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/15 disabled:opacity-50"
           >
-            {isLoading ? 'Testando...' : 'Testar vinculo'}
+            {isLoading ? 'Testando...' : 'Testar vínculo'}
           </button>
           <button
             type="button"
             disabled={isLoading}
             onClick={() => void onDisconnect(channel.binding_id, channel.provider)}
-            className="inline-flex items-center rounded-2xl border border-white/15 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/5 disabled:opacity-50"
+            className="inline-flex items-center rounded-2xl border border-white/15 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-rose-400/30 hover:text-rose-200 disabled:opacity-50"
           >
             Desconectar
           </button>

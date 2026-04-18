@@ -41,6 +41,26 @@ class SchemaSyncService:
             conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(512)"))
         if "bio" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN bio TEXT"))
+        if "company" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN company VARCHAR(140)"))
+        if "job_title" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN job_title VARCHAR(140)"))
+        if "timezone" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN timezone VARCHAR(60)"))
+        if "email_verified" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0"))
+        if "phone_verified" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_verified BOOLEAN DEFAULT 0"))
+        if "last_login_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at DATETIME"))
+        if "email_verification_code" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email_verification_code VARCHAR(12)"))
+        if "email_verification_expires_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email_verification_expires_at DATETIME"))
+        if "phone_verification_code" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_verification_code VARCHAR(12)"))
+        if "phone_verification_expires_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_verification_expires_at DATETIME"))
         if "updated_at" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN updated_at DATETIME"))
 
@@ -130,6 +150,36 @@ class SchemaSyncService:
 
         if "bio" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN bio TEXT"))
+
+        if "company" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN company VARCHAR(140)"))
+
+        if "job_title" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN job_title VARCHAR(140)"))
+
+        if "timezone" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN timezone VARCHAR(60)"))
+
+        if "email_verified" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false"))
+
+        if "phone_verified" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_verified BOOLEAN DEFAULT false"))
+
+        if "last_login_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at TIMESTAMPTZ"))
+
+        if "email_verification_code" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email_verification_code VARCHAR(12)"))
+
+        if "email_verification_expires_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email_verification_expires_at TIMESTAMPTZ"))
+
+        if "phone_verification_code" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_verification_code VARCHAR(12)"))
+
+        if "phone_verification_expires_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_verification_expires_at TIMESTAMPTZ"))
 
         if "updated_at" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN updated_at TIMESTAMPTZ DEFAULT now()"))

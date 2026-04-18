@@ -1,6 +1,10 @@
+from datetime import datetime, timedelta, timezone
+from secrets import randbelow
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models.integration import Integration
 from app.models.setting import UserSettings
@@ -17,6 +21,8 @@ from app.schemas.account import (
     AccountPrivacyRead,
     AccountProfileRead,
     AccountProfileUpdate,
+    AccountVerificationChallenge,
+    AccountVerificationConfirm,
     AccountSecurityChangePassword,
     AccountSecuritySummary,
 )
@@ -27,9 +33,31 @@ class AccountService:
         self.db = db
 
     def get_profile(self, user: User) -> AccountProfileRead:
-        return AccountProfileRead.model_validate(user)
+        settings = self._get_settings(user)
+        return AccountProfileRead(
+            id=user.id,
+            name=user.name,
+            username=user.username,
+            email=user.email,
+            phone=user.phone,
+            avatar_url=user.avatar_url,
+            bio=user.bio,
+            company=user.company,
+            job_title=user.job_title,
+            timezone=user.timezone,
+            language=settings.language,
+            email_verified=user.email_verified,
+            phone_verified=user.phone_verified,
+            status="ativa",
+            plan=user.plan,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+            last_login_at=user.last_login_at,
+        )
 
     def update_profile(self, user: User, payload: AccountProfileUpdate) -> AccountProfileRead:
+        settings = self._get_settings(user)
+        email_changed = user.email != payload.email
         conflict = (
             self.db.query(User)
             .filter((User.email == payload.email) | (User.username == payload.username), User.id != user.id)
@@ -42,6 +70,7 @@ class AccountService:
             )
 
         phone = payload.phone.strip() if payload.phone else None
+        phone_changed = (user.phone or None) != phone
         if phone and len(phone) < 8:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Telefone deve ter pelo menos 8 digitos")
 
@@ -51,9 +80,87 @@ class AccountService:
         user.phone = phone
         user.avatar_url = payload.avatar_url
         user.bio = payload.bio
+        user.company = payload.company.strip() if payload.company else None
+        user.job_title = payload.job_title.strip() if payload.job_title else None
+        user.timezone = payload.timezone.strip() if payload.timezone else None
+        if email_changed:
+            user.email_verified = False
+            user.email_verification_code = None
+            user.email_verification_expires_at = None
+        if phone_changed:
+            user.phone_verified = False
+            user.phone_verification_code = None
+            user.phone_verification_expires_at = None
+        if payload.language:
+            settings.language = payload.language
         self.db.commit()
         self.db.refresh(user)
-        return AccountProfileRead.model_validate(user)
+        self.db.refresh(settings)
+        return self.get_profile(user)
+
+    def request_email_verification(self, user: User) -> AccountVerificationChallenge:
+        if not user.email:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Nenhum email cadastrado para verificar")
+
+        code = self._generate_code()
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+        user.email_verification_code = code
+        user.email_verification_expires_at = expires_at
+        self.db.commit()
+        self.db.refresh(user)
+        return AccountVerificationChallenge(
+            channel="email",
+            destination=self._mask_email(user.email),
+            expires_at=expires_at,
+            message="Código de verificação de email gerado com sucesso.",
+            preview_code=code if settings.app_env.lower() != "production" else None,
+        )
+
+    def confirm_email_verification(self, user: User, payload: AccountVerificationConfirm) -> AccountActionResponse:
+        self._validate_verification_code(
+            submitted_code=payload.code,
+            expected_code=user.email_verification_code,
+            expires_at=user.email_verification_expires_at,
+            missing_message="Solicite um código de verificação de email antes de confirmar.",
+        )
+        user.email_verified = True
+        user.email_verification_code = None
+        user.email_verification_expires_at = None
+        self.db.commit()
+        self.db.refresh(user)
+        return AccountActionResponse(message="Email verificado com sucesso")
+
+    def request_phone_verification(self, user: User) -> AccountVerificationChallenge:
+        if not user.phone:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Cadastre um telefone antes de solicitar verificação")
+
+        code = self._generate_code()
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+        user.phone_verification_code = code
+        user.phone_verification_expires_at = expires_at
+        self.db.commit()
+        self.db.refresh(user)
+        return AccountVerificationChallenge(
+            channel="phone",
+            destination=self._mask_phone(user.phone),
+            expires_at=expires_at,
+            message="Código de verificação de telefone gerado com sucesso.",
+            preview_code=code if settings.app_env.lower() != "production" else None,
+        )
+
+    def confirm_phone_verification(self, user: User, payload: AccountVerificationConfirm) -> AccountActionResponse:
+        self._validate_verification_code(
+            submitted_code=payload.code,
+            expected_code=user.phone_verification_code,
+            expires_at=user.phone_verification_expires_at,
+            missing_message="Solicite um código de verificação de telefone antes de confirmar.",
+        )
+        user.phone_verified = True
+        user.phone_verification_code = None
+        user.phone_verification_expires_at = None
+        self.db.commit()
+        self.db.refresh(user)
+        return AccountActionResponse(message="Telefone verificado com sucesso")
 
     def get_preferences(self, user: User) -> AccountPreferencesRead:
         settings = self._get_settings(user)
@@ -186,3 +293,39 @@ class AccountService:
             created = True
         if created:
             self.db.commit()
+
+    def _generate_code(self) -> str:
+        return f"{randbelow(900000) + 100000}"
+
+    def _validate_verification_code(
+        self,
+        *,
+        submitted_code: str,
+        expected_code: str | None,
+        expires_at: datetime | None,
+        missing_message: str,
+    ) -> None:
+        if not expected_code or not expires_at:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=missing_message)
+
+        now = datetime.now(timezone.utc)
+        normalized_expires_at = expires_at if expires_at.tzinfo else expires_at.replace(tzinfo=timezone.utc)
+        if normalized_expires_at < now:
+            raise HTTPException(status_code=status.HTTP_410_GONE, detail="O código de verificação expirou. Solicite um novo código.")
+
+        if submitted_code.strip() != expected_code:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Código de verificação inválido")
+
+    def _mask_email(self, email: str) -> str:
+        local_part, _, domain = email.partition("@")
+        if len(local_part) <= 2:
+            masked_local = local_part[0] + "*" if local_part else "*"
+        else:
+            masked_local = local_part[:2] + "*" * max(1, len(local_part) - 2)
+        return f"{masked_local}@{domain}"
+
+    def _mask_phone(self, phone: str) -> str:
+        digits = ''.join(char for char in phone if char.isdigit())
+        if len(digits) <= 4:
+            return '*' * len(digits)
+        return '*' * (len(digits) - 4) + digits[-4:]

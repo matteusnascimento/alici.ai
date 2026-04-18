@@ -12,7 +12,7 @@ export function PlatformShell() {
   const inStudioEditorMode = location.pathname.startsWith('/app/studio/editor/');
 
   return (
-    <main className="min-h-screen bg-ink">
+    <main className="min-h-screen bg-ink text-[var(--text-primary)]">
       <div className="flex min-h-screen">
         {inStudioEditorMode ? null : (
           <AppSidebar

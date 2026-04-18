@@ -14,7 +14,6 @@ import { AccountChatsPage } from '../components/account/pages/AccountChatsPage';
 import { AccountDataPage } from '../components/account/pages/AccountDataPage';
 import { AccountHelpPage } from '../components/account/pages/AccountHelpPage';
 import { AccountHomePage } from '../components/account/pages/AccountHomePage';
-import { AccountLanguagePage } from '../components/account/pages/AccountLanguagePage';
 import { AccountLegalPage } from '../components/account/pages/AccountLegalPage';
 import { AccountNotificationsPage } from '../components/account/pages/AccountNotificationsPage';
 import { AccountPersonalizationPage } from '../components/account/pages/AccountPersonalizationPage';
@@ -66,7 +65,7 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: st
     return <Navigate replace to="/app/dashboard" />;
   }
   return (
-    <main className="flex min-h-screen items-center justify-center bg-ink px-6 py-12 text-white">
+    <main className="flex min-h-screen items-center justify-center bg-ink px-6 py-12 text-[var(--text-primary)]">
       <section className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-soft backdrop-blur">
         <p className="text-sm uppercase tracking-[0.3em] text-cyan">AXI Platform</p>
         <h1 className="mt-4 font-display text-4xl">{title}</h1>
@@ -171,7 +170,7 @@ export function AppRouter() {
               <Route path="data-controls" element={<AccountDataPage />} />
               <Route path="security" element={<AccountSecurityPage />} />
               <Route path="archived-chats" element={<AccountChatsPage />} />
-              <Route path="language-appearance" element={<AccountLanguagePage />} />
+              <Route path="language-appearance" element={<Navigate replace to="/app/account/personalization" />} />
               <Route path="help" element={<AccountHelpPage />} />
               <Route path="help/status" element={<AccountPlatformStatusPage />} />
               <Route path="legal" element={<AccountLegalPage />} />
@@ -181,7 +180,7 @@ export function AppRouter() {
               <Route path="apps/actions" element={<Navigate replace to="/app/account/applications/actions" />} />
               <Route path="data" element={<Navigate replace to="/app/account/data-controls" />} />
               <Route path="chats" element={<Navigate replace to="/app/account/archived-chats" />} />
-              <Route path="language" element={<Navigate replace to="/app/account/language-appearance" />} />
+              <Route path="language" element={<Navigate replace to="/app/account/personalization" />} />
             </Route>
           </Route>
         </Route>

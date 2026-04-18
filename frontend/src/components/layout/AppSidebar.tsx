@@ -54,7 +54,7 @@ export function AppSidebar({
       <button
         type="button"
         onClick={onMobileOpen}
-        className="fixed left-4 top-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-storm/90 text-white shadow-soft backdrop-blur lg:hidden"
+        className="fixed left-4 top-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-storm/90 text-[var(--text-primary)] shadow-soft backdrop-blur lg:hidden"
         aria-label="Abrir menu"
       >
         <Menu size={18} />

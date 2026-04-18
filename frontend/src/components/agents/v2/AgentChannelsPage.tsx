@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import type { ChannelProviderCatalogItem } from '../../../types/agentsV2';
@@ -72,6 +72,16 @@ export function AgentChannelsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
+  const notify = useCallback((ok: boolean, message: string) => {
+    setFeedback({ ok, message });
+    const timer = setTimeout(() => setFeedback(null), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    return () => setFeedback(null);
+  }, []);
+
   const groupedProviders = useMemo(() => {
     const service = providers.filter((item) => sectionByProvider(item.provider) === 'service');
     const advanced = providers.filter((item) => sectionByProvider(item.provider) === 'advanced');
@@ -86,9 +96,9 @@ export function AgentChannelsPage() {
   }) {
     try {
       await connect(payload);
-      setFeedback({ ok: true, message: 'Canal conectado com sucesso.' });
+      notify(true, 'Canal conectado com sucesso.');
     } catch (err) {
-      setFeedback({ ok: false, message: err instanceof Error ? err.message : 'Falha ao conectar canal.' });
+      notify(false, err instanceof Error ? err.message : 'Falha ao conectar canal.');
       throw err;
     }
   }
@@ -96,18 +106,18 @@ export function AgentChannelsPage() {
   async function handleDisconnect(bindingId: number, provider: string) {
     try {
       await disconnect(bindingId, provider);
-      setFeedback({ ok: true, message: 'Canal desconectado com sucesso.' });
+      notify(true, 'Canal desconectado.');
     } catch (err) {
-      setFeedback({ ok: false, message: err instanceof Error ? err.message : 'Falha ao desconectar canal.' });
+      notify(false, err instanceof Error ? err.message : 'Falha ao desconectar canal.');
     }
   }
 
   async function handleTest(bindingId: number, provider: string) {
     try {
       const result = await test(bindingId, provider);
-      setFeedback({ ok: result.success, message: result.message });
+      notify(result.success, result.message);
     } catch (err) {
-      setFeedback({ ok: false, message: err instanceof Error ? err.message : 'Falha ao testar canal.' });
+      notify(false, err instanceof Error ? err.message : 'Falha ao testar canal.');
     }
   }
 
@@ -147,7 +157,14 @@ export function AgentChannelsPage() {
       </section>
 
       {feedback ? (
-        <div className={`rounded-2xl border px-4 py-3 text-sm ${feedback.ok ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100' : 'border-rose-400/20 bg-rose-500/10 text-rose-100'}`}>
+        <div
+          role="alert"
+          className={`fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border px-4 py-3 text-sm shadow-2xl transition ${
+            feedback.ok
+              ? 'border-emerald-400/25 bg-emerald-950/90 text-emerald-200'
+              : 'border-rose-400/25 bg-rose-950/90 text-rose-200'
+          }`}
+        >
           {feedback.message}
         </div>
       ) : null}
