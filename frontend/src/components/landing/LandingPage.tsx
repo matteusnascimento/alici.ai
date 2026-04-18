@@ -17,12 +17,18 @@ import {
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 
+interface FadeSectionProps {
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.45 } }),
 };
 
-function FadeSection({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function FadeSection({ children, className = '', ...rest }: FadeSectionProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
   return (
@@ -32,6 +38,7 @@ function FadeSection({ children, className = '' }: { children: React.ReactNode; 
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5 }}
       className={className}
+      {...rest}
     >
       {children}
     </motion.div>
