@@ -174,6 +174,31 @@ class AIToolRegistry:
         ],
     )
 
+    # Ferramentas para comunicação
+    SEND_EMAIL = AITool(
+        name="send_email",
+        description="Enviar email para cliente",
+        parameters=[
+            AIToolParameter(name="to_email", type="string", description="Email destinatário", required=True),
+            AIToolParameter(name="subject", type="string", description="Assunto do email", required=True),
+            AIToolParameter(name="body", type="string", description="Corpo do email", required=True),
+            AIToolParameter(name="template", type="string", description="Template: welcome, proposal, reminder", required=False),
+        ],
+    )
+
+    REGISTER_LEAD_IN_CRM = AITool(
+        name="register_lead_in_crm",
+        description="Registrar ou atualizar lead em CRM",
+        parameters=[
+            AIToolParameter(name="name", type="string", description="Nome do lead", required=True),
+            AIToolParameter(name="email", type="string", description="Email", required=True),
+            AIToolParameter(name="phone", type="string", description="Telefone", required=False),
+            AIToolParameter(name="company", type="string", description="Empresa", required=False),
+            AIToolParameter(name="stage", type="string", description="Estágio: lead, qualified, proposal, negotiation", required=False),
+            AIToolParameter(name="notes", type="string", description="Notas internas", required=False),
+        ],
+    )
+
     # Ferramentas para operação
     GET_DASHBOARD_METRICS = AITool(
         name="get_dashboard_metrics",

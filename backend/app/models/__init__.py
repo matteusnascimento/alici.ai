@@ -20,9 +20,12 @@ from app.models.conversation import Conversation, Message
 from app.models.creative_generation import CreativeGeneration
 from app.models.integration import Integration
 from app.models.integration_account import IntegrationAccount
+from app.models.lead import Lead
 from app.models.media_job import MediaJob
 from app.models.media_project import MediaProject
 from app.models.marketing_project import MarketingProject
+from app.models.proposal import Proposal
+from app.models.reservation import Reservation
 from app.models.setting import UserSettings
 from app.models.subscription import Subscription
 from app.models.studio_asset import StudioAsset
@@ -31,6 +34,7 @@ from app.models.studio_generation import StudioGeneration
 from app.models.studio_project import StudioProject
 from app.models.studio_template import StudioTemplate
 from app.models.studio_version import StudioVersion
+from app.models.tool_execution import ToolExecution
 from app.models.usage_log import UsageLog
 from app.models.user import User
 from app.models.widget_session import WidgetSession
@@ -58,10 +62,13 @@ __all__ = [
 	"CreativeGeneration",
 	"Integration",
 	"IntegrationAccount",
+	"Lead",
 	"MediaJob",
 	"MediaProject",
 	"MarketingProject",
 	"Message",
+	"Proposal",
+	"Reservation",
 	"Subscription",
 	"StudioAsset",
 	"StudioExport",
@@ -69,6 +76,7 @@ __all__ = [
 	"StudioProject",
 	"StudioTemplate",
 	"StudioVersion",
+	"ToolExecution",
 	"UsageLog",
 	"User",
 	"UserSettings",
