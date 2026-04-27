@@ -98,11 +98,11 @@ class AIService:
 
         user_message = "Nao foi possivel executar a tarefa com IA no momento."
         if code == "rate_limit" or status_code == 429:
-            user_message = "A IA atingiu o limite temporario de uso. O sistema entrou em modo seguro por alguns instantes."
+            user_message = "A IA atingiu o limite temporario de uso. Tente novamente em instantes."
             code = "rate_limit"
             status_code = 429
         elif code in {"timeout", "network_error"} or status_code == 504:
-            user_message = "A IA demorou para responder. O sistema pode operar com resposta reduzida temporariamente."
+            user_message = "A IA demorou para responder. Tente novamente em instantes."
         elif code == "invalid_api_key" or status_code == 401:
             user_message = "A autenticacao da integracao de IA falhou."
         elif code == "http_error" and status_code >= 500:

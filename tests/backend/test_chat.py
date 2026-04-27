@@ -20,6 +20,11 @@ def test_chat_send_and_messages(client, auth_headers):
     send_v2_response = client.post('/api/chat', headers=auth_headers, json={'text': 'Segunda mensagem'})
     assert send_v2_response.status_code == 200
 
+    usage_response = client.get('/api/billing/usage', headers=auth_headers)
+    assert usage_response.status_code == 200
+    messages_usage = next(item for item in usage_response.json()['items'] if item['metric'] == 'messages')
+    assert messages_usage['used'] == 2
+
     history_response = client.get('/api/chat/history', headers=auth_headers)
     assert history_response.status_code == 200
     assert len(history_response.json()) >= 1
@@ -33,7 +38,7 @@ def test_chat_send_and_messages(client, auth_headers):
     assert upload_response.json()['filename'] == 'brief.txt'
 
 
-def test_chat_send_falls_back_when_openai_rate_limited(client, auth_headers, monkeypatch):
+def test_chat_send_returns_ai_error_when_openai_rate_limited(client, auth_headers, monkeypatch):
     def _raise_rate_limit(self, **kwargs):
         raise AIServiceError('OpenAI rate limit reached', user_message='rate', status_code=429, code='rate_limit')
 
@@ -41,6 +46,5 @@ def test_chat_send_falls_back_when_openai_rate_limited(client, auth_headers, mon
 
     send_response = client.post('/api/chat/send', headers=auth_headers, json={'text': 'Quero ajuda urgente'})
 
-    assert send_response.status_code == 200
-    body = send_response.json()
-    assert 'modo seguro' in body['assistant_message']['text'].lower()
+    assert send_response.status_code == 429
+    assert send_response.json()['detail'] == 'rate'

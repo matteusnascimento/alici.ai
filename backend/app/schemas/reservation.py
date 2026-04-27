@@ -13,8 +13,13 @@ class ReservationBase(BaseModel):
     status: str = "confirmed"
 
 
-class ReservationCreate(ReservationBase):
-    pass
+class ReservationCreate(BaseModel):
+    guest_name: str
+    check_in: date
+    check_out: date
+    room_type: str
+    guests: int
+    status: str = "confirmed"
 
 
 class ReservationRead(ReservationBase):

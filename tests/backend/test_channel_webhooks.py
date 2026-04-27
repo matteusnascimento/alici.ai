@@ -121,3 +121,33 @@ def test_webhook_signature_validation_blocks_invalid_signature(client, auth_head
     )
 
     assert webhook.status_code == 401
+
+
+def test_webhook_signature_secret_is_required(client, monkeypatch):
+    monkeypatch.setattr(settings, 'meta_app_secret', '')
+
+    webhook = client.post(
+        '/api/webhooks/meta/whatsapp',
+        json={'phone_number_id': 'phone-x', 'from': '5511999990000', 'text': 'oi'},
+        headers={'x-hub-signature-256': 'sha256=anything'},
+    )
+
+    assert webhook.status_code == 503
+
+
+def test_webhook_verify_token_is_required(client, monkeypatch):
+    monkeypatch.setattr(settings, 'meta_webhook_verify_token', '')
+
+    handshake = client.get(
+        '/api/webhooks/meta/whatsapp?hub.mode=subscribe&hub.verify_token=verify-token-axi&hub.challenge=12345'
+    )
+
+    assert handshake.status_code == 503
+
+
+def test_legacy_runtime_webhooks_are_disabled(client):
+    whatsapp = client.post('/api/agents/runtime/webhooks/whatsapp', json={})
+    instagram = client.post('/api/agents/runtime/webhooks/instagram', json={})
+
+    assert whatsapp.status_code == 410
+    assert instagram.status_code == 410

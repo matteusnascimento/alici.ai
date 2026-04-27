@@ -11,7 +11,7 @@ describe('LandingPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/AXI transforma atendimento/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Criar conta/i })).toBeInTheDocument();
+    expect(screen.getByText(/Automa..o com IA para neg.cios reais/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Come.ar gr.tis/i }).length).toBeGreaterThan(0);
   });
 });

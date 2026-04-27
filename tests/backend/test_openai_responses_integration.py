@@ -2,6 +2,7 @@
 Testes para OpenAI Responses API Integration.
 """
 
+from datetime import date, timedelta
 import pytest
 from unittest.mock import MagicMock, patch
 from sqlalchemy.orm import Session
@@ -155,8 +156,8 @@ class TestToolExecutor:
         result = executor.execute(
             "check_availability",
             {
-                "check_in": "2026-04-20",
-                "check_out": "2026-04-22",
+                "check_in": (date.today() + timedelta(days=7)).isoformat(),
+                "check_out": (date.today() + timedelta(days=9)).isoformat(),
                 "room_type": "standard",
             },
         )
@@ -171,8 +172,8 @@ class TestToolExecutor:
             "create_reservation",
             {
                 "guest_name": "João Silva",
-                "check_in": "2026-04-20",
-                "check_out": "2026-04-22",
+                "check_in": (date.today() + timedelta(days=7)).isoformat(),
+                "check_out": (date.today() + timedelta(days=9)).isoformat(),
                 "room_type": "standard",
                 "guests": 2,
             },

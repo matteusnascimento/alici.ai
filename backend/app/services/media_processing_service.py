@@ -43,8 +43,8 @@ class MediaProcessingService:
         return _project_read(project)
 
     def edit_photo(self, user: User, payload: StudioPhotoEditRequest) -> StudioToolActionResponse:
-        project = self._ensure_project(user, payload.project_id, "photo-edit", "Edicao de Foto")
         result = StudioImageService.enhance(payload.asset_url, payload.adjustments)
+        project = self._ensure_project(user, payload.project_id, "photo-edit", "Edicao de Foto")
         result["actions"] = payload.actions
         created = self.generation.create_generation(
             user_id=user.id,
@@ -58,8 +58,8 @@ class MediaProcessingService:
         return StudioToolActionResponse(project=self._project_read(project), generation=generation, message="Edicao de foto processada com sucesso.")
 
     def remove_background(self, user: User, payload: StudioBackgroundRemoveRequest) -> StudioToolActionResponse:
-        project = self._ensure_project(user, payload.project_id, "background-remove", "Remocao de Fundo")
         result = StudioImageService.remove_background(payload.asset_url, payload.options)
+        project = self._ensure_project(user, payload.project_id, "background-remove", "Remocao de Fundo")
         result["before_after_preview"] = True
         created = self.generation.create_generation(
             user_id=user.id,

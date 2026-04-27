@@ -8,9 +8,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['lucide-react', '@headlessui/react'],
-          utils: ['axios', 'date-fns', 'clsx', 'tailwind-merge'],
-          stripe: ['@stripe/stripe-js'],
+          ui: ['lucide-react'],
         },
       },
     },

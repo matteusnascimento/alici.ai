@@ -52,8 +52,21 @@ def test_billing_plan_and_upgrade_flow(client, auth_headers):
         headers=auth_headers,
         json={'plan_id': 'pro', 'billing_cycle': 'monthly'},
     )
-    assert upgrade_response.status_code == 200
-    assert upgrade_response.json()['subscription']['plan_id'] == 'pro'
+    assert upgrade_response.status_code == 403
+
+    settings = get_settings()
+    previous_admins = list(settings.billing_admin_emails)
+    settings.billing_admin_emails = ['ana@example.com']
+    try:
+        admin_upgrade_response = client.post(
+            '/api/billing/upgrade',
+            headers=auth_headers,
+            json={'plan_id': 'pro', 'billing_cycle': 'monthly'},
+        )
+        assert admin_upgrade_response.status_code == 200
+        assert admin_upgrade_response.json()['subscription']['plan_id'] == 'pro'
+    finally:
+        settings.billing_admin_emails = previous_admins
 
     usage_response = client.get('/api/billing/usage', headers=auth_headers)
     assert usage_response.status_code == 200
@@ -190,6 +203,9 @@ def test_billing_webhook_valid_and_invalid_signature(client, auth_headers, monke
 
 
 def test_billing_enforcement_messages_limit(client, auth_headers):
+    current_response = client.get('/api/billing/current', headers=auth_headers)
+    assert current_response.status_code == 200
+
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == 'ana@example.com').first()

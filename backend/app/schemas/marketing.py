@@ -67,3 +67,16 @@ class MarketingCopyResponse(BaseModel):
 
 class MarketingImagePromptResponse(BaseModel):
     prompt: str
+
+
+class MarketingContentRequest(BaseModel):
+    project_id: int
+    context: str
+    type: str = "social_post"
+
+
+class MarketingContentResponse(BaseModel):
+    copies: list[str]
+    cta: str
+    hook: str
+    hashtags: list[str] = Field(default_factory=list)

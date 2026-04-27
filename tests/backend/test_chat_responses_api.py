@@ -110,8 +110,8 @@ class TestChatResponsesAPI:
                 assert body["output_text"] == "Vou criar uma reserva para você"
                 # Tool foi executada e mensagem persistida
 
-    def test_chat_responses_error_fallback(self, client, auth_headers):
-        """Testa fallback para AIService quando Responses API falha."""
+    def test_chat_responses_error_returns_ai_error(self, client, auth_headers):
+        """Testa erro real quando Responses API falha."""
         with patch("app.services.openai_responses_service.OpenAI") as mock_openai:
             mock_client = MagicMock()
             mock_client.responses.create.side_effect = Exception("API Error")
@@ -122,14 +122,13 @@ class TestChatResponsesAPI:
                 mock_settings.openai_model = "gpt-4o-mini"
                 mock_settings.openai_timeout_seconds = 30
 
-                # Com fallback, deve usar AIService e retornar resposta
                 response = client.post(
                     "/api/chat/responses",
                     headers=auth_headers,
                     json={"text": "Teste de erro", "conversation_id": None},
                 )
 
-                assert response.status_code == 200
+                assert response.status_code == 503
 
 
 @pytest.mark.usefixtures("auth_headers", "client")

@@ -34,7 +34,8 @@ def test_studio_recent_projects_and_exports(client, auth_headers):
         headers=auth_headers,
         json={'export_type': 'png', 'options': {'quality': 'high'}},
     )
-    assert export_response.status_code == 200
+    assert export_response.status_code == 501
+    assert 'real' in export_response.json()['detail']
 
     recent_projects = client.get('/api/studio/projects/recent?limit=5', headers=auth_headers)
     assert recent_projects.status_code == 200
@@ -42,7 +43,7 @@ def test_studio_recent_projects_and_exports(client, auth_headers):
 
     recent_exports = client.get('/api/studio/exports/recent?limit=5', headers=auth_headers)
     assert recent_exports.status_code == 200
-    assert recent_exports.json()[0]['export_type'] == 'png'
+    assert recent_exports.json() == []
 
 
 def test_studio_caption_generate_uses_backend_ai(client, auth_headers, monkeypatch):
@@ -81,11 +82,8 @@ def test_studio_background_remove_endpoint(client, auth_headers):
         },
     )
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body['generation'] is not None
-    assert body['generation']['result']['operation'] == 'remove-background'
-    assert body['generation']['result']['before_after_preview'] is True
+    assert response.status_code == 501
+    assert 'remove-background' in response.json()['detail']
 
 
 def test_studio_ad_create_endpoint(client, auth_headers, monkeypatch):

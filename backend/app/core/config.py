@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     openai_model_embeddings: str = "text-embedding-3-small"
     database_url_rotated: str = ""
     cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+    billing_admin_emails: list[str] = Field(default_factory=list)
 
     # Stripe
     stripe_secret_key: str = ""
@@ -76,6 +77,15 @@ class Settings(BaseSettings):
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod
     def parse_cors(cls, value: str | list[str]) -> list[str]:
+        return cls._parse_string_list(value, field_name="CORS_ALLOWED_ORIGINS")
+
+    @field_validator("billing_admin_emails", mode="before")
+    @classmethod
+    def parse_billing_admin_emails(cls, value: str | list[str]) -> list[str]:
+        return [item.lower() for item in cls._parse_string_list(value, field_name="BILLING_ADMIN_EMAILS")]
+
+    @classmethod
+    def _parse_string_list(cls, value: str | list[str], *, field_name: str) -> list[str]:
         if isinstance(value, str):
             raw = value.strip()
             if not raw:
@@ -83,7 +93,7 @@ class Settings(BaseSettings):
             if raw.startswith("["):
                 parsed = json.loads(raw)
                 if not isinstance(parsed, list):
-                    raise ValueError("CORS_ALLOWED_ORIGINS JSON deve ser uma lista de strings")
+                    raise ValueError(f"{field_name} JSON deve ser uma lista de strings")
                 return [item.strip() for item in parsed if isinstance(item, str) and item.strip()]
             return [item.strip() for item in raw.split(",") if item.strip()]
         return [item.strip() for item in value if isinstance(item, str) and item.strip()]
@@ -103,18 +113,28 @@ class Settings(BaseSettings):
         elif raw_database_url != self.database_url:
             object.__setattr__(self, "database_url", raw_database_url)
 
-        if self.app_env != "development" and self.secret_key.lower() in _INSECURE_KEYS:
+        normalized_env = self.app_env.lower()
+        normalized_secret = self.secret_key.strip().lower()
+
+        if normalized_env != "development" and (
+            normalized_secret in _INSECURE_KEYS
+            or normalized_secret.startswith("change-me")
+            or len(self.secret_key) < 32
+        ):
             raise ValueError(
                 "Insecure SECRET_KEY detected for non-development environment. "
                 "Set a strong SECRET_KEY via environment variable."
             )
+
+        if normalized_env != "development" and "*" in self.cors_allowed_origins:
+            raise ValueError("CORS_ALLOWED_ORIGINS cannot contain '*' outside development")
 
         if self.should_seed_dev_user and not self.dev_seed_password:
             raise ValueError(
                 "ENABLE_DEV_SEED_USER=true requires DEV_SEED_PASSWORD to be set via environment variable."
             )
 
-        if self.app_env != "development":
+        if normalized_env != "development":
             object.__setattr__(self, "debug", False)
 
     @property

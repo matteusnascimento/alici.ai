@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import stripe
 from fastapi import HTTPException, status
@@ -153,12 +153,7 @@ class BillingService:
                 )
             else:
                 # Demais métricas: soma de UsageLog
-                used = (
-                    self.db.query(func.coalesce(func.sum(UsageLog.quantity), 0))
-                    .filter(UsageLog.user_id == user.id, UsageLog.metric == metric)
-                    .scalar()
-                    or 0
-                )
+                used = self._usage_total_for_period(user.id, metric, subscription)
             items.append(BillingUsageItem(metric=metric, used=int(used), limit=int(limit)))
 
         return BillingUsageResponse(items=items)
@@ -317,6 +312,8 @@ class BillingService:
     def process_webhook_event(self, payload: bytes, stripe_signature: str) -> dict:
         if not self._settings.stripe_webhook_secret:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook secret não configurado")
+        if not self._settings.stripe_secret_key:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Stripe não configurado")
 
         stripe.api_key = self._settings.stripe_secret_key
 
@@ -374,12 +371,7 @@ class BillingService:
                 or 0
             )
         else:
-            used = (
-                self.db.query(func.coalesce(func.sum(UsageLog.quantity), 0))
-                .filter(UsageLog.user_id == user.id, UsageLog.metric == metric)
-                .scalar()
-                or 0
-            )
+            used = self._usage_total_for_period(user.id, metric, subscription)
 
         if used >= limit:
             raise HTTPException(
@@ -425,6 +417,20 @@ class BillingService:
         self.db.commit()
         self.db.refresh(subscription)
         return subscription
+
+    def _usage_total_for_period(self, user_id: int, metric: str, subscription: Subscription) -> int:
+        query = (
+            self.db.query(func.coalesce(func.sum(UsageLog.quantity), 0))
+            .filter(UsageLog.user_id == user_id, UsageLog.metric == metric)
+        )
+        if subscription.current_period_start:
+            period_start = subscription.current_period_start
+            if self._settings.sqlalchemy_database_url.startswith("sqlite"):
+                period_start = period_start - timedelta(seconds=1)
+            query = query.filter(UsageLog.created_at >= period_start)
+        if subscription.current_period_end:
+            query = query.filter(UsageLog.created_at < subscription.current_period_end)
+        return int(query.scalar() or 0)
 
     def _resolve_price_id(self, plan_id: str, billing_cycle: str) -> str:
         plan = self.PLAN_CATALOG.get(plan_id, {})

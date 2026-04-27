@@ -55,27 +55,19 @@ vi.mock('../hooks/useToast', () => ({
 }));
 
 describe('MarketingPanel', () => {
-  it('renderiza a nova home do AXI Studio com entrada simples, recentes e ferramentas por contexto', async () => {
+  it('renderiza a home atual do AXI Studio com atalhos de criacao e ferramentas', async () => {
     render(
       <MemoryRouter>
         <StudioHomePage />
       </MemoryRouter>,
     );
 
-    // Hero actions
-    expect(await screen.findByRole('button', { name: /Novo projeto/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Ver projetos/i })).toBeInTheDocument();
-
-    // Recent projects section
-    expect(screen.getByText(/Continuar/i)).toBeInTheDocument();
-    expect(screen.getByText(/Poster de lancamento/i)).toBeInTheDocument();
-
-    // Category tools from studioHomeConfig
-    expect(screen.getByText(/Gerar video IA/i)).toBeInTheDocument();
-    expect(screen.getByText(/Criar story/i)).toBeInTheDocument();
-    expect(screen.getByText(/Editor de video/i)).toBeInTheDocument();
-
-    // Biblioteca section
-    expect(screen.getByText(/Biblioteca/i)).toBeInTheDocument();
+    expect(await screen.findByText(/AXI Studio/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Criar com IA/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Novo v/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Editar foto/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Gerador de IA/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Marketing/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Legendas/i })).toBeInTheDocument();
   });
 });

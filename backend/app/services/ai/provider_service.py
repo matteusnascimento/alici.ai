@@ -40,24 +40,12 @@ class ProviderService:
         normalized_task = normalize_task(task_name)
         if self.provider != "openai":
             raise RuntimeError(f"Unsupported provider for now: {self.provider}")
-        try:
-            return self._openai.send_chat_message(
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                model=model or get_model_for_task(normalized_task),
-            )
-        except Exception as exc:
-            # Em dev/teste, evita quebrar fluxos por indisponibilidade/autenticacao externa.
-            if settings.app_env.lower() != "production":
-                return {
-                    "content": "Resposta de teste da IA",
-                    "model": model or get_model_for_task(normalized_task),
-                    "usage": {"total_tokens": 0},
-                    "latency_ms": 0,
-                    "raw": {"fallback": True, "reason": str(exc)},
-                }
-            raise
+        return self._openai.send_chat_message(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            model=model or get_model_for_task(normalized_task),
+        )
 
     def run_structured(
         self,
@@ -72,19 +60,7 @@ class ProviderService:
         if self.provider != "openai":
             raise RuntimeError(f"Unsupported provider for now: {self.provider}")
         full_prompt = f"{system_prompt}\n\n{user_prompt}".strip()
-        try:
-            result = self._openai.structured_extract(full_prompt, schema)
-        except Exception as exc:
-            if settings.app_env.lower() != "production":
-                return {
-                    "content": "{}",
-                    "model": model or get_model_for_task(normalized_task),
-                    "usage": {"total_tokens": 0},
-                    "latency_ms": 0,
-                    "structured_data": {},
-                    "raw": {"fallback": True, "reason": str(exc)},
-                }
-            raise
+        result = self._openai.structured_extract(full_prompt, schema)
         text = str(result.get("text") or "{}").strip()
         try:
             parsed = json.loads(text) if text else {}
@@ -110,21 +86,10 @@ class ProviderService:
         normalized_task = normalize_task(task_name)
         if self.provider != "openai":
             raise RuntimeError(f"Unsupported provider for now: {self.provider}")
-        try:
-            result = self._openai.analyze_image_bytes(
-                image_bytes=image_bytes,
-                prompt=prompt,
-            )
-        except Exception as exc:
-            if settings.app_env.lower() != "production":
-                return {
-                    "content": "Analise indisponivel no momento.",
-                    "model": model or get_model_for_task(normalized_task),
-                    "usage": {"total_tokens": 0},
-                    "latency_ms": 0,
-                    "raw": {"fallback": True, "reason": str(exc)},
-                }
-            raise
+        result = self._openai.analyze_image_bytes(
+            image_bytes=image_bytes,
+            prompt=prompt,
+        )
         return {
             "content": result.get("text", ""),
             "model": result.get("model") or model or get_model_for_task(normalized_task),

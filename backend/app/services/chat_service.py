@@ -23,31 +23,6 @@ class ChatService:
         self.tool_executor = ToolExecutor()
 
     @staticmethod
-    def _fallback_response(reason: str | None = None) -> str:
-        if reason == "rate_limit":
-            return (
-                "A IA atingiu o limite temporario de uso. Seu chat continua operacional em modo seguro. "
-                "Tente novamente em instantes para receber resposta completa."
-            )
-        if reason == "ai_not_configured":
-            return (
-                "A integracao de IA ainda nao esta configurada por completo. "
-                "Seu chat continua operacional em modo seguro enquanto a configuracao e concluida."
-            )
-        return (
-            "A integracao de IA esta indisponivel no momento. "
-            "Seu chat continua operacional em modo seguro enquanto a plataforma se recupera."
-        )
-
-    @staticmethod
-    def _resolve_reason_from_status(status_code: int | None) -> str:
-        if status_code == 429:
-            return "rate_limit"
-        if status_code == 401:
-            return "ai_not_configured"
-        return "ai_unavailable"
-
-    @staticmethod
     def _resolve_task(agent_name: str | None) -> str:
         if not agent_name:
             return "chat"
@@ -78,14 +53,14 @@ class ChatService:
     def _build_tools_schema() -> list[dict]:
         return [tool.to_json_schema() for tool in AIToolRegistry.list_all_tools()]
 
-    def send(self, user: User, payload: ChatSendRequest, use_responses_api: bool = True, agent_name: str | None = None) -> tuple[Conversation, Message, Message]:
+    def send(self, user: User, payload: ChatSendRequest, use_responses_api: bool = False, agent_name: str | None = None) -> tuple[Conversation, Message, Message]:
         """
         Envia uma mensagem de chat.
         
         Args:
             user: Usuário que envia a mensagem
             payload: Dados da mensagem (text, conversation_id)
-            use_responses_api: Se deve usar OpenAI Responses API (padrão True)
+            use_responses_api: Se deve usar OpenAI Responses API (padrao False)
             agent_name: Nome do agente (para especialização)
         
         Returns:
@@ -132,20 +107,22 @@ class ChatService:
                             )
                         )
             except OpenAIResponsesError as exc:
-                # Fall back para AIService em caso de erro
-                if exc.status_code in (401, 429, 503, 504):
-                    assistant_text = self._fallback_response(self._resolve_reason_from_status(exc.status_code))
-                else:
-                    raise AIServiceError(
-                        str(exc),
-                        user_message="Servico de IA temporariamente indisponivel.",
-                        status_code=exc.status_code,
-                    ) from exc
+                raise AIServiceError(
+                    str(exc),
+                    user_message="Servico de IA temporariamente indisponivel. Tente novamente.",
+                    status_code=exc.status_code,
+                    code=exc.error_type,
+                ) from exc
 
         # Fall back para AIService se necessário
         if assistant_text is None:
             if not self.ai.is_configured():
-                assistant_text = self._fallback_response()
+                raise AIServiceError(
+                    "AI provider is not configured",
+                    user_message="A integracao de IA nao esta configurada.",
+                    status_code=503,
+                    code="ai_not_configured",
+                )
             else:
                 try:
                     assistant_text = self.ai.generate_text(
@@ -156,10 +133,7 @@ class ChatService:
                         function_name=selected_task,
                     )
                 except AIServiceError as exc:
-                    if exc.is_retryable_platform_issue:
-                        assistant_text = self._fallback_response(exc.code)
-                    else:
-                        raise
+                    raise
                 except Exception as exc:
                     raise AIServiceError(
                         str(exc),
@@ -169,7 +143,6 @@ class ChatService:
 
         assistant_message = Message(conversation_id=conversation.id, role="assistant", text=assistant_text)
         self.db.add(assistant_message)
-        self.db.add(UsageLog(user_id=user.id, metric="messages", quantity=2, source="chat"))
         self.db.commit()
         self.db.refresh(conversation)
         self.db.refresh(user_message)

@@ -1,52 +1,50 @@
 from datetime import date
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException, status
 import uuid
+
+from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.models.reservation import Reservation
 from app.schemas.reservation import ReservationCreate, ReservationRead, ReservationUpdate
 
 
 class ReservationService:
+    ROOM_INVENTORY = {
+        "standard": 5,
+        "deluxe": 3,
+        "suite": 1,
+    }
+    ROOM_PRICES = {
+        "standard": 150.0,
+        "deluxe": 250.0,
+        "suite": 400.0,
+    }
+
     def __init__(self, db: Session):
         self.db = db
 
     def _reservation_or_404(self, reservation_id: int) -> Reservation:
-        """Busca reserva por ID ou lança 404."""
         reservation = self.db.query(Reservation).filter(Reservation.id == reservation_id).first()
         if not reservation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Reserva não encontrada",
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reserva nao encontrada")
         return reservation
 
     def _generate_reservation_id(self) -> str:
-        """Gera ID único para reserva."""
         return f"RES-{date.today().year}-{uuid.uuid4().hex[:3].upper()}"
 
     def _calculate_price(self, room_type: str, check_in: date, check_out: date) -> float:
-        """Calcula preço baseado no tipo de quarto e período."""
-        room_prices = {
-            "standard": 150.0,
-            "deluxe": 250.0,
-            "suite": 400.0,
-        }
-        price_per_night = room_prices.get(room_type, 150.0)
+        price_per_night = self.ROOM_PRICES.get(room_type, self.ROOM_PRICES["standard"])
         nights = (check_out - check_in).days
         return price_per_night * nights
 
     def create_reservation(self, reservation_data: ReservationCreate) -> ReservationRead:
-        """Cria uma nova reserva."""
-        # Valida datas
         if reservation_data.check_in >= reservation_data.check_out:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Data de check-out deve ser posterior à data de check-in",
+                detail="Data de check-out deve ser posterior a data de check-in",
             )
 
-        # Calcula preço
         total_price = self._calculate_price(
             reservation_data.room_type,
             reservation_data.check_in,
@@ -66,22 +64,16 @@ class ReservationService:
             return ReservationRead.model_validate(reservation)
         except IntegrityError:
             self.db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Erro ao criar reserva",
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Erro ao criar reserva")
 
     def get_reservation(self, reservation_id: int) -> ReservationRead:
-        """Busca reserva por ID."""
         reservation = self._reservation_or_404(reservation_id)
         return ReservationRead.model_validate(reservation)
 
     def update_reservation(self, reservation_id: int, reservation_data: ReservationUpdate) -> ReservationRead:
-        """Atualiza reserva."""
         reservation = self._reservation_or_404(reservation_id)
         update_data = reservation_data.model_dump(exclude_unset=True)
 
-        # Recalcula preço se datas ou tipo de quarto mudaram
         if "check_in" in update_data or "check_out" in update_data or "room_type" in update_data:
             check_in = update_data.get("check_in", reservation.check_in)
             check_out = update_data.get("check_out", reservation.check_out)
@@ -96,17 +88,34 @@ class ReservationService:
         return ReservationRead.model_validate(reservation)
 
     def check_availability(self, check_in: date, check_out: date, room_type: str | None = None) -> dict:
-        """Verifica disponibilidade de quartos."""
-        # Por simplicidade, retorna disponibilidade mock
-        # Em produção, isso consultaria o banco de reservas
-        available_rooms = [
-            {"type": "standard", "count": 5, "price_per_night": 150.0},
-            {"type": "deluxe", "count": 3, "price_per_night": 250.0},
-            {"type": "suite", "count": 1, "price_per_night": 400.0},
-        ]
+        if check_in >= check_out:
+            raise ValueError("check_out deve ser posterior a check_in")
 
+        room_types = list(self.ROOM_INVENTORY)
         if room_type:
-            available_rooms = [r for r in available_rooms if r["type"] == room_type]
+            if room_type not in self.ROOM_INVENTORY:
+                raise ValueError(f"room_type deve ser um dos: {list(self.ROOM_INVENTORY)}")
+            room_types = [room_type]
+
+        available_rooms = []
+        for current_room_type in room_types:
+            overlapping = (
+                self.db.query(Reservation)
+                .filter(
+                    Reservation.room_type == current_room_type,
+                    Reservation.status != "cancelled",
+                    Reservation.check_in < check_out,
+                    Reservation.check_out > check_in,
+                )
+                .count()
+            )
+            available_rooms.append(
+                {
+                    "type": current_room_type,
+                    "count": max(self.ROOM_INVENTORY[current_room_type] - overlapping, 0),
+                    "price_per_night": self.ROOM_PRICES[current_room_type],
+                }
+            )
 
         return {
             "status": "success",

@@ -13,7 +13,7 @@ class EmailService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("SENDGRID_API_KEY")
         if not self.api_key:
-            logger.warning("SENDGRID_API_KEY not configured, emails will be logged only")
+            logger.warning("SENDGRID_API_KEY not configured, email sending disabled")
 
     def send_email(
         self,
@@ -44,13 +44,9 @@ class EmailService:
 
         # Se não tem API key, apenas loga
         if not self.api_key:
-            logger.info(
-                "Email would be sent: to=%s, subject=%s, template=%s",
-                to_email, subject, template
-            )
             return {
-                "status": "logged",
-                "message": "Email logged (SendGrid not configured)",
+                "status": "error",
+                "message": "Email nao enviado: SENDGRID_API_KEY nao configurado",
                 "to_email": to_email,
                 "subject": subject,
             }

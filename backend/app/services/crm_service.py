@@ -27,10 +27,9 @@ class CRMService:
             Dict com resultado do registro
         """
         if not self.api_key:
-            logger.info("CRM lead registration logged: %s", lead_data)
             return {
-                "status": "logged",
-                "message": f"Lead logged ({self.provider} not configured)",
+                "status": "error",
+                "message": f"Lead nao registrado: {self.provider} nao esta configurado",
                 "lead_data": lead_data,
             }
 
@@ -69,7 +68,7 @@ class CRMService:
         # Remove campos None
         person_data = {k: v for k, v in person_data.items() if v is not None}
 
-        response = requests.post(url, json=person_data, headers=headers)
+        response = requests.post(url, json=person_data, headers=headers, timeout=10)
         response.raise_for_status()
 
         person = response.json()["data"]
@@ -102,7 +101,7 @@ class CRMService:
         }
 
         try:
-            response = requests.post(url, json=note_data, headers=headers)
+            response = requests.post(url, json=note_data, headers=headers, timeout=10)
             response.raise_for_status()
         except Exception as e:
             logger.warning("Failed to add note to Pipedrive person: %s", e)
@@ -128,7 +127,7 @@ class CRMService:
             }
         }
 
-        response = requests.post(url, json=contact_data, headers=headers)
+        response = requests.post(url, json=contact_data, headers=headers, timeout=10)
         response.raise_for_status()
 
         contact = response.json()

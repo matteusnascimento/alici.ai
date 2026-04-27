@@ -149,28 +149,11 @@ class CreativeGenerationService:
                 "upload_urls": payload.upload_urls,
             },
         )
-        generation_response: StudioGenerateResponse | None = None
-        if payload.prompt:
-            result = {
-                "operation": "video-seed",
-                "status": "completed",
-                "prompt": payload.prompt,
-                "timeline": ["intro", "produto", "cta"],
-            }
-            generated = self.generation.create_generation(
-                user_id=user.id,
-                project_id=project.id,
-                generation_type="video",
-                prompt=payload.prompt,
-                input_payload=payload.model_dump(),
-                result_payload=result,
-            )
-            generation_response = StudioGenerateResponse(
-                generation_id=generated.id,
-                status=generated.status,
-                result=result,
-            )
-        return StudioToolActionResponse(project=self._project_to_read(project), generation=generation_response, message="Fluxo de criacao de video iniciado.")
+        return StudioToolActionResponse(
+            project=self._project_to_read(project),
+            generation=None,
+            message="Workspace de video criado. A geracao/renderizacao real ainda precisa ser configurada.",
+        )
 
     def generate_caption(
         self,

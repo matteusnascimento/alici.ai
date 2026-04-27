@@ -104,6 +104,9 @@ class ToolCall(BaseModel):
     tool_name: str = Field(description="Nome da ferramenta a executar")
     tool_args: dict[str, Any] = Field(default_factory=dict, description="Argumentos para a ferramenta")
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
 
 class ToolExecutionRequest(BaseModel):
     """Requisição para executar uma ferramenta."""

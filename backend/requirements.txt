@@ -15,3 +15,5 @@ python-dotenv>=1.0.0
 openai>=1.46.0
 stripe>=11.6.0
 sendgrid>=6.10.0
+cryptography>=42.0.0
+requests>=2.31.0

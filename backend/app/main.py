@@ -115,7 +115,13 @@ async def frontend_fallback(full_path: str):
     if full_path.startswith("api") or full_path in {"docs", "openapi.json", "health"}:
         raise HTTPException(status_code=404, detail="Not found")
 
-    requested_file = FRONTEND_DIST / full_path
+    frontend_root = FRONTEND_DIST.resolve()
+    requested_file = (FRONTEND_DIST / full_path).resolve()
+    try:
+        requested_file.relative_to(frontend_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Not found") from exc
+
     if requested_file.exists() and requested_file.is_file():
         return FileResponse(requested_file)
 

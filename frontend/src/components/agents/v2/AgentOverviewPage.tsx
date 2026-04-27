@@ -51,6 +51,7 @@ export function AgentOverviewPage() {
   if (loading) {
     return (
       <div className="space-y-4">
+        <p className="sr-only">Carregando overview</p>
         <div className="h-28 animate-pulse rounded-3xl bg-white/5" />
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
           <div className="h-36 animate-pulse rounded-3xl bg-white/5" />
@@ -96,7 +97,7 @@ export function AgentOverviewPage() {
               disabled={!data.setup.activation_ready || activating}
               className="w-full rounded-2xl bg-cyan py-2.5 text-sm font-semibold text-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {activating ? 'Ativando...' : data.setup.activation_ready ? 'Ativar agente' : 'Setup incompleto'}
+              {activating ? 'Ativando...' : 'Ativar agente'}
             </button>
           </div>
         </section>

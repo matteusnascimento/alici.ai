@@ -32,7 +32,7 @@ def _extract_signature(signature_header: str | None) -> str:
 def _verify_meta_signature_or_401(raw_body: bytes, signature_header: str | None) -> None:
     app_secret = _get_meta_app_secret()
     if not app_secret:
-        return
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook signature secret not configured")
     signature = _extract_signature(signature_header)
     if not signature:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing webhook signature")
@@ -45,10 +45,10 @@ def _verify_meta_handshake_or_403(mode: str | None, token: str | None, challenge
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook verification params")
 
     configured_token = _get_meta_verify_token()
-    if settings.app_env.lower() == "production" and not configured_token:
+    if not configured_token:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook verify token not configured")
 
-    if configured_token and token != configured_token:
+    if token != configured_token:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Webhook verification failed")
     return challenge
 

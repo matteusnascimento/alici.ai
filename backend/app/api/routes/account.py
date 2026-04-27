@@ -204,6 +204,10 @@ async def upload_avatar(
     allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp"}
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tipo de arquivo não permitido")
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+    ext = Path(file.filename).suffix.lower()
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Extensao de arquivo nao permitida")
     
     # Validar tamanho (máx 5MB)
     max_size = 5 * 1024 * 1024
@@ -212,16 +216,15 @@ async def upload_avatar(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo muito grande (máx 5MB)")
     
     # Criar diretório se não existir
-    upload_dir = Path("backend/uploads/avatars")
+    upload_dir = Path(__file__).resolve().parents[3] / "uploads" / "avatars"
     upload_dir.mkdir(parents=True, exist_ok=True)
     
     # Gerar nome único
-    ext = Path(file.filename).suffix
     filename = f"{current_user.id}_{uuid.uuid4()}{ext}"
     filepath = upload_dir / filename
     
     # Salvar arquivo
-    with open(filepath, "wb") as f:
+    with filepath.open("wb") as f:
         f.write(contents)
     
     # Retornar URL relativa

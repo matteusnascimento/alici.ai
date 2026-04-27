@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.media_job import MediaJob
@@ -23,59 +24,13 @@ class MediaService:
 
     def generate_video(self, user: User, payload: MediaGenerateRequest) -> MediaGenerateResponse:
         self._validate_generation_payload(payload)
-
-        timeline_data = {
-            "tracks": [
-                {
-                    "id": "track-video-1",
-                    "type": "video",
-                    "clips": [
-                        {
-                            "id": "clip-generated-1",
-                            "type": "video",
-                            "startTime": 0,
-                            "duration": payload.duration,
-                            "source": payload.source_link or f"prompt:{payload.prompt or ''}",
-                            "effects": [],
-                            "transformations": [],
-                            "text": None,
-                        }
-                    ],
-                }
-            ],
-            "zoom": 1,
-            "duration": payload.duration,
-        }
-
-        project = MediaProject(
-            user_id=user.id,
-            name=payload.project_name,
-            timeline_json=timeline_data,
-            duration=payload.duration,
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Geracao real de video ainda nao esta configurada.",
         )
-        self.db.add(project)
-        self.db.flush()
-
-        job = MediaJob(
-            user_id=user.id,
-            project_id=project.id,
-            job_type="generate",
-            status="processing",
-            progress=5,
-            prompt=payload.prompt,
-        )
-        self.db.add(job)
-        self.db.commit()
-        self.db.refresh(job)
-
-        return MediaGenerateResponse(job_id=job.id, project_id=project.id, status=job.status)
 
     def get_job_status(self, user: User, job_id: int) -> MediaJobStatusResponse:
         job = self._get_job_for_user(user, job_id)
-        self._update_job_progress(job)
-        self.db.commit()
-        self.db.refresh(job)
-
         return MediaJobStatusResponse(
             id=job.id,
             status=job.status,
@@ -85,22 +40,11 @@ class MediaService:
         )
 
     def export_video(self, user: User, payload: MediaExportRequest) -> MediaExportResponse:
-        project = self._get_project_for_user(user, payload.project_id)
-        project.updated_at = datetime.now(UTC)
-
-        job = MediaJob(
-            user_id=user.id,
-            project_id=project.id,
-            job_type="export",
-            status="completed",
-            progress=100,
-            result_url=f"https://cdn.axi.local/exports/project-{project.id}-{payload.resolution}.{payload.format}",
+        self._get_project_for_user(user, payload.project_id)
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Exportacao real de video ainda nao esta configurada.",
         )
-        self.db.add(job)
-        self.db.commit()
-        self.db.refresh(job)
-
-        return MediaExportResponse(job_id=job.id, status=job.status, download_url=job.result_url or "")
 
     def create_project(self, user: User, payload: MediaProjectCreate) -> MediaProjectRead:
         project = MediaProject(
@@ -159,23 +103,6 @@ class MediaService:
         self.db.commit()
         self.db.refresh(duplicate)
         return self._serialize_project(duplicate)
-
-    def _update_job_progress(self, job: MediaJob) -> None:
-        if job.status == "completed":
-            return
-
-        elapsed_seconds = max(int((datetime.now(UTC) - self._as_utc(job.created_at)).total_seconds()), 0)
-        progress = min(100, 10 + elapsed_seconds * 25)
-        job.progress = progress
-
-        if progress >= 100:
-            job.status = "completed"
-            if job.job_type == "generate":
-                job.result_url = f"https://cdn.axi.local/generated/job-{job.id}.mp4"
-            elif job.job_type == "export":
-                job.result_url = job.result_url or f"https://cdn.axi.local/exports/job-{job.id}.mp4"
-        else:
-            job.status = "processing"
 
     def _serialize_project(self, project: MediaProject) -> MediaProjectRead:
         return MediaProjectRead(

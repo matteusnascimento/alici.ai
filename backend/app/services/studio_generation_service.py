@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models.studio_generation import StudioGeneration
-from app.services.ai_service import AIService, AIServiceError
+from app.services.ai_service import AIService
 
 
 class StudioGenerationService:
@@ -39,10 +39,6 @@ class StudioGenerationService:
         self.db.refresh(item)
         return item
 
-    @staticmethod
-    def _can_fallback(exc: AIServiceError) -> bool:
-        return exc.is_retryable_platform_issue
-
     def generate_poster_variations(self, prompt: str, options: dict[str, Any]) -> dict[str, Any]:
         base_style = options.get("style", "premium-cyan")
         schema = {
@@ -68,27 +64,15 @@ class StudioGenerationService:
             "required": ["variations"],
             "additionalProperties": False,
         }
-        try:
-            result = self.ai.generate_structured_output(
-                prompt=f"Prompt criativo: {prompt}\nEstilo base: {base_style}",
-                schema=schema,
-                system_prompt=(
-                    "Crie 4 variacoes de poster em pt-BR para anuncios premium. "
-                    "Cada variacao precisa de headline curta, CTA forte e style descritivo."
-                ),
-                function_name="ad_copy_generator",
-            )
-        except AIServiceError as exc:
-            if not self._can_fallback(exc):
-                raise
-            result = {
-                "variations": [
-                    {"id": "A", "headline": "Oferta principal em destaque", "cta": "Quero saber mais", "style": base_style},
-                    {"id": "B", "headline": "Ganhe velocidade com sua campanha", "cta": "Falar com especialista", "style": base_style},
-                    {"id": "C", "headline": "Criativo pronto para conversao", "cta": "Receber proposta", "style": base_style},
-                    {"id": "D", "headline": "Modo seguro ativo para continuar operando", "cta": "Continuar criacao", "style": base_style},
-                ]
-            }
+        result = self.ai.generate_structured_output(
+            prompt=f"Prompt criativo: {prompt}\nEstilo base: {base_style}",
+            schema=schema,
+            system_prompt=(
+                "Crie 4 variacoes de poster em pt-BR para anuncios premium. "
+                "Cada variacao precisa de headline curta, CTA forte e style descritivo."
+            ),
+            function_name="ad_copy_generator",
+        )
         return {
             "kind": "poster",
             "generated_at": datetime.utcnow().isoformat(),
@@ -110,23 +94,12 @@ class StudioGenerationService:
             "required": ["result"],
             "additionalProperties": False,
         }
-        try:
-            generated = self.ai.generate_structured_output(
-                prompt=f"Modo: {mode}\nBriefing: {prompt}",
-                schema=schema,
-                system_prompt="Gere 3 variacoes de texto em pt-BR para o modo solicitado. Retorne apenas JSON valido.",
-                function_name="social_post_generator",
-            )
-        except AIServiceError as exc:
-            if not self._can_fallback(exc):
-                raise
-            generated = {
-                "result": [
-                    f"Versao base 1 para {mode}: destaque o beneficio principal.",
-                    f"Versao base 2 para {mode}: reforce urgencia e CTA.",
-                    f"Versao base 3 para {mode}: mantenha clareza e foco comercial.",
-                ]
-            }
+        generated = self.ai.generate_structured_output(
+            prompt=f"Modo: {mode}\nBriefing: {prompt}",
+            schema=schema,
+            system_prompt="Gere 3 variacoes de texto em pt-BR para o modo solicitado. Retorne apenas JSON valido.",
+            function_name="social_post_generator",
+        )
         return {
             "mode": mode,
             "prompt": prompt,
@@ -144,20 +117,11 @@ class StudioGenerationService:
             "required": ["brand_direction", "colors", "typography"],
             "additionalProperties": False,
         }
-        try:
-            generated = self.ai.generate_structured_output(
-                prompt=prompt,
-                schema=schema,
-                system_prompt="Crie uma direcao visual de marca em pt-BR com posicionamento, paleta e tipografia. Retorne apenas JSON valido.",
-                function_name="product_description_generator",
-            )
-        except AIServiceError as exc:
-            if not self._can_fallback(exc):
-                raise
-            generated = {
-                "brand_direction": "Direcao premium com foco em clareza, contraste e confianca.",
-                "colors": ["#0B1220", "#22D3EE", "#F8FAFC"],
-                "typography": ["Space Grotesk", "DM Sans"],
-            }
+        generated = self.ai.generate_structured_output(
+            prompt=prompt,
+            schema=schema,
+            system_prompt="Crie uma direcao visual de marca em pt-BR com posicionamento, paleta e tipografia. Retorne apenas JSON valido.",
+            function_name="product_description_generator",
+        )
         generated["prompt"] = prompt
         return generated

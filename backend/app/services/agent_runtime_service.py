@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import secrets
 from datetime import datetime
 from typing import Any
 
@@ -453,8 +454,7 @@ class AgentRuntimeService:
         if not agent:
             raise AgentRuntimeError("Agente nao encontrado ou inativo")
 
-        token_source = f"{user_id}:{agent_id}:{visitor_id}:{datetime.utcnow().isoformat()}"
-        session_token = hashlib.sha256(token_source.encode("utf-8")).hexdigest()
+        session_token = secrets.token_urlsafe(32)
 
         channel_id = f"widget:{agent_id}"
         existing_channel = (
@@ -726,8 +726,8 @@ class AgentRuntimeService:
 
     @staticmethod
     def build_channel_api_key(user_id: int, agent_id: int, channel_id: str) -> str:
-        raw = f"{user_id}:{agent_id}:{channel_id}:{settings.SECRET_KEY}"
-        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        payload = f"{user_id}:{agent_id}:{channel_id}".encode("utf-8")
+        return hmac.new(settings.secret_key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     @staticmethod
     def validate_channel_api_key(expected: str, received: str | None) -> bool:

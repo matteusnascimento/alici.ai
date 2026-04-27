@@ -1,8 +1,9 @@
 import os
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -21,6 +22,16 @@ from app.schemas.billing import (
 from app.services.billing_service import BillingService
 
 router = APIRouter(prefix="/billing", tags=["billing"])
+
+
+def _require_billing_admin(user: User) -> None:
+    allowed_emails = {email.strip().lower() for email in settings.billing_admin_emails if email.strip()}
+    user_email = (user.email or "").strip().lower()
+    if not allowed_emails or user_email not in allowed_emails:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Upgrade manual restrito a administradores de billing. Use /billing/checkout para cobranca.",
+        )
 
 
 # ── Endpoints existentes preservados ────────────────────────────────
@@ -43,6 +54,7 @@ def billing_upgrade(
     db: Session = Depends(get_db),
 ) -> UpgradeResponse:
     """[LEGADO/ADMIN] Upgrade manual sem pagamento real. Fluxo principal: POST /billing/checkout."""
+    _require_billing_admin(current_user)
     return BillingService(db).upgrade(current_user, payload)
 
 

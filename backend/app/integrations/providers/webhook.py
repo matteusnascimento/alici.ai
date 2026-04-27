@@ -1,6 +1,9 @@
 """Webhook provider adapter."""
 from __future__ import annotations
 
+import json
+import urllib.error
+import urllib.request
 from typing import Any
 
 from app.integrations.providers.base import BaseProvider, ProviderResult
@@ -13,22 +16,18 @@ class WebhookProvider(BaseProvider):
         webhook_url = str(config.get("webhook_url") or "")
         if not webhook_url:
             return ProviderResult.fail(
-                "Campo obrigatório ausente: webhook_url",
+                "Campo obrigatorio ausente: webhook_url",
                 missing_fields=["webhook_url"],
             )
         if not webhook_url.startswith(("http://", "https://")):
-            return ProviderResult.fail("webhook_url deve começar com http:// ou https://")
-        return ProviderResult.ok("Configuração válida")
+            return ProviderResult.fail("webhook_url deve comecar com http:// ou https://")
+        return ProviderResult.ok("Configuracao valida")
 
     def connect(self, config: dict[str, Any]) -> ProviderResult:
         validation = self.validate_config(config)
         if not validation.success:
             return validation
-        return ProviderResult.ok(
-            "Webhook configurado. O agente enviará eventos para a URL informada.",
-            provider="webhook",
-            webhook_url=config.get("webhook_url"),
-        )
+        return self.test_connection(config)
 
     def disconnect(self, config: dict[str, Any]) -> ProviderResult:
         return ProviderResult.ok("Webhook desconectado")
@@ -37,15 +36,59 @@ class WebhookProvider(BaseProvider):
         validation = self.validate_config(config)
         if not validation.success:
             return validation
-        return ProviderResult.ok("Webhook registrado para eventos futuros", provider="webhook")
+        return self.test_connection(config)
 
     def test_connection(self, config: dict[str, Any]) -> ProviderResult:
         validation = self.validate_config(config)
         if not validation.success:
             return validation
-        # TODO: Enviar POST de teste para webhook_url
+
+        webhook_url = str(config.get("webhook_url"))
+        payload = {
+            "event": "axi.connection_test",
+            "provider": "webhook",
+            "test": True,
+        }
+        headers = self._build_headers(config)
+
+        try:
+            status_code = self._post_json(webhook_url, payload=payload, headers=headers)
+        except urllib.error.HTTPError as exc:
+            return ProviderResult.fail(
+                f"Webhook respondeu HTTP {exc.code}",
+                provider="webhook",
+                webhook_url=webhook_url,
+                status_code=exc.code,
+            )
+        except Exception as exc:
+            return ProviderResult.fail(
+                f"Falha ao validar webhook com POST real: {exc}",
+                provider="webhook",
+                webhook_url=webhook_url,
+            )
+
         return ProviderResult.ok(
-            "URL do webhook válida. Aguardando confirmação de recebimento.",
+            "Webhook validado com POST real.",
             provider="webhook",
-            webhook_url=config.get("webhook_url"),
+            webhook_url=webhook_url,
+            status_code=status_code,
         )
+
+    def _build_headers(self, config: dict[str, Any]) -> dict[str, str]:
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "alici-ai/1.0",
+        }
+        extra_headers = config.get("headers")
+        if isinstance(extra_headers, dict):
+            headers.update({str(key): str(value) for key, value in extra_headers.items()})
+        secret = config.get("secret")
+        if secret and "X-AXI-Webhook-Secret" not in headers:
+            headers["X-AXI-Webhook-Secret"] = str(secret)
+        return headers
+
+    def _post_json(self, url: str, *, payload: dict[str, Any], headers: dict[str, str]) -> int:
+        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+        request = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return int(response.status)

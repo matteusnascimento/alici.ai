@@ -9,6 +9,8 @@ from app.models.user import User
 from app.schemas.marketing import (
     MarketingCampaignRequest,
     MarketingCampaignResponse,
+    MarketingContentRequest,
+    MarketingContentResponse,
     MarketingCopyResponse,
     MarketingImagePromptResponse,
     MarketingProjectCreate,
@@ -16,8 +18,7 @@ from app.schemas.marketing import (
     MarketingProjectUpdate,
     MarketingTool,
 )
-from app.services.ai_service import AIService
-from app.services.ai_service import AIServiceError
+from app.services.ai_service import AIService, AIServiceError
 
 
 class MarketingService:
@@ -33,28 +34,39 @@ class MarketingService:
         ]
 
     @staticmethod
-    def _can_fallback(exc: AIServiceError) -> bool:
-        return exc.is_retryable_platform_issue
+    def _normalize_content_response(result: dict) -> MarketingContentResponse:
+        raw_copies = result.get("copies")
+        if isinstance(raw_copies, list):
+            copies = [str(item).strip() for item in raw_copies if str(item).strip()]
+        elif isinstance(raw_copies, str) and raw_copies.strip():
+            copies = [raw_copies.strip()]
+        else:
+            copies = []
 
-    @staticmethod
-    def _campaign_fallback(payload: MarketingCampaignRequest) -> MarketingCampaignResponse:
-        return MarketingCampaignResponse(
-            campaign=f"Campanha base para {payload.company_name}",
-            copy_text=(
-                f"{payload.offer} para {payload.audience}. Destaque a proposta principal e convide o lead a falar com o time."
-            ),
-            cta="Fale com nossa equipe e receba sua proposta personalizada.",
-            ad_structure="Gancho inicial, beneficio central, prova rapida e CTA final.",
-            creative_suggestion=f"Visual limpo com foco em {payload.offer} e linguagem {payload.tone}.",
+        raw_hashtags = result.get("hashtags")
+        if isinstance(raw_hashtags, list):
+            hashtags = [str(item).strip() for item in raw_hashtags if str(item).strip()]
+        elif isinstance(raw_hashtags, str) and raw_hashtags.strip():
+            hashtags = [item.strip() for item in raw_hashtags.split() if item.strip()]
+        else:
+            hashtags = []
+
+        cta = str(result.get("cta") or "").strip()
+        hook = str(result.get("hook") or "").strip()
+        if not copies or not cta or not hook:
+            raise AIServiceError(
+                "Invalid marketing AI response",
+                user_message="A IA retornou uma resposta incompleta para marketing.",
+                status_code=502,
+                code="invalid_ai_response",
+            )
+
+        return MarketingContentResponse(
+            copies=copies[:3],
+            cta=cta,
+            hook=hook,
+            hashtags=hashtags[:8],
         )
-
-    @staticmethod
-    def _copy_fallback(prompt: str) -> MarketingCopyResponse:
-        return MarketingCopyResponse(copy_text=f"Mensagem base: {prompt.strip() or 'Apresente a oferta com clareza e CTA final.'}")
-
-    @staticmethod
-    def _image_prompt_fallback(prompt: str) -> MarketingImagePromptResponse:
-        return MarketingImagePromptResponse(prompt=f"Premium marketing visual, clean layout, strong offer focus, context: {prompt.strip() or 'campaign creative'}")
 
     def generate(self, payload: MarketingCampaignRequest) -> MarketingCampaignResponse:
         schema = {
@@ -69,55 +81,77 @@ class MarketingService:
             "required": ["campaign", "copy_text", "cta", "ad_structure", "creative_suggestion"],
             "additionalProperties": False,
         }
-        try:
-            result = self.ai.generate_structured_output(
-                prompt=(
-                    f"Empresa: {payload.company_name}\n"
-                    f"Publico: {payload.audience}\n"
-                    f"Objetivo: {payload.objective}\n"
-                    f"Oferta: {payload.offer}\n"
-                    f"Tom: {payload.tone}"
-                ),
-                schema=schema,
-                system_prompt=(
-                    "Gere uma campanha de marketing completa em pt-BR. "
-                    "Retorne somente JSON valido com campanha, copy_text, cta, ad_structure e creative_suggestion."
-                ),
-                function_name="ad_copy_generator",
-            )
-        except AIServiceError as exc:
-            if self._can_fallback(exc):
-                return self._campaign_fallback(payload)
-            raise
+        result = self.ai.generate_structured_output(
+            prompt=(
+                f"Empresa: {payload.company_name}\n"
+                f"Publico: {payload.audience}\n"
+                f"Objetivo: {payload.objective}\n"
+                f"Oferta: {payload.offer}\n"
+                f"Tom: {payload.tone}"
+            ),
+            schema=schema,
+            system_prompt=(
+                "Gere uma campanha de marketing completa em pt-BR. "
+                "Retorne somente JSON valido com campanha, copy_text, cta, ad_structure e creative_suggestion."
+            ),
+            function_name="ad_copy_generator",
+        )
         return MarketingCampaignResponse(**result)
 
     def generate_copy(self, prompt: str) -> MarketingCopyResponse:
-        try:
-            copy_text = self.ai.generate_text(
-                system_prompt="Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final.",
-                user_prompt=f"Contexto: {prompt.strip()}",
-                temperature=0.5,
-                function_name="ad_copy_generator",
-            )
-        except AIServiceError as exc:
-            if self._can_fallback(exc):
-                return self._copy_fallback(prompt)
-            raise
+        copy_text = self.ai.generate_text(
+            system_prompt="Gere uma copy comercial em pt-BR, direta, com proposta de valor clara e CTA final.",
+            user_prompt=f"Contexto: {prompt.strip()}",
+            temperature=0.5,
+            function_name="ad_copy_generator",
+        )
         return MarketingCopyResponse(copy_text=copy_text)
 
     def generate_image_prompt(self, prompt: str) -> MarketingImagePromptResponse:
-        try:
-            prompt_text = self.ai.generate_text(
-                system_prompt="You write premium prompts for image generation models. Return only one concise prompt in English.",
-                user_prompt=f"Create a premium ad image prompt for this context: {prompt.strip() or 'high-conversion SaaS campaign'}",
-                temperature=0.5,
-                function_name="social_post_generator",
-            )
-        except AIServiceError as exc:
-            if self._can_fallback(exc):
-                return self._image_prompt_fallback(prompt)
-            raise
+        prompt_text = self.ai.generate_text(
+            system_prompt="You write premium prompts for image generation models. Return only one concise prompt in English.",
+            user_prompt=f"Create a premium ad image prompt for this context: {prompt.strip() or 'high-conversion SaaS campaign'}",
+            temperature=0.5,
+            function_name="social_post_generator",
+        )
         return MarketingImagePromptResponse(prompt=prompt_text)
+
+    def generate_content(self, user: User, payload: MarketingContentRequest) -> MarketingContentResponse:
+        project = self.db.query(MarketingProject).filter(
+            MarketingProject.id == payload.project_id, MarketingProject.user_id == user.id
+        ).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "copies": {"type": "array", "items": {"type": "string"}},
+                "cta": {"type": "string"},
+                "hook": {"type": "string"},
+                "hashtags": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["copies", "cta", "hook", "hashtags"],
+            "additionalProperties": False,
+        }
+        result = self.ai.generate_structured_output(
+            prompt=(
+                f"Projeto: {project.name}\n"
+                f"Publico: {project.audience}\n"
+                f"Objetivo: {project.objective}\n"
+                f"Oferta: {project.offer}\n"
+                f"Tom: {project.tone}\n"
+                f"Tipo: {payload.type.strip() or 'social_post'}\n"
+                f"Contexto: {payload.context.strip()}"
+            ),
+            schema=schema,
+            system_prompt=(
+                "Gere conteudo de marketing em pt-BR. "
+                "Retorne JSON valido com ate 3 copies, cta, hook e hashtags."
+            ),
+            function_name="ad_copy_generator",
+        )
+        return self._normalize_content_response(result)
 
     def _parse_campaign_block(self, text: str) -> dict | None:
         sections = {

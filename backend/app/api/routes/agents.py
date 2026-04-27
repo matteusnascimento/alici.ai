@@ -157,6 +157,8 @@ def create_agent(
         BillingService(db).check_limit(current_user, "agents")
         agent = AgentService(db).create_agent(current_user, payload)
         return AgentRead.model_validate(agent)
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -1329,72 +1331,18 @@ def channel_api_inbound(
 
 @router.post("/runtime/webhooks/whatsapp", response_model=InboundWebhookResponse)
 async def webhook_whatsapp(request: Request, db: Session = Depends(get_db)) -> InboundWebhookResponse:
-    body = await request.body()
-    payload = AgentRuntimeService.parse_json_body(body)
-    normalized = ChannelAdapters.normalize_whatsapp(payload)
-
-    channel = (
-        db.query(AgentChannel)
-        .filter(
-            AgentChannel.channel_type == "whatsapp",
-            AgentChannel.channel_id == normalized["channel_id"],
-            AgentChannel.enabled.is_(True),
-        )
-        .first()
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Legacy runtime webhook disabled. Use /api/webhooks/meta/whatsapp with Meta signature.",
     )
-    if not channel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="WhatsApp channel not found")
-
-    try:
-        AgentRuntimeService.process_inbound_message(
-            db,
-            user_id=channel.user_id,
-            channel_type="whatsapp",
-            channel_id=normalized["channel_id"],
-            external_user_id=normalized["external_user_id"],
-            external_conversation_id=normalized["external_conversation_id"],
-            text=normalized["text"],
-            metadata=normalized["metadata"],
-        )
-    except AgentRuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-
-    return InboundWebhookResponse(ok=True, detail="whatsapp processed")
 
 
 @router.post("/runtime/webhooks/instagram", response_model=InboundWebhookResponse)
 async def webhook_instagram(request: Request, db: Session = Depends(get_db)) -> InboundWebhookResponse:
-    body = await request.body()
-    payload = AgentRuntimeService.parse_json_body(body)
-    normalized = ChannelAdapters.normalize_instagram(payload)
-
-    channel = (
-        db.query(AgentChannel)
-        .filter(
-            AgentChannel.channel_type == "instagram",
-            AgentChannel.channel_id == normalized["channel_id"],
-            AgentChannel.enabled.is_(True),
-        )
-        .first()
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Legacy runtime webhook disabled. Use /api/webhooks/meta/instagram with Meta signature.",
     )
-    if not channel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instagram channel not found")
-
-    try:
-        AgentRuntimeService.process_inbound_message(
-            db,
-            user_id=channel.user_id,
-            channel_type="instagram",
-            channel_id=normalized["channel_id"],
-            external_user_id=normalized["external_user_id"],
-            external_conversation_id=normalized["external_conversation_id"],
-            text=normalized["text"],
-            metadata=normalized["metadata"],
-        )
-    except AgentRuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-
-    return InboundWebhookResponse(ok=True, detail="instagram processed")
 
 
 # =============================================================================

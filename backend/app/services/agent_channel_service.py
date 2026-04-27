@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.integrations.providers import VALID_PROVIDERS, get_provider
 from app.models.agent import Agent
 from app.models.agent_channel import AgentChannel
@@ -30,7 +31,8 @@ class AgentChannelService:
 
     @staticmethod
     def build_api_key(user_id: int, agent_id: int, channel_id: str) -> str:
-        return hashlib.sha256(f"{user_id}:{agent_id}:{channel_id}".encode("utf-8")).hexdigest()
+        payload = f"{user_id}:{agent_id}:{channel_id}".encode("utf-8")
+        return hmac.new(settings.secret_key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     @staticmethod
     def key_hash(raw: str) -> str:

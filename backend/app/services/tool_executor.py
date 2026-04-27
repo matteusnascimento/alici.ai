@@ -8,13 +8,17 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Callable
 from email_validator import validate_email, EmailNotValidError
 from pydantic import ValidationError
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.models.lead import Lead
+from app.models.proposal import Proposal
+from app.models.reservation import Reservation
 from app.schemas.openai_responses import ToolExecutionResult
 from app.services.email_service import EmailService
 from app.services.crm_service import CRMService
@@ -97,7 +101,7 @@ class ToolExecutor:
 
         except (ValueError, ValidationError) as exc:
             execution_time = int((time.time() - start_time) * 1000)
-            error_msg = f"Erro de validação: {exc}"
+            error_msg = f"Erro em argumentos: {exc}"
             self._log_execution(
                 tool_name, tool_args, False, None, error_msg, execution_time,
                 agent_id, user_id, conversation_id
@@ -231,7 +235,7 @@ class ToolExecutor:
 
         # Valida email
         try:
-            validate_email(args["email"])
+            validate_email(args["email"], check_deliverability=False)
         except EmailNotValidError as e:
             raise ValueError(f"Email inválido: {e}")
 
@@ -280,7 +284,7 @@ class ToolExecutor:
 
         # Valida email
         try:
-            validate_email(args["to_email"])
+            validate_email(args["to_email"], check_deliverability=False)
         except EmailNotValidError as e:
             raise ValueError(f"Email inválido: {e}")
 
@@ -301,7 +305,7 @@ class ToolExecutor:
 
         # Valida email
         try:
-            validate_email(args["email"])
+            validate_email(args["email"], check_deliverability=False)
         except EmailNotValidError as e:
             raise ValueError(f"Email inválido: {e}")
 
@@ -450,32 +454,52 @@ class ToolExecutor:
 
     def _get_dashboard_metrics(self, metric_type: str | None = None) -> dict[str, Any]:
         """Obter métricas do dashboard."""
-        # Por enquanto retorna métricas mock - em produção consultaria o banco
+        today = date.today()
+        window_end = today + timedelta(days=30)
+        reservations = int(
+            self.db.query(func.count(Reservation.id))
+            .filter(Reservation.status != "cancelled")
+            .scalar()
+            or 0
+        )
+        revenue = float(
+            self.db.query(func.coalesce(func.sum(Reservation.total_price), 0.0))
+            .filter(Reservation.status != "cancelled")
+            .scalar()
+            or 0.0
+        )
+        leads = int(self.db.query(func.count(Lead.id)).scalar() or 0)
+        proposals = int(self.db.query(func.count(Proposal.id)).scalar() or 0)
+
+        occupied_nights = 0
+        active_reservations = (
+            self.db.query(Reservation)
+            .filter(
+                Reservation.status != "cancelled",
+                Reservation.check_in < window_end,
+                Reservation.check_out > today,
+            )
+            .all()
+        )
+        for reservation in active_reservations:
+            start = max(reservation.check_in, today)
+            end = min(reservation.check_out, window_end)
+            occupied_nights += max((end - start).days, 0)
+
+        total_room_nights = sum(ReservationService.ROOM_INVENTORY.values()) * 30
+        occupancy = round(occupied_nights / total_room_nights, 4) if total_room_nights else 0.0
         metrics = {
-            "revenue": 150000.0,
-            "occupancy": 0.85,
-            "reservations": 42,
-            "leads": 15,
-            "proposals": 8,
+            "revenue": revenue,
+            "occupancy": occupancy,
+            "reservations": reservations,
+            "leads": leads,
+            "proposals": proposals,
         }
 
         if metric_type and metric_type in metrics:
             return {"status": "success", metric_type: metrics[metric_type]}
 
         return {"status": "success", "metrics": metrics}
-        metrics = {
-            "revenue": 150000.0,
-            "occupancy": 0.85,
-            "reservations": 42,
-            "leads": 15,
-            "proposals": 8,
-        }
-        
-        if metric_type and metric_type in metrics:
-            return {"status": "success", metric_type: metrics[metric_type]}
-        
-        return {"status": "success", "metrics": metrics}
-
     def _send_email(self, to_email: str, subject: str, body: str, template: str | None = None) -> dict[str, Any]:
         """Envia email para cliente."""
         email_service = EmailService()

@@ -12,7 +12,7 @@ class IntegrationService:
         ("instagram", "Instagram"),
     ]
 
-    # Providers with real connectivity implemented (none yet).
+    # Providers with real connectivity implemented in this legacy service.
     _LIVE_PROVIDERS: set[str] = set()
 
     def __init__(self, db: Session):
@@ -48,14 +48,15 @@ class IntegrationService:
                 message=f"Conexão com {label} validada com sucesso.",
             )
 
-        # Provider not yet connected – return honest placeholder response
         return IntegrationTestResponse(
             provider=provider,
-            status="placeholder",
+            status="error",
             message=(
-                f"A integração com {label} ainda não está conectada. "
-                "Configure as credenciais reais e reimplemente este provider para ativá-la."
+                f"A integracao com {label} nao possui teste real neste endpoint legado. "
+                "Use o fluxo atual de integracoes com credenciais reais."
             ),
+            error_type="legacy_provider_not_available",
+            status_code=501,
         )
 
     def _seed_defaults(self, user: User) -> None:
