@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional, Any
+from pydantic import BaseModel, ConfigDict
+from typing import Optional
 from datetime import datetime
 
 
@@ -20,11 +20,10 @@ class ToolExecutionCreate(ToolExecutionBase):
 
 
 class ToolExecutionRead(ToolExecutionBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ToolExecutionUpdate(BaseModel):

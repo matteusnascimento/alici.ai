@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import date, datetime
 
@@ -23,13 +23,12 @@ class ReservationCreate(BaseModel):
 
 
 class ReservationRead(ReservationBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     reservation_id: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ReservationUpdate(BaseModel):

@@ -174,7 +174,7 @@ def test_billing_webhook_valid_and_invalid_signature(client, auth_headers, monke
 
     ok_response = client.post(
         '/api/billing/webhook',
-        data=b'{}',
+        content=b'{}',
         headers={'stripe-signature': 'valid-signature'},
     )
     assert ok_response.status_code == 200
@@ -196,7 +196,7 @@ def test_billing_webhook_valid_and_invalid_signature(client, auth_headers, monke
     monkeypatch.setattr('app.services.billing_service.stripe.Webhook.construct_event', _raise_invalid_signature)
     invalid_response = client.post(
         '/api/billing/webhook',
-        data=b'{}',
+        content=b'{}',
         headers={'stripe-signature': 'invalid-signature'},
     )
     assert invalid_response.status_code == 400

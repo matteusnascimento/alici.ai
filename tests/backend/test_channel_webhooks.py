@@ -85,7 +85,7 @@ def test_integrations_accounts_list_and_channel_log_flow(client, auth_headers, m
 
     webhook = client.post(
         '/api/webhooks/meta/whatsapp',
-        data=raw_payload,
+        content=raw_payload,
         headers={
             **auth_headers,
             'content-type': 'application/json',
