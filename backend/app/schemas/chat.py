@@ -14,6 +14,7 @@ class ChatUploadResponse(BaseModel):
     filename: str
     size: int
     content_type: str | None = None
+    file_url: str | None = None
     message: str
 
 

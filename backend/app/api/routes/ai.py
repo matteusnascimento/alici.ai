@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.config import settings
 from app.core.security import get_current_user
+from app.integrations.providers.http_security import UnsafeProviderURL, assert_public_http_url
 from app.models.user import User
 from app.schemas.ai import (
     AIStandardResponse,
@@ -20,6 +21,31 @@ from app.schemas.integration import IntegrationTestResponse
 from app.services.ai_service import AIConfigurationError, AIService, AIServiceError
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+
+MAX_IMAGE_ANALYSIS_BYTES = 10 * 1024 * 1024
+ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+
+
+def _download_public_image(image_url: str) -> bytes:
+    try:
+        assert_public_http_url(image_url)
+    except UnsafeProviderURL as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    chunks: list[bytes] = []
+    total = 0
+    with httpx.Client(timeout=settings.openai_timeout_seconds) as client:
+        with client.stream("GET", image_url, follow_redirects=False) as response:
+            response.raise_for_status()
+            content_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+            if content_type and content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+                raise HTTPException(status_code=400, detail="URL informada nao retornou uma imagem permitida")
+            for chunk in response.iter_bytes():
+                total += len(chunk)
+                if total > MAX_IMAGE_ANALYSIS_BYTES:
+                    raise HTTPException(status_code=400, detail="Imagem excede 10MB")
+                chunks.append(chunk)
+    return b"".join(chunks)
 
 
 @router.post("/test", response_model=IntegrationTestResponse)
@@ -230,10 +256,7 @@ def image_analysis(payload: ImageAnalysisRequest, current_user: User = Depends(g
         raise HTTPException(status_code=422, detail="image_url é obrigatório no momento")
     service = AIService(provider="openai")
     try:
-        with httpx.Client(timeout=settings.openai_timeout_seconds) as client:
-            response = client.get(payload.image_url)
-            response.raise_for_status()
-            image_bytes = response.content
+        image_bytes = _download_public_image(payload.image_url)
         result = service.analyze_image(
             image_bytes=image_bytes,
             prompt=payload.prompt or "Analise esta imagem para uso em marketing e operação.",
@@ -241,6 +264,8 @@ def image_analysis(payload: ImageAnalysisRequest, current_user: User = Depends(g
             endpoint="/api/ai/image-analysis",
         )
         return AIStandardResponse(**result)
+    except HTTPException:
+        raise
     except AIServiceError as exc:
         _raise_ai_http_error(exc)
     except Exception as exc:

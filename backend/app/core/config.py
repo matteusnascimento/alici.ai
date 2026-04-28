@@ -79,6 +79,17 @@ class Settings(BaseSettings):
     def parse_cors(cls, value: str | list[str]) -> list[str]:
         return cls._parse_string_list(value, field_name="CORS_ALLOWED_ORIGINS")
 
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug(cls, value: bool | str) -> bool | str:
+        if isinstance(value, str):
+            raw = value.strip().lower()
+            if raw in {"1", "true", "yes", "on", "debug", "dev", "development"}:
+                return True
+            if raw in {"0", "false", "no", "off", "release", "prod", "production"}:
+                return False
+        return value
+
     @field_validator("billing_admin_emails", mode="before")
     @classmethod
     def parse_billing_admin_emails(cls, value: str | list[str]) -> list[str]:

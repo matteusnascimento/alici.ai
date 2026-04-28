@@ -8,7 +8,9 @@ from __future__ import annotations
 import json
 import logging
 import time
+from html import escape
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Any, Callable
 from email_validator import validate_email, EmailNotValidError
 from pydantic import ValidationError
@@ -441,6 +443,20 @@ class ToolExecutor:
 
         proposal_service = ProposalService(self.db)
         proposal = proposal_service.create_proposal(proposal_data)
+        lead = self.db.query(Lead).filter(Lead.id == proposal.lead_id).first()
+        download_url, file_path = self._write_proposal_document(
+            proposal_id=proposal.proposal_id,
+            lead_name=lead.name if lead else f"Lead {proposal.lead_id}",
+            proposal_type=proposal.proposal_type,
+            value=proposal.value,
+            created_at=proposal.created_at,
+        )
+
+        proposal_row = self.db.query(Proposal).filter(Proposal.id == proposal.id).first()
+        if proposal_row:
+            proposal_row.file_path = file_path
+            proposal_row.content = f"Documento HTML gerado em {download_url}"
+            self.db.commit()
 
         return {
             "status": "success",
@@ -449,8 +465,42 @@ class ToolExecutor:
             "proposal_type": proposal.proposal_type,
             "value": proposal.value,
             "created_at": proposal.created_at.isoformat(),
-            "download_url": f"/exports/proposal-{proposal.proposal_id}.pdf",
+            "download_url": download_url,
         }
+
+    def _write_proposal_document(
+        self,
+        *,
+        proposal_id: str,
+        lead_name: str,
+        proposal_type: str,
+        value: float,
+        created_at: datetime,
+    ) -> tuple[str, str]:
+        safe_id = "".join(ch for ch in proposal_id if ch.isalnum() or ch in {"-", "_"}).strip("-_") or "proposal"
+        exports_dir = Path(__file__).resolve().parents[2] / "exports" / "proposals"
+        exports_dir.mkdir(parents=True, exist_ok=True)
+        filename = f"proposal-{safe_id}.html"
+        file_path = exports_dir / filename
+        html = f"""<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Proposta {escape(proposal_id)}</title>
+</head>
+<body>
+  <h1>Proposta Comercial</h1>
+  <p><strong>ID:</strong> {escape(proposal_id)}</p>
+  <p><strong>Lead:</strong> {escape(lead_name)}</p>
+  <p><strong>Tipo:</strong> {escape(proposal_type)}</p>
+  <p><strong>Valor:</strong> R$ {value:,.2f}</p>
+  <p><strong>Criada em:</strong> {escape(created_at.isoformat())}</p>
+</body>
+</html>
+"""
+        file_path.write_text(html, encoding="utf-8")
+        relative_path = f"exports/proposals/{filename}"
+        return f"/{relative_path}", relative_path
 
     def _get_dashboard_metrics(self, metric_type: str | None = None) -> dict[str, Any]:
         """Obter métricas do dashboard."""

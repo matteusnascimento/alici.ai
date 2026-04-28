@@ -7,6 +7,7 @@ import urllib.request
 from typing import Any
 
 from app.integrations.providers.base import BaseProvider, ProviderResult
+from app.integrations.providers.http_security import UnsafeProviderURL, assert_public_http_url
 
 SUPPORTED_CRMS = ("hubspot", "salesforce", "pipedrive", "rd_station", "custom")
 
@@ -32,6 +33,11 @@ class CRMProvider(BaseProvider):
                 f"CRM '{crm_type}' exige api_url para teste real",
                 missing_fields=["api_url"],
             )
+        if config.get("api_url"):
+            try:
+                assert_public_http_url(str(config["api_url"]))
+            except UnsafeProviderURL as exc:
+                return ProviderResult.fail(str(exc))
         return ProviderResult.ok("Configuracao valida")
 
     def connect(self, config: dict[str, Any]) -> ProviderResult:

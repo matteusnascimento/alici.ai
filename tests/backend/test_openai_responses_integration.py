@@ -3,6 +3,7 @@ Testes para OpenAI Responses API Integration.
 """
 
 from datetime import date, timedelta
+from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch
 from sqlalchemy.orm import Session
@@ -196,6 +197,38 @@ class TestToolExecutor:
 
         assert result.success is True
         assert "lead_id" in result.result
+
+    def test_execute_generate_proposal_creates_real_document(self):
+        """Testa geracao de proposta com arquivo real."""
+        executor = ToolExecutor()
+        lead = executor.execute(
+            "create_lead",
+            {
+                "name": "Cliente Proposta",
+                "email": "proposta@example.com",
+                "phone": "11999999999",
+            },
+        )
+        assert lead.success is True
+
+        result = executor.execute(
+            "generate_proposal",
+            {
+                "lead_id": lead.result["lead_id"],
+                "proposal_type": "servico",
+                "value": 1500,
+            },
+        )
+
+        assert result.success is True
+        download_url = result.result["download_url"]
+        assert download_url.endswith(".html")
+        document = Path(__file__).resolve().parents[2] / "backend" / download_url.lstrip("/")
+        try:
+            assert document.exists()
+            assert "Cliente Proposta" in document.read_text(encoding="utf-8")
+        finally:
+            document.unlink(missing_ok=True)
 
     def test_execute_with_wrong_arguments(self):
         """Testa execução com argumentos inválidos."""

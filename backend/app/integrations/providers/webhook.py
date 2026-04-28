@@ -7,6 +7,7 @@ import urllib.request
 from typing import Any
 
 from app.integrations.providers.base import BaseProvider, ProviderResult
+from app.integrations.providers.http_security import UnsafeProviderURL, assert_public_http_url
 
 
 class WebhookProvider(BaseProvider):
@@ -21,6 +22,10 @@ class WebhookProvider(BaseProvider):
             )
         if not webhook_url.startswith(("http://", "https://")):
             return ProviderResult.fail("webhook_url deve comecar com http:// ou https://")
+        try:
+            assert_public_http_url(webhook_url)
+        except UnsafeProviderURL as exc:
+            return ProviderResult.fail(str(exc))
         return ProviderResult.ok("Configuracao valida")
 
     def connect(self, config: dict[str, Any]) -> ProviderResult:

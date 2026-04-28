@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.services.ai_service import AIService, AIServiceError
 
 
@@ -35,7 +37,14 @@ def test_chat_send_and_messages(client, auth_headers):
         files={'file': ('brief.txt', b'briefing de campanha', 'text/plain')},
     )
     assert upload_response.status_code == 200
-    assert upload_response.json()['filename'] == 'brief.txt'
+    upload_body = upload_response.json()
+    assert upload_body['filename'] == 'brief.txt'
+    stored_file = Path(__file__).resolve().parents[2] / 'backend' / upload_body['file_url'].lstrip('/')
+    try:
+        assert stored_file.exists()
+        assert stored_file.read_bytes() == b'briefing de campanha'
+    finally:
+        stored_file.unlink(missing_ok=True)
 
 
 def test_chat_send_returns_ai_error_when_openai_rate_limited(client, auth_headers, monkeypatch):

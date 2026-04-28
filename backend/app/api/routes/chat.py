@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -65,14 +68,38 @@ def list_messages(
 @router.post("/upload", response_model=ChatUploadResponse)
 async def upload_chat_file(
     file: UploadFile = File(...),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> ChatUploadResponse:
+    if not file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo sem nome")
+
     content = await file.read()
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo vazio")
+
+    max_size = 10 * 1024 * 1024
+    if len(content) > max_size:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo excede 10MB")
+
+    safe_name = Path(file.filename).name.replace(" ", "_")
+    ext = Path(safe_name).suffix.lower()
+    allowed_extensions = {".txt", ".md", ".csv", ".json", ".pdf", ".docx"}
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Formato de arquivo nao permitido")
+
+    upload_root = Path(__file__).resolve().parents[3] / "uploads" / "chat" / f"user_{current_user.id}"
+    upload_root.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{uuid4().hex}{ext}"
+    file_path = upload_root / stored_name
+    file_path.write_bytes(content)
+    file_url = f"/uploads/chat/user_{current_user.id}/{stored_name}"
+
     return ChatUploadResponse(
         filename=file.filename,
         size=len(content),
         content_type=file.content_type,
-        message="Arquivo recebido com sucesso.",
+        file_url=file_url,
+        message="Arquivo armazenado com sucesso.",
     )
 
 

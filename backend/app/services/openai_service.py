@@ -37,6 +37,35 @@ class OpenAIService:
             self.timeout_seconds,
         )
 
+    @staticmethod
+    def _uploads_root() -> Path:
+        path = Path(__file__).resolve().parents[2] / "uploads"
+        path.mkdir(parents=True, exist_ok=True)
+        return path.resolve()
+
+    @classmethod
+    def _resolve_upload_path(cls, raw_path: str) -> Path:
+        path = Path(raw_path).resolve()
+        uploads_root = cls._uploads_root()
+        try:
+            path.relative_to(uploads_root)
+        except ValueError as exc:
+            raise OpenAIServiceError(
+                "Audio path must be inside backend uploads",
+                error_type="invalid_path",
+                status_code=400,
+            ) from exc
+        return path
+
+    @classmethod
+    def _resolve_speech_output_path(cls, raw_path: str) -> Path:
+        output_dir = cls._uploads_root() / "speech"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        filename = Path(raw_path or "speech.mp3").name
+        if Path(filename).suffix.lower() != ".mp3":
+            filename = f"{Path(filename).stem or 'speech'}.mp3"
+        return output_dir / filename
+
     def _headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self.api_key}",
@@ -196,7 +225,7 @@ class OpenAIService:
             raise OpenAIServiceError("OPENAI_API_KEY is not configured", error_type="missing_api_key", status_code=503)
 
         model = get_model_for(AIFunction.AUDIO_TRANSCRIPTION_FAST if fast else AIFunction.AUDIO_TRANSCRIPTION)
-        path = Path(audio_path)
+        path = self._resolve_upload_path(audio_path)
 
         try:
             with httpx.Client(timeout=self.timeout_seconds) as client:
@@ -244,10 +273,11 @@ class OpenAIService:
         except httpx.HTTPError as exc:
             raise OpenAIServiceError(f"OpenAI request failed: {exc}", error_type="http_error", status_code=502) from exc
 
-        Path(output_path).write_bytes(response.content)
+        safe_output = self._resolve_speech_output_path(output_path)
+        safe_output.write_bytes(response.content)
         return {
             "model": model,
-            "file_path": output_path,
+            "file_path": str(safe_output.relative_to(self._uploads_root().parent)).replace("\\", "/"),
         }
 
     def embed(self, texts: list[str], high_quality: bool = False) -> dict[str, Any]:
