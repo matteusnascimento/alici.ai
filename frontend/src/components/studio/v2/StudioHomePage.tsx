@@ -141,6 +141,12 @@ const bottomNav: Array<{ label: string; path: string; icon: LucideIcon; active?:
   { label: 'Marca', path: '/app/studio/brand-kit', icon: UserCircle },
 ];
 
+const projectCardStyles = [
+  { background: 'var(--studio-project-a)', color: 'var(--studio-project-on-a)' },
+  { background: 'var(--studio-project-b)', color: 'var(--studio-project-on-b)' },
+  { background: 'var(--studio-project-c)', color: 'var(--studio-project-on-c)' },
+];
+
 function normalizeStudioRoute(route: string) {
   const routeAliases: Record<string, string> = {
     '/app/studio/poster': '/app/studio/tools/ad',
@@ -176,29 +182,25 @@ function recentProjectRoute(project: StudioRecentProjectItem) {
 function StudioProjectStrip({ projects }: { projects: StudioRecentProjectItem[] }) {
   if (projects.length === 0) {
     return (
-      <div className="mb-8 rounded-[1.75rem] border border-dashed border-slate-300 bg-white/65 p-5 text-sm font-semibold text-slate-600 shadow-[0_18px_45px_rgba(44,69,104,0.08)]">
+      <div className="mb-8 rounded-[1.75rem] border border-dashed border-[var(--studio-border)] bg-[var(--studio-card-strong)] p-4 text-sm font-semibold text-[var(--studio-muted)] shadow-[var(--studio-tile-shadow)] sm:p-5">
         Projetos criados no backend aparecem aqui. Comece em Novo video, Criar anuncio ou Gerador de IA.
       </div>
     );
   }
 
   return (
-    <div className="mb-8 flex gap-4 overflow-x-auto pb-2">
+    <div className="mb-8 flex max-w-full gap-3 overflow-x-auto px-1 pb-3 sm:gap-4">
       {projects.slice(0, 6).map((project, index) => (
         <Link
           key={project.id}
           to={recentProjectRoute(project)}
-          className={cn(
-            'min-w-[148px] rounded-[1.5rem] p-4 text-left shadow-[0_20px_50px_rgba(21,38,66,0.12)] transition hover:-translate-y-1',
-            index % 3 === 0 && 'bg-[linear-gradient(135deg,#132033,#415f83)] text-white',
-            index % 3 === 1 && 'bg-[linear-gradient(135deg,#e9eef6,#c6d8f0)] text-[#101522]',
-            index % 3 === 2 && 'bg-[linear-gradient(135deg,#0e1628,rgb(var(--accent-rgb)/0.95))] text-white',
-          )}
+          style={projectCardStyles[index % projectCardStyles.length]}
+          className="min-w-[min(148px,72vw)] max-w-[176px] flex-shrink-0 rounded-[1.5rem] p-4 text-left shadow-[var(--studio-tile-shadow)] transition hover:-translate-y-1"
         >
           <div className="mb-6 inline-flex rounded-full bg-black/35 px-2 py-1 text-xs font-bold text-white">
             {String(index + 1).padStart(2, '0')}
           </div>
-          <p className="line-clamp-2 text-sm font-black">{project.title}</p>
+          <p className="line-clamp-2 break-words text-sm font-black">{project.title}</p>
           <p className="mt-2 flex items-center gap-1 text-[11px] opacity-75">
             <Clock3 size={12} /> {formatUpdatedAt(project.updated_at)}
           </p>
@@ -257,24 +259,24 @@ export function StudioHomePage() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="relative min-h-[calc(100vh-7rem)] overflow-hidden rounded-[2rem] bg-[#f7fbff] text-[#101522] shadow-soft"
+      className="relative flex min-h-[calc(100vh-7rem)] w-full max-w-full flex-col overflow-hidden rounded-[2rem] border border-[var(--studio-border)] bg-[var(--studio-bg)] text-[var(--studio-text)] shadow-soft"
     >
-      <div className="mx-auto flex min-h-[calc(100vh-7rem)] max-w-[1040px] flex-col px-6 py-7 md:px-8">
-        <div className="mb-7 flex items-start justify-between gap-4">
-          <div>
+      <div className="mx-auto flex w-full max-w-[1040px] flex-1 flex-col px-4 py-5 sm:px-6 sm:py-7 md:px-8">
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-600">AXI Studio</div>
-            <h1 className="mt-2 text-4xl font-black tracking-tight">Criar com IA</h1>
-            <p className="mt-2 max-w-xl text-sm font-medium text-slate-600">
+            <h1 className="mt-2 break-words text-3xl font-black tracking-tight sm:text-4xl">Criar com IA</h1>
+            <p className="mt-2 max-w-xl text-sm font-medium text-[var(--studio-muted)]">
               A arquitetura visual do Studio voltou, agora conectada a ferramentas, assets e projetos reais.
             </p>
           </div>
-          <Link to="/app/studio/brand-kit" className="rounded-full bg-[#101522] px-5 py-2 text-sm font-semibold text-white shadow-lg">
+          <Link to="/app/studio/brand-kit" className="inline-flex shrink-0 items-center justify-center rounded-full bg-[var(--studio-ink)] px-5 py-2 text-sm font-semibold text-[var(--studio-on-ink)] shadow-lg">
             Marca {brandTotal}
           </Link>
         </div>
 
         {loading ? (
-          <div className="mb-5 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-600">
+          <div className="mb-5 flex items-center gap-2 rounded-2xl border border-[var(--studio-border)] bg-[var(--studio-card-strong)] px-4 py-3 text-sm font-semibold text-[var(--studio-muted)]">
             <Loader2 className="h-4 w-4 animate-spin text-cyan-600" /> Carregando dados reais do Studio...
           </div>
         ) : null}
@@ -285,25 +287,23 @@ export function StudioHomePage() {
           </div>
         ) : null}
 
-        <div className="mb-7 grid gap-5 md:grid-cols-[1.2fr_0.8fr]">
+        <div className="mb-7 grid max-w-full gap-4 sm:gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
           {heroActions.map((action) => {
             const Icon = action.icon;
             return (
               <Link
                 key={action.id}
                 to={action.path}
-                className={cn(
-                  'group rounded-[28px] p-7 text-left shadow-[0_24px_70px_rgba(58,99,145,0.18)] transition hover:-translate-y-1 hover:shadow-[0_30px_90px_rgba(58,99,145,0.25)]',
-                  action.tone === 'primary'
-                    ? 'bg-gradient-to-br from-[#dceeff] to-[#b9d7f4]'
-                    : 'bg-gradient-to-br from-[#e7f4ff] to-[#c8def4]',
-                )}
+                style={{
+                  background: action.tone === 'primary' ? 'var(--studio-hero-primary)' : 'var(--studio-hero-secondary)',
+                }}
+                className="group min-w-0 rounded-[28px] border border-[var(--studio-border)] p-5 text-left shadow-[var(--studio-shadow)] transition hover:-translate-y-1 sm:p-7"
               >
-                <div className="mb-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0b1020] text-white">
+                <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--studio-ink)] text-[var(--studio-on-ink)] sm:mb-10">
                   <Icon size={28} />
                 </div>
-                <div className="text-2xl font-black">{action.title}</div>
-                <div className="mt-1 text-sm font-medium text-slate-600">{action.subtitle}</div>
+                <div className="break-words text-2xl font-black">{action.title}</div>
+                <div className="mt-1 text-sm font-medium text-[var(--studio-muted)]">{action.subtitle}</div>
               </Link>
             );
           })}
@@ -311,45 +311,45 @@ export function StudioHomePage() {
 
         <StudioProjectStrip projects={overview.recent_projects} />
 
-        <div className="grid flex-1 grid-cols-3 gap-x-5 gap-y-7 pb-28 sm:grid-cols-4 lg:grid-cols-6">
+        <div className="grid flex-1 grid-cols-[repeat(auto-fit,minmax(92px,1fr))] gap-x-3 gap-y-6 pb-6 sm:grid-cols-[repeat(auto-fit,minmax(108px,1fr))] sm:gap-x-5 lg:grid-cols-[repeat(auto-fit,minmax(112px,1fr))]">
           {quickTools.map((tool) => {
             const Icon = tool.icon;
             return (
-              <Link key={tool.name} to={tool.path} className="group flex flex-col items-center text-center transition hover:-translate-y-1">
-                <div className="mb-3 flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-white text-[#333946] shadow-[0_15px_45px_rgba(48,63,88,0.12)] ring-1 ring-slate-200/70 transition group-hover:ring-cyan-300/70">
+              <Link key={tool.name} to={tool.path} className="group flex min-w-0 flex-col items-center text-center transition hover:-translate-y-1">
+                <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[var(--studio-card)] text-[var(--studio-text)] shadow-[var(--studio-tile-shadow)] ring-1 ring-[var(--studio-border)] transition group-hover:ring-cyan-300/70 sm:h-[72px] sm:w-[72px] sm:rounded-[24px]">
                   <Icon size={26} />
                 </div>
-                <span className="max-w-[120px] text-base font-black leading-tight text-[#343842]">{tool.name}</span>
-                <span className="mt-1 max-w-[124px] text-[11px] font-semibold leading-tight text-slate-500">{tool.description}</span>
+                <span className="max-w-full break-words text-sm font-black leading-tight text-[var(--studio-text)] sm:text-base">{tool.name}</span>
+                <span className="mt-1 max-w-[124px] break-words text-[11px] font-semibold leading-tight text-[var(--studio-soft)]">{tool.description}</span>
               </Link>
             );
           })}
         </div>
 
         {overview.suggested_actions.length > 0 ? (
-          <div className="mb-5 grid gap-3 md:grid-cols-3">
+          <div className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
             {overview.suggested_actions.slice(0, 3).map((action) => (
               <Link
                 key={action.id}
                 to={normalizeStudioRoute(action.route)}
-                className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-left shadow-[0_16px_38px_rgba(48,63,88,0.08)] transition hover:-translate-y-0.5 hover:border-cyan-300"
+                className="min-w-0 rounded-2xl border border-[var(--studio-border)] bg-[var(--studio-card-strong)] p-4 text-left shadow-[var(--studio-tile-shadow)] transition hover:-translate-y-0.5 hover:border-cyan-300"
               >
-                <p className="text-sm font-black text-[#101522]">{action.label}</p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{action.description}</p>
+                <p className="break-words text-sm font-black text-[var(--studio-text)]">{action.label}</p>
+                <p className="mt-1 break-words text-xs font-semibold leading-5 text-[var(--studio-soft)]">{action.description}</p>
               </Link>
             ))}
           </div>
         ) : null}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto grid max-w-[1040px] grid-cols-5 px-6 py-3 text-center text-sm font-bold text-slate-400">
+      <div className="border-t border-[var(--studio-border)] bg-[var(--studio-surface)] backdrop-blur-xl">
+        <div className="mx-auto grid max-w-[1040px] grid-cols-5 gap-1 px-2 py-2 text-center text-[11px] font-bold text-[var(--studio-soft)] sm:px-6 sm:py-3 sm:text-sm">
           {bottomNav.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.label} to={item.path} className={cn('flex flex-col items-center gap-1 transition hover:text-black', item.active ? 'text-black' : 'text-slate-400')}>
-                <Icon size={28} />
-                <span>{item.label}</span>
+              <Link key={item.label} to={item.path} className={cn('flex min-w-0 flex-col items-center gap-1 px-1 transition hover:text-[var(--studio-text)]', item.active ? 'text-[var(--studio-text)]' : 'text-[var(--studio-soft)]')}>
+                <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                <span className="max-w-full truncate">{item.label}</span>
               </Link>
             );
           })}

@@ -21,6 +21,26 @@
     --text-subtle: #64748b;
     --axi-ink-rgb: 8 17 31;
     --axi-storm-rgb: 17 36 59;
+    --studio-bg: #0b1220;
+    --studio-surface: rgba(15, 23, 42, 0.88);
+    --studio-card: rgba(255, 255, 255, 0.08);
+    --studio-card-strong: rgba(255, 255, 255, 0.12);
+    --studio-border: rgba(255, 255, 255, 0.14);
+    --studio-text: #f8fafc;
+    --studio-muted: #cbd5e1;
+    --studio-soft: #94a3b8;
+    --studio-ink: #f8fafc;
+    --studio-on-ink: #08111f;
+    --studio-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+    --studio-tile-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
+    --studio-hero-primary: linear-gradient(135deg, rgba(var(--accent-rgb), 0.34), rgba(148, 163, 184, 0.12));
+    --studio-hero-secondary: linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(var(--accent-rgb), 0.2));
+    --studio-project-a: linear-gradient(135deg, #132033, #415f83);
+    --studio-project-b: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(var(--accent-rgb), 0.24));
+    --studio-project-c: linear-gradient(135deg, #0e1628, rgb(var(--accent-rgb) / 0.88));
+    --studio-project-on-a: #ffffff;
+    --studio-project-on-b: #f8fafc;
+    --studio-project-on-c: #ffffff;
 }
 
 html[data-theme='light'] {
@@ -40,6 +60,26 @@ html[data-theme='light'] {
     --text-subtle: #64748b;
     --axi-ink-rgb: 244 248 255;
     --axi-storm-rgb: 232 240 255;
+    --studio-bg: #f7fbff;
+    --studio-surface: rgba(255, 255, 255, 0.95);
+    --studio-card: #ffffff;
+    --studio-card-strong: rgba(255, 255, 255, 0.86);
+    --studio-border: rgba(30, 41, 59, 0.13);
+    --studio-text: #101522;
+    --studio-muted: #475569;
+    --studio-soft: #64748b;
+    --studio-ink: #101522;
+    --studio-on-ink: #ffffff;
+    --studio-shadow: 0 24px 70px rgba(58, 99, 145, 0.18);
+    --studio-tile-shadow: 0 15px 45px rgba(48, 63, 88, 0.12);
+    --studio-hero-primary: linear-gradient(135deg, color-mix(in srgb, var(--accent-color) 18%, #dceeff 82%), #b9d7f4);
+    --studio-hero-secondary: linear-gradient(135deg, #e7f4ff, color-mix(in srgb, var(--accent-color) 16%, #c8def4 84%));
+    --studio-project-a: linear-gradient(135deg, #132033, #415f83);
+    --studio-project-b: linear-gradient(135deg, #e9eef6, #c6d8f0);
+    --studio-project-c: linear-gradient(135deg, #0e1628, rgb(var(--accent-rgb) / 0.95));
+    --studio-project-on-a: #ffffff;
+    --studio-project-on-b: #101522;
+    --studio-project-on-c: #ffffff;
 }
 
 body {
