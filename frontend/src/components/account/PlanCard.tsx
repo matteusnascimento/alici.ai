@@ -4,6 +4,8 @@ interface PlanCardProps {
   current: CurrentSubscription | null;
   plans: BillingPlan[];
   billingCycle: 'monthly' | 'yearly';
+  loading?: boolean;
+  error?: string | null;
   onBillingCycleChange: (cycle: 'monthly' | 'yearly') => void;
   onUpgrade: (planId: string, billingCycle: 'monthly' | 'yearly') => void;
   onOpenPortal?: () => void;
@@ -78,14 +80,18 @@ export function PlanCard({
   current,
   plans,
   billingCycle,
+  loading = false,
+  error = null,
   onBillingCycleChange,
   onUpgrade,
   onOpenPortal,
 }: PlanCardProps) {
   const activePlanId = current?.plan_id;
+  const hasPlans = plans.length > 0;
+  const canOpenPortal = Boolean(onOpenPortal && current?.stripe_customer_id && activePlanId !== 'free');
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-5 md:p-6">
+    <section id="billing-plans" className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-5 md:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -125,7 +131,7 @@ export function PlanCard({
             </button>
           </div>
 
-          {onOpenPortal ? (
+          {canOpenPortal ? (
             <button
               type="button"
               onClick={onOpenPortal}
@@ -138,8 +144,28 @@ export function PlanCard({
       </div>
 
       {/* Plan cards */}
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {plans.map((plan) => {
+      {loading ? (
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="min-h-[320px] animate-pulse rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="h-3 w-24 rounded-full bg-white/10" />
+              <div className="mt-6 h-8 w-28 rounded-full bg-white/10" />
+              <div className="mt-8 space-y-3">
+                <div className="h-3 rounded-full bg-white/10" />
+                <div className="h-3 w-10/12 rounded-full bg-white/10" />
+                <div className="h-3 w-8/12 rounded-full bg-white/10" />
+              </div>
+              <div className="mt-10 h-11 rounded-2xl bg-white/10" />
+            </div>
+          ))}
+        </div>
+      ) : !hasPlans ? (
+        <div className="mt-6 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+          {error ?? 'Nao foi possivel carregar os planos reais do billing agora.'}
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {plans.map((plan) => {
           const visual = getVisual(plan.id);
           const isActive = activePlanId === plan.id;
           const recommended = isRecommended(plan, plans);
@@ -226,9 +252,10 @@ export function PlanCard({
                 {planCTA(plan.id, isActive)}
               </button>
             </article>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Cancel warning */}
       {current?.cancel_at_period_end ? (

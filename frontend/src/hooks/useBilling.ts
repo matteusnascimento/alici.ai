@@ -13,6 +13,11 @@ import {
 } from '../services/billing.service';
 import type { BillingHistory, BillingPlan, BillingUsage, CurrentSubscription } from '../types/billing';
 
+function settledErrorMessage(result: PromiseSettledResult<unknown>, fallback: string) {
+  if (result.status === 'fulfilled') return null;
+  return result.reason instanceof Error ? result.reason.message : fallback;
+}
+
 export function useBilling() {
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [current, setCurrent] = useState<CurrentSubscription | null>(null);
@@ -26,24 +31,55 @@ export function useBilling() {
     setLoading(true);
     try {
       const [plansResult, currentResult, usageResult, historyResult] = await Promise.all([
-        getBillingPlans(),
-        getCurrentSubscription(),
-        getBillingUsage(),
-        getBillingHistory(),
+        getBillingPlans().then(
+          (value) => ({ status: 'fulfilled' as const, value }),
+          (reason) => ({ status: 'rejected' as const, reason }),
+        ),
+        getCurrentSubscription().then(
+          (value) => ({ status: 'fulfilled' as const, value }),
+          (reason) => ({ status: 'rejected' as const, reason }),
+        ),
+        getBillingUsage().then(
+          (value) => ({ status: 'fulfilled' as const, value }),
+          (reason) => ({ status: 'rejected' as const, reason }),
+        ),
+        getBillingHistory().then(
+          (value) => ({ status: 'fulfilled' as const, value }),
+          (reason) => ({ status: 'rejected' as const, reason }),
+        ),
       ]);
-      setPlans(Array.isArray(plansResult) ? plansResult : []);
-      setCurrent(currentResult ?? null);
+
+      let nextError: string | null = null;
+
+      if (plansResult.status === 'fulfilled' && Array.isArray(plansResult.value)) {
+        setPlans(plansResult.value);
+      } else {
+        setPlans([]);
+        nextError =
+          plansResult.status === 'fulfilled'
+            ? 'A API de billing nao retornou uma lista de planos valida.'
+            : settledErrorMessage(plansResult, 'Falha ao carregar planos de billing');
+      }
+
+      if (currentResult.status === 'fulfilled') {
+        setCurrent(currentResult.value ?? null);
+      } else {
+        setCurrent(null);
+        nextError = nextError ?? settledErrorMessage(currentResult, 'Falha ao carregar assinatura atual');
+      }
+
       setUsage(
-        usageResult
-          ? { ...usageResult, items: Array.isArray(usageResult.items) ? usageResult.items : [] }
+        usageResult.status === 'fulfilled' && usageResult.value
+          ? { ...usageResult.value, items: Array.isArray(usageResult.value.items) ? usageResult.value.items : [] }
           : null,
       );
       setHistory(
-        historyResult
-          ? { ...historyResult, events: Array.isArray(historyResult.events) ? historyResult.events : [] }
+        historyResult.status === 'fulfilled' && historyResult.value
+          ? { ...historyResult.value, events: Array.isArray(historyResult.value.events) ? historyResult.value.events : [] }
           : null,
       );
-      setError(null);
+
+      setError(nextError);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar billing');
       setPlans([]);

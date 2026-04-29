@@ -12,47 +12,60 @@ import type {
   UpgradeResponse,
 } from '../types/billing';
 
+type ApiEnvelope<T> = {
+  status?: string;
+  data?: T;
+  error?: unknown;
+};
+
+function unwrapApiData<T>(value: T | ApiEnvelope<T>): T {
+  if (value && typeof value === 'object' && 'data' in value && ('status' in value || 'error' in value)) {
+    return (value as ApiEnvelope<T>).data as T;
+  }
+  return value as T;
+}
+
 export function getBillingPlans() {
-  return apiFetch<BillingPlan[]>('/billing/plans');
+  return apiFetch<BillingPlan[] | ApiEnvelope<BillingPlan[]>>('/billing/plans').then(unwrapApiData);
 }
 
 export function getCurrentSubscription() {
-  return apiFetch<CurrentSubscription>('/billing/current');
+  return apiFetch<CurrentSubscription | ApiEnvelope<CurrentSubscription>>('/billing/current').then(unwrapApiData);
 }
 
 /** @deprecated Fluxo administrativo/legado. Use createCheckoutSession() para fluxo real. */
 export function upgradeSubscription(payload: UpgradePayload) {
-  return apiFetch<UpgradeResponse>('/billing/upgrade', {
+  return apiFetch<UpgradeResponse | ApiEnvelope<UpgradeResponse>>('/billing/upgrade', {
     method: 'POST',
     body: JSON.stringify(payload),
-  });
+  }).then(unwrapApiData);
 }
 
 export function getBillingUsage() {
-  return apiFetch<BillingUsage>('/billing/usage');
+  return apiFetch<BillingUsage | ApiEnvelope<BillingUsage>>('/billing/usage').then(unwrapApiData);
 }
 
 // ── Stripe real ──────────────────────────────────────────────────────
 
 export function createCheckoutSession(payload: CheckoutPayload) {
-  return apiFetch<CheckoutResponse>('/billing/checkout', {
+  return apiFetch<CheckoutResponse | ApiEnvelope<CheckoutResponse>>('/billing/checkout', {
     method: 'POST',
     body: JSON.stringify(payload),
-  });
+  }).then(unwrapApiData);
 }
 
 export function createPortalSession() {
-  return apiFetch<PortalResponse>('/billing/portal', { method: 'POST' });
+  return apiFetch<PortalResponse | ApiEnvelope<PortalResponse>>('/billing/portal', { method: 'POST' }).then(unwrapApiData);
 }
 
 export function cancelSubscription() {
-  return apiFetch<SubscriptionActionResponse>('/billing/cancel', { method: 'POST' });
+  return apiFetch<SubscriptionActionResponse | ApiEnvelope<SubscriptionActionResponse>>('/billing/cancel', { method: 'POST' }).then(unwrapApiData);
 }
 
 export function resumeSubscription() {
-  return apiFetch<SubscriptionActionResponse>('/billing/resume', { method: 'POST' });
+  return apiFetch<SubscriptionActionResponse | ApiEnvelope<SubscriptionActionResponse>>('/billing/resume', { method: 'POST' }).then(unwrapApiData);
 }
 
 export function getBillingHistory() {
-  return apiFetch<BillingHistory>('/billing/history');
+  return apiFetch<BillingHistory | ApiEnvelope<BillingHistory>>('/billing/history').then(unwrapApiData);
 }

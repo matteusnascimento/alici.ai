@@ -73,7 +73,7 @@ function StatusBadge({ status, label }: StatusBadgeProps) {
 export function AccountHomePage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { plans, current, usage, history, startCheckout, openPortal, cancel, resume, error: billingError } = useBilling();
+  const { plans, current, usage, history, loading: billingLoading, startCheckout, openPortal, cancel, resume, error: billingError } = useBilling();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -99,6 +99,10 @@ export function AccountHomePage() {
   const profileCompletion = profile
     ? Math.round((profileCompletionChecks.filter(Boolean).length / profileCompletionChecks.length) * 100)
     : 0;
+
+  function scrollToPlans() {
+    document.getElementById('billing-plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
     <div className="space-y-5">
@@ -131,10 +135,7 @@ export function AccountHomePage() {
               {isOnFreePlan ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    const firstPaid = plans.find((p) => p.monthly_price > 0);
-                    if (firstPaid) void startCheckout(firstPaid.id, 'monthly');
-                  }}
+                  onClick={scrollToPlans}
                   className="inline-flex items-center gap-2 rounded-2xl bg-cyan px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-cyan/90 hover:shadow-lg hover:shadow-cyan/20"
                 >
                   <Zap size={14} /> Fazer upgrade
@@ -197,10 +198,7 @@ export function AccountHomePage() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                const firstPaid = plans.find((p) => p.monthly_price > 0);
-                if (firstPaid) void startCheckout(firstPaid.id, 'monthly');
-              }}
+              onClick={scrollToPlans}
               className="shrink-0 rounded-xl bg-cyan px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-cyan/90"
             >
               Ver planos →
@@ -214,6 +212,8 @@ export function AccountHomePage() {
         current={current}
         plans={plans}
         billingCycle={billingCycle}
+        loading={billingLoading}
+        error={billingError}
         onBillingCycleChange={setBillingCycle}
         onUpgrade={(planId, cycle) => void startCheckout(planId, cycle)}
         onOpenPortal={() => void openPortal()}

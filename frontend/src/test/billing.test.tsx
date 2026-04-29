@@ -79,10 +79,17 @@ describe('PlanCard billing real', () => {
   it('aciona abrir portal quando botão estiver disponível', async () => {
     const user = userEvent.setup();
     const onOpenPortal = vi.fn();
+    const paidCurrent: CurrentSubscription = {
+      ...current,
+      plan_id: 'pro',
+      plan_name: 'Pro',
+      monthly_price: 197,
+      yearly_price: 1970,
+    };
 
     render(
       <PlanCard
-        current={current}
+        current={paidCurrent}
         plans={plans}
         billingCycle="monthly"
         onBillingCycleChange={vi.fn()}
@@ -93,5 +100,35 @@ describe('PlanCard billing real', () => {
 
     await user.click(screen.getByRole('button', { name: /Gerenciar assinatura/i }));
     expect(onOpenPortal).toHaveBeenCalledTimes(1);
+  });
+
+  it('nao mostra portal Stripe para conta free sem assinatura ativa', () => {
+    render(
+      <PlanCard
+        current={current}
+        plans={plans}
+        billingCycle="monthly"
+        onBillingCycleChange={vi.fn()}
+        onUpgrade={vi.fn()}
+        onOpenPortal={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /Gerenciar assinatura/i })).not.toBeInTheDocument();
+  });
+
+  it('mostra erro quando a API nao retorna planos reais', () => {
+    render(
+      <PlanCard
+        current={current}
+        plans={[]}
+        billingCycle="monthly"
+        error="Falha ao carregar planos de billing"
+        onBillingCycleChange={vi.fn()}
+        onUpgrade={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Falha ao carregar planos de billing/i)).toBeInTheDocument();
   });
 });
