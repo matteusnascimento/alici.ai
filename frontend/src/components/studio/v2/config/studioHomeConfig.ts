@@ -128,6 +128,13 @@ export const STUDIO_HOME_CATEGORIES: StudioHomeCategory[] = [
         icon: MessageSquareQuote,
         path: '/app/studio/tools/cta',
       },
+      {
+        id: 'generate-caption',
+        title: 'Gerar legenda',
+        description: 'Crie legendas, CTA e hashtags a partir da campanha.',
+        icon: Captions,
+        path: '/app/studio/tools/caption',
+      },
     ],
   },
 ];
@@ -138,5 +145,7 @@ export function resolveStudioProjectRoute(projectType: string, projectId: number
   if (normalized.includes('photo')) return `/app/studio/tools/photo-editor`;
   if (normalized.includes('story')) return '/app/studio/tools/story';
   if (normalized.includes('cta')) return '/app/studio/tools/cta';
+  if (normalized.includes('caption')) return '/app/studio/tools/caption';
+  if (normalized.includes('poster') || normalized.includes('ad') || normalized.includes('banner')) return '/app/studio/tools/ad';
   return '/app/studio/projects';
 }

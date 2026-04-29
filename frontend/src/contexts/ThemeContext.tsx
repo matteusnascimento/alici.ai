@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { getAccountPreferences, updateAccountPreferences } from '../services/settingsAccount.service';
-import { getColorValue } from '../utils/colorMap';
+import { getColorRgbTriplet, getColorValue } from '../utils/colorMap';
 import type { AccountPreferences } from '../types/account';
 
 interface ThemeContextType {
@@ -54,6 +54,7 @@ function applyDocumentTheme(prefs: Partial<AccountPreferences>) {
   if (prefs.accent_color) {
     const colorValue = getColorValue(prefs.accent_color);
     document.documentElement.style.setProperty('--accent-color', colorValue);
+    document.documentElement.style.setProperty('--accent-rgb', getColorRgbTriplet(prefs.accent_color));
     document.documentElement.setAttribute('data-accent', prefs.accent_color);
   }
 

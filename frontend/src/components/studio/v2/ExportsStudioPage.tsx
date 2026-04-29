@@ -16,7 +16,7 @@ const routeBySource: Record<string, string> = {
   'photo-edit': '/app/studio/tools/photo-editor',
   'photo-editor': '/app/studio/tools/photo-editor',
   'background-remove': '/app/studio/tools/remove-background',
-  campaign: '/app/studio/tools/campaign',
+  campaign: '/app/studio/tools/cta',
   cta: '/app/studio/tools/cta',
 };
 

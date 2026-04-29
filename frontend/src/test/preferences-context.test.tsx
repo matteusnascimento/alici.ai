@@ -86,6 +86,7 @@ describe('ThemeContext preferences flow', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme-mode')).toBe('dark');
     expect(document.documentElement.getAttribute('data-accent')).toBe('cyan');
+    expect(document.documentElement.style.getPropertyValue('--accent-rgb')).toBe('110 231 249');
     expect(document.documentElement.lang).toBe('pt-BR');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
 
@@ -99,6 +100,7 @@ describe('ThemeContext preferences flow', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.documentElement.getAttribute('data-theme-mode')).toBe('light');
     expect(document.documentElement.getAttribute('data-accent')).toBe('green');
+    expect(document.documentElement.style.getPropertyValue('--accent-rgb')).toBe('16 185 129');
     expect(document.documentElement.lang).toBe('en-US');
     expect(document.documentElement.classList.contains('light')).toBe(true);
     expect(localStorage.getItem('axi_preferences_cache')).toContain('en-US');

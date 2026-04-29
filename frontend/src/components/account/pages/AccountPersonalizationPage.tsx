@@ -7,7 +7,7 @@ import { PreferencesForm } from '../PreferencesForm';
 
 export function AccountPersonalizationPage() {
   const toast = useToast();
-  const { preferences, isLoading, savePreferences } = useTheme();
+  const { preferences, isLoading, savePreferences, applyTheme } = useTheme();
   const [prefs, setPrefs] = useState<AccountPreferences | null>(preferences);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -21,10 +21,17 @@ export function AccountPersonalizationPage() {
     return <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-slate-300">Carregando preferências...</div>;
   }
 
+  const handleChange = (next: AccountPreferences) => {
+    setPrefs(next);
+    applyTheme(next);
+    setSaveStatus('idle');
+    setSaveMessage('');
+  };
+
   return (
     <PreferencesForm
       value={prefs}
-      onChange={setPrefs}
+      onChange={handleChange}
       onSave={async () => {
         setSaving(true);
         setSaveStatus('idle');

@@ -128,7 +128,9 @@ export function AppRouter() {
               <Route path="tools/remove-background" element={<RemoveBackgroundStudioPage />} />
               <Route path="tools/ad" element={<PosterStudioPage />} />
               <Route path="tools/story" element={<StoryStudioPage />} />
+              <Route path="tools/caption" element={<CaptionsStudioPage />} />
               <Route path="tools/cta" element={<CaptionsStudioPage mode="cta" />} />
+              <Route path="tools/copy" element={<CaptionsStudioPage mode="promo" />} />
 
               <Route path="video-editor/*" element={<Navigate replace to="/app/studio/editor/video" />} />
               <Route path="photo-editor/*" element={<Navigate replace to="/app/studio/tools/photo-editor" />} />
@@ -137,6 +139,8 @@ export function AppRouter() {
               <Route path="story" element={<Navigate replace to="/app/studio/tools/story" />} />
               <Route path="story/new" element={<Navigate replace to="/app/studio/tools/story" />} />
               <Route path="ad-builder" element={<Navigate replace to="/app/studio/tools/ad" />} />
+              <Route path="caption-generator/*" element={<Navigate replace to="/app/studio/tools/caption" />} />
+              <Route path="copy-generator/*" element={<Navigate replace to="/app/studio/tools/copy" />} />
 
               <Route path="remove-background" element={<RemoveBackgroundStudioPage />} />
               <Route path="projects" element={<ProjectsStudioPage />} />

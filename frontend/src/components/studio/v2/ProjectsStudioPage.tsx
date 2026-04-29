@@ -21,7 +21,7 @@ export function ProjectsStudioPage() {
             <p className="mt-2 text-xs text-slate-500">Atualizado em {new Date(project.updated_at).toLocaleString('pt-BR')}</p>
             <div className="mt-3 flex gap-2">
               <Link to="/app/studio/tools/ad" onClick={() => toast.info(`Abrindo projeto ${project.title}.`)} className="rounded-lg border border-cyan-300/40 px-3 py-1 text-xs text-cyan-100">Abrir</Link>
-              <Link to="/app/studio/tools/campaign" onClick={() => toast.info('Abrindo campanha relacionada.')} className="rounded-lg border border-white/20 px-3 py-1 text-xs text-slate-100">Campanha</Link>
+              <Link to="/app/studio/tools/cta" onClick={() => toast.info('Abrindo copy de campanha relacionada.')} className="rounded-lg border border-white/20 px-3 py-1 text-xs text-slate-100">Campanha</Link>
             </div>
           </article>
         ))}

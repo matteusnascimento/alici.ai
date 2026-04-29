@@ -76,13 +76,13 @@ class StudioService:
                     "id": "poster-launch",
                     "label": "Criar poster de lancamento",
                     "description": "Abra o wizard de poster e gere 3 variacoes.",
-                    "route": "/app/studio/poster",
+                    "route": "/app/studio/tools/ad",
                 },
                 {
                     "id": "caption-campaign",
                     "label": "Gerar legenda com CTA",
                     "description": "Crie legenda, CTA e hashtags para campanha ativa.",
-                    "route": "/app/studio/caption-generator",
+                    "route": "/app/studio/tools/caption",
                 },
                 {
                     "id": "brand-library",

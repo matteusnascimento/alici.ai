@@ -10,6 +10,9 @@ def test_studio_overview_empty_state(client, auth_headers):
     assert body['recent_exports'] == []
     assert body['brand_summary']['assets_count'] == 0
     assert len(body['suggested_actions']) >= 1
+    routes = {item['route'] for item in body['suggested_actions']}
+    assert '/app/studio/tools/ad' in routes
+    assert '/app/studio/tools/caption' in routes
 
 
 def test_studio_recent_projects_and_exports(client, auth_headers):

@@ -5,6 +5,7 @@
 :root {
     color-scheme: dark;
     --accent-color: #6ee7f9;
+    --accent-rgb: 110 231 249;
     --theme-mode: dark;
     --bg-primary: #08111f;
     --bg-secondary: #0f172a;
