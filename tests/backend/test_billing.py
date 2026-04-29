@@ -26,6 +26,36 @@ def _enable_fake_stripe_config():
     settings.stripe_cancel_url = "http://localhost:5173/app/billing/cancel"
 
 
+def test_billing_plans_include_stripe_connection_status(client, auth_headers):
+    settings = get_settings()
+    keys = [
+        "stripe_price_pro_monthly",
+        "stripe_price_pro_yearly",
+        "stripe_price_business_monthly",
+        "stripe_price_business_yearly",
+    ]
+    previous = {key: getattr(settings, key) for key in keys}
+    try:
+        settings.stripe_price_pro_monthly = "price_pro_m"
+        settings.stripe_price_pro_yearly = "price_pro_y"
+        settings.stripe_price_business_monthly = ""
+        settings.stripe_price_business_yearly = "price_b_y"
+
+        plans_response = client.get('/api/billing/plans', headers=auth_headers)
+        assert plans_response.status_code == 200
+        plans = {item['id']: item for item in plans_response.json()}
+
+        assert plans['free']['checkout_available'] is False
+        assert plans['free']['stripe_prices'] == {'monthly': False, 'yearly': False}
+        assert plans['pro']['checkout_available'] is True
+        assert plans['pro']['stripe_prices'] == {'monthly': True, 'yearly': True}
+        assert plans['business']['checkout_available'] is True
+        assert plans['business']['stripe_prices'] == {'monthly': False, 'yearly': True}
+    finally:
+        for key, value in previous.items():
+            setattr(settings, key, value)
+
+
 def _agent_payload(name: str) -> dict:
     return {
         "nome": name,
@@ -185,6 +215,7 @@ def test_billing_webhook_valid_and_invalid_signature(client, auth_headers, monke
         user = db.query(User).filter(User.email == 'ana@example.com').first()
         subscription = db.query(Subscription).filter(Subscription.user_id == user.id).first()
         assert subscription.plan_id == 'pro'
+        assert subscription.billing_cycle == 'monthly'
         assert subscription.stripe_customer_id == 'cus_test_123'
     finally:
         db.close()

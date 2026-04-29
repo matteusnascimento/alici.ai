@@ -23,6 +23,7 @@ from app.schemas.billing import (
     CurrentSubscriptionResponse,
     PlanLimit,
     PlanRead,
+    PlanStripePrices,
     PortalResponse,
     SubscriptionActionResponse,
     UpgradeRequest,
@@ -74,6 +75,10 @@ class BillingService:
     def list_plans(self) -> list[PlanRead]:
         plans: list[PlanRead] = []
         for plan_id, config in self.PLAN_CATALOG.items():
+            stripe_prices = PlanStripePrices(
+                monthly=bool(self._resolve_price_id(plan_id, "monthly")),
+                yearly=bool(self._resolve_price_id(plan_id, "yearly")),
+            )
             plans.append(
                 PlanRead(
                     id=plan_id,
@@ -83,6 +88,8 @@ class BillingService:
                     features=config["features"],
                     limits=[PlanLimit(key=key, value=value) for key, value in config["limits"].items()],
                     active=True,
+                    checkout_available=plan_id != "free" and (stripe_prices.monthly or stripe_prices.yearly),
+                    stripe_prices=stripe_prices,
                 )
             )
         return plans
@@ -217,7 +224,7 @@ class BillingService:
                 success_url=success_url,
                 cancel_url=cancel_url,
                 metadata={"user_id": str(user.id), "plan_id": payload.plan_id, "billing_cycle": payload.billing_cycle},
-                subscription_data={"metadata": {"user_id": str(user.id), "plan_id": payload.plan_id}},
+                subscription_data={"metadata": {"user_id": str(user.id), "plan_id": payload.plan_id, "billing_cycle": payload.billing_cycle}},
             )
         except stripe.StripeError as exc:
             logger.error("Erro ao criar checkout session Stripe: %s", exc)
@@ -466,6 +473,7 @@ class BillingService:
         subscription.external_status = stripe_sub.get("status")
         subscription.cancel_at_period_end = stripe_sub.get("cancel_at_period_end", False)
         subscription.plan_id = plan_id
+        subscription.billing_cycle = self._billing_cycle_from_stripe_sub(stripe_sub)
         subscription.status = "active" if stripe_sub.get("status") in ("active", "trialing") else stripe_sub.get("status", "active")
         subscription.provider = "stripe"
 
@@ -498,6 +506,34 @@ class BillingService:
                     return plan_id
 
         return "free"
+
+    def _billing_cycle_from_stripe_sub(self, stripe_sub: dict) -> str:
+        """Resolve ciclo local sem expor IDs de preco ao frontend."""
+        metadata = stripe_sub.get("metadata") or {}
+        if metadata.get("billing_cycle") in {"monthly", "yearly"}:
+            return metadata["billing_cycle"]
+
+        items = stripe_sub.get("items", {}).get("data", [])
+        if not items:
+            return "monthly"
+
+        price = items[0].get("price", {})
+        recurring = price.get("recurring") or {}
+        interval = recurring.get("interval")
+        if interval == "year":
+            return "yearly"
+        if interval == "month":
+            return "monthly"
+
+        price_id = price.get("id")
+        if price_id:
+            for config in self.PLAN_CATALOG.values():
+                if getattr(self._settings, config.get("stripe_price_yearly_env") or "", None) == price_id:
+                    return "yearly"
+                if getattr(self._settings, config.get("stripe_price_monthly_env") or "", None) == price_id:
+                    return "monthly"
+
+        return "monthly"
 
     def _record_event(
         self,

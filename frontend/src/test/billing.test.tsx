@@ -14,6 +14,8 @@ const plans: BillingPlan[] = [
     features: ['A', 'B', 'C'],
     limits: [{ key: 'messages', value: 500 }],
     active: true,
+    checkout_available: false,
+    stripe_prices: { monthly: false, yearly: false },
   },
   {
     id: 'pro',
@@ -23,6 +25,8 @@ const plans: BillingPlan[] = [
     features: ['A', 'B', 'C'],
     limits: [{ key: 'messages', value: 5000 }],
     active: true,
+    checkout_available: true,
+    stripe_prices: { monthly: true, yearly: true },
   },
 ];
 
@@ -130,5 +134,25 @@ describe('PlanCard billing real', () => {
     );
 
     expect(screen.getByText(/Falha ao carregar planos de billing/i)).toBeInTheDocument();
+  });
+
+  it('bloqueia checkout quando o ciclo nao tem Price ID conectado', () => {
+    const disconnectedPlans = plans.map((plan) =>
+      plan.id === 'pro'
+        ? { ...plan, stripe_prices: { monthly: false, yearly: true } }
+        : plan,
+    );
+
+    render(
+      <PlanCard
+        current={current}
+        plans={disconnectedPlans}
+        billingCycle="monthly"
+        onBillingCycleChange={vi.fn()}
+        onUpgrade={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Price ID pendente/i })).toBeDisabled();
   });
 });

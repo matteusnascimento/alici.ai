@@ -78,6 +78,7 @@ export function AccountHomePage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   const isOnFreePlan = !current || current.plan_id === 'free';
+  const hasStripeBilling = Boolean(current?.stripe_customer_id && current.plan_id !== 'free');
   const usageRate = usage && Array.isArray(usage.items) && usage.items.length > 0 
     ? Math.max(...usage.items.map(item => item.limit > 0 ? Math.round((item.used / item.limit) * 100) : 0))
     : 0;
@@ -140,7 +141,7 @@ export function AccountHomePage() {
                 >
                   <Zap size={14} /> Fazer upgrade
                 </button>
-              ) : (
+              ) : hasStripeBilling ? (
                 <>
                   <button
                     type="button"
@@ -167,6 +168,14 @@ export function AccountHomePage() {
                     </button>
                   )}
                 </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={scrollToPlans}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-cyan px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-cyan/90 hover:shadow-lg hover:shadow-cyan/20"
+                >
+                  <Zap size={14} /> Conectar billing
+                </button>
               )}
             </div>
           </div>

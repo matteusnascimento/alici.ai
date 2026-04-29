@@ -1,11 +1,17 @@
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PlanLimit(BaseModel):
     key: str
     value: int
+
+
+class PlanStripePrices(BaseModel):
+    monthly: bool = False
+    yearly: bool = False
 
 
 class PlanRead(BaseModel):
@@ -16,6 +22,8 @@ class PlanRead(BaseModel):
     features: list[str]
     limits: list[PlanLimit]
     active: bool = True
+    checkout_available: bool = False
+    stripe_prices: PlanStripePrices = Field(default_factory=PlanStripePrices)
 
 
 class CurrentSubscriptionResponse(BaseModel):
@@ -36,7 +44,7 @@ class CurrentSubscriptionResponse(BaseModel):
 class UpgradeRequest(BaseModel):
     """Mantido para compatibilidade interna/administrativa. Fluxo principal usa /billing/checkout."""
     plan_id: str
-    billing_cycle: str = "monthly"
+    billing_cycle: Literal["monthly", "yearly"] = "monthly"
 
 
 class UpgradeResponse(BaseModel):
@@ -47,7 +55,7 @@ class UpgradeResponse(BaseModel):
 # ── Checkout Stripe ─────────────────────────────────────────
 class CheckoutRequest(BaseModel):
     plan_id: str
-    billing_cycle: str = "monthly"
+    billing_cycle: Literal["monthly", "yearly"] = "monthly"
 
 
 class CheckoutResponse(BaseModel):

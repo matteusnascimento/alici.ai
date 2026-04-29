@@ -76,6 +76,12 @@ function yearlySavings(plan: BillingPlan): number | null {
   return savings > 0 ? savings : null;
 }
 
+function hasStripePriceForCycle(plan: BillingPlan, billingCycle: 'monthly' | 'yearly'): boolean {
+  if (plan.monthly_price === 0) return true;
+  if (!plan.stripe_prices) return plan.checkout_available ?? true;
+  return Boolean(plan.checkout_available && plan.stripe_prices[billingCycle]);
+}
+
 export function PlanCard({
   current,
   plans,
@@ -166,14 +172,24 @@ export function PlanCard({
       ) : (
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {plans.map((plan) => {
-          const visual = getVisual(plan.id);
-          const isActive = activePlanId === plan.id;
-          const recommended = isRecommended(plan, plans);
-          const price = billingCycle === 'yearly' ? (plan.yearly_price ?? plan.monthly_price) : plan.monthly_price;
-          const savings = billingCycle === 'yearly' ? yearlySavings(plan) : null;
-          const isFree = plan.monthly_price === 0;
+            const visual = getVisual(plan.id);
+            const isActive = activePlanId === plan.id;
+            const recommended = isRecommended(plan, plans);
+            const price = billingCycle === 'yearly' ? (plan.yearly_price ?? plan.monthly_price) : plan.monthly_price;
+            const savings = billingCycle === 'yearly' ? yearlySavings(plan) : null;
+            const isFree = plan.monthly_price === 0;
+            const isCurrentPaid = Boolean(activePlanId && activePlanId !== 'free');
+            const cycleConnected = isFree ? Boolean(isCurrentPaid && canOpenPortal) : hasStripePriceForCycle(plan, billingCycle);
+            const actionDisabled = isActive || !cycleConnected;
+            const buttonLabel = isActive
+              ? 'Plano ativo'
+              : isFree
+                ? (isCurrentPaid ? 'Gerenciar no Stripe' : 'Plano gratuito')
+                : cycleConnected
+                  ? planCTA(plan.id, false)
+                  : 'Price ID pendente';
 
-          return (
+            return (
             <article
               key={plan.id}
               className={`relative flex flex-col rounded-3xl border p-5 transition ${
@@ -198,6 +214,15 @@ export function PlanCard({
                   {isActive ? (
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${visual.badge} ${visual.badgeText}`}>
                       Plano ativo
+                    </span>
+                  ) : null}
+                  {!isFree ? (
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${
+                      cycleConnected
+                        ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
+                        : 'border-amber-400/35 bg-amber-500/10 text-amber-300'
+                    }`}>
+                      {cycleConnected ? 'Stripe conectado' : 'Price pendente'}
                     </span>
                   ) : null}
                 </div>
@@ -239,17 +264,23 @@ export function PlanCard({
               {/* CTA */}
               <button
                 type="button"
-                disabled={isActive}
-                onClick={() => onUpgrade(plan.id, billingCycle)}
+                disabled={actionDisabled}
+                onClick={() => {
+                  if (isFree) {
+                    onOpenPortal?.();
+                    return;
+                  }
+                  onUpgrade(plan.id, billingCycle);
+                }}
                 className={`mt-6 w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                  isActive
+                  actionDisabled
                     ? 'border-white/10 text-slate-500'
                     : recommended
                       ? 'border-transparent bg-cyan text-ink hover:bg-cyan/90'
                       : `border ${visual.ctaClass}`
                 }`}
               >
-                {planCTA(plan.id, isActive)}
+                {buttonLabel}
               </button>
             </article>
             );

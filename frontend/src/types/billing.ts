@@ -3,6 +3,11 @@ export interface PlanLimit {
   value: number;
 }
 
+export interface BillingPlanStripePrices {
+  monthly: boolean;
+  yearly: boolean;
+}
+
 export interface BillingPlan {
   id: string;
   name: string;
@@ -11,6 +16,8 @@ export interface BillingPlan {
   features: string[];
   limits: PlanLimit[];
   active: boolean;
+  checkout_available?: boolean;
+  stripe_prices?: BillingPlanStripePrices;
 }
 
 export interface CurrentSubscription {
