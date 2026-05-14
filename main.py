@@ -121,7 +121,18 @@ def build_parser() -> argparse.ArgumentParser:
         "command",
         nargs="?",
         default="web",
-        choices=("web", "dev", "migrate", "worker", "worker-high", "worker-low", "worker-dlq", "all", "doctor"),
+        choices=(
+            "web",
+            "dev",
+            "migrate",
+            "worker",
+            "worker-high",
+            "worker-low",
+            "worker-dlq",
+            "workers",
+            "all",
+            "doctor",
+        ),
         help="Command to run. Default: web.",
     )
     parser.add_argument("--host", default=os.getenv("HOST", "0.0.0.0"))
@@ -156,6 +167,21 @@ def main() -> None:
 
     if args.command == "worker-dlq":
         run_worker("alici_api.jobs.queue.DeadLetterWorkerSettings")
+        return
+
+    if args.command == "workers":
+        processes = [
+            subprocess.Popen([_arq_executable(), "alici_api.jobs.queue.HighPriorityWorkerSettings"], cwd=str(BASE_DIR)),
+            subprocess.Popen([_arq_executable(), "alici_api.jobs.queue.WorkerSettings"], cwd=str(BASE_DIR)),
+            subprocess.Popen([_arq_executable(), "alici_api.jobs.queue.DeadLetterWorkerSettings"], cwd=str(BASE_DIR)),
+        ]
+        try:
+            for process in processes:
+                process.wait()
+        finally:
+            for process in processes:
+                if process.poll() is None:
+                    process.terminate()
         return
 
     reload = bool(args.reload or args.command == "dev" or (settings.is_development and args.command == "web"))
