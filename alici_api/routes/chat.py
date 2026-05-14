@@ -12,6 +12,7 @@ from alici_api.services.ai import IA_DISPONIVEL
 from alici_api.services.ai_service import actual_chat_cost, estimate_chat_cost, generate_chat_response, get_cached_chat_response
 from alici_api.services.credit_service import CreditService, InsufficientCreditsError
 from alici_api.services.generation_job_service import GenerationJobService
+from alici_api.services.media_service import MediaProviderUnavailableError, ensure_media_provider_available
 from alici_api.services.media_uploads import save_upload_for_job
 from alici_api.services.prompt_security import PromptSecurityError, validate_prompt
 from database import contar_mensagens_hoje
@@ -73,6 +74,21 @@ def _prompt_or_400(prompt: str, *, purpose: str) -> str:
                 "message": str(exc),
                 "risk_score": exc.risk_score,
                 "findings": exc.findings,
+            },
+        )
+
+
+def _ensure_chat_image_or_503() -> None:
+    try:
+        ensure_media_provider_available("chat_image_analysis")
+    except MediaProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": Codes.SERVICE_UNAVAILABLE,
+                "message": str(exc),
+                "media_type": exc.media_type,
+                "charged": False,
             },
         )
 
@@ -251,6 +267,8 @@ async def chat(req: ChatRequest, user=Depends(get_current_user)):
 
 @router.post("/chat/image", status_code=status.HTTP_202_ACCEPTED)
 async def chat_image(user=Depends(get_current_user), imagem: UploadFile = File(...)):
+    _ensure_chat_image_or_503()
+
     if imagem.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=400,

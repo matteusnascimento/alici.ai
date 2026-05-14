@@ -300,6 +300,14 @@ class BillingService:
         subscription_id = invoice.get("subscription")
         if not subscription_id:
             return
+        invoice_id = invoice.get("id")
+        grant_reason = "stripe_invoice_payment_succeeded"
+        if invoice_id and self.credit_service.transaction_exists(job_id=invoice_id, reason=grant_reason):
+            logger_billing.info(
+                "stripe_invoice_credit_already_granted",
+                extra={"invoice_id": invoice_id, "event_id": event_id, "subscription_id": subscription_id},
+            )
+            return
 
         subscription = stripe.Subscription.retrieve(subscription_id, expand=["items.data.price"])
         data = self._sync_subscription(subscription)
@@ -308,21 +316,30 @@ class BillingService:
         if credits <= 0:
             return
 
-        self.credit_service.add_credits(
-            user_id=data["user_id"],
-            amount=credits,
-            reason="stripe_invoice_payment_succeeded",
-            provider="stripe",
-            model=plan,
-            job_id=invoice.get("id"),
-            metadata={
-                "stripe_event_id": event_id,
-                "invoice_id": invoice.get("id"),
-                "subscription_id": subscription_id,
-                "plan": plan,
-                "price_id": data["stripe_price_id"],
-            },
-        )
+        try:
+            self.credit_service.add_credits(
+                user_id=data["user_id"],
+                amount=credits,
+                reason=grant_reason,
+                provider="stripe",
+                model=plan,
+                job_id=invoice_id,
+                metadata={
+                    "stripe_event_id": event_id,
+                    "invoice_id": invoice_id,
+                    "subscription_id": subscription_id,
+                    "plan": plan,
+                    "price_id": data["stripe_price_id"],
+                },
+            )
+        except Exception as exc:
+            if invoice_id and self.credit_service.transaction_exists(job_id=invoice_id, reason=grant_reason):
+                logger_billing.info(
+                    "stripe_invoice_credit_duplicate_ignored",
+                    extra={"invoice_id": invoice_id, "event_id": event_id, "error": str(exc)[:300]},
+                )
+                return
+            raise
 
     def _handle_subscription_event(self, subscription) -> None:
         self._sync_subscription(subscription)

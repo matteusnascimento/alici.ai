@@ -56,7 +56,7 @@ class AIManager:
                 providers["gemini"] = GeminiProvider()
             except Exception as exc:
                 logger_ai.warning(f"Gemini nao inicializado: {exc}")
-        if self.settings.ollama_base_url:
+        if self.settings.ollama_enabled and self.settings.ollama_base_url:
             try:
                 from .providers.ollama_provider import OllamaProvider
 

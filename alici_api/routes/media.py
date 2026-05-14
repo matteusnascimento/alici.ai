@@ -10,6 +10,7 @@ from alici_api.schemas import AudioRequest, ImageRequest, VideoRequest
 from alici_api.services.ai_cache import AICache
 from alici_api.services.credit_service import CreditService, InsufficientCreditsError
 from alici_api.services.generation_job_service import GenerationJobService
+from alici_api.services.media_service import MediaProviderUnavailableError, ensure_media_provider_available
 from alici_api.services.media_uploads import save_upload_for_job
 from alici_api.services.prompt_security import PromptSecurityError, validate_prompt
 from logger import get_logger
@@ -46,6 +47,21 @@ def _sanitize_prompt_or_400(prompt: str, *, purpose: str) -> str:
                 "message": str(exc),
                 "risk_score": exc.risk_score,
                 "findings": exc.findings,
+            },
+        )
+
+
+def _ensure_media_or_503(media_type: str) -> None:
+    try:
+        ensure_media_provider_available(media_type)
+    except MediaProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": Codes.SERVICE_UNAVAILABLE,
+                "message": str(exc),
+                "media_type": exc.media_type,
+                "charged": False,
             },
         )
 
@@ -124,6 +140,7 @@ async def _create_job_or_http_error(**kwargs) -> dict:
 @router.post("/generate-image", status_code=status.HTTP_202_ACCEPTED)
 async def generate_image_endpoint(req: ImageRequest, user=Depends(get_current_user)):
     prompt = _sanitize_prompt_or_400((req.prompt or "").strip(), purpose="image")
+    _ensure_media_or_503("image")
     cache_key = _cache_system_prompt(resolution="1024x1024")
     cached = await _cached_media_payload(
         operation="media:image",
@@ -151,6 +168,7 @@ async def generate_image_endpoint(req: ImageRequest, user=Depends(get_current_us
 @router.post("/generate-audio", status_code=status.HTTP_202_ACCEPTED)
 async def generate_audio_endpoint(req: AudioRequest, user=Depends(get_current_user)):
     texto = _sanitize_prompt_or_400((req.texto or "").strip(), purpose="audio")
+    _ensure_media_or_503("audio")
     cached = await _cached_media_payload(
         operation="media:audio",
         prompt=texto,
@@ -176,6 +194,7 @@ async def generate_audio_endpoint(req: AudioRequest, user=Depends(get_current_us
 @router.post("/generate-video", status_code=status.HTTP_202_ACCEPTED)
 async def generate_video_endpoint(req: VideoRequest, user=Depends(get_current_user)):
     prompt = _sanitize_prompt_or_400((req.prompt or "").strip(), purpose="video")
+    _ensure_media_or_503("video")
     cache_key = _cache_system_prompt(resolution="720p", duration_seconds=5)
     cached = await _cached_media_payload(
         operation="media:video",
@@ -207,6 +226,7 @@ async def generate_video_endpoint(req: VideoRequest, user=Depends(get_current_us
 
 @router.post("/analyze-image", status_code=status.HTTP_202_ACCEPTED)
 async def analyze_image_endpoint(file: UploadFile = File(...), user=Depends(get_current_user)):
+    _ensure_media_or_503("image_analysis")
     job_id = job_service.new_job_id("image_analysis")
     saved = await save_upload_for_job(file, job_id=job_id, allowed_types=ALLOWED_IMAGE_TYPES)
     cost = credit_service.calculate_cost(job_type="image", model="default-image", resolution="1024x1024")

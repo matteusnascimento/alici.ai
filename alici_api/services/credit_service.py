@@ -113,6 +113,13 @@ class CreditService:
     def get_history(self, user_id: int, limit: int = 50) -> list[dict[str, Any]]:
         return self.repository.get_transaction_history(user_id=user_id, limit=limit)
 
+    def transaction_exists(self, *, job_id: str, reason: str, transaction_type: str = "grant") -> bool:
+        return self.repository.transaction_exists(
+            job_id=job_id,
+            reason=reason,
+            transaction_type=transaction_type,
+        )
+
     def calculate_cost(
         self,
         *,

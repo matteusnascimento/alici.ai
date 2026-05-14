@@ -6,6 +6,8 @@ import os
 
 import httpx
 
+from alici_api.config import get_settings
+
 from ..base import AIResponse, BaseAIProvider
 
 
@@ -13,11 +15,14 @@ class OllamaProvider(BaseAIProvider):
     provider_name = "ollama"
 
     def __init__(self):
-        self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-        self.model = os.getenv("OLLAMA_MODEL", "llama3")
+        settings = get_settings()
+        self.base_url = os.getenv("OLLAMA_BASE_URL", settings.ollama_base_url).rstrip("/")
+        self.model = os.getenv("OLLAMA_MODEL", settings.ollama_model)
+        self.timeout_seconds = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", settings.ollama_timeout_seconds))
 
     async def _generate(self, prompt: str) -> AIResponse:
-        async with httpx.AsyncClient(timeout=120) as client:
+        timeout = httpx.Timeout(self.timeout_seconds, connect=1.5)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 f"{self.base_url}/api/generate",
                 json={"model": self.model, "prompt": prompt, "stream": False},

@@ -11,7 +11,7 @@ from alici_api.monitoring import capture_critical_event
 from alici_api.repositories.generation_job_repository import GenerationJobRepository
 from alici_api.services.ai_cache import AICache
 from alici_api.services.credit_service import CreditService
-from alici_api.services.media_service import analyze_image_bytes, generate_audio, generate_image, generate_video
+from alici_api.services.media_service import MediaProviderUnavailableError, generate_audio, generate_image, generate_video, unavailable_message
 from logger import get_logger
 
 
@@ -149,15 +149,9 @@ async def _run_image_analysis_job(repo: GenerationJobRepository, job: dict[str, 
     except RuntimeError:
         raise
     except Exception:
-        logger_jobs.exception("vision_model_failed_using_basic_analysis", extra={"job_id": job.get("id")})
+        logger_jobs.exception("vision_model_failed", extra={"job_id": job.get("id")})
 
-    content = Path(str(input_path)).read_bytes()
-    basic = analyze_image_bytes(content, filename, content_type)
-    repo.update_progress(job["id"], 80)
-    payload = {"resultado": basic}
-    if job.get("job_type") == "chat_image_analysis":
-        payload["resposta"] = basic.get("descricao")
-    return None, payload
+    raise MediaProviderUnavailableError(str(job.get("job_type") or "image_analysis"), unavailable_message("image_analysis"))
 
 
 async def run_generation_job(ctx: dict[str, Any], job_id: str) -> dict[str, Any]:

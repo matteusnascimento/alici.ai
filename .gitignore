@@ -38,6 +38,7 @@ secrets/
 # Logs
 *.log
 logs/
+pytest_report.txt
 
 # OS
 .DS_Store
@@ -47,3 +48,4 @@ Thumbs.db
 # model/*.h5 - Descomentar se usar Git LFS
 artifacts/
 generated/
+backend/backend/uploads/

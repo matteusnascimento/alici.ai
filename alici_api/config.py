@@ -157,8 +157,10 @@ class Settings(BaseSettings):
     groq_model_code: str = "qwen/qwen3-coder"
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-1.5-flash"
+    ollama_enabled: bool = False
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3"
+    ollama_timeout_seconds: float = 8.0
     openai_api_key: SecretStr | None = None
     openai_model_chat_general: str = "gpt-4o-mini"
 
@@ -200,6 +202,7 @@ class Settings(BaseSettings):
         "openapi_enabled",
         "prompt_security_enabled",
         "prompt_block_high_risk",
+        "ollama_enabled",
         mode="before",
     )
     @classmethod

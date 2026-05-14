@@ -273,6 +273,28 @@ class CreditRepository:
             cur.close()
             return result
 
+    def transaction_exists(self, *, job_id: str, reason: str, transaction_type: str = "grant") -> bool:
+        if not job_id:
+            return False
+
+        placeholder = self._placeholder()
+        with get_db_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                f"""
+                SELECT 1
+                FROM credit_transactions
+                WHERE job_id = {placeholder}
+                  AND reason = {placeholder}
+                  AND type = {placeholder}
+                LIMIT 1
+                """,
+                (job_id, reason, transaction_type),
+            )
+            exists = cur.fetchone() is not None
+            cur.close()
+            return exists
+
     def get_price(
         self,
         *,
