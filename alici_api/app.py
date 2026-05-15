@@ -28,6 +28,7 @@ from database import criar_tabelas
 from logger import get_logger
 
 load_dotenv()
+load_dotenv("backend/.env", override=False)
 settings = get_settings()
 logger_app = get_logger("api")
 
@@ -48,9 +49,6 @@ def create_app() -> FastAPI:
 
     if os.path.isdir("static"):
         app.mount("/static", StaticFiles(directory="static"), name="static")
-    if os.path.isdir("generated"):
-        app.mount("/generated", StaticFiles(directory="generated"), name="generated")
-
     app.include_router(auth_router)
     app.include_router(billing_router)
     app.include_router(chat_router)

@@ -222,7 +222,7 @@ export function LandingPage() {
                 </motion.div>
               </motion.div>
 
-              {/* Right — Dashboard mockup */}
+              {/* Right — Dashboard preview */}
               <motion.div
                 initial={{ opacity: 0, y: 28, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}

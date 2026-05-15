@@ -32,7 +32,7 @@ def _parse_bool(value) -> bool:
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     rate_limit_global_max_requests: int = 3_000
     rate_limit_excluded_paths: str = (
         "/health,/health.,/health/live,/health/ready,/health/deep,"
-        "/api/health,/v1/health,/static,/generated,/favicon.ico"
+        "/api/health,/v1/health,/static,/favicon.ico"
     )
     redis_url: str | None = None
     redis_prefix: str = "alici"
@@ -150,7 +150,14 @@ class Settings(BaseSettings):
     credits_video_default_cost: int = 100
 
     # AI providers
-    default_ai_provider: Literal["groq", "gemini", "ollama", "openai"] = "groq"
+    default_ai_provider: Literal["grok", "groq", "gemini", "ollama", "openai"] = "grok"
+    grok_api_key: SecretStr | None = None
+    xai_api_key: SecretStr | None = None
+    grok_base_url: str = "https://api.x.ai/v1"
+    grok_model_chat: str = "grok-3-mini-fast"
+    grok_model_agent: str = "grok-3-mini-fast"
+    grok_model_code: str = "grok-3-mini-fast"
+    grok_timeout_seconds: float = 45.0
     groq_api_key: SecretStr | None = None
     groq_model_chat: str = "llama-3.1-8b-instant"
     groq_model_agent: str = "llama-3.1-8b-instant"
@@ -160,7 +167,8 @@ class Settings(BaseSettings):
     ollama_enabled: bool = False
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3"
-    ollama_timeout_seconds: float = 8.0
+    ollama_timeout_seconds: float = 2.5
+    ollama_probe_timeout_seconds: float = 0.75
     openai_api_key: SecretStr | None = None
     openai_model_chat_general: str = "gpt-4o-mini"
 
@@ -178,6 +186,25 @@ class Settings(BaseSettings):
     r2_secret_access_key: SecretStr | None = None
     r2_bucket_uploads: str = "uploads"
     r2_public_base_url: str | None = None
+
+    # Media storage
+    media_storage_required: bool = True
+    media_generation_poll_interval_seconds: float = 3.0
+    media_generation_timeout_seconds: int = 600
+
+    # Real media providers
+    replicate_api_token: SecretStr | None = None
+    replicate_image_model: str = "black-forest-labs/flux-schnell"
+    runway_api_secret: SecretStr | None = None
+    runwayml_api_secret: SecretStr | None = None
+    runway_api_version: str = "2024-11-06"
+    runway_image_model: str = "gen4_image_turbo"
+    runway_video_model: str = "gen4.5"
+    luma_api_key: SecretStr | None = None
+    luma_video_model: str = "ray-2"
+    elevenlabs_api_key: SecretStr | None = None
+    elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
+    elevenlabs_model: str = "eleven_multilingual_v2"
 
     # Hugging Face
     huggingface_api_key: SecretStr | None = None
@@ -203,6 +230,7 @@ class Settings(BaseSettings):
         "prompt_security_enabled",
         "prompt_block_high_risk",
         "ollama_enabled",
+        "media_storage_required",
         mode="before",
     )
     @classmethod
@@ -285,6 +313,10 @@ class Settings(BaseSettings):
         if self.env == "production":
             raise ValueError("REDIS_URL e obrigatorio em producao")
         return "redis://localhost:6379/0"
+
+    @property
+    def resolved_grok_api_key(self) -> SecretStr | None:
+        return self.grok_api_key or self.xai_api_key
 
 
 @lru_cache(maxsize=1)

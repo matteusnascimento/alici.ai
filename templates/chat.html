@@ -75,7 +75,8 @@
         const data = await res.json();
         messages.lastChild.remove();
         if (!res.ok) throw new Error(data.message || data.detail?.message || 'Erro no chat');
-        addMessage(data.resposta || 'Sem resposta.', 'ai');
+        if (!data.resposta) throw new Error('A IA nao retornou uma resposta valida.');
+        addMessage(data.resposta, 'ai');
         if (data.credit_balance !== undefined) creditBalance.textContent = 'Creditos: ' + data.credit_balance;
       } catch (err) {
         messages.lastChild?.remove();

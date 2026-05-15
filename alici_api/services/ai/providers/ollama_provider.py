@@ -21,7 +21,7 @@ class OllamaProvider(BaseAIProvider):
         self.timeout_seconds = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", settings.ollama_timeout_seconds))
 
     async def _generate(self, prompt: str) -> AIResponse:
-        timeout = httpx.Timeout(self.timeout_seconds, connect=1.5)
+        timeout = httpx.Timeout(self.timeout_seconds, connect=min(0.75, self.timeout_seconds))
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 f"{self.base_url}/api/generate",

@@ -95,7 +95,7 @@ export const StudioToolCard: React.FC<StudioToolCardProps> = ({
 
           {comingSoon && (
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 backdrop-blur-md border border-amber-500/30">
-              Em breve
+              Indisponivel
             </span>
           )}
         </div>

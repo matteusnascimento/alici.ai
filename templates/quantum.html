@@ -750,7 +750,7 @@
                     }, 800);
                 })
                 .catch(() => {
-                    addMessage('Sistema temporariamente indisponível...', 'ai');
+                    addMessage('Falha ao obter resposta real da IA. Verifique a conexao e tente novamente.', 'ai');
                     changeState('online');
                 });
             }, 1500);

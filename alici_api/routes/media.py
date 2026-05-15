@@ -51,23 +51,14 @@ def _sanitize_prompt_or_400(prompt: str, *, purpose: str) -> str:
         )
 
 
-def _ensure_media_or_503(media_type: str) -> None:
-    try:
-        ensure_media_provider_available(media_type)
-    except MediaProviderUnavailableError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": Codes.SERVICE_UNAVAILABLE,
-                "message": str(exc),
-                "media_type": exc.media_type,
-                "charged": False,
-            },
-        )
+def _media_provider(media_type: str) -> tuple[str | None, str]:
+    provider = ensure_media_provider_available(media_type)
+    return provider.provider_name, provider.model_name
 
 
 def _queued_payload(result: dict, *, user: dict, message: str) -> dict:
     job = result["job"]
+    metadata = job.get("metadata") or {}
     return success(
         Codes.JOB_QUEUED_OK,
         message=message,
@@ -79,6 +70,8 @@ def _queued_payload(result: dict, *, user: dict, message: str) -> dict:
         priority=result["priority"],
         usuario=user["nome"],
         credit_cost=job["cost"],
+        charged=not bool(metadata.get("charge_on_success")),
+        charge_on_success=bool(metadata.get("charge_on_success")),
         credit_balance=result["credit_balance"],
         status_url=f"/jobs/{job['id']}",
     )
@@ -140,7 +133,13 @@ async def _create_job_or_http_error(**kwargs) -> dict:
 @router.post("/generate-image", status_code=status.HTTP_202_ACCEPTED)
 async def generate_image_endpoint(req: ImageRequest, user=Depends(get_current_user)):
     prompt = _sanitize_prompt_or_400((req.prompt or "").strip(), purpose="image")
-    _ensure_media_or_503("image")
+    try:
+        provider, model = _media_provider("image")
+    except MediaProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": Codes.SERVICE_UNAVAILABLE, "message": str(exc), "media_type": exc.media_type, "charged": False},
+        )
     cache_key = _cache_system_prompt(resolution="1024x1024")
     cached = await _cached_media_payload(
         operation="media:image",
@@ -152,15 +151,17 @@ async def generate_image_endpoint(req: ImageRequest, user=Depends(get_current_us
     if cached:
         return cached
 
-    cost = credit_service.calculate_cost(job_type="image", model="default-image", resolution="1024x1024")
+    cost = credit_service.calculate_cost(job_type="image", provider=provider, model=model, resolution="1024x1024")
     result = await _create_job_or_http_error(
         user=user,
         job_type="image",
         prompt=prompt,
         cost=cost,
-        model="default-image",
+        provider=provider,
+        model=model,
         reason="image_generation",
         metadata={"endpoint": "/generate-image", "prompt_chars": len(prompt), "resolution": "1024x1024"},
+        charge_on_success=True,
     )
     return _queued_payload(result, user=user, message="Geracao de imagem enfileirada")
 
@@ -168,7 +169,13 @@ async def generate_image_endpoint(req: ImageRequest, user=Depends(get_current_us
 @router.post("/generate-audio", status_code=status.HTTP_202_ACCEPTED)
 async def generate_audio_endpoint(req: AudioRequest, user=Depends(get_current_user)):
     texto = _sanitize_prompt_or_400((req.texto or "").strip(), purpose="audio")
-    _ensure_media_or_503("audio")
+    try:
+        provider, model = _media_provider("audio")
+    except MediaProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": Codes.SERVICE_UNAVAILABLE, "message": str(exc), "media_type": exc.media_type, "charged": False},
+        )
     cached = await _cached_media_payload(
         operation="media:audio",
         prompt=texto,
@@ -178,15 +185,17 @@ async def generate_audio_endpoint(req: AudioRequest, user=Depends(get_current_us
     if cached:
         return cached
 
-    cost = credit_service.calculate_cost(job_type="audio", model="default-audio")
+    cost = credit_service.calculate_cost(job_type="audio", provider=provider, model=model)
     result = await _create_job_or_http_error(
         user=user,
         job_type="audio",
         prompt=texto,
         cost=cost,
-        model="default-audio",
+        provider=provider,
+        model=model,
         reason="audio_generation",
         metadata={"endpoint": "/generate-audio", "prompt_chars": len(texto)},
+        charge_on_success=True,
     )
     return _queued_payload(result, user=user, message="Geracao de audio enfileirada")
 
@@ -194,7 +203,13 @@ async def generate_audio_endpoint(req: AudioRequest, user=Depends(get_current_us
 @router.post("/generate-video", status_code=status.HTTP_202_ACCEPTED)
 async def generate_video_endpoint(req: VideoRequest, user=Depends(get_current_user)):
     prompt = _sanitize_prompt_or_400((req.prompt or "").strip(), purpose="video")
-    _ensure_media_or_503("video")
+    try:
+        provider, model = _media_provider("video")
+    except MediaProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": Codes.SERVICE_UNAVAILABLE, "message": str(exc), "media_type": exc.media_type, "charged": False},
+        )
     cache_key = _cache_system_prompt(resolution="720p", duration_seconds=5)
     cached = await _cached_media_payload(
         operation="media:video",
@@ -208,7 +223,8 @@ async def generate_video_endpoint(req: VideoRequest, user=Depends(get_current_us
 
     cost = credit_service.calculate_cost(
         job_type="video",
-        model="default-video",
+        provider=provider,
+        model=model,
         resolution="720p",
         duration_seconds=5,
     )
@@ -217,25 +233,34 @@ async def generate_video_endpoint(req: VideoRequest, user=Depends(get_current_us
         job_type="video",
         prompt=prompt,
         cost=cost,
-        model="default-video",
+        provider=provider,
+        model=model,
         reason="video_generation",
         metadata={"endpoint": "/generate-video", "prompt_chars": len(prompt), "resolution": "720p", "duration_seconds": 5},
+        charge_on_success=True,
     )
     return _queued_payload(result, user=user, message="Geracao de video enfileirada")
 
 
 @router.post("/analyze-image", status_code=status.HTTP_202_ACCEPTED)
 async def analyze_image_endpoint(file: UploadFile = File(...), user=Depends(get_current_user)):
-    _ensure_media_or_503("image_analysis")
+    try:
+        provider, model = _media_provider("image_analysis")
+    except MediaProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": Codes.SERVICE_UNAVAILABLE, "message": str(exc), "media_type": exc.media_type, "charged": False},
+        )
     job_id = job_service.new_job_id("image_analysis")
     saved = await save_upload_for_job(file, job_id=job_id, allowed_types=ALLOWED_IMAGE_TYPES)
-    cost = credit_service.calculate_cost(job_type="image", model="default-image", resolution="1024x1024")
+    cost = credit_service.calculate_cost(job_type="image", provider=provider, model=model, resolution="1024x1024")
     result = await _create_job_or_http_error(
         user=user,
         job_type="image_analysis",
         prompt=f"[image-analysis] {saved.filename}",
         cost=cost,
-        model="default-image",
+        provider=provider,
+        model=model,
         reason="image_analysis",
         input_path=saved.path,
         job_id=job_id,
@@ -244,6 +269,9 @@ async def analyze_image_endpoint(file: UploadFile = File(...), user=Depends(get_
             "filename": saved.filename,
             "content_type": saved.content_type,
             "size_bytes": saved.size_bytes,
+            "input_url": saved.url,
+            "input_key": saved.key,
         },
+        charge_on_success=True,
     )
     return _queued_payload(result, user=user, message="Analise de imagem enfileirada")

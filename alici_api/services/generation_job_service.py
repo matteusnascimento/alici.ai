@@ -42,12 +42,15 @@ class GenerationJobService:
         input_path: str | None = None,
         metadata: dict | None = None,
         job_id: str | None = None,
+        charge_on_success: bool = False,
     ) -> dict:
         plan = (user.get("plano") or "free").lower()
         queue_name, priority = queue_for_plan(plan)
         job_id = job_id or self.new_job_id(job_type)
         metadata_payload = {
             "plan": plan,
+            "charge_on_success": bool(charge_on_success),
+            "charge_reason": reason,
             **(metadata or {}),
         }
 
@@ -66,24 +69,31 @@ class GenerationJobService:
             metadata=metadata_payload,
         )
 
-        try:
-            credit_balance = self.credit_service.spend_credits(
-                user_id=int(user["id"]),
-                amount=cost,
-                reason=reason,
-                provider=provider,
-                model=model,
-                job_id=job_id,
-                metadata=metadata_payload,
-            )
-        except InsufficientCreditsError:
-            self.repository.fail_job(job_id, error_message="Creditos insuficientes")
-            self._cleanup_input(input_path, job_id)
-            raise
-        except Exception:
-            self.repository.fail_job(job_id, error_message="Falha ao reservar creditos")
-            self._cleanup_input(input_path, job_id)
-            raise
+        if charge_on_success:
+            credit_balance = self.credit_service.get_balance(int(user["id"]))
+            if cost > 0 and credit_balance < cost:
+                self.repository.fail_job(job_id, error_message="Creditos insuficientes")
+                self._cleanup_input(input_path, job_id)
+                raise InsufficientCreditsError(balance=credit_balance, required=cost)
+        else:
+            try:
+                credit_balance = self.credit_service.spend_credits(
+                    user_id=int(user["id"]),
+                    amount=cost,
+                    reason=reason,
+                    provider=provider,
+                    model=model,
+                    job_id=job_id,
+                    metadata=metadata_payload,
+                )
+            except InsufficientCreditsError:
+                self.repository.fail_job(job_id, error_message="Creditos insuficientes")
+                self._cleanup_input(input_path, job_id)
+                raise
+            except Exception:
+                self.repository.fail_job(job_id, error_message="Falha ao reservar creditos")
+                self._cleanup_input(input_path, job_id)
+                raise
 
         try:
             arq_job = await enqueue_generation_job(job_id, queue_name=queue_name)
@@ -115,6 +125,12 @@ class GenerationJobService:
         if not job or job.get("refunded_at") or int(job.get("cost") or 0) <= 0:
             return
 
+        metadata = job.get("metadata") or {}
+        reason = str(metadata.get("charge_reason") or f"{job.get('job_type')}_generation")
+        if not self.credit_service.transaction_exists(job_id=job_id, reason=reason, transaction_type="spend"):
+            logger_jobs.info("generation_refund_skipped_no_spend", extra={"job_id": job_id, "reason": reason})
+            return
+
         try:
             self.credit_service.refund_credits(
                 user_id=int(job["user_id"]),
@@ -141,6 +157,8 @@ class GenerationJobService:
 
     def _cleanup_input(self, input_path: str | None, job_id: str) -> None:
         if not input_path:
+            return
+        if str(input_path).startswith(("http://", "https://")):
             return
         try:
             Path(input_path).unlink(missing_ok=True)

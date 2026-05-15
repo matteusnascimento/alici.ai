@@ -64,7 +64,7 @@ export const StudioRecentProject: React.FC<StudioRecentProjectProps> = ({
         'hover:border-white/20 hover:bg-white/10'
       )}
     >
-      {/* Thumbnail or placeholder */}
+      {/* Thumbnail or fallback visual */}
       <div className="relative w-full aspect-video bg-gradient-to-br from-slate-700 to-slate-900 overflow-hidden">
         {thumbnail ? (
           <img src={thumbnail} alt={title} className="w-full h-full object-cover" />

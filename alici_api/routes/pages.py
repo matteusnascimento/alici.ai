@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
 from alici_api.config import get_settings
@@ -18,16 +18,9 @@ def _read_template(filename: str) -> str:
     if template_path.exists():
         return template_path.read_text(encoding="utf-8")
 
-    docs_hint = (
-        "<p>Acesse <a href='/docs'>/docs</a> para usar a API em desenvolvimento.</p>"
-        if settings.api_docs_enabled
-        else "<p>Interface temporariamente indisponivel.</p>"
-    )
-    return (
-        "<html><body><h1>ALICI API</h1>"
-        "<p>Template nao encontrado.</p>"
-        f"{docs_hint}"
-        "</body></html>"
+    raise HTTPException(
+        status_code=500,
+        detail=f"Template obrigatorio nao encontrado: templates/{filename}",
     )
 
 
