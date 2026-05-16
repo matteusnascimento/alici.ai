@@ -33,6 +33,19 @@ def login(req: LoginRequest):
     return success(Codes.AUTH_LOGIN_OK, **payload)
 
 
+@router.get("/me")
+def me(user=Depends(get_current_user)):
+    return success(
+        Codes.AUTH_LOGIN_OK,
+        usuario={
+            "id": user["id"],
+            "nome": user["nome"],
+            "email": user["email"],
+            "plano": user.get("plano", "free"),
+        },
+    )
+
+
 @router.post("/refresh")
 def refresh_token(req: RefreshRequest):
     try:

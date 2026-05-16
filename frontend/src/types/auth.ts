@@ -1,10 +1,12 @@
 export interface User {
   id: number;
   name: string;
-  username: string;
+  nome?: string;
+  username?: string;
   email: string;
-  phone: string | null;
+  phone?: string | null;
   plan: string;
+  plano?: string;
   created_at?: string;
 }
 
@@ -23,6 +25,7 @@ export interface RegisterInput {
 
 export interface AuthResponse {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
   user: User;
 }

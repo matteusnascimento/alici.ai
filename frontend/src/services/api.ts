@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 const TOKEN_KEY = 'axi_token';
 
 let unauthorizedHandler: (() => void) | null = null;
@@ -30,12 +30,42 @@ export function clearAuthToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+function extractErrorMessage(data: unknown, fallback: string): string {
+  if (typeof data === 'object' && data !== null) {
+    const payload = data as { message?: unknown; detail?: unknown };
+    if (typeof payload.message === 'string') {
+      return payload.message;
+    }
+    if (typeof payload.detail === 'string') {
+      return payload.detail;
+    }
+    if (typeof payload.detail === 'object' && payload.detail !== null) {
+      const detail = payload.detail as { message?: unknown };
+      if (typeof detail.message === 'string') {
+        return detail.message;
+      }
+    }
+  }
+  return fallback;
+}
+
+async function parseResponse(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { detail: text };
+  }
+}
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const headers = new Headers(init.headers || {});
   const isFormDataBody = typeof FormData !== 'undefined' && init.body instanceof FormData;
 
-  // Set Content-Type only for requests that carry a body (avoid breaking multipart uploads)
   if (init.body !== undefined && !isFormDataBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
@@ -48,41 +78,41 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   try {
     response = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
-    throw new ApiError('Servidor indisponível. Verifique sua conexão.', 0);
+    throw new ApiError('Servidor indisponivel. Verifique sua conexao.', 0);
   }
 
+  const data = await parseResponse(response);
+
   if (response.status === 401) {
-    if (unauthorizedHandler) {
+    const isAuthRequest = path === '/auth/login' || path === '/auth/register';
+    if (!isAuthRequest && unauthorizedHandler) {
       unauthorizedHandler();
     }
-    throw new ApiError('Sessão expirada. Faça login novamente.', 401);
+    const message = isAuthRequest
+      ? extractErrorMessage(data, 'Email ou senha invalidos.')
+      : extractErrorMessage(data, 'Sessao expirada. Faca login novamente.');
+    throw new ApiError(message, 401, data);
   }
 
   if (response.status === 403) {
-    throw new ApiError('Acesso negado. Você não tem permissão para esta ação.', 403);
+    throw new ApiError(
+      extractErrorMessage(data, 'Acesso negado. Voce nao tem permissao para esta acao.'),
+      403,
+      data,
+    );
   }
 
   if (response.status >= 500) {
-    throw new ApiError('Erro interno do servidor. Tente novamente mais tarde.', response.status);
+    throw new ApiError(
+      extractErrorMessage(data, 'Erro interno do servidor. Tente novamente mais tarde.'),
+      response.status,
+      data,
+    );
   }
 
-  const text = await response.text();
-  let data: unknown = null;
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { detail: text };
-    }
-  }
   if (!response.ok) {
-    const detailValue =
-      typeof data === 'object' && data !== null && 'detail' in data
-        ? (data as { detail: unknown }).detail
-        : 'Erro de rede';
-
-    const detailMessage = typeof detailValue === 'string' ? detailValue : 'Operacao nao concluida.';
-    throw new ApiError(detailMessage, response.status, detailValue);
+    throw new ApiError(extractErrorMessage(data, 'Operacao nao concluida.'), response.status, data);
   }
+
   return data as T;
 }

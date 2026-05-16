@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -31,6 +32,8 @@ load_dotenv()
 load_dotenv("backend/.env", override=False)
 settings = get_settings()
 logger_app = get_logger("api")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_DIST = PROJECT_ROOT / "frontend" / "dist"
 
 
 def create_app() -> FastAPI:
@@ -49,6 +52,8 @@ def create_app() -> FastAPI:
 
     if os.path.isdir("static"):
         app.mount("/static", StaticFiles(directory="static"), name="static")
+    if (FRONTEND_DIST / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="frontend_assets")
     app.include_router(auth_router)
     app.include_router(billing_router)
     app.include_router(chat_router)

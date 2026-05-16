@@ -1,17 +1,21 @@
 """Pydantic schemas used by the API."""
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field
 
 
 class RegisterRequest(BaseModel):
-    nome: str = Field(min_length=2, max_length=120)
+    model_config = ConfigDict(populate_by_name=True)
+
+    nome: str = Field(min_length=2, max_length=120, validation_alias=AliasChoices("nome", "name"))
     email: EmailStr
-    senha: str = Field(min_length=8, max_length=72)
+    senha: str = Field(min_length=8, max_length=72, validation_alias=AliasChoices("senha", "password"))
 
 
 class LoginRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     email: EmailStr
-    senha: str = Field(min_length=1, max_length=72)
+    senha: str = Field(min_length=1, max_length=72, validation_alias=AliasChoices("senha", "password"))
 
 
 class RefreshRequest(BaseModel):
