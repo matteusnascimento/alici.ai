@@ -1,0 +1,51 @@
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+env
+loginhuggi
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+pytest_report.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Modelo (sera feito download em CI/CD)
+# model/*.h5 - Descomentar se usar Git LFS
+artifacts/
+generated/
+backend/backend/uploads/
