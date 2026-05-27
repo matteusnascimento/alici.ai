@@ -118,3 +118,14 @@ export interface StudioToolActionResponse {
   generation: StudioGenerateResponse | null;
   message: string;
 }
+
+export interface StudioWebImage {
+  id: string;
+  provider: 'pexels' | 'unsplash';
+  title: string;
+  image_url: string;
+  thumb_url: string;
+  author_name: string | null;
+  author_url: string | null;
+  source_url: string;
+}

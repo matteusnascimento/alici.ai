@@ -17,12 +17,17 @@ from alici_api.monitoring import capture_critical_event, init_monitoring
 from alici_api.responses import Codes, error_payload
 from alici_api.routes.auth import router as auth_router
 from alici_api.routes.billing import router as billing_router
+from alici_api.routes.business import router as business_router
 from alici_api.routes.chat import router as chat_router
 from alici_api.routes.health import router as health_router
 from alici_api.routes.history import router as history_router
+from alici_api.routes.integrations import router as integrations_router
 from alici_api.routes.jobs import router as jobs_router
+from alici_api.routes.marketing import router as marketing_router
 from alici_api.routes.media import router as media_router
+from alici_api.routes.omnichannel import router as omnichannel_router
 from alici_api.routes.pages import router as pages_router
+from alici_api.routes.studio import router as studio_router
 from alici_api.routes.webhooks import router as webhooks_router
 from alici_api.services.ai import AIManager, IA_DISPONIVEL, VISAO_DISPONIVEL
 from database import criar_tabelas
@@ -56,9 +61,14 @@ def create_app() -> FastAPI:
         app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="frontend_assets")
     app.include_router(auth_router)
     app.include_router(billing_router)
+    app.include_router(business_router)
     app.include_router(chat_router)
     app.include_router(media_router)
     app.include_router(jobs_router)
+    app.include_router(marketing_router)
+    app.include_router(integrations_router)
+    app.include_router(omnichannel_router)
+    app.include_router(studio_router)
     app.include_router(webhooks_router)
     app.include_router(history_router)
     app.include_router(pages_router)

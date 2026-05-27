@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
+import { GoogleOAuthCallback } from '../components/auth/GoogleOAuthCallback';
 import { LandingPage } from '../components/landing/LandingPage';
 import { ChatPanel } from '../components/platform/ChatPanel';
 import { DashboardPanel } from '../components/platform/DashboardPanel';
@@ -35,6 +36,7 @@ import { RemoveBackgroundStudioPage } from '../components/studio/v2/RemoveBackgr
 import { StoryStudioPage } from '../components/studio/v2/StoryStudioPage';
 import { StudioHomePage } from '../components/studio/v2/StudioHomePage';
 import { TemplatesStudioPage } from '../components/studio/v2/TemplatesStudioPage';
+import { UnifiedStudioEditorPage } from '../components/studio/v2/UnifiedStudioEditorPage';
 import { VideoEditorStudioPage } from '../components/studio/v2/VideoEditorStudioPage';
 import { useAuth } from '../hooks/useAuth';
 import { AgentActionsPage } from '../components/agents/v2/AgentActionsPage';
@@ -56,6 +58,7 @@ import { MarketingProjectsPage } from '../components/marketing/MarketingProjects
 import { MarketingProjectWorkspace } from '../components/marketing/MarketingProjectWorkspace';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
+import { BusinessModulePage } from '../components/modules/BusinessModulePage';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -65,10 +68,25 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: st
     return <Navigate replace to="/app/dashboard" />;
   }
   return (
-    <main className="flex min-h-screen items-center justify-center bg-ink px-6 py-12 text-[var(--text-primary)]">
-      <section className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-soft backdrop-blur">
+    <main className="grid min-h-screen bg-ink px-6 py-10 text-[var(--text-primary)] lg:grid-cols-[minmax(0,1fr)_520px] lg:gap-8">
+      <section className="hidden min-h-[calc(100vh-5rem)] rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan/20 via-white/[0.04] to-black/20 p-10 shadow-soft lg:flex lg:flex-col lg:justify-between">
+        <div>
+          <p className="text-sm uppercase tracking-[0.35em] text-cyan">AXI Platform</p>
+          <h2 className="mt-6 max-w-xl font-display text-5xl font-bold leading-tight">Entre, conecte seus canais e deixe a IA trabalhar com seus dados reais.</h2>
+          <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
+            Login simples com email ou Google, CRM, atendimento, Studio e automações em um único cockpit.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          {['Chat omnichannel', 'AXI Studio', 'CRM com IA'].map((item) => (
+            <div key={item} className="rounded-2xl border border-white/10 bg-black/20 p-4 font-semibold text-slate-200">{item}</div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto flex w-full max-w-lg flex-col justify-center rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-soft backdrop-blur lg:mx-0">
         <p className="text-sm uppercase tracking-[0.3em] text-cyan">AXI Platform</p>
-        <h1 className="mt-4 font-display text-4xl">{title}</h1>
+        <h1 className="mt-4 font-display text-4xl font-bold">{title}</h1>
         <p className="mt-3 text-slate-300">{subtitle}</p>
         <div className="mt-8">{children}</div>
       </section>
@@ -97,12 +115,25 @@ export function AppRouter() {
           )}
           path="/register"
         />
+        <Route element={<GoogleOAuthCallback />} path="/auth/google/callback" />
         <Route element={<ProtectedRoute />}>
           <Route element={<PlatformShell />} path="/app">
             <Route element={<Navigate replace to="/app/dashboard" />} index />
             <Route element={<DashboardPanel />} path="dashboard" />
             <Route element={<RevenueIntelligencePage />} path="revenue" />
             <Route element={<ChatPanel />} path="chat" />
+            <Route path="crm">
+              <Route index element={<Navigate replace to="/app/crm/negocios" />} />
+              <Route path=":moduleId" element={<BusinessModulePage group="crm" />} />
+            </Route>
+            <Route path="cs">
+              <Route index element={<Navigate replace to="/app/cs/jornada" />} />
+              <Route path=":moduleId" element={<BusinessModulePage group="cs" />} />
+            </Route>
+            <Route path="analytics">
+              <Route index element={<Navigate replace to="/app/analytics/analises" />} />
+              <Route path=":moduleId" element={<BusinessModulePage group="analytics" />} />
+            </Route>
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
               <Route path="create" element={<AgentCreatePage />} />
@@ -121,6 +152,7 @@ export function AppRouter() {
             </Route>
             <Route path="studio">
               <Route index element={<StudioHomePage />} />
+              <Route path="editor" element={<UnifiedStudioEditorPage />} />
               <Route path="editor/video" element={<VideoEditorStudioPage />} />
               <Route path="editor/video/:projectId" element={<VideoEditorStudioPage />} />
 

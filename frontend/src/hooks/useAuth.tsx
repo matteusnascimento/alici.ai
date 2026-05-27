@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-import { getMe, login as loginRequest, logout as logoutRequest, register as registerRequest } from '../services/auth.service';
+import { completeOAuthLogin as completeOAuthLoginRequest, getMe, login as loginRequest, logout as logoutRequest, register as registerRequest } from '../services/auth.service';
 import { clearAuthToken, getAuthToken, setUnauthorizedHandler } from '../services/api';
 import type { LoginInput, RegisterInput, User } from '../types/auth';
 
@@ -11,6 +11,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (payload: LoginInput) => Promise<void>;
   register: (payload: RegisterInput) => Promise<void>;
+  completeOAuthLogin: (payload: { access_token: string; refresh_token?: string; token_type?: string }) => Promise<void>;
   logout: () => void;
 }
 
@@ -73,13 +74,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function completeOAuthLogin(payload: { access_token: string; refresh_token?: string; token_type?: string }) {
+    setLoading(true);
+    try {
+      const response = await completeOAuthLoginRequest({
+        access_token: payload.access_token,
+        refresh_token: payload.refresh_token,
+        token_type: payload.token_type || 'bearer',
+      });
+      setUser(response.user);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function logout() {
     logoutRequest();
     setUser(null);
   }
 
   const value = useMemo(
-    () => ({ user, loading, ready, isAuthenticated: Boolean(user), login, register, logout }),
+    () => ({ user, loading, ready, isAuthenticated: Boolean(user), login, register, completeOAuthLogin, logout }),
     [loading, ready, user],
   );
 

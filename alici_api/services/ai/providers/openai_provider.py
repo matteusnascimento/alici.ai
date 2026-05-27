@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import os
-
 from openai import AsyncOpenAI
+
+from alici_api.config import get_settings
 
 from ..base import AIResponse, BaseAIProvider
 
@@ -13,8 +13,12 @@ class OpenAIProvider(BaseAIProvider):
     provider_name = "openai"
 
     def __init__(self):
-        self.model = os.getenv("OPENAI_MODEL_CHAT_GENERAL", "gpt-4o-mini")
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        settings = get_settings()
+        if not settings.openai_api_key:
+            raise RuntimeError("OPENAI_API_KEY nao configurada")
+
+        self.model = settings.openai_model_chat_general
+        self.client = AsyncOpenAI(api_key=settings.openai_api_key.get_secret_value())
 
     async def chat(self, prompt: str, system_prompt: str = "") -> AIResponse:
         response = await self.client.chat.completions.create(

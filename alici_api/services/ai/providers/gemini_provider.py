@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-import os
 
 import google.generativeai as genai
+
+from alici_api.config import get_settings
 
 from ..base import AIResponse, BaseAIProvider
 
@@ -14,8 +15,12 @@ class GeminiProvider(BaseAIProvider):
     provider_name = "gemini"
 
     def __init__(self):
-        self.model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        settings = get_settings()
+        if not settings.gemini_api_key:
+            raise RuntimeError("GEMINI_API_KEY nao configurada")
+
+        self.model_name = settings.gemini_model
+        genai.configure(api_key=settings.gemini_api_key.get_secret_value())
         self.model = genai.GenerativeModel(self.model_name)
 
     async def _generate(self, prompt: str) -> AIResponse:

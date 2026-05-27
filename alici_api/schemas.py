@@ -1,5 +1,7 @@
 """Pydantic schemas used by the API."""
 
+from typing import Any, Literal
+
 from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field
 
 
@@ -44,4 +46,20 @@ class VideoRequest(BaseModel):
 
 
 class BillingCheckoutRequest(BaseModel):
-    plano: str = Field(min_length=2, max_length=32)
+    model_config = ConfigDict(populate_by_name=True)
+
+    plano: str = Field(min_length=2, max_length=32, validation_alias=AliasChoices("plano", "plan_id", "plan"))
+    billing_cycle: str | None = Field(default="monthly", validation_alias=AliasChoices("billing_cycle", "cycle"))
+
+
+class SocialConnectRequest(BaseModel):
+    provider: Literal["whatsapp", "instagram", "messenger", "facebook", "facebook_messenger", "tiktok"]
+    external_account_id: str = Field(min_length=2, max_length=255)
+    external_account_name: str | None = Field(default=None, max_length=255)
+    access_token: str | None = Field(default=None, max_length=4096)
+    enabled: bool = True
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SocialConnectionToggleRequest(BaseModel):
+    enabled: bool

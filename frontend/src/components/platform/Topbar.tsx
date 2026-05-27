@@ -6,6 +6,9 @@ import { useAuth } from '../../hooks/useAuth';
 const titleMap: Record<string, string> = {
   '/app/dashboard': 'Dashboard',
   '/app/chat': 'Alici Chat',
+  '/app/crm': 'CRM',
+  '/app/cs': 'CS',
+  '/app/analytics': 'Analises',
   '/app/agents': 'Agents',
   '/app/studio': 'AXI Studio',
   '/app/account': 'Conta AXI',
@@ -17,6 +20,12 @@ export function Topbar() {
   const { user, logout } = useAuth();
   const title = location.pathname.startsWith('/app/studio') || location.pathname.startsWith('/app/marketing')
     ? 'AXI Studio'
+    : location.pathname.startsWith('/app/crm')
+      ? 'CRM'
+      : location.pathname.startsWith('/app/cs')
+        ? 'CS'
+        : location.pathname.startsWith('/app/analytics')
+          ? 'Analises'
     : location.pathname.startsWith('/app/account')
       ? 'Conta AXI'
       : titleMap[location.pathname] || 'AXI';

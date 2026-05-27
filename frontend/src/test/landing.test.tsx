@@ -11,7 +11,8 @@ describe('LandingPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/Automa..o com IA para neg.cios reais/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /Come.ar gr.tis/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Crie, Edite e/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Revolucione/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /Criar conta gratis|Testar gratis|Comecar agora/i }).length).toBeGreaterThan(0);
   });
 });

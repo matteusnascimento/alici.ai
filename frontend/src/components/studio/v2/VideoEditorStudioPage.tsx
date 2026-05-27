@@ -1,4 +1,4 @@
-import { Film, Grip, LayoutTemplate, Loader2, PlayCircle, Wand2 } from 'lucide-react';
+import { Captions, FolderOpen, Grip, Image as ImageIcon, LayoutTemplate, Loader2, Mic2, PlayCircle, Plus, SlidersHorizontal, Type, UploadCloud, Wand2, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
@@ -6,12 +6,14 @@ import { useStudioV2 } from '../../../hooks/useStudioV2';
 import { useToast } from '../../../hooks/useToast';
 import { studioVideoCaptions, studioVideoGenerate, studioVideoVoiceover, uploadStudioAsset } from '../../../services/studio.service';
 import { StudioCanvas } from './StudioCanvas';
+import { StudioContextToolbar } from './StudioContextToolbar';
 import { StudioExportModal } from './StudioExportModal';
 import { StudioTimeline } from './StudioTimeline';
 import { StudioTopbar } from './StudioTopbar';
 import { StudioVideoContextPanel } from './StudioVideoContextPanel';
 
 type EditorTool = 'Editar' | 'Audio' | 'Texto' | 'Efeitos' | 'Camadas' | 'Legendas' | 'Filtros';
+type SideTool = 'modelos' | 'uploads' | 'texto' | 'midia' | 'legendas' | 'ajustes' | 'projetos';
 
 type TimelineClip = {
   id: string;
@@ -22,6 +24,58 @@ type TimelineClip = {
 };
 
 const editorTools: EditorTool[] = ['Editar', 'Audio', 'Texto', 'Efeitos', 'Camadas', 'Legendas', 'Filtros'];
+const sideRailTools = [
+  { id: 'modelos', label: 'Modelos', icon: LayoutTemplate },
+  { id: 'uploads', label: 'Uploads', icon: UploadCloud },
+  { id: 'texto', label: 'Texto', icon: Type },
+  { id: 'midia', label: 'Midia', icon: ImageIcon },
+  { id: 'legendas', label: 'Legendas', icon: Captions },
+  { id: 'ajustes', label: 'Ajustes', icon: SlidersHorizontal },
+  { id: 'projetos', label: 'Projetos', icon: FolderOpen },
+] satisfies Array<{ id: SideTool; label: string; icon: LucideIcon }>;
+
+const templateCards = [
+  {
+    title: 'Reels venda direta',
+    type: '9:16',
+    tone: 'bg-cyan/15',
+    clips: [
+      { id: 'tpl-hook', label: 'Hook de venda', length: 3, kind: 'video' },
+      { id: 'tpl-benefit', label: 'Beneficio principal', length: 7, kind: 'video' },
+      { id: 'tpl-cta', label: 'CTA direto', length: 4, kind: 'overlay' },
+    ],
+  },
+  {
+    title: 'Antes e depois',
+    type: 'video',
+    tone: 'bg-fuchsia-400/15',
+    clips: [
+      { id: 'tpl-before', label: 'Antes', length: 4, kind: 'video' },
+      { id: 'tpl-transition', label: 'Transicao', length: 2, kind: 'effect' },
+      { id: 'tpl-after', label: 'Depois', length: 5, kind: 'video' },
+    ],
+  },
+  {
+    title: 'Depoimento curto',
+    type: 'social',
+    tone: 'bg-emerald-400/15',
+    clips: [
+      { id: 'tpl-proof', label: 'Prova social', length: 5, kind: 'video' },
+      { id: 'tpl-caption', label: 'Legenda de destaque', length: 3, kind: 'text' },
+      { id: 'tpl-offer', label: 'Oferta final', length: 4, kind: 'overlay' },
+    ],
+  },
+  {
+    title: 'Oferta relampago',
+    type: 'ads',
+    tone: 'bg-orange-400/15',
+    clips: [
+      { id: 'tpl-urgency', label: 'Urgencia', length: 3, kind: 'video' },
+      { id: 'tpl-price', label: 'Preco e bonus', length: 5, kind: 'text' },
+      { id: 'tpl-action', label: 'Chamar no WhatsApp', length: 4, kind: 'overlay' },
+    ],
+  },
+];
 const defaultClips: TimelineClip[] = [
   { id: 'intro', label: 'Intro hook', length: 3, kind: 'video' },
   { id: 'main', label: 'Cena principal', length: 8, kind: 'video' },
@@ -59,8 +113,9 @@ export function VideoEditorStudioPage() {
   const [prompt, setPrompt] = useState('Video vertical de 15 segundos para lancamento premium com hook forte e CTA direto.');
   const [processing, setProcessing] = useState(false);
   const [clips, setClips] = useState<TimelineClip[]>(defaultClips);
-  const [selectedClipId, setSelectedClipId] = useState<string | null>(defaultClips[0].id);
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [uploadedMediaLabel, setUploadedMediaLabel] = useState<string | null>(null);
+  const [activeSideTool, setActiveSideTool] = useState<SideTool | null>('modelos');
 
   useEffect(() => {
     const timelineData = studio.currentProject?.timeline_data;
@@ -70,12 +125,12 @@ export function VideoEditorStudioPage() {
       : null;
     if (projectClips && projectClips.length > 0) {
       setClips(projectClips);
-      setSelectedClipId(projectClips[0]?.id || null);
+      setSelectedClipId(null);
     }
   }, [studio.currentProject?.id]);
 
   const selectedClip = useMemo(
-    () => clips.find((clip) => clip.id === selectedClipId) || clips[0] || null,
+    () => clips.find((clip) => clip.id === selectedClipId) || null,
     [clips, selectedClipId],
   );
 
@@ -113,6 +168,52 @@ export function VideoEditorStudioPage() {
     } finally {
       setProcessing(false);
     }
+  }
+
+  function handleToolbarAction(actionId: string) {
+    if (!selectedClip) {
+      pushToast('Selecione um clip na timeline antes de usar esta ferramenta.', 'error');
+      return;
+    }
+    const map: Record<string, EditorTool> = {
+      split: 'Editar',
+      trim: 'Editar',
+      speed: 'Editar',
+      audio: 'Audio',
+      captions: 'Legendas',
+      animate: 'Efeitos',
+      position: 'Camadas',
+      ai: 'Efeitos',
+    };
+    setActiveTool(map[actionId] || 'Editar');
+    if (actionId === 'split') {
+      const nextClips = clips.flatMap((clip) => clip.id === selectedClip.id
+        ? [
+            { ...clip, id: `${clip.id}-a`, label: `${clip.label} A`, length: Math.max(1, Math.ceil(clip.length / 2)) },
+            { ...clip, id: `${clip.id}-b`, label: `${clip.label} B`, length: Math.max(1, Math.floor(clip.length / 2)) },
+          ]
+        : [clip]);
+      setClips(nextClips);
+      setSelectedClipId(`${selectedClip.id}-a`);
+      studio.setSaveState('dirty');
+      pushToast('Clip dividido na timeline.', 'success');
+      return;
+    }
+    if (actionId === 'trim') {
+      setClips((current) => current.map((clip) => clip.id === selectedClip.id ? { ...clip, length: Math.max(1, clip.length - 1) } : clip));
+      studio.setSaveState('dirty');
+      pushToast('Clip cortado em 1 segundo.', 'success');
+      return;
+    }
+    if (actionId === 'speed') {
+      setClips((current) => current.map((clip) => clip.id === selectedClip.id ? { ...clip, length: Math.max(1, Math.round(clip.length * 0.75)) } : clip));
+      studio.setSaveState('dirty');
+      pushToast('Velocidade ajustada no clip.', 'success');
+      return;
+    }
+    if (actionId === 'captions') void handleRunAiAction('captions');
+    if (actionId === 'audio') setActiveTool('Audio');
+    if (actionId === 'ai') void handleRunAiAction('generate');
   }
 
   async function handleUploadMedia(file: File) {
@@ -181,6 +282,140 @@ export function VideoEditorStudioPage() {
     [clips],
   );
 
+  function selectSideTool(tool: SideTool) {
+    setActiveSideTool((current) => (current === tool ? null : tool));
+    const map: Partial<Record<SideTool, EditorTool>> = {
+      texto: 'Texto',
+      legendas: 'Legendas',
+      ajustes: 'Filtros',
+      uploads: 'Editar',
+      modelos: 'Editar',
+    };
+    if (map[tool]) setActiveTool(map[tool]);
+  }
+
+  function applyTemplate(template: (typeof templateCards)[number]) {
+    const nextClips = template.clips.map((clip) => ({
+      ...clip,
+      id: `${clip.id}-${Date.now()}`,
+    }));
+    setClips(nextClips);
+    setSelectedClipId(nextClips[0]?.id ?? null);
+    setPrompt(`${template.title}: video curto com narrativa clara, texto objetivo e CTA forte.`);
+    studio.setSaveState('dirty');
+    pushToast(`Template "${template.title}" aplicado na timeline.`, 'success');
+  }
+
+  function renderSidePanel() {
+    if (!activeSideTool) return null;
+    if (activeSideTool === 'modelos') {
+      return (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan">Modelos</p>
+            <input placeholder="Buscar modelos" className="mt-3 h-11 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan/40" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {templateCards.map((template) => (
+              <button key={template.title} type="button" onClick={() => applyTemplate(template)} className={`min-h-36 rounded-2xl border border-white/10 ${template.tone} p-3 text-left transition hover:border-cyan/40`}>
+                <span className="rounded-full bg-black/30 px-2 py-1 text-[10px] font-bold text-slate-300">{template.type}</span>
+                <p className="mt-12 text-sm font-black text-white">{template.title}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (activeSideTool === 'uploads') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan">Uploads</p>
+            <p className="mt-1 text-sm text-slate-400">Envie video, imagem ou audio para editar no canvas.</p>
+          </div>
+          <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-cyan/30 bg-cyan/10 p-5 text-center text-sm text-cyan transition hover:bg-cyan/15">
+            <UploadCloud size={32} />
+            <span className="mt-3 font-bold">Fazer upload</span>
+            <span className="mt-1 text-xs text-slate-400">MP4, JPG, PNG ou MP3</span>
+            <input
+              type="file"
+              accept="video/*,image/*,audio/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                if (file.type.startsWith('audio')) void handleUploadAudio(file);
+                else void handleUploadMedia(file);
+                event.currentTarget.value = '';
+              }}
+            />
+          </label>
+        </div>
+      );
+    }
+    if (activeSideTool === 'texto') {
+      return (
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan">Texto</p>
+          {['Adicionar titulo', 'Adicionar subtitulo', 'Adicionar texto curto'].map((label) => (
+            <button key={label} type="button" onClick={() => handleAddTextClip(label.replace('Adicionar ', ''))} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-left text-sm font-bold text-white transition hover:border-cyan/40">
+              <Plus size={16} className="mb-2 text-cyan" /> {label}
+            </button>
+          ))}
+        </div>
+      );
+    }
+    if (activeSideTool === 'legendas') {
+      return (
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan">Legendas</p>
+          <button type="button" onClick={() => void handleRunAiAction('captions')} className="w-full rounded-2xl border border-cyan/30 bg-cyan/10 px-4 py-3 text-sm font-bold text-cyan hover:bg-cyan/15">
+            Gerar legendas com IA
+          </button>
+          <p className="text-xs leading-5 text-slate-500">A legenda usa o prompt do projeto e salva o resultado no projeto.</p>
+        </div>
+      );
+    }
+    if (activeSideTool === 'ajustes') {
+      const adjustmentActions: Array<{ label: string; action: string }> = [
+        { label: 'Cortar', action: 'trim' },
+        { label: 'Dividir', action: 'split' },
+        { label: 'Velocidade', action: 'speed' },
+        { label: 'Animar', action: 'animate' },
+        { label: 'Posicao', action: 'position' },
+      ];
+      return (
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan">Ajustes</p>
+          {adjustmentActions.map((item) => (
+            <button key={item.action} type="button" onClick={() => handleToolbarAction(item.action)} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-bold text-white hover:border-cyan/40">
+              {item.label}
+            </button>
+          ))}
+        </div>
+      );
+    }
+    if (activeSideTool === 'midia') {
+      return (
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan">Midia IA</p>
+          <button type="button" onClick={() => void handleRunAiAction('generate')} className="w-full rounded-2xl border border-cyan/30 bg-cyan/10 px-4 py-3 text-sm font-bold text-cyan hover:bg-cyan/15">
+            Gerar variacao visual
+          </button>
+          <button type="button" onClick={() => void handleRunAiAction('voiceover')} className="inline-flex w-full items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white hover:border-cyan/40">
+            <Mic2 size={16} /> Criar voiceover
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-3">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan">Projetos</p>
+        <p className="text-sm leading-6 text-slate-400">Use Salvar para manter este projeto na biblioteca do Studio.</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="min-h-screen bg-[linear-gradient(180deg,#040813,#091324)] px-4 py-4 md:px-6">
@@ -194,7 +429,37 @@ export function VideoEditorStudioPage() {
             onBackHome={() => navigate('/app/studio')}
           />
 
-          <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className={['grid min-h-0 flex-1 gap-4', activeSideTool ? 'xl:grid-cols-[76px_320px_minmax(0,1fr)_340px]' : 'xl:grid-cols-[76px_minmax(0,1fr)_340px]'].join(' ')}>
+            <aside className="hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-2 xl:block">
+              <div className="space-y-2">
+                {sideRailTools.map((tool) => {
+                  const Icon = tool.icon;
+                  const active = activeSideTool === tool.id;
+                  return (
+                    <button
+                      key={tool.id}
+                      type="button"
+                      onClick={() => selectSideTool(tool.id)}
+                      className={[
+                        'flex w-full flex-col items-center gap-1 rounded-2xl px-2 py-3 text-[11px] font-semibold transition',
+                        active ? 'bg-cyan text-ink' : 'text-slate-300 hover:bg-white/[0.06] hover:text-white',
+                      ].join(' ')}
+                      title={tool.label}
+                    >
+                      <Icon size={20} />
+                      <span className="leading-tight">{tool.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+
+            {activeSideTool ? (
+              <aside className="hidden min-h-0 overflow-y-auto rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-4 xl:block">
+                {renderSidePanel()}
+              </aside>
+            ) : null}
+
             <div className="min-h-0 space-y-4">
               <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -210,43 +475,38 @@ export function VideoEditorStudioPage() {
                 </div>
               </div>
 
-              <StudioCanvas title="Preview do video" subtitle="Workspace focado em composicao, timing e narrativa visual.">
-                <div className="grid h-full gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-                  <div className="flex h-full min-h-[280px] items-center justify-center rounded-[1.5rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.18))] p-4">
+              <StudioCanvas
+                title="Area de edicao"
+                subtitle="Selecione um clip na timeline para liberar a barra de ferramentas contextual."
+                selected={Boolean(selectedClipId && selectedClip)}
+                toolbar={selectedClipId && selectedClip ? <StudioContextToolbar selectionKind={selectedClip.kind === 'text' ? 'text' : 'video'} activeAction={activeTool === 'Legendas' ? 'captions' : undefined} onAction={handleToolbarAction} /> : null}
+                footer={(
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+                    <button type="button" className="rounded-xl border border-slate-300 px-4 py-2 hover:bg-slate-50">+ Adicionar pagina</button>
+                    <span>{clips.length} clips - {totalDuration}s - 9:16</span>
+                  </div>
+                )}
+              >
+                <div className="flex min-h-[500px] items-center justify-center">
+                  <div className="relative flex aspect-[9/16] h-[460px] max-h-full items-center justify-center bg-[#a99b92] shadow-[0_22px_70px_rgba(15,23,42,0.22)]">
+                    <div className="absolute -top-10 right-0 flex gap-2 text-slate-600">
+                      <span className="rounded-lg bg-white/80 px-2 py-1 text-xs">bloquear</span>
+                      <span className="rounded-lg bg-white/80 px-2 py-1 text-xs">duplicar</span>
+                      <span className="rounded-lg bg-white/80 px-2 py-1 text-xs">+</span>
+                    </div>
                     {selectedClip?.assetUrl ? (
                       selectedClip.kind === 'image' ? (
-                        <img src={selectedClip.assetUrl} alt={selectedClip.label} className="max-h-full max-w-full rounded-[1.25rem] object-contain" />
+                        <img src={selectedClip.assetUrl} alt={selectedClip.label} className="max-h-full max-w-full object-contain" />
                       ) : (
-                        <video src={selectedClip.assetUrl} controls className="max-h-full max-w-full rounded-[1.25rem]" />
+                        <video src={selectedClip.assetUrl} controls className="max-h-full max-w-full" />
                       )
                     ) : (
-                      <div className="flex w-full max-w-[360px] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-cyan-300/25 bg-black/25 px-6 py-10 text-center">
-                        <PlayCircle className="h-12 w-12 text-cyan-200" />
-                        <p className="mt-4 text-lg font-semibold text-white">{selectedClip?.label || 'Projeto pronto para editar'}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-300">Envie uma midia, reorganize a timeline e refine o corte no painel lateral.</p>
+                      <div className="mx-8 flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-700/30 bg-white/18 px-8 py-10 text-center text-slate-900">
+                        <PlayCircle className="h-12 w-12 text-cyan" />
+                        <p className="mt-4 text-lg font-black">{selectedClip?.label || 'Projeto pronto para editar'}</p>
+                        <p className="mt-2 max-w-[260px] text-sm leading-6">Envie uma midia ou selecione um clip na timeline para abrir as ferramentas.</p>
                       </div>
                     )}
-                  </div>
-
-                  <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-center gap-2 text-cyan-200">
-                      <Film size={16} />
-                      <p className="text-xs uppercase tracking-[0.24em]">Resumo do frame</p>
-                    </div>
-                    <div className="mt-4 space-y-3 text-sm text-slate-300">
-                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                        <p className="text-xs text-slate-400">Clip selecionado</p>
-                        <p className="mt-1 font-medium text-white">{selectedClip?.label || 'Nenhum clip selecionado'}</p>
-                      </div>
-                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                        <p className="text-xs text-slate-400">Prompt de criacao</p>
-                        <p className="mt-1 line-clamp-4 text-white">{prompt}</p>
-                      </div>
-                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                        <p className="text-xs text-slate-400">Ultima midia</p>
-                        <p className="mt-1 text-white">{uploadedMediaLabel || 'Nenhuma midia enviada nesta sessao'}</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </StudioCanvas>
@@ -263,6 +523,11 @@ export function VideoEditorStudioPage() {
                 <span className="mb-1 block">Prompt do projeto</span>
                 <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} className="min-h-28 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white" />
               </label>
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-sm text-slate-300">
+                <p className="text-xs text-slate-500">Ultima midia enviada</p>
+                <p className="mt-1 font-semibold text-white">{uploadedMediaLabel || 'Nenhuma midia nesta sessao'}</p>
+              </div>
 
               <StudioVideoContextPanel
                 activeTool={activeTool}

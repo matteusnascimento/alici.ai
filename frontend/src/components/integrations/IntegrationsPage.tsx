@@ -1,300 +1,252 @@
-import { CheckCircle2, Link2, Loader2, PlugZap, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+﻿import {
+  BarChart3,
+  CheckCircle2,
+  ExternalLink,
+  Instagram,
+  Link2,
+  Loader2,
+  MessageCircle,
+  PlugZap,
+  ShieldCheck,
+  XCircle,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+
 import type { IntegrationAccount, IntegrationProvider } from '../../services/integrations.service';
 import {
-  connectIntegration,
   disconnectProvider,
   listChannelIntegrations,
   listIntegrationAccounts,
+  startIntegrationOAuth,
 } from '../../services/integrations.service';
-
-const DEV = import.meta.env.DEV;
-
-const PROVIDER_ICONS: Record<string, string> = {
-  whatsapp: '💬',
-  instagram: '📸',
-};
-
-const PROVIDER_FIELDS: Record<string, { key: string; label: string; type: string }[]> = {
-  whatsapp: [
-    { key: 'access_token', label: 'Access Token', type: 'password' },
-    { key: 'external_account_id', label: 'Phone Number ID', type: 'text' },
-    { key: 'external_account_name', label: 'Nome da conta', type: 'text' },
-  ],
-  instagram: [
-    { key: 'access_token', label: 'Access Token', type: 'password' },
-    { key: 'external_account_id', label: 'Instagram Account ID', type: 'text' },
-    { key: 'external_account_name', label: 'Nome da conta', type: 'text' },
-  ],
-};
 
 type NormalizedStatus = 'connected' | 'pending' | 'disconnected';
 
-/**
- * Fonte única de verdade para o status de conexão de um provedor.
- * - connected: conta com status connected/active
- * - pending: conta existe mas aguarda verificação de webhook (pending_setup/auth_required)
- * - disconnected: nenhuma conta ou todas desconectadas
- */
-function normalizeStatus(provider: IntegrationProvider, providerAccounts: IntegrationAccount[]): NormalizedStatus {
-  const connectedAccounts = providerAccounts.filter((a) => a.status === 'connected' || a.status === 'active');
-  const pendingAccounts = providerAccounts.filter((a) => a.status === 'pending_setup' || a.status === 'auth_required');
+const PROVIDER_META: Record<string, { short: string; icon: React.ReactNode; accent: string; copy: string }> = {
+  whatsapp: {
+    short: 'WA',
+    icon: <MessageCircle size={22} />,
+    accent: 'from-emerald-400/20 to-cyan/10 border-emerald-300/25 text-emerald-200',
+    copy: 'Login oficial da Meta para autorizar WhatsApp Business, nÃºmeros e webhooks.',
+  },
+  instagram: {
+    short: 'IG',
+    icon: <Instagram size={22} />,
+    accent: 'from-pink-400/20 to-cyan/10 border-pink-300/25 text-pink-200',
+    copy: 'Login oficial da Meta para autorizar Instagram profissional e DMs.',
+  },
+  messenger: {
+    short: 'FB',
+    icon: <MessageCircle size={22} />,
+    accent: 'from-blue-400/20 to-cyan/10 border-blue-300/25 text-blue-200',
+    copy: 'Login oficial da Meta para escolher pÃ¡ginas e ativar Messenger.',
+  },
+  tiktok: {
+    short: 'TK',
+    icon: <PlugZap size={22} />,
+    accent: 'from-fuchsia-400/20 to-cyan/10 border-fuchsia-300/25 text-fuchsia-200',
+    copy: 'Login TikTok Business para eventos, conta de anÃºncios e mensagens aprovadas.',
+  },
+  google_ads: {
+    short: 'GA',
+    icon: <BarChart3 size={22} />,
+    accent: 'from-amber-400/20 to-cyan/10 border-amber-300/25 text-amber-100',
+    copy: 'Login oficial do Google para importar metricas de anuncios, cliques e conversoes.',
+  },};
 
-  if (DEV) {
-    console.debug(`[Integrations] ${provider.provider}`, {
-      provider_status: provider.status,
-      accounts_total: providerAccounts.length,
-      accounts_connected: connectedAccounts.length,
-      accounts_pending: pendingAccounts.length,
-    });
-  }
-
-  if (connectedAccounts.length > 0) return 'connected';
-  if (pendingAccounts.length > 0) return 'pending';
+function normalizeStatus(providerAccounts: IntegrationAccount[]): NormalizedStatus {
+  if (providerAccounts.some((account) => account.status === 'connected' || account.status === 'active')) return 'connected';
+  if (providerAccounts.some((account) => account.status === 'pending_setup' || account.status === 'auth_required')) return 'pending';
   return 'disconnected';
 }
 
-function StatusBadge({ status }: { status: NormalizedStatus }) {
-  if (status === 'connected') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-green-500/15 text-green-400">
-        <CheckCircle2 size={11} /> Conectado
-      </span>
-    );
-  }
-  if (status === 'pending') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-500/15 text-yellow-400">
-        <Loader2 size={11} className="animate-spin" /> Configurando
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-slate-500/15 text-slate-400">
-      <XCircle size={11} /> Desconectado
-    </span>
-  );
+function statusUi(status: NormalizedStatus) {
+  if (status === 'connected') return { label: 'Conectado', className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300', icon: CheckCircle2 };
+  if (status === 'pending') return { label: 'Configurando', className: 'border-amber-400/25 bg-amber-400/10 text-amber-300', icon: Loader2 };
+  return { label: 'Desconectado', className: 'border-slate-500/25 bg-slate-500/10 text-slate-400', icon: XCircle };
 }
 
 export function IntegrationsPage() {
   const [providers, setProviders] = useState<IntegrationProvider[]>([]);
   const [accounts, setAccounts] = useState<IntegrationAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState<string | null>(null);
-  const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const [busyProvider, setBusyProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showFormFor, setShowFormFor] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function reload() {
     setLoading(true);
     try {
-      const [p, a] = await Promise.all([listChannelIntegrations(), listIntegrationAccounts()]);
-      const safeProviders = Array.isArray(p) ? p : [];
-      const safeAccounts = Array.isArray(a) ? a : [];
-      if (DEV) {
-        console.debug('[Integrations] reload — providers:', safeProviders, 'accounts:', safeAccounts);
-      }
-      setProviders(safeProviders);
-      setAccounts(safeAccounts);
+      const [providerList, accountList] = await Promise.all([listChannelIntegrations(), listIntegrationAccounts()]);
+      setProviders(Array.isArray(providerList) ? providerList : []);
+      setAccounts(Array.isArray(accountList) ? accountList : []);
       setError(null);
     } catch {
-      setError('Erro ao carregar integrações');
       setProviders([]);
       setAccounts([]);
+      setError('Nao foi possivel carregar as conexoes. Verifique sua sessao e tente novamente.');
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { void reload(); }, []);
+  useEffect(() => {
+    void reload();
+  }, []);
 
-  async function handleConnect(e: React.FormEvent, provider: string) {
-    e.preventDefault();
-    setConnecting(provider);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauth = params.get('oauth');
+    const provider = params.get('provider');
+    if (!oauth) return;
+    if (oauth === 'success') {
+      setSuccess(`${provider ?? 'Canal'} conectado com sucesso. As proximas mensagens entram no atendimento omnichannel.`);
+      setError(null);
+      void reload();
+    } else {
+      setSuccess(null);
+      setError(`Nao foi possivel concluir a conexao ${provider ?? ''}. Revise as permissoes no provedor e tente novamente.`);
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
+
+  const totals = useMemo(() => {
+    const connected = accounts.filter((account) => account.status === 'connected' || account.status === 'active').length;
+    return { connected, total: providers.length };
+  }, [accounts, providers]);
+
+  async function handleOAuthConnect(provider: string) {
+    setBusyProvider(provider);
     setError(null);
+    setSuccess(null);
     try {
-      const { access_token, external_account_id, external_account_name, ...rest } = formValues;
-      await connectIntegration({
-        provider,
-        access_token,
-        external_account_id,
-        external_account_name,
-        metadata: rest,
-      });
-      setShowFormFor(null);
-      setFormValues({});
-      await reload();
-    } catch {
-      setError(`Erro ao conectar ${provider}`);
-    } finally {
-      setConnecting(null);
+      const response = await startIntegrationOAuth(provider);
+      window.location.href = response.authorization_url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Erro ao iniciar login de ${provider}.`);
+      setBusyProvider(null);
     }
   }
 
   async function handleDisconnect(provider: string) {
-    if (!confirm(`Desconectar ${provider}?`)) return;
-    setDisconnecting(provider);
+    if (!window.confirm(`Desconectar ${provider}? As novas mensagens deste canal deixam de entrar na AXI.`)) return;
+    setBusyProvider(provider);
     setError(null);
-
-    // Update otimista: marca contas do provedor como desconectadas antes do reload
-    setAccounts((current) =>
-      current.map((a) =>
-        a.provider === provider ? { ...a, status: 'disconnected' } : a,
-      ),
-    );
-
+    setSuccess(null);
     try {
-      const result = await disconnectProvider(provider);
-      if (DEV) {
-        console.debug(`[Integrations] disconnect ${provider} — resposta:`, result);
-      }
+      await disconnectProvider(provider);
       await reload();
+      setSuccess(`${provider} desconectado.`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : `Erro ao desconectar ${provider}`;
-      setError(msg);
-      // Reverte o update otimista em caso de erro
-      await reload();
+      setError(err instanceof Error ? err.message : `Erro ao desconectar ${provider}.`);
     } finally {
-      setDisconnecting(null);
+      setBusyProvider(null);
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-cyan" />
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8 space-y-8">
-      <div className="flex items-center gap-3">
-        <Link2 size={20} className="text-cyan" />
-        <div>
-          <h1 className="text-xl font-semibold text-white">Integrações de Canal</h1>
-          <p className="text-sm text-slate-400">Conecte seus canais de atendimento aos agentes AXI</p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        {providers.map((provider) => {
-          const icon = PROVIDER_ICONS[provider.provider] ?? '🔗';
-          const providerAccounts = accounts.filter((a) => a.provider === provider.provider);
-          // Fonte única de verdade — derivada das contas reais no banco
-          const connStatus = normalizeStatus(provider, providerAccounts);
-          const isConnected = connStatus !== 'disconnected';
-          const fields = PROVIDER_FIELDS[provider.provider] ?? [];
-
-          return (
-            <div
-              key={provider.provider}
-              className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{icon}</span>
-                  <div>
-                    <p className="font-semibold text-white">{provider.title}</p>
-                    <p className="text-xs text-slate-400">{provider.description}</p>
-                  </div>
-                </div>
-                <StatusBadge status={connStatus} />
-              </div>
-
-              <p className="text-xs text-slate-500">{provider.helper_text}</p>
-
-              {providerAccounts.length > 0 && (
-                <div className="space-y-2">
-                  {providerAccounts.map((acc) => {
-                    const accConnected = acc.status === 'connected' || acc.status === 'active';
-                    return (
-                      <div
-                        key={acc.id}
-                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
-                      >
-                        <div>
-                          <p className="text-xs text-white">{acc.external_account_name ?? acc.external_account_id ?? `Conta #${acc.id}`}</p>
-                          <p className={`text-xs ${accConnected ? 'text-green-400' : acc.status === 'pending_setup' ? 'text-yellow-400' : 'text-slate-500'}`}>
-                            {accConnected ? 'ativa' : acc.status === 'pending_setup' ? 'aguardando webhook' : 'desconectada'}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                {isConnected ? (
-                  <button
-                    onClick={() => void handleDisconnect(provider.provider)}
-                    disabled={disconnecting === provider.provider}
-                    className="flex items-center gap-1.5 rounded-xl border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 disabled:opacity-50"
-                  >
-                    {disconnecting === provider.provider ? <Loader2 size={11} className="animate-spin" /> : <XCircle size={11} />}
-                    Desconectar
-                  </button>
-                ) : showFormFor === provider.provider ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowFormFor(null)}
-                    className="rounded-xl border border-white/15 px-3 py-1.5 text-xs text-slate-400 hover:bg-white/5"
-                  >
-                    Cancelar
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowFormFor(provider.provider)}
-                    className="flex items-center gap-1.5 rounded-xl bg-cyan/10 border border-cyan/30 px-3 py-1.5 text-xs text-cyan hover:bg-cyan/20"
-                  >
-                    <PlugZap size={11} />
-                    Conectar
-                  </button>
-                )}
-              </div>
-
-              {showFormFor === provider.provider && fields.length > 0 && (
-                <form onSubmit={(e) => void handleConnect(e, provider.provider)} className="space-y-2">
-                  {fields.map((f) => (
-                    <input
-                      key={f.key}
-                      type={f.type}
-                      required={f.key === 'access_token'}
-                      placeholder={f.label}
-                      value={formValues[f.key] ?? ''}
-                      onChange={(e) => setFormValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan/50"
-                    />
-                  ))}
-                  <button
-                    type="submit"
-                    disabled={connecting === provider.provider}
-                    className="flex items-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-xs font-semibold text-ink hover:bg-cyan/90 disabled:opacity-50"
-                  >
-                    {connecting === provider.provider ? <Loader2 size={11} className="animate-spin" /> : null}
-                    Salvar Conexão
-                  </button>
-                </form>
-              )}
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <section className="overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_0%_0%,rgba(0,212,255,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.025))] p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-cyan">
+              <Link2 size={14} /> Central unica de conexoes
             </div>
-          );
-        })}
-      </div>
+            <h1 className="mt-4 font-display text-3xl font-black text-white">Conecte canais oficiais</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              O cliente autoriza cada rede com login oficial. A AXI recebe webhooks reais, organiza conversas,
+              atualiza contatos e disponibiliza os dados para analise da IA.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Status</p>
+            <p className="mt-1 text-2xl font-black text-white">{totals.connected}/{totals.total}</p>
+            <p>Canais conectados</p>
+          </div>
+        </div>
+      </section>
 
-      {providers.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 py-16 gap-3 text-slate-400">
-          <Link2 size={32} />
-          <p className="text-sm">Nenhum provedor disponível no momento.</p>
+      {error ? <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-300">{error}</div> : null}
+      {success ? <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">{success}</div> : null}
+
+      {loading ? (
+        <div className="flex h-48 items-center justify-center rounded-3xl border border-white/10 bg-white/[0.03]">
+          <Loader2 className="animate-spin text-cyan" />
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {providers.map((provider) => {
+            const meta = PROVIDER_META[provider.provider] ?? PROVIDER_META.whatsapp;
+            const providerAccounts = accounts.filter((account) => account.provider === provider.provider);
+            const status = normalizeStatus(providerAccounts);
+            const statusConfig = statusUi(status);
+            const StatusIcon = statusConfig.icon;
+            const busy = busyProvider === provider.provider;
+
+            return (
+              <article key={provider.provider} className={`rounded-3xl border bg-gradient-to-br ${meta.accent} p-5 shadow-[0_18px_45px_rgba(0,0,0,0.18)]`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white">
+                      {meta.icon}
+                    </div>
+                    <div>
+                      <h2 className="font-display text-xl font-bold text-white">{provider.title}</h2>
+                      <p className="text-xs text-slate-300">{meta.copy}</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${statusConfig.className}`}>
+                    <StatusIcon size={12} className={status === 'pending' ? 'animate-spin' : ''} /> {statusConfig.label}
+                  </span>
+                </div>
+
+                {providerAccounts.length ? (
+                  <div className="mt-4 space-y-2">
+                    {providerAccounts.map((account) => (
+                      <div key={account.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                        <div>
+                          <p className="text-sm font-semibold text-white">{account.external_account_name || account.external_account_id || `Conta ${account.id}`}</p>
+                          <p className="text-xs text-slate-400">{account.status}</p>
+                        </div>
+                        <ShieldCheck size={16} className="text-cyan" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 rounded-2xl border border-white/10 bg-black/15 px-3 py-3 text-sm leading-6 text-slate-300">
+                    Clique em conectar para abrir o login oficial do provedor e escolher a conta que deseja autorizar.
+                  </p>
+                )}
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {status === 'connected' ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleDisconnect(provider.provider)}
+                      disabled={busy}
+                      className="inline-flex items-center gap-2 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 py-2 text-sm font-bold text-rose-200 transition hover:bg-rose-500/20 disabled:opacity-50"
+                    >
+                      {busy ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
+                      Desconectar
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void handleOAuthConnect(provider.provider)}
+                      disabled={busy}
+                      className="inline-flex items-center gap-2 rounded-xl bg-cyan px-4 py-2 text-sm font-black text-ink shadow-[0_12px_28px_rgb(var(--accent-rgb)/0.25)] transition hover:bg-white disabled:opacity-50"
+                    >
+                      {busy ? <Loader2 size={15} className="animate-spin" /> : <ExternalLink size={15} />}
+                      Conectar com login
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+

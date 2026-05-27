@@ -71,6 +71,23 @@ export async function login(payload: LoginInput) {
   return normalized;
 }
 
+export function startGoogleLogin() {
+  const apiUrl = import.meta.env.VITE_API_URL ?? '';
+  window.location.assign(`${apiUrl}/auth/google/start`);
+}
+
+export async function completeOAuthLogin(payload: Pick<AuthResponse, 'access_token' | 'refresh_token' | 'token_type'>) {
+  if (!payload.access_token) {
+    throw new Error('Token de acesso ausente.');
+  }
+  setAuthToken(payload.access_token);
+  const user = await getMe();
+  return {
+    ...payload,
+    user,
+  };
+}
+
 export async function getMe() {
   const response = await apiFetch<{ usuario?: ApiAuthUser; user?: ApiAuthUser }>('/auth/me');
   const user = response.user || response.usuario;

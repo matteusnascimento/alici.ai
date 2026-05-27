@@ -38,6 +38,26 @@ export interface MarketingProjectUpdate {
   notes?: string;
 }
 
+export interface MarketingPerformanceSummary {
+  views: number;
+  clicks: number;
+  reservations: number;
+  open_opportunities: number;
+  pipeline_value_cents: number;
+  won_value_cents: number;
+  ads_cost_micros?: number;
+  leads: number;
+  ads_connected: boolean;
+  message?: string | null;
+  channel_counts: Record<string, number>;
+  connected_sources: Array<{
+    provider: string;
+    name?: string | null;
+    enabled: boolean;
+    status?: string | null;
+  }>;
+}
+
 export interface MarketingTemplateProfile {
   businessName: string;
   marketSegment: string;

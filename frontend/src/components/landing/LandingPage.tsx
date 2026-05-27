@@ -2,17 +2,20 @@ import { motion, useInView } from 'framer-motion';
 import {
   ArrowRight,
   Bot,
-  ChartNoAxesCombined,
   CheckCircle2,
+  ChevronRight,
+  LayoutDashboard,
+  LineChart,
+  Megaphone,
   MessageCircle,
-  Rocket,
+  PlayCircle,
+  ShieldCheck,
   Sparkles,
-  Zap,
-  Shield,
-  Users,
-  TrendingUp,
-  Clock,
   Star,
+  Users,
+  Wand2,
+  Zap,
+  type LucideIcon,
 } from 'lucide-react';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
@@ -23,16 +26,27 @@ interface FadeSectionProps {
   id?: string;
 }
 
+interface FeatureItem {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
 const fadeUp = {
-  hidden: { opacity: 0, y: 22 },
-  show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.45 } }),
+  hidden: { opacity: 0, y: 24 },
+  show: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.08, duration: 0.45 },
+  }),
 };
 
 function FadeSection({ children, className = '', ...rest }: FadeSectionProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
+  const inView = useInView(ref, { once: true, margin: '-80px' });
+
   return (
-    <motion.div
+    <motion.section
       ref={ref}
       initial={{ opacity: 0, y: 28 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -41,460 +55,477 @@ function FadeSection({ children, className = '', ...rest }: FadeSectionProps) {
       {...rest}
     >
       {children}
-    </motion.div>
+    </motion.section>
   );
 }
 
-const stats = [
-  { label: 'Conversas automatizadas', value: '18.420', delta: '+32% em 30 dias', color: 'text-emerald-300' },
-  { label: 'Leads qualificados', value: '1.284', delta: 'Fluxo ativo', color: 'text-cyan' },
-  { label: 'Horas poupadas/mês', value: '340h', delta: 'Por cliente médio', color: 'text-violet-300' },
-  { label: 'Taxa de resposta', value: '100%', delta: '24h por dia', color: 'text-amber-300' },
+const platformStats = [
+  { label: 'Atendimento 24/7', value: '100%', detail: 'sem fila manual' },
+  { label: 'Canais conectados', value: '4+', detail: 'WhatsApp, Instagram e mais' },
+  { label: 'Tempo economizado', value: '80%', detail: 'menos rotina operacional' },
+  { label: 'Setup inicial', value: '1h', detail: 'para comecar a vender' },
 ];
 
-const useCases = [
+const pillars: FeatureItem[] = [
   {
-    title: 'Atendimento automático',
-    description: 'Responda clientes instantaneamente no WhatsApp, Instagram e webchat — sem nenhum atendente online.',
     icon: MessageCircle,
-    tag: 'Atendimento',
-    tagColor: 'border-cyan/30 bg-cyan/10 text-cyan',
+    title: 'Atendimento omnichannel',
+    description: 'Unifique WhatsApp, Instagram, Messenger, TikTok e webchat em uma conversa inteligente.',
   },
   {
-    title: 'Geração de vendas',
-    description: 'Qualifique leads, responda objeções e conduza o cliente até a compra com fluxos de IA treinados para vender.',
-    icon: TrendingUp,
-    tag: 'Vendas',
-    tagColor: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
-  },
-  {
-    title: 'Campanhas com IA',
-    description: 'Crie campanhas completas — copy, estratégia e execução — em minutos sem depender de agência.',
-    icon: Rocket,
-    tag: 'Marketing',
-    tagColor: 'border-violet-400/30 bg-violet-500/10 text-violet-300',
-  },
-];
-
-const steps = [
-  {
-    num: '01',
-    title: 'Crie seu agente em minutos',
-    description: 'Defina identidade, tom de voz e objetivo. A IA aprende como sua empresa fala e vende.',
     icon: Bot,
+    title: 'Agentes que vendem',
+    description: 'A IA responde, qualifica leads, entende contexto e entrega oportunidades para o time certo.',
   },
   {
-    num: '02',
+    icon: Wand2,
+    title: 'AXI Studio',
+    description: 'Crie anuncios, videos, posts e campanhas com IA para acelerar marketing e vendas.',
+  },
+  {
+    icon: LineChart,
+    title: 'CRM e forecast',
+    description: 'Transforme conversas em contatos, negocios, pipelines, receita prevista e indicadores reais.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Controle e seguranca',
+    description: 'Limites de uso, logs, billing, credito atomico, webhooks e integracoes oficiais por login.',
+  },
+  {
+    icon: Megaphone,
+    title: 'Campanhas prontas',
+    description: 'Gere copy, CTA, segmentacao, respostas rapidas e criativos para canais sociais.',
+  },
+];
+
+const workflow = [
+  {
+    step: '01',
     title: 'Conecte seus canais',
-    description: 'WhatsApp, Instagram e webchat ativos sem setup complexo. Tudo centralizado no mesmo painel.',
-    icon: Zap,
+    description: 'O cliente autoriza as redes sociais com login oficial. A AXI recebe mensagens reais e organiza tudo no inbox.',
   },
   {
-    num: '03',
-    title: 'Automatize e escale',
-    description: 'Respostas, qualificação e campanhas rodando 24h — sem time dedicado, sem custo operacional extra.',
-    icon: ChartNoAxesCombined,
+    step: '02',
+    title: 'Treine sua operacao',
+    description: 'Configure tom de voz, produtos, agenda, contratos, CRM, respostas rapidas e regras de escalada.',
+  },
+  {
+    step: '03',
+    title: 'Venda com IA',
+    description: 'A plataforma atende, qualifica, cria campanhas, acompanha receita e mostra o que precisa de acao humana.',
   },
 ];
 
-const capabilities = [
-  { icon: Bot, title: 'Agentes de IA configuráveis', description: 'Crie múltiplos agentes com personalidades e objetivos diferentes para cada área do negócio.' },
-  { icon: MessageCircle, title: 'Omnichannel real', description: 'WhatsApp, Instagram e webchat integrados em um inbox unificado com histórico completo.' },
-  { icon: Rocket, title: 'Campanhas inteligentes', description: 'Planeje e execute campanhas de marketing com geração de copy e automação por IA.' },
-  { icon: Shield, title: 'Controle e segurança', description: 'Defina limites de comportamento, filtros de conteúdo e regras de escalada para humanos.' },
-  { icon: Users, title: 'Gestão de leads', description: 'Qualifique e segmente automaticamente com base em intenção e comportamento de conversa.' },
-  { icon: Star, title: 'Análise e métricas', description: 'Dashboard com volume de conversas, taxa de resposta, leads gerados e performance por canal.' },
+const testimonials = [
+  {
+    quote: 'A AXI tira o caos do WhatsApp e transforma conversa em pipeline real.',
+    name: 'Operacao comercial',
+    role: 'Atendimento e vendas',
+  },
+  {
+    quote: 'O Studio ajuda a criar campanha sem depender de agencia para cada ideia nova.',
+    name: 'Time de marketing',
+    role: 'Criativos e anuncios',
+  },
+  {
+    quote: 'A visao de receita, forecast e contatos deixa a gestao muito mais clara.',
+    name: 'Gestao',
+    role: 'Indicadores e crescimento',
+  },
 ];
 
-const benefits = [
-  'Reduza até 80% do trabalho manual de atendimento',
-  'Responda clientes 24h por dia, 7 dias por semana',
-  'Aumente conversão com respostas rápidas e personalizadas',
-  'Centralize canais, campanhas e análises em um painel único',
-  'Escale sem contratar mais atendentes',
-  'Setup completo em menos de 1 hora',
-];
+function ProductPreview() {
+  return (
+    <div className="relative">
+      <div className="absolute -inset-6 rounded-[2.5rem] bg-[radial-gradient(circle_at_top_left,rgba(0,240,255,0.2),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(160,32,240,0.2),transparent_46%)] blur-2xl" />
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#07111f] shadow-[0_34px_120px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-rose-400" />
+            <span className="h-3 w-3 rounded-full bg-amber-300" />
+            <span className="h-3 w-3 rounded-full bg-emerald-400" />
+          </div>
+          <span className="rounded-full border border-cyan/25 bg-cyan/10 px-3 py-1 text-xs font-semibold text-cyan">
+            AXI ao vivo
+          </span>
+        </div>
+
+        <div className="grid min-h-[420px] md:grid-cols-[190px_1fr]">
+          <aside className="hidden border-r border-white/10 bg-black/20 p-4 md:block">
+            <div className="mb-5 flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan text-ink">
+                <Sparkles size={17} />
+              </div>
+              <div>
+                <p className="text-sm font-black text-white">AXI Platform</p>
+                <p className="text-xs text-slate-500">workspace</p>
+              </div>
+            </div>
+            {['Dashboard', 'Chat', 'CRM', 'AXI Studio', 'Analises'].map((item, index) => (
+              <div
+                key={item}
+                className={[
+                  'mb-2 rounded-xl px-3 py-2 text-sm font-semibold',
+                  index === 1 ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/25' : 'text-slate-400',
+                ].join(' ')}
+              >
+                {item}
+              </div>
+            ))}
+          </aside>
+
+          <div className="p-4 sm:p-5">
+            <div className="mb-4 grid gap-3 sm:grid-cols-4">
+              {platformStats.map((stat) => (
+                <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{stat.label}</p>
+                  <p className="mt-2 text-2xl font-black text-white">{stat.value}</p>
+                  <p className="text-[11px] text-cyan/80">{stat.detail}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="rounded-3xl border border-white/10 bg-black/25 p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-cyan">Inbox inteligente</p>
+                    <h3 className="mt-1 text-xl font-black text-white">Conversas viram vendas</h3>
+                  </div>
+                  <MessageCircle className="text-cyan" size={22} />
+                </div>
+                {[
+                  ['WhatsApp', 'Cliente pediu preco do plano anual', 'IA respondeu em 4s'],
+                  ['Instagram', 'Lead quer agendar demonstracao', 'Enviado para CRM'],
+                  ['Webchat', 'Pergunta sobre suporte e garantia', 'Resolvido pela IA'],
+                ].map(([channel, text, status]) => (
+                  <div key={text} className="mb-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-bold text-white">{channel}</p>
+                      <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-[10px] font-bold text-emerald-300">
+                        {status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-400">{text}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(0,240,255,0.12),rgba(160,32,240,0.12))] p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-cyan">AXI Studio</p>
+                  <h3 className="mt-1 text-xl font-black text-white">Criativos com IA</h3>
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {['Video', 'Post', 'Anuncio'].map((item) => (
+                      <div key={item} className="rounded-2xl border border-white/10 bg-black/25 p-3 text-center">
+                        <PlayCircle className="mx-auto text-cyan" size={20} />
+                        <p className="mt-2 text-xs font-bold text-white">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-violet-200">Forecast</p>
+                  <div className="mt-4 h-24 rounded-2xl bg-[linear-gradient(180deg,rgba(0,240,255,0.2),rgba(0,240,255,0.02))]">
+                    <div className="flex h-full items-end gap-2 px-4 pb-4">
+                      {[30, 55, 42, 76, 61, 88].map((height, index) => (
+                        <span key={index} style={{ height: `${height}%` }} className="flex-1 rounded-t-lg bg-cyan/70" />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-400">Receita, pipeline e oportunidades acompanhadas em tempo real.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-ink text-white">
-      {/* ── NAV ── */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-ink/80 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan text-ink">
-              <Bot size={17} strokeWidth={2.5} />
+    <div className="min-h-screen overflow-hidden bg-[#030711] text-white">
+      <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#030711]/82 backdrop-blur-xl">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#00F0FF,#A020F0)] text-ink shadow-[0_0_30px_rgba(0,240,255,0.24)]">
+              <Sparkles size={19} strokeWidth={2.7} />
             </div>
-            <span className="font-display text-lg font-bold tracking-tight text-white">Alici</span>
-          </div>
-          <div className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
+            <div>
+              <p className="font-display text-xl font-black leading-none text-white">AXI</p>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-cyan">AI SaaS Platform</p>
+            </div>
+          </Link>
+
+          <div className="hidden items-center gap-8 text-sm font-semibold text-slate-300 md:flex">
+            <a href="#produto" className="transition hover:text-white">Produto</a>
             <a href="#como-funciona" className="transition hover:text-white">Como funciona</a>
-            <a href="#features" className="transition hover:text-white">Features</a>
-            <a href="#beneficios" className="transition hover:text-white">Benefícios</a>
+            <a href="#recursos" className="transition hover:text-white">Recursos</a>
+            <a href="#planos" className="transition hover:text-white">Planos</a>
           </div>
+
           <div className="flex items-center gap-3">
-            <Link to="/login" className="hidden text-sm text-slate-300 transition hover:text-white sm:block">Entrar</Link>
+            <Link to="/login" className="hidden rounded-full px-4 py-2 text-sm font-semibold text-slate-300 transition hover:text-white sm:inline-flex">
+              Entrar
+            </Link>
             <Link
               to="/register"
-              className="inline-flex items-center gap-1.5 rounded-full bg-cyan px-5 py-2 text-sm font-semibold text-ink shadow-[0_8px_24px_rgba(34,211,238,0.28)] transition hover:brightness-110"
+              className="inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 text-sm font-black text-ink shadow-[0_12px_36px_rgba(0,240,255,0.25)] transition hover:brightness-110"
             >
-              Começar grátis <ArrowRight size={14} />
+              Comecar agora <ArrowRight size={16} />
             </Link>
           </div>
         </nav>
       </header>
 
       <main>
-        {/* ── HERO ── */}
-        <section className="relative overflow-hidden px-6 pb-24 pt-20 md:px-12 lg:px-20">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(34,211,238,0.18),transparent)]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,rgba(59,130,246,0.14),transparent_50%)]" />
-          <div className="relative mx-auto max-w-6xl">
-            <div className="grid items-center gap-14 lg:grid-cols-[1.15fr_1fr]">
-              {/* Left */}
-              <motion.div variants={fadeUp} initial="hidden" animate="show">
-                <motion.div
-                  variants={fadeUp}
-                  custom={0}
-                  initial="hidden"
-                  animate="show"
-                  className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-4 py-1.5 text-sm text-cyan"
-                >
-                  <Sparkles size={14} strokeWidth={2.5} />
-                  Automação com IA para negócios reais
-                </motion.div>
-
-                <motion.h1
-                  variants={fadeUp}
-                  custom={0.5}
-                  initial="hidden"
-                  animate="show"
-                  className="font-display text-[2.6rem] font-extrabold leading-[1.12] tracking-tight md:text-6xl"
-                >
-                  Sua empresa{' '}
-                  <span className="bg-gradient-to-r from-cyan via-sky-300 to-blue-400 bg-clip-text text-transparent">
-                    atendendo, vendendo
-                  </span>
-                  {' '}e crescendo 24h — no piloto automático.
-                </motion.h1>
-
-                <motion.p
-                  variants={fadeUp}
-                  custom={1}
-                  initial="hidden"
-                  animate="show"
-                  className="mt-6 max-w-xl text-lg leading-relaxed text-slate-300"
-                >
-                  Crie agentes de IA que respondem clientes, qualificam leads e executam campanhas. Tudo centralizado, sem precisar de equipe extra.
-                </motion.p>
-
-                <motion.div
-                  variants={fadeUp}
-                  custom={1.5}
-                  initial="hidden"
-                  animate="show"
-                  className="mt-10 flex flex-col gap-3 sm:flex-row"
-                >
-                  <Link
-                    to="/register"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan px-8 py-3.5 font-semibold text-ink shadow-[0_12px_36px_rgba(34,211,238,0.34)] transition hover:brightness-110 active:scale-95"
-                  >
-                    Começar grátis — sem cartão <ArrowRight size={17} />
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center justify-center rounded-full border border-white/18 px-8 py-3.5 font-semibold text-white transition hover:border-white/35 hover:bg-white/[0.05]"
-                  >
-                    Já tenho conta
-                  </Link>
-                </motion.div>
-
-                <motion.div
-                  variants={fadeUp}
-                  custom={2}
-                  initial="hidden"
-                  animate="show"
-                  className="mt-8 flex flex-wrap items-center gap-4 text-sm text-slate-400"
-                >
-                  <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-400" /> Grátis para começar</span>
-                  <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-400" /> Setup em menos de 1h</span>
-                  <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-400" /> Sem contrato de fidelidade</span>
-                </motion.div>
-              </motion.div>
-
-              {/* Right — Dashboard preview */}
+        <section className="relative px-5 pb-20 pt-16 lg:px-8 lg:pb-28 lg:pt-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,240,255,0.16),transparent_34%),radial-gradient(circle_at_top_right,rgba(160,32,240,0.17),transparent_34%)]" />
+          <div className="relative mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[0.92fr_1.08fr]">
+            <motion.div variants={fadeUp} initial="hidden" animate="show">
               <motion.div
-                initial={{ opacity: 0, y: 28, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.55 }}
-                className="relative"
+                variants={fadeUp}
+                custom={0}
+                initial="hidden"
+                animate="show"
+                className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-4 py-2 text-sm font-bold text-cyan"
               >
-                <div className="rounded-[2rem] border border-white/12 bg-[linear-gradient(155deg,rgba(10,20,44,0.98),rgba(7,14,32,0.96))] p-1 shadow-[0_32px_96px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)]">
-                  <div className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] p-5">
-                    {/* Header bar */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-emerald-400" />
-                        <span className="text-xs text-slate-300">Painel operacional</span>
-                      </div>
-                      <span className="rounded-full border border-emerald-400/25 bg-emerald-500/12 px-2.5 py-0.5 text-[11px] text-emerald-300">
-                        3 agentes online
-                      </span>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      {stats.map((s) => (
-                        <div key={s.label} className="rounded-2xl border border-white/[0.07] bg-black/25 p-4">
-                          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{s.label}</p>
-                          <p className="mt-2 text-2xl font-bold text-white">{s.value}</p>
-                          <p className={`mt-0.5 text-[11px] ${s.color}`}>{s.delta}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Activity */}
-                    <div className="mt-3 rounded-2xl border border-white/[0.07] bg-black/20 p-4">
-                      <p className="mb-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">Última atividade</p>
-                      {[
-                        { name: 'Ana Souza', msg: 'Quero saber mais sobre o plano...', time: '2 min', color: 'bg-cyan' },
-                        { name: 'Carlos M.', msg: 'Já recebi o link de pagamento?', time: '5 min', color: 'bg-emerald-400' },
-                        { name: 'Julia R.', msg: 'Perfeito! Vou fechar agora.', time: '8 min', color: 'bg-violet-400' },
-                      ].map((item) => (
-                        <div key={item.name} className="flex items-start gap-3 py-1.5">
-                          <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${item.color}`} />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs text-slate-200">{item.name} <span className="text-slate-500">· {item.time}</span></p>
-                            <p className="truncate text-[11px] text-slate-400">{item.msg}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Channels */}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {['WhatsApp', 'Instagram', 'Webchat', 'Campanhas IA'].map((ch, i) => (
-                        <span
-                          key={ch}
-                          className={`rounded-full border px-3 py-1 text-[11px] ${i === 3 ? 'border-cyan/30 bg-cyan/10 text-cyan' : 'border-white/10 bg-black/20 text-slate-300'}`}
-                        >
-                          {ch}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* Glow */}
-                <div className="pointer-events-none absolute -bottom-10 left-1/2 h-40 w-3/4 -translate-x-1/2 rounded-full bg-cyan/10 blur-3xl" />
+                <Zap size={15} /> IA, atendimento, CRM e criativos em uma plataforma
               </motion.div>
-            </div>
+
+              <motion.h1
+                variants={fadeUp}
+                custom={1}
+                initial="hidden"
+                animate="show"
+                className="font-display text-5xl font-black leading-[1.04] tracking-tight text-white md:text-7xl"
+              >
+                Crie, Edite e{' '}
+                <span className="bg-[linear-gradient(90deg,#00F0FF,#A020F0,#ffffff)] bg-clip-text text-transparent">
+                  Revolucione
+                </span>{' '}
+                com IA.
+              </motion.h1>
+
+              <motion.p
+                variants={fadeUp}
+                custom={2}
+                initial="hidden"
+                animate="show"
+                className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl"
+              >
+                A AXI une agentes inteligentes, CRM, canais sociais e AXI Studio para sua empresa atender melhor,
+                vender mais e criar campanhas profissionais sem aumentar o time.
+              </motion.p>
+
+              <motion.div
+                variants={fadeUp}
+                custom={3}
+                initial="hidden"
+                animate="show"
+                className="mt-9 flex flex-col gap-3 sm:flex-row"
+              >
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan px-8 py-4 text-base font-black text-ink shadow-[0_18px_48px_rgba(0,240,255,0.28)] transition hover:brightness-110"
+                >
+                  Testar gratis <ArrowRight size={18} />
+                </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/18 bg-white/[0.04] px-8 py-4 text-base font-bold text-white transition hover:border-white/35 hover:bg-white/[0.08]"
+                >
+                  Ver plataforma <ChevronRight size={18} />
+                </Link>
+              </motion.div>
+
+              <motion.div
+                variants={fadeUp}
+                custom={4}
+                initial="hidden"
+                animate="show"
+                className="mt-8 flex flex-wrap gap-4 text-sm font-semibold text-slate-400"
+              >
+                {['Sem cartao para comecar', 'Login social', 'Canais oficiais', 'Pronto para vender'].map((item) => (
+                  <span key={item} className="inline-flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-emerald-300" /> {item}
+                  </span>
+                ))}
+              </motion.div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, scale: 0.97, y: 22 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.55 }}>
+              <ProductPreview />
+            </motion.div>
           </div>
         </section>
 
-        {/* ── STATS BAR ── */}
-        <FadeSection>
-          <section className="border-y border-white/[0.07] bg-white/[0.02] px-6 py-8 md:px-12">
-            <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 md:grid-cols-4">
-              {[
-                { value: '18k+', label: 'Conversas/mês', icon: MessageCircle },
-                { value: '80%', label: 'Menos trabalho manual', icon: Clock },
-                { value: '24h', label: 'Atendimento ininterrupto', icon: Zap },
-                { value: '1h', label: 'Setup completo', icon: Rocket },
-              ].map((item) => (
-                <div key={item.label} className="flex flex-col items-center gap-1 text-center">
-                  <item.icon size={18} className="text-cyan opacity-70" />
-                  <p className="font-display text-3xl font-bold text-white">{item.value}</p>
-                  <p className="text-sm text-slate-400">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+        <FadeSection className="border-y border-white/[0.07] bg-white/[0.025] px-5 py-8 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {platformStats.map((stat) => (
+              <div key={stat.label} className="rounded-3xl border border-white/10 bg-black/20 p-5">
+                <p className="text-sm font-semibold text-slate-400">{stat.label}</p>
+                <p className="mt-2 text-4xl font-black text-white">{stat.value}</p>
+                <p className="mt-1 text-sm font-semibold text-cyan">{stat.detail}</p>
+              </div>
+            ))}
+          </div>
         </FadeSection>
 
-        <div className="mx-auto max-w-6xl px-6 md:px-12 lg:px-20">
-          {/* ── USE CASES ── */}
-          <FadeSection className="mt-24">
-            <div className="mb-10 text-center">
-              <p className="text-sm font-medium uppercase tracking-[0.3em] text-cyan">O que você pode fazer</p>
-              <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-white md:text-4xl">
-                Um sistema para atendimento, vendas e marketing.
-              </h2>
-            </div>
-            <div className="grid gap-6 md:grid-cols-3">
-              {useCases.map((uc, i) => (
+        <FadeSection id="produto" className="mx-auto max-w-7xl px-5 py-24 lg:px-8">
+          <div className="mb-12 max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan">Produto</p>
+            <h2 className="mt-3 font-display text-4xl font-black tracking-tight md:text-5xl">
+              Uma operacao digital completa, nao apenas mais um chatbot.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-400">
+              A AXI combina atendimento, vendas, criacao de conteudo e analytics para que cada conversa vire dado,
+              cada dado vire acao e cada acao gere crescimento.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {pillars.map((item, index) => {
+              const Icon = item.icon;
+              return (
                 <motion.article
-                  key={uc.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  key={item.title}
+                  initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-7 transition duration-300 hover:border-white/20 hover:shadow-[0_0_36px_rgba(34,211,238,0.07)]"
+                  transition={{ delay: index * 0.05 }}
+                  className="group rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.025))] p-6 transition hover:-translate-y-1 hover:border-cyan/35"
                 >
-                  <div className="mb-5 flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.07]">
-                      <uc.icon size={21} className="text-cyan" />
-                    </div>
-                    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${uc.tagColor}`}>
-                      {uc.tag}
-                    </span>
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan/10 text-cyan ring-1 ring-cyan/20">
+                    <Icon size={22} />
                   </div>
-                  <h3 className="font-display text-xl font-bold text-white">{uc.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-400">{uc.description}</p>
+                  <h3 className="font-display text-xl font-black text-white">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-400">{item.description}</p>
                 </motion.article>
-              ))}
-            </div>
-          </FadeSection>
+              );
+            })}
+          </div>
+        </FadeSection>
 
-          {/* ── COMO FUNCIONA ── */}
-          <FadeSection className="mt-28" id="como-funciona">
-            <div className="mb-12 text-center">
-              <p className="text-sm font-medium uppercase tracking-[0.3em] text-cyan">Como funciona</p>
-              <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-white md:text-4xl">
-                3 passos para sua operação rodar sozinha.
-              </h2>
-            </div>
-            <div className="relative grid gap-6 md:grid-cols-3">
-              {/* Connector line */}
-              <div className="absolute left-0 right-0 top-11 hidden h-px bg-gradient-to-r from-transparent via-white/15 to-transparent md:block" />
-              {steps.map((step, i) => (
-                <motion.div
-                  key={step.num}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15 }}
-                  className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-7"
-                >
-                  <div className="mb-5 flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan/30 bg-cyan/10">
-                      <step.icon size={17} className="text-cyan" />
-                    </div>
-                    <span className="font-mono text-3xl font-bold text-white/10">{step.num}</span>
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-white">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-400">{step.description}</p>
-                </motion.div>
-              ))}
-            </div>
-          </FadeSection>
-
-          {/* ── BENEFÍCIOS ── */}
-          <FadeSection className="mt-28" id="beneficios">
-            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.03] to-transparent">
-              <div className="grid gap-10 p-8 lg:grid-cols-[1.1fr_1fr] lg:p-12">
-                <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.3em] text-cyan">Resultados reais</p>
-                  <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight text-white md:text-4xl">
-                    Impacto direto no atendimento e nas vendas — desde o primeiro dia.
-                  </h2>
-                  <p className="mt-5 text-slate-400">
-                    Negócios que usam Alici param de perder clientes por demora na resposta e passam a operar com escala real sem aumentar o time.
-                  </p>
-                  <Link
-                    to="/register"
-                    className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan px-7 py-3.5 font-semibold text-ink shadow-[0_10px_28px_rgba(34,211,238,0.3)] transition hover:brightness-110"
-                  >
-                    Quero começar agora <ArrowRight size={17} />
-                  </Link>
-                </div>
-                <ul className="flex flex-col justify-center space-y-4">
-                  {benefits.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/15">
-                        <CheckCircle2 size={11} className="text-emerald-300" />
+        <FadeSection id="como-funciona" className="mx-auto max-w-7xl px-5 pb-24 lg:px-8">
+          <div className="rounded-[2.5rem] border border-white/10 bg-[linear-gradient(135deg,rgba(0,240,255,0.08),rgba(160,32,240,0.08))] p-6 md:p-10">
+            <div className="grid gap-10 lg:grid-cols-[0.72fr_1fr]">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan">Como funciona</p>
+                <h2 className="mt-3 font-display text-4xl font-black">Do primeiro login ao crescimento diario.</h2>
+                <p className="mt-5 text-lg leading-8 text-slate-300">
+                  A AXI foi desenhada para ser simples no comeco e poderosa quando sua operacao cresce.
+                </p>
+              </div>
+              <div className="grid gap-4">
+                {workflow.map((item) => (
+                  <div key={item.step} className="rounded-3xl border border-white/10 bg-black/25 p-5">
+                    <div className="flex gap-4">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan text-base font-black text-ink">
+                        {item.step}
+                      </span>
+                      <div>
+                        <h3 className="font-display text-xl font-black text-white">{item.title}</h3>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">{item.description}</p>
                       </div>
-                      <span className="text-slate-200">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </FadeSection>
+          </div>
+        </FadeSection>
 
-          {/* ── CAPABILITIES ── */}
-          <FadeSection className="mt-28" id="features">
-            <div className="mb-10 text-center">
-              <p className="text-sm font-medium uppercase tracking-[0.3em] text-cyan">O que está incluído</p>
-              <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-white md:text-4xl">
-                Tudo para operar IA com resultado real.
-              </h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {capabilities.map((cap, i) => (
-                <motion.article
-                  key={cap.title}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.07 }}
-                  className="rounded-2xl border border-white/8 bg-white/[0.03] p-6 transition duration-300 hover:border-cyan/25 hover:bg-white/[0.06]"
-                >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
-                    <cap.icon size={18} className="text-cyan" />
-                  </div>
-                  <h3 className="font-display text-lg font-bold text-white">{cap.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-400">{cap.description}</p>
-                </motion.article>
-              ))}
-            </div>
-          </FadeSection>
-
-          {/* ── CTA FINAL ── */}
-          <FadeSection className="mb-24 mt-24">
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-cyan/25 bg-[radial-gradient(ellipse_100%_120%_at_50%_120%,rgba(34,211,238,0.18),transparent_70%),linear-gradient(160deg,rgba(10,20,50,0.95),rgba(7,14,32,0.98))] px-8 py-16 text-center shadow-[0_0_80px_rgba(34,211,238,0.08)]">
-              <div className="pointer-events-none absolute inset-0 rounded-[2.5rem] border border-cyan/10" />
-              <motion.div
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-              >
-                <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-4 py-1.5 text-sm text-cyan">
-                  <Sparkles size={13} /> Sem cartão de crédito — comece agora
-                </p>
-                <h2 className="mt-2 font-display text-3xl font-extrabold text-white md:text-5xl">
-                  Comece grátis e coloque{' '}
-                  <span className="bg-gradient-to-r from-cyan to-sky-300 bg-clip-text text-transparent">
-                    sua operação no piloto automático.
+        <FadeSection id="recursos" className="mx-auto max-w-7xl px-5 pb-24 lg:px-8">
+          <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-7">
+              <LayoutDashboard className="text-cyan" size={28} />
+              <h2 className="mt-5 font-display text-3xl font-black">Painel claro para decisao rapida</h2>
+              <p className="mt-4 text-slate-400">
+                Veja contatos, negocios, contratos, ligacoes, receita, forecast e campanhas em modulos com proposito real.
+              </p>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                {['CRM', 'Receita', 'Forecast', 'Studio'].map((item) => (
+                  <span key={item} className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold text-white">
+                    {item}
                   </span>
-                </h2>
-                <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-300">
-                  Alici foi feita para tirar você da operação manual e colocar IA para gerar resposta, conversão e escala — de verdade.
-                </p>
-                <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                  <Link
-                    to="/register"
-                    className="inline-flex items-center gap-2 rounded-full bg-cyan px-9 py-4 text-lg font-bold text-ink shadow-[0_14px_44px_rgba(34,211,238,0.38)] transition hover:brightness-110 active:scale-95"
-                  >
-                    Criar conta grátis <ArrowRight size={20} />
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/20 px-9 py-4 text-lg font-semibold text-white transition hover:border-white/40 hover:bg-white/[0.07]"
-                  >
-                    Já tenho conta
-                  </Link>
-                </div>
-                <p className="mt-6 text-sm text-slate-500">Setup em menos de 1 hora · Sem contrato · Cancele quando quiser</p>
-              </motion.div>
+                ))}
+              </div>
             </div>
-          </FadeSection>
-        </div>
+
+            <div className="rounded-[2rem] border border-cyan/20 bg-[linear-gradient(160deg,rgba(0,240,255,0.13),rgba(160,32,240,0.08))] p-7">
+              <Sparkles className="text-cyan" size={28} />
+              <h2 className="mt-5 font-display text-3xl font-black">AXI Studio para criar e publicar</h2>
+              <p className="mt-4 text-slate-300">
+                Edite fotos, videos e criativos de campanha com fluxo inspirado em Canva e CapCut, mantendo sua marca.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {['Templates', 'Video', 'Foto', 'IA', 'Assets', 'Export'].map((item) => (
+                  <span key={item} className="rounded-full border border-white/12 bg-black/25 px-4 py-2 text-sm font-bold text-white">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </FadeSection>
+
+        <FadeSection className="mx-auto max-w-7xl px-5 pb-24 lg:px-8">
+          <div className="mb-10 text-center">
+            <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan">Clientes ideais</p>
+            <h2 className="mt-3 font-display text-4xl font-black">Feita para empresas que vivem de conversa e conversao.</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {testimonials.map((item) => (
+              <article key={item.name} className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-6">
+                <div className="mb-4 flex gap-1 text-amber-300">
+                  {Array.from({ length: 5 }).map((_, index) => <Star key={index} size={15} fill="currentColor" />)}
+                </div>
+                <p className="text-lg font-semibold leading-8 text-white">"{item.quote}"</p>
+                <p className="mt-5 text-sm font-black text-cyan">{item.name}</p>
+                <p className="text-sm text-slate-500">{item.role}</p>
+              </article>
+            ))}
+          </div>
+        </FadeSection>
+
+        <FadeSection id="planos" className="mx-auto max-w-7xl px-5 pb-28 lg:px-8">
+          <div className="overflow-hidden rounded-[2.5rem] border border-cyan/25 bg-[radial-gradient(circle_at_top_left,rgba(0,240,255,0.18),transparent_42%),linear-gradient(135deg,rgba(7,17,31,0.96),rgba(8,9,25,0.98))] p-8 text-center md:p-14">
+            <p className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-4 py-2 text-sm font-bold text-cyan">
+              <Users size={15} /> Comece enxuto, escale quando vender mais
+            </p>
+            <h2 className="font-display text-4xl font-black md:text-6xl">
+              Pronto para colocar a AXI trabalhando pela sua empresa?
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+              Crie sua conta, conecte seus canais oficiais e comece a transformar atendimento em vendas com IA.
+            </p>
+            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link to="/register" className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan px-9 py-4 text-lg font-black text-ink shadow-[0_18px_48px_rgba(0,240,255,0.28)] transition hover:brightness-110">
+                Criar conta gratis <ArrowRight size={20} />
+              </Link>
+              <Link to="/login" className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/[0.04] px-9 py-4 text-lg font-bold text-white transition hover:bg-white/[0.08]">
+                Entrar na plataforma
+              </Link>
+            </div>
+          </div>
+        </FadeSection>
       </main>
 
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-white/[0.07] bg-ink px-6 py-10 md:px-12">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan text-ink">
-              <Bot size={14} strokeWidth={2.5} />
-            </div>
-            <span className="font-display font-bold text-white">Alici</span>
+      <footer className="border-t border-white/[0.07] px-5 py-10 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-display text-lg font-black text-white">AXI</p>
+            <p>Crie, Edite e Revolucione com IA.</p>
           </div>
-          <p className="text-sm text-slate-500">© {new Date().getFullYear()} Alici. Todos os direitos reservados.</p>
-          <div className="flex items-center gap-6 text-sm text-slate-500">
-            <a href="#" className="transition hover:text-slate-300">Termos</a>
-            <a href="#" className="transition hover:text-slate-300">Privacidade</a>
-            <a href="#" className="transition hover:text-slate-300">Suporte</a>
+          <p>© {new Date().getFullYear()} AXI. Todos os direitos reservados.</p>
+          <div className="flex gap-5">
+            <a href="#produto" className="hover:text-white">Produto</a>
+            <a href="#planos" className="hover:text-white">Planos</a>
+            <a href="#recursos" className="hover:text-white">Recursos</a>
           </div>
         </div>
       </footer>

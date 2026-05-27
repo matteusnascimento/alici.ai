@@ -1,252 +1,181 @@
-/**
- * SINGLE SOURCE OF TRUTH for all Studio tools, sections, and navigation
- * Designed for zero duplication across Home, Sidebar, and all Studio pages
- */
+import {
+  Captions,
+  Clapperboard,
+  Crop,
+  Eraser,
+  FolderOpen,
+  ImageUp,
+  LayoutTemplate,
+  Megaphone,
+  Music2,
+  Palette,
+  Scissors,
+  Sparkles,
+  Type,
+  UploadCloud,
+  UserCircle,
+  Wand2,
+  type LucideIcon,
+} from 'lucide-react';
 
-import { LucideIcon, Zap, Video, Image, BookOpen, Palette, Archive, LayoutGrid, List } from 'lucide-react';
+export type StudioToolCategory = 'create' | 'edit' | 'ai' | 'library' | 'manage';
 
-export type StudioSection = 'create' | 'continue' | 'manage' | 'library';
-export type ToolType = 'creation' | 'edit' | 'content' | 'workspace' | 'navigation';
-
-export interface StudioTool {
+export interface StudioToolItem {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
   path: string;
-  section: 'create';
-  type: 'creation';
-  color: string;
-  gradient: string;
+  icon: LucideIcon;
+  category: StudioToolCategory;
+  featured?: boolean;
   badge?: string;
-  comingSoon?: boolean;
 }
 
-export interface StudioNavLink {
-  id: string;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  path: string;
-  section: 'manage' | 'library';
-  type: 'navigation';
-  color: string;
-}
-
-export type StudioItem = StudioTool | StudioNavLink;
-
-/**
- * ==========================================
- * SEÇÃO 1: CRIAR
- * ==========================================
- * Ferramentas de criação principal (top priority)
- * Displayed with large cards, strong visuals, prominent CTAs
- */
-export const CREATE_TOOLS: StudioTool[] = [
+export const STUDIO_TOOLS: StudioToolItem[] = [
   {
     id: 'video-editor',
-    title: 'Editor de Vídeo IA',
-    description: 'Crie vídeos profissionais com IA',
-    icon: Video,
-    path: '/app/studio/editor/video',
-    section: 'create',
-    type: 'creation',
-    color: 'from-blue-500 to-cyan-500',
-    gradient: 'bg-gradient-to-br from-blue-500/10 to-cyan-500/10',
+    title: 'Editor unificado',
+    description: 'Foto, video, IA, layers, timeline e exportacao em um fluxo.',
+    path: '/app/studio/editor',
+    icon: Clapperboard,
+    category: 'create',
+    featured: true,
   },
   {
     id: 'photo-editor',
-    title: 'Editor de Fotos IA',
-    description: 'Edite fotos com ajustes inteligentes',
-    icon: Image,
+    title: 'Editar foto',
+    description: 'Upload, selecao, fundo, corte, ajustes e IA visual.',
     path: '/app/studio/tools/photo-editor',
-    section: 'create',
-    type: 'creation',
-    color: 'from-purple-500 to-pink-500',
-    gradient: 'bg-gradient-to-br from-purple-500/10 to-pink-500/10',
+    icon: ImageUp,
+    category: 'create',
+    featured: true,
   },
   {
-    id: 'poster-ai',
-    title: 'Criar Anúncio',
-    description: 'Gere anúncios visuais com IA',
-    icon: LayoutGrid,
-    path: '/app/studio/tools/ad',
-    section: 'create',
-    type: 'creation',
-    color: 'from-orange-500 to-red-500',
-    gradient: 'bg-gradient-to-br from-orange-500/10 to-red-500/10',
-  },
-  {
-    id: 'story-ai',
-    title: 'Criar Story',
-    description: 'Stories animadas para redes sociais',
-    icon: Zap,
-    path: '/app/studio/tools/story',
-    section: 'create',
-    type: 'creation',
-    color: 'from-emerald-500 to-teal-500',
-    gradient: 'bg-gradient-to-br from-emerald-500/10 to-teal-500/10',
-  },
-  {
-    id: 'thumbnail',
-    title: 'Criar Thumbnail',
-    description: 'Miniaturas chamativas para vídeos',
-    icon: Image,
-    path: '/app/studio/tools/ad',
-    section: 'create',
-    type: 'creation',
-    color: 'from-rose-500 to-pink-500',
-    gradient: 'bg-gradient-to-br from-rose-500/10 to-pink-500/10',
-  },
-];
-
-/**
- * ==========================================
- * SEÇÃO 2: CONTINUAR
- * ==========================================
- * Recent projects management
- * This is NOT a config array - it's generated from database
- * See StudioHomePage for listing logic
- */
-export const CONTINUE_SECTION = {
-  id: 'continue',
-  title: 'Continuar',
-  description: 'Retorne aos seus projetos recentes',
-  maxItems: 5,
-  viewAllPath: '/app/studio/projects',
-};
-
-/**
- * ==========================================
- * SEÇÃO 3: GERENCIAR
- * ==========================================
- * Organization & management (NOT creation tools)
- * These are navigation links to specialized pages
- */
-export const MANAGE_LINKS: StudioNavLink[] = [
-  {
-    id: 'projects',
-    title: 'Projetos',
-    description: 'Organize todos os seus projetos',
-    icon: LayoutGrid,
-    path: '/app/studio/projects',
-    section: 'manage',
-    type: 'navigation',
-    color: 'from-slate-400 to-slate-600',
-  },
-  {
-    id: 'exports',
-    title: 'Exportações',
-    description: 'Histórico de arquivos exportados',
-    icon: Archive,
-    path: '/app/studio/exports',
-    section: 'manage',
-    type: 'navigation',
-    color: 'from-purple-400 to-purple-600',
-  },
-  {
-    id: 'history',
-    title: 'Histórico',
-    description: 'Versions e histórico completo',
-    icon: List,
-    path: '/app/studio/exports', // Maps to exports as temporary data container
-    section: 'manage',
-    type: 'navigation',
-    color: 'from-amber-400 to-amber-600',
-  },
-];
-
-/**
- * ==========================================
- * SEÇÃO 4: BIBLIOTECA
- * ==========================================
- * Brand & Assets management
- * These are navigation links, not creation tools
- */
-export const LIBRARY_LINKS: StudioNavLink[] = [
-  {
-    id: 'brand-kit',
-    title: 'Brand Kit',
-    description: 'Paletas, logos e guidelines',
-    icon: Palette,
-    path: '/app/studio/brand-kit',
-    section: 'library',
-    type: 'navigation',
-    color: 'from-cyan-400 to-cyan-600',
-  },
-  {
-    id: 'assets',
-    title: 'Assets',
-    description: 'Imagens, vídeos e mídia',
-    icon: Archive,
-    path: '/app/studio/assets',
-    section: 'library',
-    type: 'navigation',
-    color: 'from-green-400 to-green-600',
+    id: 'ai-creator',
+    title: 'Gerador de IA',
+    description: 'Crie imagens, anuncios e variacoes a partir de briefing.',
+    path: '/app/studio/ai-creative',
+    icon: Wand2,
+    category: 'ai',
+    featured: true,
   },
   {
     id: 'templates',
     title: 'Templates',
-    description: 'Modelos prontos para usar',
-    icon: BookOpen,
+    description: 'Modelos profissionais para posts, videos e campanhas.',
     path: '/app/studio/templates',
-    section: 'library',
-    type: 'navigation',
-    color: 'from-indigo-400 to-indigo-600',
+    icon: LayoutTemplate,
+    category: 'library',
+    featured: true,
   },
   {
-    id: 'logos',
-    title: 'Logos',
-    description: 'Suas logos e variações',
-    icon: Zap,
+    id: 'autocut',
+    title: 'AutoCut',
+    description: 'Corte rapido de video com timeline objetiva.',
+    path: '/app/studio/editor/video?mode=new&entry=autocut',
+    icon: Scissors,
+    category: 'edit',
+  },
+  {
+    id: 'captions',
+    title: 'Legendas',
+    description: 'Gere legendas, CTA e textos curtos para redes.',
+    path: '/app/studio/tools/caption',
+    icon: Captions,
+    category: 'edit',
+  },
+  {
+    id: 'remove-background',
+    title: 'Remover fundo',
+    description: 'Processamento de imagem para recorte e composicao.',
+    path: '/app/studio/tools/remove-background',
+    icon: Eraser,
+    category: 'edit',
+  },
+  {
+    id: 'resize',
+    title: 'Redimensionar',
+    description: 'Adapte criativos para feed, story, reels e banners.',
+    path: '/app/studio/tools/ad',
+    icon: Crop,
+    category: 'edit',
+  },
+  {
+    id: 'marketing',
+    title: 'Marketing',
+    description: 'CTA, copy e estrutura de campanhas com IA.',
+    path: '/app/studio/tools/cta',
+    icon: Megaphone,
+    category: 'ai',
+  },
+  {
+    id: 'text',
+    title: 'Texto',
+    description: 'Titulos, subtitulos, estilos e camadas textuais.',
+    path: '/app/studio/editor/video?mode=new&entry=text',
+    icon: Type,
+    category: 'edit',
+  },
+  {
+    id: 'audio',
+    title: 'Audio',
+    description: 'Voiceover, trilha e estrutura sonora para video.',
+    path: '/app/studio/editor/video?mode=new&entry=audio',
+    icon: Music2,
+    category: 'edit',
+  },
+  {
+    id: 'uploads',
+    title: 'Uploads',
+    description: 'Envie imagens, videos e audios para seus projetos.',
+    path: '/app/studio/assets',
+    icon: UploadCloud,
+    category: 'library',
+  },
+  {
+    id: 'assets',
+    title: 'Assets',
+    description: 'Biblioteca de midias, logos e arquivos de marca.',
+    path: '/app/studio/assets',
+    icon: FolderOpen,
+    category: 'library',
+  },
+  {
+    id: 'brand-kit',
+    title: 'Marca',
+    description: 'Paletas, logos, fontes e identidade visual.',
     path: '/app/studio/brand-kit',
-    section: 'library',
-    type: 'navigation',
-    color: 'from-rose-400 to-rose-600',
+    icon: Palette,
+    category: 'manage',
+  },
+  {
+    id: 'projects',
+    title: 'Projetos',
+    description: 'Organize, retome e exporte trabalhos reais.',
+    path: '/app/studio/projects',
+    icon: FolderOpen,
+    category: 'manage',
   },
 ];
 
-/**
- * All navigation items (for sidebar, etc.)
- * Does NOT include CREATE section (those are action tools, not nav)
- */
-export const NAVIGATION_ITEMS = [
-  ...MANAGE_LINKS,
-  ...LIBRARY_LINKS,
+export const CREATE_TOOLS = STUDIO_TOOLS.filter((tool) => tool.category === 'create' || tool.category === 'ai');
+export const MANAGE_LINKS = STUDIO_TOOLS.filter((tool) => tool.category === 'manage');
+export const LIBRARY_LINKS = STUDIO_TOOLS.filter((tool) => tool.category === 'library' || tool.category === 'edit');
+
+export const STUDIO_BOTTOM_NAV: StudioToolItem[] = [
+  STUDIO_TOOLS.find((tool) => tool.id === 'video-editor')!,
+  STUDIO_TOOLS.find((tool) => tool.id === 'templates')!,
+  STUDIO_TOOLS.find((tool) => tool.id === 'ai-creator')!,
+  STUDIO_TOOLS.find((tool) => tool.id === 'projects')!,
+  STUDIO_TOOLS.find((tool) => tool.id === 'brand-kit')!,
 ];
 
-/**
- * All creation tools by category for sidebar
- */
-export const SIDEBAR_TOOLS = {
-  creation: CREATE_TOOLS,
-  editing: [
-    // These would be nested within relevant editor pages (Video, Photo, etc.)
-    // Not shown in main sidebar
-  ],
-};
-
-/**
- * Helper: Get tool by ID
- */
-export function getToolById(id: string): StudioItem | undefined {
-  return [...CREATE_TOOLS, ...MANAGE_LINKS, ...LIBRARY_LINKS].find(tool => tool.id === id);
+export function findStudioTool(id: string) {
+  return STUDIO_TOOLS.find((tool) => tool.id === id);
 }
 
-/**
- * Helper: Get all items for a section
- */
-export function getItemsBySection(section: StudioSection): StudioItem[] {
-  switch (section) {
-    case 'create':
-      return CREATE_TOOLS;
-    case 'manage':
-      return MANAGE_LINKS;
-    case 'library':
-      return LIBRARY_LINKS;
-    case 'continue':
-      return []; // Dynamic - from database
-    default:
-      return [];
-  }
+export function filterStudioTools(query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return STUDIO_TOOLS;
+  return STUDIO_TOOLS.filter((tool) => `${tool.title} ${tool.description}`.toLowerCase().includes(normalized));
 }

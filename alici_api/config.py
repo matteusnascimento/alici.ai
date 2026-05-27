@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     port: int = 8000
     public_app_url: str = "http://localhost:8000"
     api_base_url: str = "http://localhost:8000"
+    frontend_app_url: str = "http://localhost:8000"
     docs_enabled: bool = True
     openapi_enabled: bool = True
     allowed_hosts: str = ""
@@ -55,6 +56,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
     refresh_token_expire_minutes: int = 60 * 24 * 7
+    google_oauth_client_id: str | None = None
+    google_oauth_client_secret: SecretStr | None = None
+    google_oauth_redirect_uri: str | None = None
+    google_ads_developer_token: SecretStr | None = None
+    google_ads_oauth_redirect_uri: str | None = None
 
     # Database
     database_url: str | None = "sqlite:///database.db"
@@ -76,7 +82,7 @@ class Settings(BaseSettings):
         "default-src 'self'; "
         "script-src 'self'; "
         "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data: blob:; "
+        "img-src 'self' data: blob: https://images.pexels.com https://images.unsplash.com; "
         "font-src 'self' data:; "
         "connect-src 'self' http://localhost:* ws://localhost:*; "
         "media-src 'self' blob: data:; "
@@ -150,7 +156,7 @@ class Settings(BaseSettings):
     credits_video_default_cost: int = 100
 
     # AI providers
-    default_ai_provider: Literal["grok", "groq", "gemini", "ollama", "openai"] = "grok"
+    default_ai_provider: Literal["grok", "groq", "gemini", "ollama", "openai"] = "groq"
     grok_api_key: SecretStr | None = None
     xai_api_key: SecretStr | None = None
     grok_base_url: str = "https://api.x.ai/v1"
@@ -187,6 +193,10 @@ class Settings(BaseSettings):
     r2_bucket_uploads: str = "uploads"
     r2_public_base_url: str | None = None
 
+    # Studio media search providers
+    pexels_api_key: SecretStr | None = None
+    unsplash_access_key: SecretStr | None = None
+
     # Media storage
     media_storage_required: bool = True
     media_generation_poll_interval_seconds: float = 3.0
@@ -216,6 +226,15 @@ class Settings(BaseSettings):
     alici_hf_repo_type: str = "space"
     alici_hf_subfolder: str | None = None
     alici_hf_cache_dir: str = "/tmp/alici_hf_cache"
+
+    # Omnichannel / social channels
+    meta_app_id: str | None = None
+    meta_app_secret: SecretStr | None = None
+    meta_webhook_verify_token: SecretStr | None = None
+    meta_graph_api_version: str = "v20.0"
+    tiktok_client_key: str | None = None
+    tiktok_client_secret: SecretStr | None = None
+    tiktok_webhook_secret: SecretStr | None = None
 
     @field_validator(
         "debug",

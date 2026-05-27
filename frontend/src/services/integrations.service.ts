@@ -66,6 +66,12 @@ export function connectIntegration(payload: {
   });
 }
 
+export function startIntegrationOAuth(provider: string): Promise<{ provider: string; authorization_url: string }> {
+  return apiFetch<{ provider: string; authorization_url: string }>(`/integrations/${provider}/oauth/start`, {
+    method: 'POST',
+  });
+}
+
 export function getProviderStatus(provider: string): Promise<IntegrationProviderStatus> {
   return apiFetch<IntegrationProviderStatus>(`/integrations/${provider}/status`);
 }

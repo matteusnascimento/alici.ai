@@ -10,6 +10,7 @@ import type {
   StudioRecentProjectItem,
   StudioTemplate,
   StudioToolActionResponse,
+  StudioWebImage,
   StudioVersion,
 } from '../types/studioV2';
 
@@ -241,4 +242,9 @@ export function applyStudioTemplate(payload: { template_id: number; project_id: 
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export function searchStudioWebImages(query: string, limit = 12) {
+  const params = new URLSearchParams({ query, limit: String(limit) });
+  return apiFetch<StudioWebImage[]>(`/studio/web-images/search?${params.toString()}`);
 }

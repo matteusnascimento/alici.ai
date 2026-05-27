@@ -29,11 +29,11 @@ class AICostEstimate:
 class AIManager:
     supported_providers = ("grok", "groq", "gemini", "ollama", "openai")
     provider_priority = {
-        "grok": 0,
-        "groq": 10,
+        "groq": 0,
         "gemini": 20,
         "ollama": 80,
         "openai": 100,
+        "grok": 110,
     }
     _provider_failure_counts: dict[str, int] = {}
     _provider_disabled_until: dict[str, float] = {}
@@ -187,7 +187,7 @@ class AIManager:
         return "unknown"
 
     def _configured_order(self) -> list[str]:
-        order = [self.default_provider, "grok", "groq", "gemini", "ollama", "openai"]
+        order = [self.default_provider, "groq", "gemini", "ollama", "openai", "grok"]
         return [provider for index, provider in enumerate(order) if provider in self.supported_providers and provider not in order[:index]]
 
     def provider_cost(self, provider_name: str, operation_name: str = "chat") -> int:

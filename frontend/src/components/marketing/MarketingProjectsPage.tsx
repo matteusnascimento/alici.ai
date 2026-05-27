@@ -2,8 +2,8 @@ import { Bot, Loader2, Megaphone, Pencil, Plus, Rocket, Sparkles, Trash2, Wand2 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { MarketingProject, MarketingProjectCreate } from '../../types/marketing';
-import { createProject, deleteProject, listProjects } from '../../services/marketing.service';
+import type { MarketingPerformanceSummary, MarketingProject, MarketingProjectCreate } from '../../types/marketing';
+import { createProject, deleteProject, getMarketingPerformance, listProjects, quickBriefFromIdea } from '../../services/marketing.service';
 
 const toneStyles: Record<string, string> = {
   premium: 'Premium e sofisticado',
@@ -29,59 +29,13 @@ function buildPreview(form: MarketingProjectCreate) {
   };
 }
 
-function autofillFromQuickIdea(idea: string, currentTone: string): MarketingProjectCreate {
-  const text = idea.trim();
-  const lower = text.toLowerCase();
-
-  const isHotel = lower.includes('hotel') || lower.includes('pousada') || lower.includes('hospedagem');
-  const isClinic = lower.includes('clinica') || lower.includes('estetica') || lower.includes('odont');
-  const isRestaurant = lower.includes('restaurante') || lower.includes('delivery') || lower.includes('food');
-
-  if (isHotel) {
-    return {
-      name: 'Campanha Hospedagem IA',
-      audience: 'Casais e familias buscando viagem curta',
-      objective: 'Aumentar reservas diretas',
-      offer: 'Pacote de hospedagem com beneficios exclusivos',
-      tone: currentTone || 'premium',
-      notes: text,
-    };
-  }
-
-  if (isClinic) {
-    return {
-      name: 'Campanha Conversao Clinica',
-      audience: 'Adultos interessados em procedimentos com seguranca',
-      objective: 'Gerar agendamentos qualificados',
-      offer: 'Consulta avaliativa com condicao especial',
-      tone: currentTone || 'premium',
-      notes: text,
-    };
-  }
-
-  if (isRestaurant) {
-    return {
-      name: 'Campanha Delivery Performance',
-      audience: 'Moradores da regiao com interesse em entrega rapida',
-      objective: 'Aumentar pedidos no horario de pico',
-      offer: 'Combo promocional com tempo limitado',
-      tone: currentTone || 'urgente',
-      notes: text,
-    };
-  }
-
-  return {
-    name: 'Projeto de Marketing IA',
-    audience: 'Publico com alta chance de compra',
-    objective: 'Gerar demanda e conversao',
-    offer: 'Oferta principal da marca',
-    tone: currentTone || 'premium',
-    notes: text,
-  };
+function formatCurrency(cents: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((cents || 0) / 100);
 }
 
 export function MarketingProjectsPage() {
   const [projects, setProjects] = useState<MarketingProject[]>([]);
+  const [performance, setPerformance] = useState<MarketingPerformanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -100,9 +54,10 @@ export function MarketingProjectsPage() {
 
   useEffect(() => {
     setLoading(true);
-    listProjects()
-      .then((rows) => {
+    Promise.all([listProjects(), getMarketingPerformance()])
+      .then(([rows, metrics]) => {
         setProjects(Array.isArray(rows) ? rows : []);
+        setPerformance(metrics);
         setError(null);
       })
       .catch(() => {
@@ -127,7 +82,7 @@ export function MarketingProjectsPage() {
     }
   }
 
-  function handleQuickGenerate() {
+  async function handleQuickGenerate() {
     if (!quickIdea.trim()) {
       setError('Descreva sua ideia para ativar a geracao rapida.');
       return;
@@ -135,14 +90,14 @@ export function MarketingProjectsPage() {
 
     setQuickLoading(true);
     setError(null);
-
-    // Simula preenchimento inteligente da IA sem depender de endpoint extra.
-    const next = autofillFromQuickIdea(quickIdea, form.tone || 'premium');
-    setForm(next);
-
-    setTimeout(() => {
+    try {
+      const next = await quickBriefFromIdea(quickIdea, form.tone || 'premium');
+      setForm(next);
+    } catch {
+      setError('Nao foi possivel estruturar o briefing agora. Verifique o provider de IA.');
+    } finally {
       setQuickLoading(false);
-    }, 250);
+    }
   }
 
   async function handleDelete(id: number) {
@@ -207,6 +162,28 @@ export function MarketingProjectsPage() {
           </div>
         </div>
       </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {[
+          { label: 'Visualizacoes', value: String(performance?.views ?? 0), hint: performance?.ads_connected ? 'Google/Meta Ads' : 'Aguardando Ads' },
+          { label: 'Cliques', value: String(performance?.clicks ?? 0), hint: performance?.ads_connected ? 'Dados importados' : 'Conecte Ads' },
+          { label: 'Reservas', value: String(performance?.reservations ?? 0), hint: 'Deals ganhos' },
+          { label: 'Pipeline', value: formatCurrency(performance?.pipeline_value_cents ?? 0), hint: `${performance?.open_opportunities ?? 0} oportunidades` },
+          { label: 'Leads', value: String(performance?.leads ?? 0), hint: `${performance?.connected_sources.length ?? 0} canais conectados` },
+        ].map((card) => (
+          <article key={card.label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{card.label}</p>
+            <p className="mt-2 text-2xl font-black text-white">{card.value}</p>
+            <p className="mt-1 text-xs text-slate-400">{card.hint}</p>
+          </article>
+        ))}
+      </section>
+
+      {performance?.message ? (
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          {performance.message}
+        </div>
+      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <article className="rounded-3xl border border-white/10 bg-[linear-gradient(170deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">

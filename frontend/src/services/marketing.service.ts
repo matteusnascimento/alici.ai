@@ -2,6 +2,7 @@ import { apiFetch } from './api';
 import type {
   MarketingCampaignInput,
   MarketingCampaignResult,
+  MarketingPerformanceSummary,
   MarketingProject,
   MarketingProjectCreate,
   MarketingProjectUpdate,
@@ -66,6 +67,17 @@ export function updateProject(id: number, data: MarketingProjectUpdate): Promise
 
 export function deleteProject(id: number): Promise<void> {
   return apiFetch<void>(`/marketing/projects/${id}`, { method: 'DELETE' });
+}
+
+export function getMarketingPerformance(): Promise<MarketingPerformanceSummary> {
+  return apiFetch<MarketingPerformanceSummary>('/marketing/performance');
+}
+
+export function quickBriefFromIdea(idea: string, tone: string = 'premium'): Promise<MarketingProjectCreate> {
+  return apiFetch<MarketingProjectCreate>('/marketing/quick-brief', {
+    method: 'POST',
+    body: JSON.stringify({ idea, tone }),
+  });
 }
 
 export function generateCopy(projectId: number, context: string, type: string = 'social_post') {
