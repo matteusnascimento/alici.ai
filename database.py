@@ -2060,6 +2060,70 @@ def deletar_marketing_project(user_id, project_id):
     return deleted > 0
 
 
+def listar_studio_templates(category=None, template_type=None, include_premium=True, limit=100):
+    if not DATABASE_ENABLED:
+        raise RuntimeError("Banco nao configurado")
+    p = _placeholder()
+    filters = ["is_active = " + p]
+    values = [1 if USE_SQLITE else True]
+    if category:
+        filters.append(f"category = {p}")
+        values.append(category)
+    if template_type:
+        filters.append(f"type = {p}")
+        values.append(template_type)
+    if not include_premium:
+        filters.append("premium = " + p)
+        values.append(0 if USE_SQLITE else False)
+    with get_db_connection() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            SELECT id, name, category, type, thumbnail_url, preview_video_url, template_json, premium
+            FROM templates
+            WHERE {' AND '.join(filters)}
+            ORDER BY premium ASC, category ASC, name ASC
+            LIMIT {int(limit)}
+            """,
+            tuple(values),
+        )
+        rows = cur.fetchall()
+        result = []
+        for row in rows:
+            item = _row_to_dict(cur, row)
+            if isinstance(item.get("template_json"), str):
+                item["template_json"] = json.loads(item["template_json"])
+            item["premium"] = bool(item.get("premium"))
+            result.append(item)
+        cur.close()
+    return result
+
+
+def buscar_studio_template(template_id):
+    if not DATABASE_ENABLED:
+        raise RuntimeError("Banco nao configurado")
+    p = _placeholder()
+    with get_db_connection() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            SELECT id, name, category, type, thumbnail_url, preview_video_url, template_json, premium
+            FROM templates
+            WHERE id = {p} AND is_active = {p}
+            LIMIT 1
+            """,
+            (template_id, 1 if USE_SQLITE else True),
+        )
+        row = cur.fetchone()
+        item = _row_to_dict(cur, row)
+        if item and isinstance(item.get("template_json"), str):
+            item["template_json"] = json.loads(item["template_json"])
+        if item:
+            item["premium"] = bool(item.get("premium"))
+        cur.close()
+    return item
+
+
 def marketing_performance_summary(user_id):
     """Return marketing KPIs from real internal records and connected accounts only."""
     connections = listar_conexoes_sociais(user_id)

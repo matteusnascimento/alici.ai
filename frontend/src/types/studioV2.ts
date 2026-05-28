@@ -57,6 +57,17 @@ export interface StudioTemplate {
   created_at: string;
 }
 
+export interface StudioTemplateCatalogItem {
+  id: string;
+  name: string;
+  category: string;
+  type: 'photo' | 'video' | 'social' | 'ad';
+  thumbnail_url: string | null;
+  preview_video_url: string | null;
+  premium: boolean;
+  template_json: Record<string, unknown>;
+}
+
 export interface StudioExport {
   id: number;
   user_id: number;

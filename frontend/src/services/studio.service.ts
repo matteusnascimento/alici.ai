@@ -9,6 +9,7 @@ import type {
   StudioRecentExportItem,
   StudioRecentProjectItem,
   StudioTemplate,
+  StudioTemplateCatalogItem,
   StudioToolActionResponse,
   StudioWebImage,
   StudioVersion,
@@ -235,6 +236,10 @@ export function deleteStudioAsset(assetId: number) {
 
 export function listStudioTemplates() {
   return apiFetch<StudioTemplate[]>('/studio/templates/list');
+}
+
+export function listStudioTemplateCatalog() {
+  return apiFetch<StudioTemplateCatalogItem[]>('/studio/templates/catalog');
 }
 
 export function applyStudioTemplate(payload: { template_id: number; project_id: number }) {

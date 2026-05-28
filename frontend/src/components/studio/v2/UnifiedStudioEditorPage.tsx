@@ -8,12 +8,15 @@ import {
   FolderOpen,
   ImagePlus,
   Layers3,
+  Maximize2,
   MousePointer2,
   Palette,
+  Pause,
+  Play,
+  Plus,
   Search,
   Scissors,
   Shapes,
-  SlidersHorizontal,
   SmilePlus,
   Sparkles,
   Split,
@@ -32,13 +35,15 @@ import {
   studioImageRemoveBackground,
   studioImageRetouch,
   studioVideoCaptions,
+  listStudioTemplateCatalog,
   uploadStudioAsset,
 } from '../../../services/studio.service';
-import type { AxiLayerKind, AxiStudioLayer } from '../../../store/axiStudioStore';
+import type { AxiLayerKind, AxiStudioClip, AxiStudioLayer } from '../../../store/axiStudioStore';
 import type { StudioWebImage } from '../../../types/studioV2';
 import { getAxiStudioSnapshot, useAxiStudioStore } from '../../../store/axiStudioStore';
 import { StudioExportModal } from './StudioExportModal';
 import { StudioTopbar } from './StudioTopbar';
+import { catalogItemToTemplate, templateToStudioSnapshot, type AxiTemplateDefinition } from './templates/axiStudioTemplates';
 
 type StudioToolId =
   | 'select'
@@ -86,38 +91,21 @@ const effectPresets = [
   { id: 'clean', label: 'Limpo', color: '#ffffff', opacity: 0.08 },
 ];
 
-const templatePresets = [
-  {
-    id: 'social-launch',
-    title: 'Post de lancamento',
-    type: 'Social',
-    prompt: 'Post quadrado para lancamento com titulo forte, prova social e CTA.',
-    layers: [
-      { name: 'Titulo lancamento', text: 'LANCAMENTO', x: 160, y: 120, width: 360, height: 68, color: '#07111f' },
-      { name: 'CTA', text: 'Garanta sua vaga', x: 190, y: 390, width: 300, height: 54, color: '#A020F0' },
-    ],
-  },
-  {
-    id: 'story-offer',
-    title: 'Story oferta',
-    type: 'Stories',
-    prompt: 'Story vertical com oferta, beneficio principal e chamada para WhatsApp.',
-    layers: [
-      { name: 'Oferta', text: 'OFERTA ESPECIAL', x: 130, y: 140, width: 420, height: 62, color: '#00F0FF' },
-      { name: 'Mensagem', text: 'Fale conosco hoje', x: 165, y: 360, width: 360, height: 52, color: '#111827' },
-    ],
-  },
-  {
-    id: 'reels-hook',
-    title: 'Reels hook',
-    type: 'Video',
-    prompt: 'Video vertical de 15 segundos com hook nos 3 primeiros segundos e CTA final.',
-    layers: [
-      { name: 'Hook', text: 'PARE DE PERDER CLIENTES', x: 105, y: 130, width: 500, height: 70, color: '#07111f' },
-      { name: 'CTA final', text: 'Conecte suas redes na AXI', x: 110, y: 400, width: 500, height: 54, color: '#A020F0' },
-    ],
-  },
+const workspaces = [
+  { id: 'editing', label: 'Editing' },
+  { id: 'color', label: 'Color' },
+  { id: 'audio', label: 'Audio' },
+  { id: 'graphics', label: 'Graphics' },
+  { id: 'ai', label: 'IA Generate' },
 ];
+
+const trackMeta: Record<AxiStudioClip['track'], { label: string; accent: string; bg: string }> = {
+  video: { label: 'V1 Video', accent: '#38bdf8', bg: 'rgba(56, 189, 248, 0.16)' },
+  overlay: { label: 'V2 Overlay', accent: '#f97316', bg: 'rgba(249, 115, 22, 0.14)' },
+  text: { label: 'T1 Texto', accent: '#c026d3', bg: 'rgba(192, 38, 211, 0.16)' },
+  audio: { label: 'A1 Audio', accent: '#22c55e', bg: 'rgba(34, 197, 94, 0.14)' },
+  effect: { label: 'FX Efeitos', accent: '#fb923c', bg: 'rgba(251, 146, 60, 0.14)' },
+};
 
 function LayoutIcon({ size = 20 }: { size?: string | number }) {
   return <Shapes size={size} />;
@@ -208,6 +196,12 @@ export function UnifiedStudioEditorPage() {
   const [webImages, setWebImages] = useState<StudioWebImage[]>([]);
   const [webImagesLoading, setWebImagesLoading] = useState(false);
   const [webImagesError, setWebImagesError] = useState<string | null>(null);
+  const [workspace, setWorkspace] = useState('editing');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [timelineZoom, setTimelineZoom] = useState(1);
+  const [templates, setTemplates] = useState<AxiTemplateDefinition[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
 
   const {
     activeTool,
@@ -228,6 +222,7 @@ export function UnifiedStudioEditorPage() {
     addClip,
     splitClip,
     trimClip,
+    loadTemplate,
     setMode,
   } = useAxiStudioStore();
 
@@ -235,6 +230,7 @@ export function UnifiedStudioEditorPage() {
   const selectedLayer = useMemo(() => layers.find((layer) => layer.id === selectedLayerId) ?? null, [layers, selectedLayerId]);
   const activeEffects = useMemo(() => layers.filter((layer) => layer.kind === 'effect'), [layers]);
   const totalDuration = useMemo(() => clips.reduce((total, clip) => Math.max(total, clip.start + clip.duration), 0), [clips]);
+  const hasMedia = useMemo(() => layers.some((layer) => ['image', 'video', 'audio'].includes(layer.kind)), [layers]);
 
   async function saveUnifiedProject() {
     await studio.saveProject({
@@ -350,10 +346,10 @@ export function UnifiedStudioEditorPage() {
     pushToast(`Efeito "${effect.label}" aplicado.`, 'success');
   }
 
-  function applyTemplate(template: (typeof templatePresets)[number]) {
-    setPrompt(template.prompt);
-    template.layers.forEach((layer) => addTextLayer({ label: layer.name, text: layer.text, size: 34, color: layer.color }));
-    pushToast(`Template "${template.title}" aplicado.`, 'success');
+  function applyTemplate(template: AxiTemplateDefinition) {
+    loadTemplate(templateToStudioSnapshot(template));
+    setZoom(1);
+    pushToast(`Template "${template.name}" aplicado como composicao editavel.`, 'success');
   }
 
   async function handleUpload(file: File) {
@@ -423,6 +419,18 @@ export function UnifiedStudioEditorPage() {
   }
 
   useEffect(() => {
+    setTemplatesLoading(true);
+    setTemplatesError(null);
+    listStudioTemplateCatalog()
+      .then((items) => setTemplates(items.map(catalogItemToTemplate)))
+      .catch((error) => {
+        setTemplates([]);
+        setTemplatesError(error instanceof Error ? error.message : 'Catalogo de templates indisponivel.');
+      })
+      .finally(() => setTemplatesLoading(false));
+  }, []);
+
+  useEffect(() => {
     const query = webQuery.trim();
     if (query.length < 2) {
       setWebImages([]);
@@ -475,9 +483,21 @@ export function UnifiedStudioEditorPage() {
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan">Axi Studio Web</p>
                     <h1 className="font-display text-2xl font-black">Editor Unificado</h1>
-                    <p className="mt-1 text-sm text-slate-400">Clique em uma ferramenta para abrir suas opcoes. Nada fica fixo ocupando a tela.</p>
+                    <p className="mt-1 text-sm text-slate-400">Workspace profissional para campanha, video, foto, assets e IA em um fluxo unico.</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex rounded-2xl border border-white/10 bg-black/20 p-1">
+                      {workspaces.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setWorkspace(item.id)}
+                          className={workspace === item.id ? 'rounded-xl bg-white px-3 py-1.5 text-xs font-black text-ink' : 'rounded-xl px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white'}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
                     {(['photo', 'video', 'ai'] as const).map((item) => (
                       <button
                         key={item}
@@ -492,9 +512,14 @@ export function UnifiedStudioEditorPage() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[2rem] border border-cyan/20 bg-[#eef2f7] p-4 shadow-[0_30px_90px_rgba(0,0,0,0.28)]">
+              <div className="relative overflow-hidden rounded-[2rem] border border-cyan/20 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.15),transparent_34%),#eef2f7] p-4 shadow-[0_30px_90px_rgba(0,0,0,0.28)]">
+                <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-slate-950/80 px-3 py-1 text-xs font-bold text-cyan shadow-lg">1080x1920</span>
+                  <span className="rounded-full bg-slate-950/80 px-3 py-1 text-xs font-bold text-white shadow-lg">30 FPS</span>
+                  <span className="rounded-full bg-slate-950/80 px-3 py-1 text-xs font-bold text-white shadow-lg">{formatTime(totalDuration || 15)}</span>
+                </div>
                 {selectedLayer ? (
-                  <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-900 shadow-xl">
+                  <div className="absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-900 shadow-xl">
                     <button type="button" onClick={() => removeLayer(selectedLayer.id)} className="rounded-lg px-2 py-1 hover:bg-slate-100">Excluir</button>
                     <button type="button" onClick={() => reorderLayer(selectedLayer.id, 'up')} className="rounded-lg px-2 py-1 hover:bg-slate-100">Subir</button>
                     <button type="button" onClick={() => reorderLayer(selectedLayer.id, 'down')} className="rounded-lg px-2 py-1 hover:bg-slate-100">Descer</button>
@@ -502,7 +527,17 @@ export function UnifiedStudioEditorPage() {
                 ) : null}
 
                 <div className="flex min-h-[460px] items-center justify-center pt-12 xl:min-h-[540px]">
-                  <Stage width={720} height={540} scaleX={zoom} scaleY={zoom} className="rounded-2xl bg-white shadow-2xl">
+                  <div className="relative">
+                    {!hasMedia ? (
+                      <div className="absolute inset-10 z-10 grid place-items-center rounded-3xl border border-dashed border-slate-400/70 bg-white/65 text-center text-slate-700 backdrop-blur-sm">
+                        <div>
+                          <UploadCloud className="mx-auto mb-3 text-slate-500" size={34} />
+                          <p className="text-lg font-black">Arraste uma mídia ou clique em Upload</p>
+                          <p className="mt-1 text-sm">Depois corte, aplique efeitos, legendas e exporte a campanha.</p>
+                        </div>
+                      </div>
+                    ) : null}
+                    <Stage width={720} height={540} scaleX={zoom} scaleY={zoom} className="rounded-2xl bg-white shadow-2xl">
                     <Layer>
                       {[...layers].reverse().filter((layer) => layer.visible).map((layer) => {
                         const selected = selectedLayerId === layer.id;
@@ -524,7 +559,8 @@ export function UnifiedStudioEditorPage() {
                               x={layer.x}
                               y={layer.y}
                               text={layer.text || layer.name}
-                              fontSize={layer.text && emojiSet.includes(layer.text) ? 72 : 36}
+                              fontSize={layer.text && emojiSet.includes(layer.text) ? 72 : layer.fontSize ?? 36}
+                              fontFamily={layer.fontFamily ?? 'Inter'}
                               fontStyle="bold"
                               fill={layer.color || '#111827'}
                               opacity={layer.opacity}
@@ -555,53 +591,34 @@ export function UnifiedStudioEditorPage() {
                         );
                       })}
                     </Layer>
-                  </Stage>
+                    </Stage>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-3 py-2 text-slate-900 shadow-xl">
+                  <button type="button" onClick={() => setIsPlaying((value) => !value)} className="grid h-9 w-9 place-items-center rounded-full bg-cyan text-ink shadow-md" title="Play/Pause">
+                    {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                  </button>
+                  <button type="button" onClick={() => setZoom(1)} className="rounded-full px-3 py-1.5 text-xs font-black hover:bg-slate-100">Fit</button>
+                  <button type="button" className="grid h-9 w-9 place-items-center rounded-full hover:bg-slate-100" title="Tela cheia">
+                    <Maximize2 size={16} />
+                  </button>
                 </div>
               </div>
 
-              <div className="rounded-[1.5rem] border border-white/10 bg-[#050a16]/95 p-4 backdrop-blur">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-cyan">
-                    <Film size={16} />
-                    <p className="text-sm font-black">Timeline multi-track</p>
-                    <span className="text-xs text-slate-500">{formatTime(totalDuration)}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => selectedLayerId && splitClip(clips.find((clip) => clip.layerId === selectedLayerId)?.id || '')} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.06]">
-                      <Split size={14} /> Split
-                    </button>
-                    <button type="button" onClick={() => selectedLayerId && trimClip(clips.find((clip) => clip.layerId === selectedLayerId)?.id || '', -0.5)} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.06]">
-                      <Scissors size={14} /> Trim
-                    </button>
-                    <button type="button" onClick={() => void runAiAction('captions')} className="inline-flex items-center gap-2 rounded-xl border border-cyan/30 bg-cyan/10 px-3 py-2 text-xs font-bold text-cyan">
-                      <Zap size={14} /> Auto Captions
-                    </button>
-                    <button type="button" onClick={() => setOpenExport(true)} className="inline-flex items-center gap-2 rounded-xl bg-cyan px-3 py-2 text-xs font-black text-ink">
-                      <Download size={14} /> Exportar
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2 overflow-x-auto pb-1">
-                  {(['video', 'overlay', 'text', 'audio', 'effect'] as const).map((track) => (
-                    <div key={track} className="grid min-w-[720px] grid-cols-[80px_1fr] items-center gap-3">
-                      <span className="text-xs font-bold uppercase text-slate-500">{track}</span>
-                      <div className="relative h-11 rounded-2xl border border-white/10 bg-white/[0.035]">
-                        {clips.filter((clip) => clip.track === track).map((clip) => (
-                          <button
-                            key={clip.id}
-                            type="button"
-                            onClick={() => selectLayer(clip.layerId)}
-                            style={{ left: `${(clip.start / Math.max(1, totalDuration)) * 100}%`, width: `${Math.max(8, (clip.duration / Math.max(1, totalDuration)) * 100)}%` }}
-                            className="absolute top-1 h-9 rounded-xl border border-cyan/30 bg-cyan/15 px-3 text-left text-xs font-bold text-cyan hover:bg-cyan/20"
-                          >
-                            {clip.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <TimelinePanel
+                clips={clips}
+                totalDuration={totalDuration}
+                selectedLayerId={selectedLayerId}
+                timelineZoom={timelineZoom}
+                onTimelineZoomChange={setTimelineZoom}
+                onSelectLayer={selectLayer}
+                onSplitClip={splitClip}
+                onTrimClip={trimClip}
+                onCaptions={() => void runAiAction('captions')}
+                onExport={() => setOpenExport(true)}
+                onAddTrack={() => addShapeLayer('#00F0FF')}
+              />
 
               <EditStatusBar
                 selectedLayer={selectedLayer}
@@ -632,6 +649,9 @@ export function UnifiedStudioEditorPage() {
                 onAddWebImage={addWebImage}
                 onApplyEffect={applyEffect}
                 onApplyTemplate={applyTemplate}
+                templates={templates}
+                templatesLoading={templatesLoading}
+                templatesError={templatesError}
                 onRunAiAction={(action) => void runAiAction(action)}
               />
             </aside>
@@ -693,6 +713,9 @@ function ToolPanel({
   onAddWebImage,
   onApplyEffect,
   onApplyTemplate,
+  templates,
+  templatesLoading,
+  templatesError,
   onRunAiAction,
 }: {
   activeTool: StudioToolId;
@@ -711,14 +734,20 @@ function ToolPanel({
   onAddShape: (color?: string) => void;
   onAddWebImage: (url: string, label: string) => void;
   onApplyEffect: (effect: (typeof effectPresets)[number]) => void;
-  onApplyTemplate: (template: (typeof templatePresets)[number]) => void;
+  onApplyTemplate: (template: AxiTemplateDefinition) => void;
+  templates: AxiTemplateDefinition[];
+  templatesLoading: boolean;
+  templatesError: string | null;
   onRunAiAction: (action: string) => void;
 }) {
   return (
     <div className="flex h-full max-h-[calc(100vh-8rem)] min-h-[520px] flex-col">
       <div className="border-b border-white/10 p-4">
-        <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan">{leftTools.find((tool) => tool.id === activeTool)?.label}</p>
-        <p className="mt-1 text-sm text-slate-400">Painel contextual. Escolha uma acao para aplicar no projeto.</p>
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan">Painel contextual</p>
+        <h2 className="mt-1 text-xl font-black text-white">{leftTools.find((tool) => tool.id === activeTool)?.label}</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          {selectedLayer ? `Ajustes de ${selectedLayer.name}.` : 'Escolha uma ferramenta ou selecione uma camada.'} Nada fica fixo ocupando a tela.
+        </p>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -775,11 +804,25 @@ function ToolPanel({
 
         {activeTool === 'templates' ? (
           <div className="grid gap-3">
-            {templatePresets.map((template) => (
-              <button key={template.id} type="button" onClick={() => onApplyTemplate(template)} className="min-h-32 rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(0,240,255,0.18),transparent_45%),rgba(255,255,255,0.04)] p-4 text-left hover:border-cyan/40">
-                <span className="rounded-full bg-black/30 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan">{template.type}</span>
-                <span className="mt-8 block text-lg font-black text-white">{template.title}</span>
-                <span className="text-xs text-slate-400">{template.prompt}</span>
+            <p className="text-xs text-slate-500">Templates sao composicoes editaveis: camadas, timeline, assets, animacoes e regioes dinamicas.</p>
+            {templatesLoading ? <p className="rounded-2xl border border-cyan/20 bg-cyan/10 px-3 py-2 text-xs text-cyan">Carregando templates do banco...</p> : null}
+            {templatesError ? <p className="rounded-2xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">{templatesError}</p> : null}
+            {!templatesLoading && !templatesError && templates.length === 0 ? (
+              <p className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">Nenhum template ativo cadastrado no banco.</p>
+            ) : null}
+            {templates.map((template) => (
+              <button key={template.id} type="button" onClick={() => onApplyTemplate(template)} className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] text-left hover:border-cyan/40">
+                <span className="block h-24 border-b border-white/10" style={{ background: template.thumbnailGradient }} />
+                <span className="block p-4">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="rounded-full bg-black/30 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan">{template.category}</span>
+                    <span className={template.premium ? 'rounded-full bg-amber-400/15 px-2 py-1 text-[10px] font-black text-amber-200' : 'rounded-full bg-emerald-400/10 px-2 py-1 text-[10px] font-black text-emerald-200'}>
+                      {template.premium ? 'PRO' : 'Livre'}
+                    </span>
+                  </span>
+                  <span className="mt-3 block text-lg font-black text-white">{template.name}</span>
+                  <span className="text-xs text-slate-400">{template.previewLabel} - {template.templateJson.layers.length} layers - {template.templateJson.clips.length} clips</span>
+                </span>
               </button>
             ))}
           </div>
@@ -859,13 +902,205 @@ function ToolPanel({
         ) : null}
 
         {selectedLayer ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
-            <p className="text-sm font-black text-white">Selecionado: {selectedLayer.name}</p>
-            <p className="mt-1 text-xs text-slate-500">{selectedLayer.kind} - {Math.round(selectedLayer.opacity * 100)}% opacidade</p>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-2xl border border-cyan/20 bg-cyan/10 p-3">
+              <p className="text-sm font-black text-white">Selecionado: {selectedLayer.name}</p>
+              <p className="mt-1 text-xs text-cyan/80">{selectedLayer.kind} - {Math.round(selectedLayer.opacity * 100)}% opacidade</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Transformacao</p>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <span className="rounded-xl bg-white/[0.04] px-3 py-2 text-slate-300">X {Math.round(selectedLayer.x)}</span>
+                <span className="rounded-xl bg-white/[0.04] px-3 py-2 text-slate-300">Y {Math.round(selectedLayer.y)}</span>
+                <span className="rounded-xl bg-white/[0.04] px-3 py-2 text-slate-300">W {Math.round(selectedLayer.width)}</span>
+                <span className="rounded-xl bg-white/[0.04] px-3 py-2 text-slate-300">H {Math.round(selectedLayer.height)}</span>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Aparencia</p>
+              <div className="mt-3 space-y-2 text-xs text-slate-300">
+                <div className="flex items-center justify-between rounded-xl bg-white/[0.04] px-3 py-2">
+                  <span>Visibilidade</span>
+                  <span className={selectedLayer.visible ? 'text-emerald-300' : 'text-red-300'}>{selectedLayer.visible ? 'Ativa' : 'Oculta'}</span>
+                </div>
+                <div className="flex items-center justify-between rounded-xl bg-white/[0.04] px-3 py-2">
+                  <span>Bloqueio</span>
+                  <span>{selectedLayer.locked ? 'Bloqueada' : 'Editavel'}</span>
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
     </div>
+  );
+}
+
+function TimelinePanel({
+  clips,
+  totalDuration,
+  selectedLayerId,
+  timelineZoom,
+  onTimelineZoomChange,
+  onSelectLayer,
+  onSplitClip,
+  onTrimClip,
+  onCaptions,
+  onExport,
+  onAddTrack,
+}: {
+  clips: AxiStudioClip[];
+  totalDuration: number;
+  selectedLayerId: string | null;
+  timelineZoom: number;
+  onTimelineZoomChange: (value: number) => void;
+  onSelectLayer: (layerId: string) => void;
+  onSplitClip: (clipId: string) => void;
+  onTrimClip: (clipId: string, seconds: number) => void;
+  onCaptions: () => void;
+  onExport: () => void;
+  onAddTrack: () => void;
+}) {
+  const trackOrder: Array<AxiStudioClip['track']> = ['video', 'overlay', 'text', 'audio', 'effect'];
+  const activeClip = clips.find((clip) => clip.layerId === selectedLayerId) ?? clips[0] ?? null;
+  const duration = Math.max(totalDuration, 15);
+  const timelineWidth = Math.max(920, Math.round(980 * timelineZoom));
+
+  function clipLeft(clip: AxiStudioClip) {
+    return `${Math.min(94, Math.max(0, (clip.start / duration) * 100))}%`;
+  }
+
+  function clipWidth(clip: AxiStudioClip) {
+    return `${Math.max(8, Math.min(100, (clip.duration / duration) * 100))}%`;
+  }
+
+  return (
+    <section className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Film size={18} className="text-cyan" />
+            <h2 className="font-display text-xl font-black text-white">Timeline profissional</h2>
+            <span className="rounded-full bg-white/[0.06] px-2 py-1 text-xs font-bold text-slate-400">{formatTime(duration)}</span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">Faixas por tipo, keyframes visuais, zoom e acoes somente quando fazem sentido.</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-bold text-slate-300">
+            Zoom
+            <input
+              type="range"
+              min={70}
+              max={180}
+              value={Math.round(timelineZoom * 100)}
+              onChange={(event) => onTimelineZoomChange(Number(event.target.value) / 100)}
+              className="w-28"
+            />
+          </label>
+          <button type="button" onClick={onAddTrack} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/[0.06]">
+            <Plus size={14} /> Faixa
+          </button>
+          <button
+            type="button"
+            disabled={!activeClip}
+            onClick={() => activeClip && onSplitClip(activeClip.id)}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Split size={14} /> Split
+          </button>
+          <button
+            type="button"
+            disabled={!activeClip}
+            onClick={() => activeClip && onTrimClip(activeClip.id, Math.max(1, activeClip.duration - 1))}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Scissors size={14} /> Trim
+          </button>
+          <button type="button" onClick={onCaptions} className="inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-2 text-xs font-black text-cyan hover:bg-cyan/15">
+            <Zap size={14} /> Auto Captions
+          </button>
+          <button type="button" onClick={onExport} className="inline-flex items-center gap-2 rounded-full bg-cyan px-4 py-2 text-xs font-black text-ink shadow-[0_0_24px_rgba(0,240,255,0.25)]">
+            <Download size={14} /> Exportar
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-3xl border border-white/10 bg-black/20 p-3">
+        <div className="relative" style={{ width: timelineWidth }}>
+          <div className="pointer-events-none absolute bottom-0 left-[22%] top-0 z-20 w-px bg-cyan/80 shadow-[0_0_18px_rgba(0,240,255,0.8)]">
+            <span className="absolute -left-2 -top-2 h-4 w-4 rotate-45 rounded-[4px] bg-cyan" />
+          </div>
+
+          <div className="mb-2 grid grid-cols-[96px_1fr] gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <span>Track</span>
+            <div className="grid grid-cols-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <span key={index}>{formatTime((duration / 5) * index)}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {trackOrder.map((track) => {
+              const meta = trackMeta[track];
+              const trackClips = clips.filter((clip) => clip.track === track);
+
+              return (
+                <div key={track} className="grid min-h-[58px] grid-cols-[96px_1fr] gap-3">
+                  <div className="flex items-center rounded-2xl border border-white/10 bg-white/[0.03] px-3">
+                    <span className="text-xs font-black" style={{ color: meta.accent }}>{meta.label}</span>
+                  </div>
+                  <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/55">
+                    <div className="absolute inset-y-0 left-0 right-0 grid grid-cols-6">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <span key={index} className="border-l border-white/[0.04]" />
+                      ))}
+                    </div>
+                    {trackClips.map((clip) => {
+                      const active = clip.layerId === selectedLayerId;
+                      return (
+                        <button
+                          key={clip.id}
+                          type="button"
+                          onClick={() => onSelectLayer(clip.layerId)}
+                          className={[
+                            'absolute top-2 h-[40px] overflow-hidden rounded-xl border px-3 text-left text-xs font-black transition',
+                            active ? 'shadow-[0_0_0_2px_rgba(0,240,255,0.22)]' : 'hover:brightness-125',
+                          ].join(' ')}
+                          style={{
+                            left: clipLeft(clip),
+                            width: clipWidth(clip),
+                            background: meta.bg,
+                            borderColor: active ? '#00F0FF' : meta.accent,
+                            color: meta.accent,
+                          }}
+                        >
+                          <span className="relative z-10 block truncate">{clip.label}</span>
+                          {track === 'audio' ? (
+                            <span className="absolute bottom-1 left-2 right-2 flex h-4 items-end gap-[2px] opacity-70">
+                              {Array.from({ length: 18 }).map((_, index) => (
+                                <span
+                                  key={index}
+                                  className="w-1 rounded-full bg-current"
+                                  style={{ height: `${4 + ((index * 7) % 13)}px` }}
+                                />
+                              ))}
+                            </span>
+                          ) : null}
+                          <span className="absolute left-1/4 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 rounded-[2px] bg-white/80" />
+                          <span className="absolute left-2/3 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 rounded-[2px] bg-white/80" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

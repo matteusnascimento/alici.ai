@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from alici_api.config import get_settings
 from alici_api.dependencies import get_current_user
+from database import listar_studio_templates
 
 router = APIRouter(prefix="/studio", tags=["studio"])
 
@@ -30,10 +31,37 @@ class StudioWebImage(BaseModel):
     source_url: str
 
 
+class StudioTemplateCatalogItem(BaseModel):
+    id: str
+    name: str
+    category: str
+    type: Literal["photo", "video", "social", "ad"]
+    thumbnail_url: str | None = None
+    preview_video_url: str | None = None
+    premium: bool = False
+    template_json: dict[str, Any]
+
+
 def _secret_value(value) -> str | None:
     if not value:
         return None
     return value.get_secret_value() if hasattr(value, "get_secret_value") else str(value)
+
+
+@router.get("/templates/catalog", response_model=list[StudioTemplateCatalogItem])
+async def list_template_catalog(
+    category: str | None = Query(default=None, max_length=80),
+    type: Literal["photo", "video", "social", "ad"] | None = Query(default=None),
+    current_user=Depends(get_current_user),
+):
+    del current_user
+    try:
+        return listar_studio_templates(category=category, template_type=type)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Catalogo de templates indisponivel. Execute alembic upgrade head e cadastre templates reais no banco.",
+        ) from exc
 
 
 def _pexels_photo_to_image(photo: dict[str, Any]) -> StudioWebImage:

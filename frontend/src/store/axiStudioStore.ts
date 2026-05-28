@@ -19,6 +19,14 @@ export interface AxiStudioLayer {
   src?: string;
   text?: string;
   color?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  effects?: string[];
+  editable?: boolean;
+  animations?: Array<{
+    property: 'x' | 'y' | 'opacity' | 'scale' | 'rotation';
+    keyframes: Array<{ time: number; value: number }>;
+  }>;
   start?: number;
   duration?: number;
 }
@@ -58,6 +66,14 @@ interface AxiStudioState {
   updateClip: (clipId: string, patch: Partial<AxiStudioClip>) => void;
   splitClip: (clipId: string) => void;
   trimClip: (clipId: string, seconds: number) => void;
+  loadTemplate: (snapshot: {
+    mode?: AxiStudioMode;
+    prompt?: string;
+    duration?: number;
+    layers: AxiStudioLayer[];
+    clips: AxiStudioClip[];
+    selectedLayerId?: string | null;
+  }) => void;
   markSaved: () => void;
   hydrate: (snapshot: Partial<Pick<AxiStudioState, 'mode' | 'activeTool' | 'selectedLayerId' | 'zoom' | 'pan' | 'duration' | 'layers' | 'clips' | 'prompt'>>) => void;
 }
@@ -180,6 +196,16 @@ export const useAxiStudioStore = create<AxiStudioState>((set, get) => ({
   }),
   trimClip: (clipId, seconds) => set((state) => ({
     clips: state.clips.map((clip) => (clip.id === clipId ? { ...clip, duration: Math.max(0.5, clip.duration + seconds) } : clip)),
+    dirty: true,
+  })),
+  loadTemplate: (snapshot) => set((state) => ({
+    mode: snapshot.mode ?? state.mode,
+    prompt: snapshot.prompt ?? state.prompt,
+    duration: snapshot.duration ?? state.duration,
+    layers: snapshot.layers,
+    clips: snapshot.clips,
+    selectedLayerId: snapshot.selectedLayerId ?? snapshot.layers.find((layer) => layer.editable !== false)?.id ?? snapshot.layers[0]?.id ?? null,
+    activeTool: 'select',
     dirty: true,
   })),
   markSaved: () => set({ dirty: false, lastSavedAt: new Date().toISOString() }),
