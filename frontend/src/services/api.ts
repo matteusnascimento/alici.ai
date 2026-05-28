@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '');
 const TOKEN_KEY = 'axi_token';
 
 let unauthorizedHandler: (() => void) | null = null;
@@ -76,7 +77,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, { ...init, headers });
+    response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
   } catch {
     throw new ApiError('Servidor indisponivel. Verifique sua conexao.', 0);
   }

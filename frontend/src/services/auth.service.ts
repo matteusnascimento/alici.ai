@@ -1,4 +1,4 @@
-import { apiFetch, clearAuthToken, setAuthToken } from './api';
+import { API_BASE_URL, apiFetch, clearAuthToken, setAuthToken } from './api';
 import type { AuthResponse, LoginInput, RegisterInput, User } from '../types/auth';
 
 type ApiAuthUser = {
@@ -72,8 +72,7 @@ export async function login(payload: LoginInput) {
 }
 
 export function startGoogleLogin() {
-  const apiUrl = import.meta.env.VITE_API_URL ?? '';
-  window.location.assign(`${apiUrl}/auth/google/start`);
+  window.location.assign(`${API_BASE_URL}/auth/google/start`);
 }
 
 export async function completeOAuthLogin(payload: Pick<AuthResponse, 'access_token' | 'refresh_token' | 'token_type'>) {
