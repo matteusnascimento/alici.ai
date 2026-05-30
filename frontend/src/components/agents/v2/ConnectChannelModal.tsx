@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ExternalLink, Loader2, QrCode, RefreshCw } from 'lucide-react';
 import type { ChannelProviderCatalogItem, AgentConnectedChannel, ChannelIntegrationAccount } from '../../../types/agentsV2';
+import { startChannelProviderOAuth, startWhatsAppChannelQr } from '../../../services/agentsV2.service';
 import { ChannelProviderCard } from './ChannelProviderCard';
 import { ChannelStatusBadge } from './ChannelStatusBadge';
 
 interface ConnectChannelModalProps {
   open: boolean;
+  initialProvider?: string | null;
   providers: ChannelProviderCatalogItem[];
   accounts: ChannelIntegrationAccount[];
   channels: AgentConnectedChannel[];
@@ -25,33 +28,114 @@ const DEFAULT_FORM: Record<string, string> = {
   external_channel_id: '',
   channel_name: '',
   phone_number_or_handle: '',
+  api_url: '',
+  api_key: '',
+  site_url: '',
+  webhook_url: '',
+  secret: '',
+  smtp_host: '',
+  smtp_port: '',
+  smtp_user: '',
+  smtp_password: '',
+  smtp_tls: 'true',
+  smtp_ssl: '',
 };
 
-export function ConnectChannelModal({ open, providers, accounts, channels, actionLoading, onClose, onConnect }: ConnectChannelModalProps) {
-  const activatableProviders = providers.filter((item) => item.supports_activation);
-  const [selectedProvider, setSelectedProvider] = useState<string>('whatsapp');
+const OFFICIAL_LOGIN_PROVIDERS = new Set(['instagram']);
+const QR_CODE_PROVIDERS = new Set(['whatsapp']);
+
+interface QrSession {
+  qr_code_url: string;
+  pairing_code: string;
+  expires_at: string;
+}
+
+type FieldTarget = 'integration' | 'endpoint' | 'config';
+
+interface ProviderFormField {
+  key: string;
+  label: string;
+  placeholder: string;
+  target: FieldTarget;
+  type?: string;
+  required?: boolean;
+}
+
+const PROVIDER_FORM_FIELDS: Record<string, ProviderFormField[]> = {
+  whatsapp: [],
+  instagram: [],
+  website_chat: [
+    { key: 'channel_name', label: 'Nome do widget', placeholder: 'Chat do site principal', target: 'endpoint', required: true },
+    { key: 'site_url', label: 'URL do site', placeholder: 'https://suaempresa.com', target: 'config' },
+  ],
+  api: [
+    { key: 'channel_name', label: 'Nome da integracao', placeholder: 'API do produto', target: 'endpoint', required: true },
+    { key: 'api_url', label: 'URL da API', placeholder: 'https://api.suaempresa.com/axi', target: 'config', required: true },
+    { key: 'api_key', label: 'Token ou API key', placeholder: 'Opcional para Authorization Bearer', target: 'config', type: 'password' },
+  ],
+  email: [
+    { key: 'channel_name', label: 'Nome da caixa', placeholder: 'Email de atendimento', target: 'endpoint', required: true },
+    { key: 'smtp_host', label: 'SMTP host', placeholder: 'smtp.suaempresa.com', target: 'config', required: true },
+    { key: 'smtp_port', label: 'SMTP porta', placeholder: '587', target: 'config', required: true },
+    { key: 'smtp_user', label: 'Usuario SMTP', placeholder: 'atendimento@suaempresa.com', target: 'config', required: true },
+    { key: 'smtp_password', label: 'Senha SMTP', placeholder: 'Senha ou app password', target: 'config', type: 'password', required: true },
+    { key: 'smtp_tls', label: 'Usar TLS', placeholder: 'true ou false', target: 'config' },
+    { key: 'smtp_ssl', label: 'Usar SSL', placeholder: 'true ou false', target: 'config' },
+  ],
+  webhook: [
+    { key: 'channel_name', label: 'Nome do webhook', placeholder: 'Eventos comerciais', target: 'endpoint', required: true },
+    { key: 'webhook_url', label: 'URL do webhook', placeholder: 'https://hooks.suaempresa.com/axi', target: 'config', required: true },
+    { key: 'secret', label: 'Segredo', placeholder: 'Opcional para assinatura X-AXI-Webhook-Secret', target: 'config', type: 'password' },
+  ],
+};
+
+export function ConnectChannelModal({ open, initialProvider, providers, accounts, channels, actionLoading, onClose, onConnect }: ConnectChannelModalProps) {
+  const activatableProviders = useMemo(() => providers.filter((item) => item.supports_activation), [providers]);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, string>>(DEFAULT_FORM);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [qrSession, setQrSession] = useState<QrSession | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setFeedback(null);
       setForm(DEFAULT_FORM);
+      setSelectedProvider(null);
+      setQrSession(null);
       return;
     }
 
-    if (activatableProviders.length > 0 && !activatableProviders.some((item) => item.provider === selectedProvider)) {
-      setSelectedProvider(activatableProviders[0].provider);
+    if (initialProvider && activatableProviders.some((item) => item.provider === initialProvider)) {
+      setSelectedProvider(initialProvider);
+      return;
     }
-  }, [open, activatableProviders, selectedProvider]);
+
+    setSelectedProvider(null);
+  }, [open, activatableProviders, initialProvider]);
 
   if (!open) {
     return null;
   }
 
-  const selected = providers.find((item) => item.provider === selectedProvider) ?? activatableProviders[0] ?? providers[0];
+  const selected = selectedProvider ? providers.find((item) => item.provider === selectedProvider) : null;
   const providerAccounts = selected ? accounts.filter((account) => account.provider === selected.provider) : [];
   const isLoading = selected ? Boolean(actionLoading[`provider:${selected.provider}`]) : false;
+  const isOfficialLoginProvider = selected ? OFFICIAL_LOGIN_PROVIDERS.has(selected.provider) : false;
+  const isQrCodeProvider = selected ? QR_CODE_PROVIDERS.has(selected.provider) : false;
+  const selectedFields = selected ? PROVIDER_FORM_FIELDS[selected.provider] ?? PROVIDER_FORM_FIELDS.api : [];
+
+  function handleProviderSelect(provider: string) {
+    setSelectedProvider((current) => {
+      const next = current === provider ? null : provider;
+      if (next !== current) {
+        setForm(DEFAULT_FORM);
+      }
+      return next;
+    });
+    setFeedback(null);
+    setQrSession(null);
+  }
 
   function applyAccount(account: ChannelIntegrationAccount) {
     setForm((current) => ({
@@ -65,17 +149,41 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
     if (!selected) return;
     setFeedback(null);
     try {
+      const config = selectedFields
+        .filter((field) => field.target === 'config')
+        .reduce<Record<string, string>>((payload, field) => {
+          if (form[field.key]) {
+            payload[field.key] = form[field.key];
+          }
+          return payload;
+        }, {});
+      const accountName =
+        form.external_account_name ||
+        form.smtp_user ||
+        form.api_url ||
+        form.webhook_url ||
+        form.site_url ||
+        selected.title;
+      const accountId =
+        form.external_account_id ||
+        form.api_url ||
+        form.webhook_url ||
+        form.site_url ||
+        form.smtp_user ||
+        selected.provider;
+      const channelName = form.channel_name || selected.title;
+
       await onConnect({
         provider: selected.provider,
         integration: {
-          external_account_name: form.external_account_name,
-          external_account_id: form.external_account_id || undefined,
+          external_account_name: accountName,
+          external_account_id: accountId,
           access_token: form.access_token || undefined,
-          metadata: { source: 'agent_connect_modal' },
+          metadata: { source: 'agent_connect_modal', config },
         },
         endpoint: {
           external_channel_id: form.external_channel_id || undefined,
-          channel_name: form.channel_name,
+          channel_name: channelName,
           phone_number_or_handle: form.phone_number_or_handle || undefined,
         },
       });
@@ -83,6 +191,35 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
       setForm(DEFAULT_FORM);
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Falha ao conectar canal.');
+    }
+  }
+
+  async function handleOfficialLogin() {
+    if (!selected) return;
+    setFeedback(null);
+    try {
+      const result = await startChannelProviderOAuth(selected.provider, window.location.pathname);
+      window.location.assign(result.authorization_url);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : 'Falha ao abrir o login oficial.');
+    }
+  }
+
+  async function handleQrStart() {
+    if (!selected) return;
+    setFeedback(null);
+    setQrLoading(true);
+    try {
+      const result = await startWhatsAppChannelQr(window.location.pathname);
+      setQrSession({
+        qr_code_url: result.qr_code_url,
+        pairing_code: result.pairing_code,
+        expires_at: result.expires_at,
+      });
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : 'Falha ao gerar QR Code.');
+    } finally {
+      setQrLoading(false);
     }
   }
 
@@ -111,7 +248,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                   item={item}
                   selected={selected?.provider === item.provider}
                   isLoading={Boolean(actionLoading[`provider:${item.provider}`])}
-                  onSelect={setSelectedProvider}
+                  onSelect={handleProviderSelect}
                 />
               ))}
             </div>
@@ -159,7 +296,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                   </div>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="hidden">
                   {providerAccounts.length > 0 ? (
                     <div className="rounded-2xl border border-cyan-300/20 bg-cyan-500/8 p-3">
                       <p className="text-xs uppercase tracking-[0.16em] text-cyan-100/80">Contas disponíveis — clique para pré-preencher</p>
@@ -242,9 +379,102 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                   </div>
                 </div>
 
+                {isQrCodeProvider ? (
+                  <div className="space-y-4 rounded-2xl border border-emerald-300/20 bg-emerald-500/8 p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-black/20 text-emerald-100">
+                        <QrCode size={18} />
+                      </span>
+                      <div>
+                        <h4 className="text-sm font-semibold text-white">Conectar WhatsApp com QR Code</h4>
+                        <p className="mt-1 text-sm leading-6 text-emerald-50">
+                          O cliente escaneia o QR Code no WhatsApp do celular. A AXI nao pede token, API key ou senha.
+                        </p>
+                      </div>
+                    </div>
+
+                    {qrSession ? (
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <div className="rounded-2xl border border-white/10 bg-white p-3">
+                          <img src={qrSession.qr_code_url} alt="QR Code para conectar WhatsApp" className="h-48 w-48" />
+                        </div>
+                        <div className="space-y-2 text-sm text-slate-200">
+                          <p>Codigo: <strong className="text-white">{qrSession.pairing_code}</strong></p>
+                          <p className="text-slate-400">Expira em {new Date(qrSession.expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.</p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      disabled={qrLoading}
+                      onClick={() => void handleQrStart()}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-cyan px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-105 disabled:opacity-50"
+                    >
+                      {qrLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                      {qrSession ? 'Gerar novo QR Code' : 'Gerar QR Code'}
+                    </button>
+                  </div>
+                ) : isOfficialLoginProvider ? (
+                  <div className="space-y-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/8 p-4">
+                    <p className="text-sm leading-6 text-cyan-50">
+                      O cliente sera levado para o login oficial do provedor. Ele usa o proprio usuario e senha, escolhe a conta autorizada e a AXI recebe apenas a autorizacao necessaria para ativar mensagens e webhooks.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => void handleOfficialLogin()}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-cyan px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-105 disabled:opacity-50"
+                    >
+                      {isLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
+                      Conectar com login oficial
+                    </button>
+                  </div>
+                ) : (
+                <div className="grid gap-4">
+                  {providerAccounts.length > 0 ? (
+                    <div className="rounded-2xl border border-cyan-300/20 bg-cyan-500/8 p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-cyan-100/80">Contas disponiveis - clique para pre-preencher</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {providerAccounts.slice(0, 4).map((account) => (
+                          <button
+                            key={account.id}
+                            type="button"
+                            onClick={() => applyAccount(account)}
+                            className="rounded-xl border border-cyan-300/30 bg-black/20 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-500/15"
+                          >
+                            {account.external_account_name || account.external_account_id || `Conta ${account.id}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {selectedFields.map((field) => (
+                    <label key={field.key} className="block">
+                      <span className="mb-2 block text-xs uppercase tracking-[0.16em] text-slate-400">
+                        {field.label}
+                        {field.required ? <span className="text-cyan-200"> *</span> : null}
+                      </span>
+                      <input
+                        type={field.type || 'text'}
+                        required={field.required}
+                        value={form[field.key] ?? ''}
+                        onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}
+                        placeholder={field.placeholder}
+                        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300/40"
+                      />
+                    </label>
+                  ))}
+                </div>
+                )}
+
+                {!isOfficialLoginProvider && !isQrCodeProvider ? (
                 <div className="rounded-2xl border border-amber-300/20 bg-amber-500/8 px-4 py-3 text-sm leading-6 text-amber-100">
                   O vínculo é real e salvo no banco. Se o token oficial ainda não estiver configurado, o canal fica salvo como <strong>pronto para ativação</strong>, sem simular conexão completa com a Meta.
                 </div>
+
+                ) : null}
 
                 {feedback ? <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{feedback}</div> : null}
 
@@ -252,6 +482,7 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                   <button type="button" onClick={onClose} className="rounded-2xl border border-white/12 px-4 py-2.5 text-sm text-slate-200 transition hover:bg-white/5">
                     Cancelar
                   </button>
+                  {!isOfficialLoginProvider && !isQrCodeProvider ? (
                   <button
                     type="button"
                     disabled={isLoading || selected.status === 'coming_soon'}
@@ -260,9 +491,14 @@ export function ConnectChannelModal({ open, providers, accounts, channels, actio
                   >
                     {isLoading ? 'Salvando...' : 'Vincular ao agente'}
                   </button>
+                  ) : null}
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div className="flex min-h-[360px] items-center justify-center rounded-[28px] border border-dashed border-white/12 bg-white/[0.03] p-6 text-center text-sm leading-6 text-slate-400">
+                Selecione um canal para abrir as opcoes de vinculacao.
+              </div>
+            )}
           </div>
         </div>
       </div>

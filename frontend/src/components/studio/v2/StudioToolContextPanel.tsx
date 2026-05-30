@@ -35,6 +35,32 @@ function resolveContext(activeTool: string): ContextConfig {
     };
   }
 
+  if (tool.includes('redimensionar') || tool.includes('resize')) {
+    return {
+      title: 'Redimensionar',
+      subtitle: 'Adapte a mesma arte para feed, story, reels e banners sem sair do editor.',
+      sliders: [
+        { key: 'resize-safe-area', label: 'Area segura', defaultValue: 80 },
+        { key: 'resize-scale', label: 'Escala do conteudo', defaultValue: 72 },
+      ],
+      toggles: [{ key: 'resize-smart-fill', label: 'Preenchimento inteligente', defaultValue: true }],
+      actions: ['9:16 Reels', '1:1 Feed', '4:5 Social', '16:9 Banner'],
+    };
+  }
+
+  if (tool.includes('remover fundo') || tool.includes('remove background')) {
+    return {
+      title: 'Remover fundo',
+      subtitle: 'Recorte produto, pessoa ou objeto e prepare composicoes limpas.',
+      sliders: [
+        { key: 'remove-edge', label: 'Suavidade da borda', defaultValue: 48 },
+        { key: 'remove-detail', label: 'Preservar detalhes', defaultValue: 64 },
+      ],
+      toggles: [{ key: 'remove-shadow', label: 'Adicionar sombra natural', defaultValue: true }],
+      actions: ['Processar fundo', 'Fundo transparente', 'Aplicar cor de marca'],
+    };
+  }
+
   if (tool.includes('adjust') || tool.includes('ajust') || tool.includes('brilho') || tool.includes('contraste')) {
     return {
       title: 'Ajustar',
@@ -117,7 +143,7 @@ export function StudioToolContextPanel({ activeTool }: StudioToolContextPanelPro
   const [toggleValues, setToggleValues] = useState<Record<string, boolean>>({});
 
   return (
-    <div className="space-y-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+    <div className="space-y-4 rounded-2xl border border-white/10 bg-black/25 p-4">
       <div>
         <p className="text-[11px] uppercase tracking-[0.22em] text-cyan-300">Contexto da ferramenta</p>
         <h4 className="mt-1 text-base font-semibold text-white">{context.title}</h4>
@@ -141,7 +167,7 @@ export function StudioToolContextPanel({ activeTool }: StudioToolContextPanelPro
               max={max}
               value={value}
               onChange={(event) => setSliderValues((current) => ({ ...current, [slider.key]: Number(event.target.value) }))}
-              className="w-full"
+              className="studio-range w-full"
             />
           </label>
         );
@@ -165,7 +191,7 @@ export function StudioToolContextPanel({ activeTool }: StudioToolContextPanelPro
       {context.actions ? (
         <div className="grid gap-2">
           {context.actions.map((action) => (
-            <button key={action} type="button" className="rounded-xl border border-white/20 px-3 py-2 text-xs text-white transition hover:border-cyan-300/45 hover:text-cyan-100">
+            <button key={action} type="button" className="rounded-xl border border-white/20 bg-white/[0.03] px-3 py-2 text-xs text-white transition hover:border-cyan-300/45 hover:text-cyan-100">
               {action}
             </button>
           ))}

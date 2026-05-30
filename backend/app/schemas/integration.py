@@ -67,3 +67,23 @@ class IntegrationProviderStatusRead(BaseModel):
     active_endpoints: int
     active_bindings: int
     helper_text: str
+
+
+class IntegrationOAuthStartRequest(BaseModel):
+    redirect_path: str | None = None
+
+
+class IntegrationOAuthStartResponse(BaseModel):
+    provider: str
+    authorization_url: str
+
+
+class IntegrationQrStartRequest(BaseModel):
+    redirect_path: str | None = None
+
+
+class IntegrationQrStartResponse(BaseModel):
+    provider: str
+    qr_code_url: str
+    pairing_code: str
+    expires_at: datetime

@@ -5,6 +5,8 @@ import {
   connectIntegration,
   disconnectProvider,
   listChannelIntegrations,
+  startIntegrationOAuth,
+  startWhatsAppQr,
   type IntegrationProvider,
 } from '../../../services/integrations.service';
 import { useToast } from '../../../hooks/useToast';
@@ -26,6 +28,9 @@ const PROVIDER_META: Record<string, { icon: React.ReactNode; color: string; desc
     description: 'Widget de chat para seu site. Instale em qualquer página com uma linha de código.',
   },
 };
+
+const OFFICIAL_LOGIN_PROVIDERS = new Set(['instagram']);
+const QR_CODE_PROVIDERS = new Set(['whatsapp']);
 
 const FALLBACK_PROVIDERS: IntegrationProvider[] = [
   {
@@ -84,6 +89,19 @@ export function AccountAppsPage() {
   async function handleConnect(provider: IntegrationProvider) {
     setActionLoading(provider.provider);
     try {
+      if (OFFICIAL_LOGIN_PROVIDERS.has(provider.provider)) {
+        const result = await startIntegrationOAuth(provider.provider, window.location.pathname);
+        window.location.assign(result.authorization_url);
+        return;
+      }
+
+      if (QR_CODE_PROVIDERS.has(provider.provider)) {
+        const result = await startWhatsAppQr(window.location.pathname);
+        window.open(result.qr_code_url, '_blank', 'noopener,noreferrer');
+        pushToast('QR Code do WhatsApp gerado.', 'success');
+        return;
+      }
+
       await connectIntegration({ provider: provider.provider });
       setProviders((prev) =>
         prev.map((p) => p.provider === provider.provider ? { ...p, status: 'connected', connected_accounts: 1 } : p)
@@ -189,7 +207,7 @@ export function AccountAppsPage() {
                       className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-500/20 disabled:opacity-50"
                     >
                       {busy ? <Loader2 size={12} className="animate-spin" /> : <Plug size={12} />}
-                      Conectar
+                      {QR_CODE_PROVIDERS.has(p.provider) ? 'QR Code' : OFFICIAL_LOGIN_PROVIDERS.has(p.provider) ? 'Login oficial' : 'Conectar'}
                     </button>
                   )}
                 </div>

@@ -26,7 +26,7 @@ function sectionByProvider(provider: string): 'service' | 'advanced' {
   return 'advanced';
 }
 
-function ProviderCard({ item, onOpen }: { item: ChannelProviderCatalogItem; onOpen: () => void }) {
+function ProviderCard({ item, onOpen }: { item: ChannelProviderCatalogItem; onOpen: (provider: string) => void }) {
   const visual = CHANNEL_VISUALS[item.provider] ?? CHANNEL_VISUALS.api;
   const Icon = visual.icon;
 
@@ -53,7 +53,7 @@ function ProviderCard({ item, onOpen }: { item: ChannelProviderCatalogItem; onOp
           </div>
           <button
             type="button"
-            onClick={onOpen}
+            onClick={() => onOpen(item.provider)}
             className="rounded-xl border border-white/20 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:border-cyan-300/45 hover:bg-cyan-400/10"
           >
             {item.status === 'connected' ? 'Gerenciar' : 'Conectar'}
@@ -70,6 +70,7 @@ export function AgentChannelsPage() {
   const { providers, accounts, channels, loading, error, actionLoading, connect, disconnect, test } = useAgentChannels(agentId);
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalProvider, setModalProvider] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   const notify = useCallback((ok: boolean, message: string) => {
@@ -121,6 +122,16 @@ export function AgentChannelsPage() {
     }
   }
 
+  function openConnectModal(provider: string | null = null) {
+    setModalProvider(provider);
+    setModalOpen(true);
+  }
+
+  function closeConnectModal() {
+    setModalOpen(false);
+    setModalProvider(null);
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -148,7 +159,7 @@ export function AgentChannelsPage() {
           </div>
           <button
             type="button"
-            onClick={() => setModalOpen(true)}
+            onClick={() => openConnectModal()}
             className="rounded-2xl bg-cyan px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-105"
           >
             Conectar canal
@@ -174,7 +185,7 @@ export function AgentChannelsPage() {
         <p className="text-sm text-slate-400">Escolha onde seu agente vai conversar com clientes no dia a dia.</p>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {groupedProviders.service.map((item) => (
-            <ProviderCard key={item.provider} item={item} onOpen={() => setModalOpen(true)} />
+            <ProviderCard key={item.provider} item={item} onOpen={openConnectModal} />
           ))}
         </div>
       </section>
@@ -185,7 +196,7 @@ export function AgentChannelsPage() {
           <p className="text-sm text-slate-400">Conecte canais avançados disponíveis para este workspace.</p>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {groupedProviders.advanced.map((item) => (
-              <ProviderCard key={item.provider} item={item} onOpen={() => setModalOpen(true)} />
+              <ProviderCard key={item.provider} item={item} onOpen={openConnectModal} />
             ))}
           </div>
         </section>
@@ -218,11 +229,12 @@ export function AgentChannelsPage() {
 
       <ConnectChannelModal
         open={modalOpen}
+        initialProvider={modalProvider}
         providers={providers}
         accounts={accounts}
         channels={channels}
         actionLoading={actionLoading}
-        onClose={() => setModalOpen(false)}
+        onClose={closeConnectModal}
         onConnect={handleConnect}
       />
     </div>

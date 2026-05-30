@@ -18,6 +18,7 @@ from app.schemas.marketing import (
     MarketingTool,
 )
 from app.services.ai_service import AIServiceError
+from app.services.billing_service import BillingService
 from app.services.marketing_service import MarketingService
 
 router = APIRouter(prefix="/marketing", tags=["marketing"])
@@ -26,11 +27,14 @@ router = APIRouter(prefix="/marketing", tags=["marketing"])
 @router.post("/campaign", response_model=MarketingCampaignResponse)
 def generate_campaign(
     payload: MarketingCampaignRequest,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingCampaignResponse:
+    BillingService(db).assert_can_use(current_user, "messages", 1)
     try:
-        return MarketingService(db).generate(payload)
+        result = MarketingService(db).generate(payload)
+        BillingService(db).record_usage(current_user, "messages", 1, source="marketing")
+        return result
     except AIServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
 
@@ -43,11 +47,14 @@ def list_tools(_: User = Depends(get_current_user), db: Session = Depends(get_db
 @router.post("/generate-copy", response_model=MarketingCopyResponse)
 def generate_copy(
     payload: MarketingCopyRequest,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingCopyResponse:
+    BillingService(db).assert_can_use(current_user, "messages", 1)
     try:
-        return MarketingService(db).generate_copy(payload.prompt)
+        result = MarketingService(db).generate_copy(payload.prompt)
+        BillingService(db).record_usage(current_user, "messages", 1, source="marketing")
+        return result
     except AIServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
 
@@ -58,8 +65,11 @@ def generate_content(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingContentResponse:
+    BillingService(db).assert_can_use(current_user, "messages", 1)
     try:
-        return MarketingService(db).generate_content(current_user, payload)
+        result = MarketingService(db).generate_content(current_user, payload)
+        BillingService(db).record_usage(current_user, "messages", 1, source="marketing")
+        return result
     except AIServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
 
@@ -67,11 +77,14 @@ def generate_content(
 @router.post("/generate-image-prompt", response_model=MarketingImagePromptResponse)
 def generate_image_prompt(
     payload: MarketingCopyRequest,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingImagePromptResponse:
+    BillingService(db).assert_can_use(current_user, "messages", 1)
     try:
-        return MarketingService(db).generate_image_prompt(payload.prompt)
+        result = MarketingService(db).generate_image_prompt(payload.prompt)
+        BillingService(db).record_usage(current_user, "messages", 1, source="marketing")
+        return result
     except AIServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc
 
@@ -124,7 +137,10 @@ def generate_for_project(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MarketingCampaignResponse:
+    BillingService(db).assert_can_use(current_user, "messages", 1)
     try:
-        return MarketingService(db).generate_for_project(current_user, project_id)
+        result = MarketingService(db).generate_for_project(current_user, project_id)
+        BillingService(db).record_usage(current_user, "messages", 1, source="marketing")
+        return result
     except AIServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.user_message) from exc

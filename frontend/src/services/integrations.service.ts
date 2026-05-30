@@ -32,6 +32,18 @@ export interface IntegrationProviderStatus {
   helper_text: string;
 }
 
+export interface IntegrationOAuthStartResponse {
+  provider: string;
+  authorization_url: string;
+}
+
+export interface IntegrationQrStartResponse {
+  provider: string;
+  qr_code_url: string;
+  pairing_code: string;
+  expires_at: string;
+}
+
 // Account-level integrations (AI providers, OpenAI key, etc.)
 export function getAccountIntegrations() {
   return apiFetch<AccountIntegration[]>('/account/integrations');
@@ -63,6 +75,20 @@ export function connectIntegration(payload: {
   return apiFetch<IntegrationAccount>('/integrations', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export function startIntegrationOAuth(provider: string, redirectPath?: string): Promise<IntegrationOAuthStartResponse> {
+  return apiFetch<IntegrationOAuthStartResponse>(`/integrations/${provider}/oauth/start`, {
+    method: 'POST',
+    body: JSON.stringify({ redirect_path: redirectPath }),
+  });
+}
+
+export function startWhatsAppQr(redirectPath?: string): Promise<IntegrationQrStartResponse> {
+  return apiFetch<IntegrationQrStartResponse>('/integrations/whatsapp/qr/start', {
+    method: 'POST',
+    body: JSON.stringify({ redirect_path: redirectPath }),
   });
 }
 

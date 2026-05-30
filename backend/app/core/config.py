@@ -35,7 +35,19 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-local-dev-secret"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
-    default_ai_provider: str = "openai"
+    refresh_token_expire_minutes: int = 10080
+    password_reset_expire_minutes: int = 30
+    email_verification_expire_minutes: int = 1440
+    default_ai_provider: str = "groq"
+    ai_provider_timeout_seconds: float = 30.0
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.1-8b-instant"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-1.5-flash"
+    ollama_enabled: bool = False
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3"
+    ollama_timeout_seconds: float = 8.0
     openai_api_key: str = ""
     openai_api_key_rotated: str = ""
     openai_model: str = "gpt-4o-mini"
@@ -69,10 +81,20 @@ class Settings(BaseSettings):
     stripe_cancel_url: str = ""
 
     # Meta channels (WhatsApp/Instagram)
+    meta_oauth_client_id: str = ""
+    meta_oauth_redirect_uri: str = ""
     meta_app_secret: str = ""
     meta_webhook_verify_token: str = ""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
+    redis_url: str = ""
+    redis_required: bool = False
+    storage_external_required: bool = False
+    rate_limit_enabled: bool = True
+    rate_limit_window_seconds: int = 60
+    rate_limit_max_requests: int = 120
+    public_upload_max_age_seconds: int = 300
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod
@@ -94,6 +116,14 @@ class Settings(BaseSettings):
     @classmethod
     def parse_billing_admin_emails(cls, value: str | list[str]) -> list[str]:
         return [item.lower() for item in cls._parse_string_list(value, field_name="BILLING_ADMIN_EMAILS")]
+
+    @field_validator("default_ai_provider")
+    @classmethod
+    def validate_default_ai_provider(cls, value: str) -> str:
+        normalized = (value or "").strip().lower()
+        if normalized not in {"groq", "gemini", "ollama", "openai"}:
+            raise ValueError("DEFAULT_AI_PROVIDER deve ser groq, gemini, ollama ou openai")
+        return normalized
 
     @classmethod
     def _parse_string_list(cls, value: str | list[str], *, field_name: str) -> list[str]:

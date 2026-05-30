@@ -88,7 +88,7 @@ export function StudioVideoContextPanel({ activeTool, onAddTextClip, onUploadAud
             <span>Volume</span>
             <span>{volume}%</span>
           </span>
-          <input type="range" min={0} max={100} value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full" />
+          <input type="range" min={0} max={100} value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="studio-range w-full" />
         </label>
         <button type="button" onClick={() => void onRunAiAction('voiceover')} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100">
           <Sparkles size={16} /> Gerar voz IA
@@ -107,6 +107,45 @@ export function StudioVideoContextPanel({ activeTool, onAddTextClip, onUploadAud
         </div>
         <button type="button" onClick={() => void onRunAiAction('captions')} className="inline-flex items-center gap-2 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-ink">
           <Sparkles size={16} /> Gerar legendas
+        </button>
+      </div>
+    );
+  }
+
+  if (tool.includes('redimensionar') || tool.includes('cortar') || tool.includes('remover fundo')) {
+    const isResize = tool.includes('redimensionar');
+    const isRemoveBg = tool.includes('remover fundo');
+    return (
+      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-cyan-300">Edicao de midia</p>
+          <h3 className="mt-1 text-base font-semibold text-white">
+            {isResize ? 'Redimensionamento por canal' : isRemoveBg ? 'Remocao de fundo' : 'Corte e enquadramento'}
+          </h3>
+          <p className="mt-1 text-xs text-slate-300">
+            {isResize ? 'Adapte o criativo para feed, story, reels e banners.' : isRemoveBg ? 'Prepare produto, avatar ou composicao para sobreposicao.' : 'Ajuste o enquadramento do clip selecionado.'}
+          </p>
+        </div>
+        {isResize ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {['9:16 Reels', '1:1 Feed', '4:5 Social', '16:9 Banner'].map((preset) => (
+              <button key={preset} type="button" className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-200 transition hover:border-cyan-300/45 hover:text-white">
+                {preset}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {isRemoveBg ? (
+          <label className="block text-xs text-slate-300">
+            <span className="mb-1 flex items-center justify-between">
+              <span>Suavidade da borda</span>
+              <span>50%</span>
+            </span>
+            <input type="range" min={0} max={100} defaultValue={50} className="studio-range w-full" />
+          </label>
+        ) : null}
+        <button type="button" onClick={() => void onRunAiAction('generate')} className="inline-flex items-center gap-2 rounded-xl bg-[var(--studio-gradient)] px-4 py-2 text-sm font-semibold text-white">
+          <Wand2 size={16} /> Aplicar no editor
         </button>
       </div>
     );

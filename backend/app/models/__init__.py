@@ -12,6 +12,7 @@ from app.models.agent_metric import AgentMetric
 from app.models.agent_test_session import AgentTestSession
 from app.models.agent_test_message import AgentTestMessage
 from app.models.billing_event import BillingEvent
+from app.models.auth_token import AuthToken
 from app.models.brand_asset import BrandAsset
 from app.models.channel_endpoint import ChannelEndpoint
 from app.models.channel_message import ChannelMessage
@@ -54,6 +55,7 @@ __all__ = [
 	"AgentTestSession",
 	"AgentTestMessage",
 	"BillingEvent",
+	"AuthToken",
 	"BrandAsset",
 	"ChannelEndpoint",
 	"ChannelMessage",

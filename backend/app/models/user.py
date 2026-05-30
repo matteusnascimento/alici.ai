@@ -49,3 +49,4 @@ class User(Base):
     agent_channels = relationship("AgentChannel", back_populates="user", cascade="all, delete-orphan")
     agent_knowledge_items = relationship("AgentKnowledge", back_populates="user", cascade="all, delete-orphan")
     agent_actions = relationship("AgentAction", back_populates="user", cascade="all, delete-orphan")
+    auth_tokens = relationship("AuthToken", back_populates="user", cascade="all, delete-orphan")

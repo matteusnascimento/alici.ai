@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from app.integrations.providers.api import APIProvider
 from app.integrations.providers.base import BaseProvider
-from app.integrations.providers.crm import CRMProvider
 from app.integrations.providers.email import EmailProvider
 from app.integrations.providers.instagram import InstagramProvider
 from app.integrations.providers.webhook import WebhookProvider
@@ -15,7 +14,6 @@ VALID_PROVIDERS = frozenset({
     "instagram",
     "website_chat",
     "email",
-    "crm",
     "api",
     "webhook",
 })
@@ -25,7 +23,6 @@ _REGISTRY: dict[str, type[BaseProvider]] = {
     "instagram": InstagramProvider,
     "website_chat": WebsiteChatProvider,
     "email": EmailProvider,
-    "crm": CRMProvider,
     "api": APIProvider,
     "webhook": WebhookProvider,
 }

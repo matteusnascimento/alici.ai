@@ -22,6 +22,75 @@ interface UseStudioV2Options {
   forceNew?: boolean;
 }
 
+export const FALLBACK_STUDIO_TEMPLATES: StudioTemplate[] = [
+  {
+    id: -1,
+    user_id: null,
+    name: 'Promocao de Produto',
+    category: 'Marketing',
+    style_tag: '9:16',
+    template_data: { project_type: 'video-editor', route: '/app/studio/editor/video?mode=new&template=promo-produto', clips: ['Hook', 'Beneficio', 'Oferta', 'CTA'] },
+    preview_url: null,
+    is_public: true,
+    created_at: new Date(0).toISOString(),
+  },
+  {
+    id: -2,
+    user_id: null,
+    name: 'Oferta Relampago',
+    category: 'Marketing',
+    style_tag: 'Reels',
+    template_data: { project_type: 'video-editor', route: '/app/studio/editor/video?mode=new&template=oferta-relampago', clips: ['Urgencia', 'Produto', 'Desconto', 'CTA'] },
+    preview_url: null,
+    is_public: true,
+    created_at: new Date(0).toISOString(),
+  },
+  {
+    id: -3,
+    user_id: null,
+    name: 'Reserva Direta',
+    category: 'Hotelaria',
+    style_tag: 'Story',
+    template_data: { project_type: 'video-editor', route: '/app/studio/editor/video?mode=new&template=reserva-direta', clips: ['Destino', 'Experiencia', 'Quarto', 'Reserva'] },
+    preview_url: null,
+    is_public: true,
+    created_at: new Date(0).toISOString(),
+  },
+  {
+    id: -4,
+    user_id: null,
+    name: 'Experiencia Premium',
+    category: 'Hotelaria',
+    style_tag: '9:16',
+    template_data: { project_type: 'video-editor', route: '/app/studio/editor/video?mode=new&template=experiencia-premium', clips: ['Ambiente', 'Servico', 'Prova social', 'CTA'] },
+    preview_url: null,
+    is_public: true,
+    created_at: new Date(0).toISOString(),
+  },
+  {
+    id: -5,
+    user_id: null,
+    name: 'Story Social',
+    category: 'Redes Sociais',
+    style_tag: 'Story',
+    template_data: { project_type: 'video-editor', route: '/app/studio/editor/video?mode=new&template=story-social', clips: ['Abertura', 'Mensagem', 'Sticker', 'CTA'] },
+    preview_url: null,
+    is_public: true,
+    created_at: new Date(0).toISOString(),
+  },
+  {
+    id: -6,
+    user_id: null,
+    name: 'TikTok / Shorts',
+    category: 'Redes Sociais',
+    style_tag: 'Shorts',
+    template_data: { project_type: 'video-editor', route: '/app/studio/editor/video?mode=new&template=tiktok-shorts', clips: ['Hook rapido', 'Corte dinamico', 'Legenda', 'Loop'] },
+    preview_url: null,
+    is_public: true,
+    created_at: new Date(0).toISOString(),
+  },
+];
+
 export function useStudioV2({ defaultType, defaultTitle, projectId = null, forceNew = false }: UseStudioV2Options) {
   const { pushToast } = useToast();
   const [projects, setProjects] = useState<StudioProject[]>([]);
@@ -37,14 +106,15 @@ export function useStudioV2({ defaultType, defaultTitle, projectId = null, force
   async function ensureWorkspaceProject() {
     setLoading(true);
     try {
-      const [loadedProjects, loadedAssets, loadedTemplates] = await Promise.all([
+      const [projectsResult, assetsResult, templatesResult] = await Promise.allSettled([
         listStudioProjects(),
         listStudioAssets(),
         listStudioTemplates(),
       ]);
-      const safeProjects = Array.isArray(loadedProjects) ? loadedProjects : [];
-      const safeAssets = Array.isArray(loadedAssets) ? loadedAssets : [];
-      const safeTemplates = Array.isArray(loadedTemplates) ? loadedTemplates : [];
+      const safeProjects = projectsResult.status === 'fulfilled' && Array.isArray(projectsResult.value) ? projectsResult.value : [];
+      const safeAssets = assetsResult.status === 'fulfilled' && Array.isArray(assetsResult.value) ? assetsResult.value : [];
+      const loadedTemplates = templatesResult.status === 'fulfilled' && Array.isArray(templatesResult.value) ? templatesResult.value : [];
+      const safeTemplates = loadedTemplates.length > 0 ? loadedTemplates : FALLBACK_STUDIO_TEMPLATES;
 
       setProjects(safeProjects);
       setAssets(safeAssets);

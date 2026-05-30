@@ -165,6 +165,26 @@ class BillingService:
 
         return BillingUsageResponse(items=items)
 
+    def assert_can_use(self, user: User, metric: str, quantity: int = 1) -> None:
+        subscription = self._get_or_create_subscription(user)
+        plan = self.PLAN_CATALOG.get(subscription.plan_id, self.PLAN_CATALOG["free"])
+        limit = int(plan["limits"].get(metric, 0) or 0)
+        if limit <= 0:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Seu plano nao permite uso de {metric}.")
+        used = int(self._usage_total_for_period(user.id, metric, subscription))
+        if used + quantity > limit:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"Limite de {metric} do plano atingido. Atualize o plano para continuar.",
+            )
+
+    def record_usage(self, user: User, metric: str, quantity: int = 1, source: str | None = None) -> UsageLog:
+        row = UsageLog(user_id=user.id, metric=metric, quantity=quantity, source=source)
+        self.db.add(row)
+        self.db.commit()
+        self.db.refresh(row)
+        return row
+
     def history(self, user: User) -> BillingHistoryResponse:
         events = (
             self.db.query(BillingEvent)

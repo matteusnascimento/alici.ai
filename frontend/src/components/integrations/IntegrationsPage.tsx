@@ -6,9 +6,13 @@ import {
   disconnectProvider,
   listChannelIntegrations,
   listIntegrationAccounts,
+  startIntegrationOAuth,
+  startWhatsAppQr,
 } from '../../services/integrations.service';
 
 const DEV = import.meta.env.DEV;
+const OFFICIAL_LOGIN_PROVIDERS = new Set(['instagram']);
+const QR_CODE_PROVIDERS = new Set(['whatsapp']);
 
 const PROVIDER_ICONS: Record<string, string> = {
   whatsapp: '💬',
@@ -132,6 +136,32 @@ export function IntegrationsPage() {
     }
   }
 
+  async function handleOfficialLogin(provider: string) {
+    setConnecting(provider);
+    setError(null);
+    try {
+      const result = await startIntegrationOAuth(provider, window.location.pathname);
+      window.location.assign(result.authorization_url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Erro ao abrir login oficial de ${provider}`);
+    } finally {
+      setConnecting(null);
+    }
+  }
+
+  async function handleQrConnect(provider: string) {
+    setConnecting(provider);
+    setError(null);
+    try {
+      const result = await startWhatsAppQr(window.location.pathname);
+      window.open(result.qr_code_url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Erro ao gerar QR Code de ${provider}`);
+    } finally {
+      setConnecting(null);
+    }
+  }
+
   async function handleDisconnect(provider: string) {
     if (!confirm(`Desconectar ${provider}?`)) return;
     setDisconnecting(provider);
@@ -191,6 +221,8 @@ export function IntegrationsPage() {
           // Fonte única de verdade — derivada das contas reais no banco
           const connStatus = normalizeStatus(provider, providerAccounts);
           const isConnected = connStatus !== 'disconnected';
+          const usesOfficialLogin = OFFICIAL_LOGIN_PROVIDERS.has(provider.provider);
+          const usesQrCode = QR_CODE_PROVIDERS.has(provider.provider);
           const fields = PROVIDER_FIELDS[provider.provider] ?? [];
 
           return (
@@ -242,6 +274,26 @@ export function IntegrationsPage() {
                     {disconnecting === provider.provider ? <Loader2 size={11} className="animate-spin" /> : <XCircle size={11} />}
                     Desconectar
                   </button>
+                ) : usesQrCode ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleQrConnect(provider.provider)}
+                    disabled={connecting === provider.provider}
+                    className="flex items-center gap-1.5 rounded-xl bg-cyan/10 border border-cyan/30 px-3 py-1.5 text-xs text-cyan hover:bg-cyan/20 disabled:opacity-50"
+                  >
+                    {connecting === provider.provider ? <Loader2 size={11} className="animate-spin" /> : <PlugZap size={11} />}
+                    QR Code
+                  </button>
+                ) : usesOfficialLogin ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleOfficialLogin(provider.provider)}
+                    disabled={connecting === provider.provider}
+                    className="flex items-center gap-1.5 rounded-xl bg-cyan/10 border border-cyan/30 px-3 py-1.5 text-xs text-cyan hover:bg-cyan/20 disabled:opacity-50"
+                  >
+                    {connecting === provider.provider ? <Loader2 size={11} className="animate-spin" /> : <PlugZap size={11} />}
+                    Login oficial
+                  </button>
                 ) : showFormFor === provider.provider ? (
                   <button
                     type="button"
@@ -261,7 +313,7 @@ export function IntegrationsPage() {
                 )}
               </div>
 
-              {showFormFor === provider.provider && fields.length > 0 && (
+              {showFormFor === provider.provider && fields.length > 0 && !usesOfficialLogin && (
                 <form onSubmit={(e) => void handleConnect(e, provider.provider)} className="space-y-2">
                   {fields.map((f) => (
                     <input

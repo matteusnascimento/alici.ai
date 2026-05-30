@@ -5,9 +5,9 @@ interface StudioInspectorPanelProps {
 
 export function StudioInspectorPanel({ title, children }: StudioInspectorPanelProps) {
   return (
-    <aside className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,14,32,0.95),rgba(11,22,42,0.92))] p-4">
+    <aside className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.085),rgba(255,255,255,0.035))] p-4 shadow-[var(--studio-tile-shadow)] backdrop-blur-xl">
       <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Inspector</p>
-      <h3 className="mt-2 font-display text-lg text-white">{title}</h3>
+      <h3 className="mt-2 font-display text-lg font-bold text-white">{title}</h3>
       <div className="mt-4 space-y-3">{children}</div>
     </aside>
   );

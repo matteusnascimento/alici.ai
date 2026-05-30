@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.services.ai.moderation_service import ModerationService
 from app.services.ai.prompt_builder import build_prompt_for_task
 from app.services.ai.provider_service import ProviderService, get_default_chat_model
+from app.services.ai.providers.base import ProviderError
 from app.services.ai.request_logger import log_ai_request
 from app.services.ai.response_formatter import format_ai_response
 
@@ -56,10 +57,6 @@ class AIService:
         return self._provider_service.is_configured()
 
     def _ensure_provider(self) -> None:
-        if self.provider != "openai":
-            raise AIConfigurationError(f"Unsupported AI provider: {self.provider}")
-        if not settings.effective_openai_api_key:
-            raise AIConfigurationError("OPENAI_API_KEY is not configured")
         if not self._provider_service.is_configured():
             raise AIConfigurationError("AI provider is not configured")
 
@@ -88,6 +85,13 @@ class AIService:
     def _wrap_error(self, exc: Exception) -> AIServiceError:
         if isinstance(exc, AIServiceError):
             return exc
+        if isinstance(exc, ProviderError):
+            return AIServiceError(
+                str(exc),
+                user_message="Nao foi possivel executar a tarefa com IA no momento.",
+                status_code=exc.status_code,
+                code=exc.code,
+            )
         message = str(exc)
         if "OPENAI_API_KEY" in message:
             return AIConfigurationError(message)
@@ -235,7 +239,12 @@ class AIService:
                 model=self._model_for(task_name, model),
             )
             if not (raw.get("content") or "").strip():
-                raw["content"] = "No momento não foi possível gerar resposta completa. Tente novamente."
+                raise AIServiceError(
+                    "AI provider returned empty content",
+                    user_message="Nao foi possivel executar a tarefa com IA no momento.",
+                    status_code=502,
+                    code="empty_response",
+                )
             return raw
         except Exception as exc:
             raise self._wrap_error(exc) from exc
@@ -261,7 +270,12 @@ class AIService:
         )
         content = str(response.get("content") or "").strip()
         if not content:
-            return "No momento não foi possível gerar conteúdo. Tente novamente em instantes."
+            raise AIServiceError(
+                "AI provider returned empty content",
+                user_message="Nao foi possivel executar a tarefa com IA no momento.",
+                status_code=502,
+                code="empty_response",
+            )
         return content
 
     def generate_structured_output(

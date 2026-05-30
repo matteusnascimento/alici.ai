@@ -249,6 +249,7 @@ def create_agent_alias(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AgentCreatedFlowResponse:
+    BillingService(db).check_limit(current_user, "agents")
     agent = AgentService(db).create_agent(current_user, payload)
     setup = AgentSetupService(db).get_setup_status(current_user, agent.id)
     return AgentCreatedFlowResponse.model_validate(

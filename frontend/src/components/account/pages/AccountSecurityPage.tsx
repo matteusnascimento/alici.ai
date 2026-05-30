@@ -99,8 +99,8 @@ export function AccountSecurityPage() {
         </div>
       </section>
 
-      {/* 2FA stub */}
-      <section className="rounded-3xl border border-amber-400/20 bg-amber-500/5 p-6">
+      {/* 2FA disabled until the backend flow is implemented. */}
+      <section className="hidden">
         <div className="flex items-start gap-3">
           <ShieldAlert size={20} className="mt-0.5 shrink-0 text-amber-400" />
           <div>

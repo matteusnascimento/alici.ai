@@ -32,6 +32,7 @@ from app.core.config import settings
 from app.core import database as db_core
 from app.services.dev_seed_service import DevSeedService
 from app.services.schema_sync_service import SchemaSyncService
+from app.middleware.rate_limit import RateLimitMiddleware
 
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware)
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")

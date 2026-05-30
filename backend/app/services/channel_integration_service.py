@@ -19,7 +19,7 @@ from app.models.integration_account import IntegrationAccount
 from app.models.user import User
 from app.services.agent_runtime_service import AgentRuntimeError, AgentRuntimeService
 
-ACTIVE_PROVIDERS = frozenset({"whatsapp", "instagram"})
+ACTIVE_PROVIDERS = frozenset({"whatsapp", "instagram", "website_chat", "api", "email", "webhook"})
 COMING_SOON_PROVIDERS = frozenset()
 SUPPORTED_PROVIDERS = ACTIVE_PROVIDERS | COMING_SOON_PROVIDERS
 
@@ -34,6 +34,30 @@ PROVIDER_CATALOG: dict[str, dict[str, str | bool]] = {
         "title": "Instagram",
         "description": "Resposta automatica para mensagens do Instagram.",
         "helper": "Base real pronta para vinculo com o agente. A ativacao oficial Meta ainda depende da autenticacao externa.",
+        "supports_activation": True,
+    },
+    "website_chat": {
+        "title": "Chat do site",
+        "description": "Widget embutido para atender visitantes no seu site.",
+        "helper": "Nao exige credenciais externas. Depois de vincular, instale o script do widget no site.",
+        "supports_activation": True,
+    },
+    "api": {
+        "title": "API externa",
+        "description": "Endpoint HTTP para integrar sistemas internos ou produtos proprios.",
+        "helper": "Informe a URL publica da API e, se necessario, um token Bearer para chamadas autenticadas.",
+        "supports_activation": True,
+    },
+    "email": {
+        "title": "Email SMTP",
+        "description": "Conecte uma caixa SMTP para envio de emails operacionais.",
+        "helper": "Informe host, porta, usuario e senha SMTP. TLS e SSL podem ser configurados no painel.",
+        "supports_activation": True,
+    },
+    "webhook": {
+        "title": "Webhook",
+        "description": "Envie eventos do agente para uma URL externa.",
+        "helper": "Informe uma URL publica para receber eventos. Opcionalmente adicione um segredo de assinatura.",
         "supports_activation": True,
     },
 }
@@ -74,6 +98,27 @@ class ChannelIntegrationService:
             return {}
         return data if isinstance(data, dict) else {}
 
+    def _provider_config(self, payload: dict[str, Any]) -> dict[str, Any]:
+        metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+        config = metadata.get("config") if isinstance(metadata.get("config"), dict) else {}
+        return config
+
+    def _has_required_config(self, provider: str, payload: dict[str, Any]) -> bool:
+        config = self._provider_config(payload)
+        if provider == "website_chat":
+            return True
+        if provider == "whatsapp":
+            return bool(payload.get("access_token") and payload.get("external_account_id"))
+        if provider == "instagram":
+            return bool(payload.get("access_token") and payload.get("external_account_id"))
+        if provider == "api":
+            return bool(config.get("api_url"))
+        if provider == "webhook":
+            return bool(config.get("webhook_url"))
+        if provider == "email":
+            return bool(config.get("smtp_host") and config.get("smtp_port") and config.get("smtp_user") and config.get("smtp_password"))
+        return False
+
     def _derive_account_status(self, provider: str, payload: dict[str, Any]) -> str:
         metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
         token_invalid = bool(metadata.get("token_invalid"))
@@ -86,6 +131,10 @@ class ChannelIntegrationService:
             return "auth_required"
         if runtime_error:
             return "error"
+        if provider == "website_chat":
+            return "connected"
+        if provider not in {"whatsapp", "instagram"}:
+            return "pending_setup" if self._has_required_config(provider, payload) else "auth_required"
         if not payload.get("access_token"):
             return "auth_required"
         if not payload.get("external_account_id") and not payload.get("external_account_name"):
@@ -103,6 +152,10 @@ class ChannelIntegrationService:
             return "error"
         if account.status == "auth_required":
             return "auth_required"
+        if provider == "website_chat" and account.status == "connected":
+            return "connected"
+        if provider not in {"whatsapp", "instagram"}:
+            return "pending_setup" if account.status == "pending_setup" else account.status
         if endpoint.webhook_status == "active" and account.status == "connected":
             return "connected"
         return "pending_setup"
@@ -173,7 +226,12 @@ class ChannelIntegrationService:
         endpoint.phone_number_or_handle = (
             str(payload.get("phone_number_or_handle")) if payload.get("phone_number_or_handle") else endpoint.phone_number_or_handle
         )
-        endpoint.webhook_status = "pending_setup" if provider in ACTIVE_PROVIDERS else "coming_soon"
+        if provider == "website_chat":
+            endpoint.webhook_status = "active"
+        elif provider in ACTIVE_PROVIDERS:
+            endpoint.webhook_status = "pending_setup"
+        else:
+            endpoint.webhook_status = "coming_soon"
         endpoint.is_active = True
         self.db.flush()
         return endpoint

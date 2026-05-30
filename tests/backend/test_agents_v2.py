@@ -191,9 +191,10 @@ def test_agent_connections_list_creates_defaults(client, auth_headers):
     body = response.json()
 
     assert isinstance(body, list)
-    assert len(body) >= 7
+    assert len(body) >= 6
     providers = {item['channel_type'] for item in body}
-    assert {'whatsapp', 'instagram', 'website_chat', 'email', 'crm', 'api', 'webhook'}.issubset(providers)
+    assert {'whatsapp', 'instagram', 'website_chat', 'email', 'api', 'webhook'}.issubset(providers)
+    assert 'crm' not in providers
 
 
 def test_agent_connection_connect_disconnect_sync_and_test(client, auth_headers):

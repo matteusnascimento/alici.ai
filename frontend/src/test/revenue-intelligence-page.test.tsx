@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 vi.mock('../services/revenue.service', () => ({
@@ -53,10 +54,18 @@ import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligen
 
 describe('RevenueIntelligencePage', () => {
   it('renderiza blocos principais de receita e conversao', async () => {
-    render(<RevenueIntelligencePage />);
+    render(
+      <MemoryRouter>
+        <RevenueIntelligencePage />
+      </MemoryRouter>,
+    );
 
-    expect(await screen.findByRole('heading', { name: /Financeiro e Conversao/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Reservas fechadas/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Revenue Intelligence/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /IA Insights/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Inbox Omnichannel/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Control Room em tempo real/i })).toBeInTheDocument();
+    expect(screen.getByText(/Receita total/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Reservas fechadas/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: /Remarketing/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Funil comercial/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Receita por canal/i })).toBeInTheDocument();

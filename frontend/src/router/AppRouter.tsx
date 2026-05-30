@@ -3,8 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
 import { LandingPage } from '../components/landing/LandingPage';
-import { ChatPanel } from '../components/platform/ChatPanel';
-import { DashboardPanel } from '../components/platform/DashboardPanel';
 import { PlatformShell } from '../components/platform/PlatformShell';
 import { AccountShell } from '../components/account/AccountShell';
 import { AccountAppsPage } from '../components/account/pages/AccountAppsPage';
@@ -34,11 +32,12 @@ import { ProjectsStudioPage } from '../components/studio/v2/ProjectsStudioPage';
 import { RemoveBackgroundStudioPage } from '../components/studio/v2/RemoveBackgroundStudioPage';
 import { StoryStudioPage } from '../components/studio/v2/StoryStudioPage';
 import { StudioHomePage } from '../components/studio/v2/StudioHomePage';
+import { StudioImportPage } from '../components/studio/v2/StudioImportPage';
 import { TemplatesStudioPage } from '../components/studio/v2/TemplatesStudioPage';
+import { UnifiedEditorPage } from '../components/studio/v2/UnifiedEditorPage';
 import { VideoEditorStudioPage } from '../components/studio/v2/VideoEditorStudioPage';
 import { useAuth } from '../hooks/useAuth';
 import { AgentActionsPage } from '../components/agents/v2/AgentActionsPage';
-import { AgentAnalyticsPage } from '../components/agents/v2/AgentAnalyticsPage';
 import { AgentChannelsPage } from '../components/agents/v2/AgentChannelsPage';
 import { AgentCreatePage } from '../components/agents/v2/AgentCreatePage';
 import { AgentKnowledgePage } from '../components/agents/v2/AgentKnowledgePage';
@@ -99,10 +98,10 @@ export function AppRouter() {
         />
         <Route element={<ProtectedRoute />}>
           <Route element={<PlatformShell />} path="/app">
-            <Route element={<Navigate replace to="/app/dashboard" />} index />
-            <Route element={<DashboardPanel />} path="dashboard" />
+            <Route element={<Navigate replace to="/app/revenue" />} index />
+            <Route element={<Navigate replace to="/app/revenue" />} path="dashboard" />
             <Route element={<RevenueIntelligencePage />} path="revenue" />
-            <Route element={<ChatPanel />} path="chat" />
+            <Route element={<Navigate replace to="/app/agents" />} path="chat" />
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
               <Route path="create" element={<AgentCreatePage />} />
@@ -115,14 +114,19 @@ export function AppRouter() {
                 <Route path="actions" element={<AgentActionsPage />} />
                 <Route path="test" element={<AgentTestPage />} />
                 <Route path="logs" element={<AgentLogsPage />} />
-                <Route path="analytics" element={<AgentAnalyticsPage />} />
+                <Route path="analytics" element={<Navigate replace to="/app/revenue?view=agents" />} />
                 <Route path="settings" element={<AgentSettingsPage />} />
               </Route>
             </Route>
             <Route path="studio">
               <Route index element={<StudioHomePage />} />
+              <Route path="editor" element={<UnifiedEditorPage />} />
+              <Route path="editor/new" element={<UnifiedEditorPage />} />
+              <Route path="editor/:projectId" element={<UnifiedEditorPage />} />
+              <Route path="editor/design" element={<UnifiedEditorPage />} />
               <Route path="editor/video" element={<VideoEditorStudioPage />} />
               <Route path="editor/video/:projectId" element={<VideoEditorStudioPage />} />
+              <Route path="import" element={<StudioImportPage />} />
 
               <Route path="tools/photo-editor" element={<PhotoEditorStudioPage />} />
               <Route path="tools/remove-background" element={<RemoveBackgroundStudioPage />} />

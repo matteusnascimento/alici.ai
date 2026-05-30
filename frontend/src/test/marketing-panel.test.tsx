@@ -63,21 +63,21 @@ describe('MarketingPanel', () => {
     });
   });
 
-  it('renderiza a home atual do AXI Studio com atalhos de criacao e ferramentas', async () => {
+  it('renderiza a home do Studio com busca, categorias e recentes', async () => {
     render(
       <MemoryRouter>
         <StudioHomePage />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText(/AXI Studio/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Criar com IA/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Novo video/i })).toHaveAttribute('href', '/app/studio/editor/video?mode=new');
-    expect(screen.getByRole('link', { name: /Editar foto/i })).toHaveAttribute('href', '/app/studio/tools/photo-editor');
-    expect(screen.getByRole('link', { name: /AutoCut/i })).toHaveAttribute('href', '/app/studio/editor/video?mode=new&entry=autocut');
-    expect(screen.getByRole('link', { name: /Gerador de IA/i })).toHaveAttribute('href', '/app/studio/ai-creative');
-    expect(screen.getByRole('link', { name: /Legendas/i })).toHaveAttribute('href', '/app/studio/tools/caption');
+    expect(await screen.findByRole('heading', { name: /O que vamos criar hoje/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /Buscar no Studio/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Templates$/i })).toHaveAttribute('href', '/app/studio/templates');
+    expect(screen.getByRole('link', { name: /Video/i })).toHaveAttribute('href', '/app/studio/editor/video?mode=new');
+    expect(screen.getByRole('link', { name: /Story/i })).toHaveAttribute('href', '/app/studio/templates?category=Stories');
+    expect(screen.getByRole('link', { name: /^Uploads$/i })).toHaveAttribute('href', '/app/studio/assets');
+    expect(screen.getByRole('link', { name: /Landing Page/i })).toHaveAttribute('href', '/app/studio/templates?category=Landing%20Pages');
+    expect(screen.getAllByRole('link', { name: /Magic Studio/i })[0]).toHaveAttribute('href', '/app/studio/ai-creative');
     expect(screen.getByRole('link', { name: /Poster de lancamento/i })).toHaveAttribute('href', '/app/studio/tools/ad');
-    expect(screen.getByRole('link', { name: /Gerar legenda com CTA/i })).toHaveAttribute('href', '/app/studio/tools/caption');
   });
 });

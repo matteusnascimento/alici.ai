@@ -6,13 +6,11 @@ import { AgentActionCard } from './AgentActionCard';
 import { AgentActionConfigModal } from './AgentActionConfigModal';
 
 const actionsCatalog = [
-  { name: 'Capturar lead', type: 'save_lead', description: 'Salva lead para acompanhamento', requirement: 'CRM opcional' },
+  { name: 'Capturar lead', type: 'save_lead', description: 'Salva lead para acompanhamento', requirement: 'Cadastro interno' },
   { name: 'Criar reserva', type: 'create_booking', description: 'Inicia fluxo de reserva', requirement: 'Agenda' },
   { name: 'Consultar disponibilidade', type: 'check_availability', description: 'Consulta agenda e horarios', requirement: 'Calendario' },
   { name: 'Enviar orcamento', type: 'send_quote', description: 'Envia proposta comercial', requirement: 'Modelo de proposta' },
   { name: 'Encaminhar para humano', type: 'transfer_human', description: 'Direciona para equipe humana', requirement: 'Canal humano' },
-  { name: 'Atualizar CRM', type: 'crm_update', description: 'Atualiza dados no CRM', requirement: 'Integracao CRM' },
-  { name: 'Agendar reuniao', type: 'schedule_meeting', description: 'Marca reuniao no calendario', requirement: 'Calendario' },
   { name: 'Acionar webhook', type: 'webhook_call', description: 'Envia evento via webhook', requirement: 'URL webhook' },
   { name: 'Acionar API externa', type: 'api_call', description: 'Executa chamada API externa', requirement: 'Credencial API' },
 ];

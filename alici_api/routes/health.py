@@ -38,7 +38,6 @@ def _text_model_statuses() -> tuple[dict, dict]:
 
 
 @router.get("/health")
-@router.get("/health.")
 @router.get("/api/health")
 @router.get("/v1/health")
 def health():

@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Bot, ChartColumnBig, LayoutDashboard, Link2, Megaphone, Menu, Settings2, Sparkles, X } from 'lucide-react';
+import { BadgeDollarSign, ChartColumnBig, Link2, Megaphone, Menu, Settings2, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { SidebarItem } from './SidebarItem';
@@ -12,9 +12,7 @@ interface AppSidebarProps {
 }
 
 const items = [
-  { label: 'Dashboard', to: '/app/dashboard', icon: LayoutDashboard },
-  { label: 'Revenue', to: '/app/revenue', icon: BadgeDollarSign },
-  { label: 'Alici Chat', to: '/app/chat', icon: Bot },
+  { label: 'Inteligencia', to: '/app/revenue', icon: BadgeDollarSign },
   { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
   { label: 'AXI Studio', to: '/app/studio', icon: Megaphone },
   { label: 'Marketing', to: '/app/marketing', icon: Sparkles },
@@ -65,7 +63,7 @@ export function AppSidebar({
         onMouseLeave={() => hoverCapable && setExpandedDesktop(false)}
         className={[
           'fixed left-0 top-0 z-30 hidden h-screen shrink-0 overflow-hidden rounded-r-[2rem] border-r border-white/10',
-          'bg-gradient-to-b from-storm/95 via-storm/85 to-ink/95 py-4 shadow-soft backdrop-blur lg:flex lg:flex-col',
+          'bg-[radial-gradient(circle_at_20%_0%,rgba(192,38,211,0.22),transparent_32%),linear-gradient(180deg,rgba(8,8,12,0.97),rgba(5,5,7,0.96))] py-4 shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:flex lg:flex-col',
           'transition-[width] duration-300 ease-out',
           expanded ? 'px-3 lg:w-[284px]' : 'px-0 lg:w-[92px]',
         ].join(' ')}
@@ -85,7 +83,7 @@ export function AppSidebar({
       <aside
         className={[
           'fixed bottom-0 left-0 top-0 z-50 w-[304px] rounded-r-3xl border-r border-white/10',
-          'bg-gradient-to-b from-storm via-storm/90 to-ink px-4 py-5 shadow-soft transition-transform duration-300 lg:hidden',
+          'bg-[radial-gradient(circle_at_20%_0%,rgba(192,38,211,0.22),transparent_32%),linear-gradient(180deg,rgba(8,8,12,0.97),rgba(5,5,7,0.96))] px-4 py-5 shadow-soft transition-transform duration-300 lg:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
