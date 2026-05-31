@@ -4,6 +4,7 @@ import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
 import { LandingPage } from '../components/landing/LandingPage';
 import { PlatformShell } from '../components/platform/PlatformShell';
+import { AdminPage } from '../components/admin/AdminPage';
 import { AccountShell } from '../components/account/AccountShell';
 import { AccountAppsPage } from '../components/account/pages/AccountAppsPage';
 import { AccountAppsActionsPage } from '../components/account/pages/AccountAppsActionsPage';
@@ -54,10 +55,20 @@ import { MarketingShell } from '../components/marketing/MarketingShell';
 import { MarketingProjectsPage } from '../components/marketing/MarketingProjectsPage';
 import { MarketingProjectWorkspace } from '../components/marketing/MarketingProjectWorkspace';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
+import { ChatsPage } from '../components/chats/ChatsPage';
 import { ChatPanel } from '../components/platform/ChatPanel';
+import { AxiAssistantPage } from '../components/platform/AxiAssistantPage';
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
 
 import { ProtectedRoute } from './ProtectedRoute';
+
+function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (user?.role !== 'owner') {
+    return <Navigate replace to="/app/revenue?view=business-pulse" />;
+  }
+  return children;
+}
 
 function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -105,8 +116,9 @@ export function AppRouter() {
             <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="analytics" />
             <Route element={<RevenueIntelligencePage />} path="revenue" />
             <Route element={<Navigate replace to="/app/chats" />} path="chat" />
-            <Route element={<ChatPanel />} path="chats" />
-            <Route element={<ChatPanel />} path="assistant" />
+            <Route element={<ChatsPage />} path="chats" />
+            <Route element={<AxiAssistantPage />} path="assistant" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin" />
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
               <Route path="create" element={<AgentCreatePage />} />

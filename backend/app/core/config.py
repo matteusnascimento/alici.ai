@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     database_url_rotated: str = ""
     cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
     billing_admin_emails: list[str] = Field(default_factory=list)
+    owner_emails: list[str] = Field(default_factory=list)
 
     # Stripe
     stripe_secret_key: str = ""
@@ -116,6 +117,11 @@ class Settings(BaseSettings):
     @classmethod
     def parse_billing_admin_emails(cls, value: str | list[str]) -> list[str]:
         return [item.lower() for item in cls._parse_string_list(value, field_name="BILLING_ADMIN_EMAILS")]
+
+    @field_validator("owner_emails", mode="before")
+    @classmethod
+    def parse_owner_emails(cls, value: str | list[str]) -> list[str]:
+        return [item.lower() for item in cls._parse_string_list(value, field_name="OWNER_EMAILS")]
 
     @field_validator("default_ai_provider")
     @classmethod

@@ -18,9 +18,8 @@ import {
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { getAccountProfile, getAccountSubscription } from '../../services/account.service';
+import { getAccountProfile } from '../../services/account.service';
 import type { AccountProfile } from '../../types/account';
-import type { CurrentSubscription } from '../../types/billing';
 import { AccountHeader } from './AccountHeader';
 
 interface SidebarItemProps {
@@ -90,18 +89,15 @@ const sections = [
 export function AccountShell() {
   const location = useLocation();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
-  const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    void Promise.all([getAccountProfile(), getAccountSubscription()])
-      .then(([profileData, subscriptionData]) => {
+    void getAccountProfile()
+      .then((profileData) => {
         setProfile(profileData);
-        setSubscription(subscriptionData);
       })
       .catch(() => {
         setProfile(null);
-        setSubscription(null);
       });
   }, []);
 
@@ -136,9 +132,8 @@ export function AccountShell() {
     <div className="space-y-6 pb-8">
       <AccountHeader
         title="Conta AXI"
-        subtitle="Gerencie perfil, assinatura, seguranca e aplicativos em um unico hub profissional."
+        subtitle="Gerencie seu perfil pessoal, preferencias, seguranca da conta e dados individuais."
         profile={profile}
-        subscription={subscription}
       />
       <div className="lg:hidden">
         <button

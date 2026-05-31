@@ -11,10 +11,12 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import (
     ai,
     account,
+    admin,
     agents,
     auth,
     billing,
     chat,
+    chats,
     dashboard,
     health,
     integrations,
@@ -97,8 +99,10 @@ app.add_middleware(RateLimitMiddleware)
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
+app.include_router(chats.router, prefix="/api")
 app.include_router(agents.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(marketing.router, prefix="/api")

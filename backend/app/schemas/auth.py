@@ -47,6 +47,7 @@ class UserRead(BaseModel):
     email: EmailStr
     phone: str | None
     plan: str
+    role: str = "member"
     created_at: datetime
 
 

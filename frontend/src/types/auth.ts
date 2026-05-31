@@ -5,6 +5,7 @@ export interface User {
   email: string;
   phone: string | null;
   plan: string;
+  role?: 'owner' | 'member' | string;
   created_at?: string;
 }
 

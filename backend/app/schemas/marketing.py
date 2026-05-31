@@ -80,3 +80,79 @@ class MarketingContentResponse(BaseModel):
     cta: str
     hook: str
     hashtags: list[str] = Field(default_factory=list)
+
+
+class MarketingDataStatus(BaseModel):
+    status: str = "empty"
+    message: str
+
+
+class MarketingKpiRead(BaseModel):
+    key: str
+    label: str
+    value: float | None = None
+    variation: float | None = None
+    status: str = "empty"
+    message: str
+
+
+class MarketingOverviewResponse(BaseModel):
+    status: str
+    projects_count: int
+    kpis: list[MarketingKpiRead]
+    message: str
+
+
+class MarketingSeriesPoint(BaseModel):
+    label: str
+    receita: float | None = None
+    investimento: float | None = None
+
+
+class MarketingRevenueInvestmentResponse(BaseModel):
+    status: str
+    points: list[MarketingSeriesPoint] = Field(default_factory=list)
+    message: str
+
+
+class MarketingChannelRevenueRead(BaseModel):
+    channel: str
+    receita: float | None = None
+    percentual: float | None = None
+    roas: float | None = None
+    leads: int | None = None
+    reservas: int | None = None
+
+
+class MarketingChannelRevenueResponse(BaseModel):
+    status: str
+    channels: list[MarketingChannelRevenueRead] = Field(default_factory=list)
+    message: str
+
+
+class MarketingFunnelStepRead(BaseModel):
+    stage: str
+    count: int | None = None
+    conversion_rate: float | None = None
+    amount: float | None = None
+
+
+class MarketingFunnelResponse(BaseModel):
+    status: str
+    stages: list[MarketingFunnelStepRead] = Field(default_factory=list)
+    message: str
+
+
+class MarketingCampaignListItem(BaseModel):
+    id: int
+    name: str
+    objective: str
+    audience: str
+    status: str
+    source: str
+
+
+class MarketingCampaignListResponse(BaseModel):
+    status: str
+    campaigns: list[MarketingCampaignListItem] = Field(default_factory=list)
+    message: str

@@ -50,3 +50,16 @@ class User(Base):
     agent_knowledge_items = relationship("AgentKnowledge", back_populates="user", cascade="all, delete-orphan")
     agent_actions = relationship("AgentAction", back_populates="user", cascade="all, delete-orphan")
     auth_tokens = relationship("AuthToken", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def role(self) -> str:
+        from app.core.config import settings
+
+        email = (self.email or "").strip().lower()
+        owner_emails = {item.strip().lower() for item in settings.owner_emails if item.strip()}
+        billing_admin_emails = {item.strip().lower() for item in settings.billing_admin_emails if item.strip()}
+        if email in owner_emails or email in billing_admin_emails:
+            return "owner"
+        if settings.app_env.lower() == "development" and email == settings.dev_seed_email.strip().lower():
+            return "owner"
+        return "member"

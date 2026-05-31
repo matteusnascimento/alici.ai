@@ -1,6 +1,8 @@
-import { BadgeDollarSign, Bot, Building2, ChartColumnBig, Link2, Megaphone, Menu, MessageSquare, Settings2, Sparkles, UserCircle2, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, ChartColumnBig, ChevronLeft, Link2, Megaphone, Menu, MessageSquare, Settings2, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+import { useAuth } from '../../hooks/useAuth';
 import { SidebarItem } from './SidebarItem';
 import { SidebarLogo } from './SidebarLogo';
 
@@ -22,7 +24,7 @@ const items = [
   { label: 'Account', to: '/app/account', icon: Settings2 },
 ];
 
-function SidebarFooter({ expanded }: { expanded: boolean }) {
+function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse: () => void }) {
   return (
     <div className={['mt-auto border-t border-white/10 pt-3', expanded ? 'space-y-3 px-0' : 'flex flex-col items-center gap-3 px-0'].join(' ')}>
       <div
@@ -37,11 +39,16 @@ function SidebarFooter({ expanded }: { expanded: boolean }) {
           </span>
           {expanded ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">Empresa ativa</p>
-              <p className="truncate text-xs text-slate-400">Workspace AXI</p>
+              <p className="truncate text-sm font-semibold text-white">Pousada Mar & Sol</p>
+              <p className="truncate text-xs text-slate-400">Plano Enterprise</p>
             </div>
           ) : null}
         </div>
+        {expanded ? (
+          <Link to="/app/account/overview" className="mt-3 flex h-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-slate-200 hover:bg-white/[0.08]">
+            Ver meu plano
+          </Link>
+        ) : null}
       </div>
       <div
         className={[
@@ -55,12 +62,22 @@ function SidebarFooter({ expanded }: { expanded: boolean }) {
           </span>
           {expanded ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">Usuario logado</p>
-              <p className="truncate text-xs text-slate-400">Plano e perfil</p>
+              <p className="truncate text-sm font-semibold text-white">Geovana Moreira</p>
+              <p className="truncate text-xs text-slate-400">Administrador</p>
             </div>
           ) : null}
         </div>
       </div>
+      {expanded ? (
+        <button
+          type="button"
+          onClick={onCollapse}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 hover:bg-white/[0.05] hover:text-white"
+        >
+          <ChevronLeft size={17} />
+          Recolher menu
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -71,8 +88,13 @@ export function AppSidebar({
   onMobileClose,
   onDesktopExpandedChange,
 }: AppSidebarProps) {
+  const { user } = useAuth();
   const [hoverCapable, setHoverCapable] = useState(false);
-  const [expandedDesktop, setExpandedDesktop] = useState(false);
+  const [expandedDesktop, setExpandedDesktop] = useState(true);
+  const visibleItems = useMemo(
+    () => (user?.role === 'owner' ? [...items, { label: 'Administracao', to: '/app/admin', icon: ShieldCheck }] : items),
+    [user?.role],
+  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') {
@@ -105,21 +127,21 @@ export function AppSidebar({
 
       <aside
         onMouseEnter={() => hoverCapable && setExpandedDesktop(true)}
-        onMouseLeave={() => hoverCapable && setExpandedDesktop(false)}
+        onMouseLeave={() => undefined}
         className={[
           'fixed left-0 top-0 z-30 hidden h-screen shrink-0 overflow-hidden rounded-r-[2rem] border-r border-white/10',
           'bg-[radial-gradient(circle_at_20%_0%,rgba(192,38,211,0.22),transparent_32%),linear-gradient(180deg,rgba(8,8,12,0.97),rgba(5,5,7,0.96))] py-4 shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:flex lg:flex-col',
           'transition-[width] duration-300 ease-out',
-          expanded ? 'px-3 lg:w-[284px]' : 'px-0 lg:w-[92px]',
+          expanded ? 'px-3 lg:w-[260px]' : 'px-0 lg:w-[92px]',
         ].join(' ')}
       >
         <SidebarLogo expanded={expanded} />
         <nav className={['mt-6 flex flex-1 flex-col overflow-y-auto pb-3', expanded ? 'gap-2.5 pr-1' : 'items-center gap-4 pr-0'].join(' ')}>
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
         </nav>
-        <SidebarFooter expanded={expanded} />
+        <SidebarFooter expanded={expanded} onCollapse={() => setExpandedDesktop(false)} />
       </aside>
 
       {mobileOpen ? (
@@ -146,11 +168,11 @@ export function AppSidebar({
         </div>
         <SidebarLogo expanded />
         <nav className="mt-5 flex max-h-[calc(100vh-310px)] flex-col gap-2.5 overflow-y-auto pb-2 pr-1">
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <SidebarItem key={item.to} expanded onNavigate={onMobileClose} {...item} />
           ))}
         </nav>
-        <SidebarFooter expanded />
+        <SidebarFooter expanded onCollapse={onMobileClose} />
       </aside>
     </>
   );
