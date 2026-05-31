@@ -1,4 +1,4 @@
-from app.api.routes import account, agents, ai, auth, billing, chat, dashboard, health, integrations, marketing, media, settings, studio, subscriptions, usage, users, webhooks
+from app.api.routes import account, agents, ai, auth, billing, chat, dashboard, health, integrations, marketing, media, revenue, settings, studio, subscriptions, usage, users, webhooks
 
 __all__ = [
 	"agents",
@@ -12,6 +12,7 @@ __all__ = [
 	"integrations",
 	"marketing",
 	"media",
+	"revenue",
 	"settings",
 	"studio",
 	"subscriptions",

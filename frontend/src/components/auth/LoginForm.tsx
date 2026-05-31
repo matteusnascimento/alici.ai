@@ -16,7 +16,7 @@ export function LoginForm() {
     try {
       await login({ email, password });
       const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-      navigate(from || '/app/dashboard');
+      navigate(from || '/app/revenue?view=business-pulse');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao autenticar');
     }

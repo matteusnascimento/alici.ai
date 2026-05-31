@@ -5,9 +5,14 @@ import { useAuth } from '../../hooks/useAuth';
 
 const titleMap: Record<string, string> = {
   '/app/dashboard': 'Dashboard',
-  '/app/chat': 'Alici Chat',
+  '/app/chat': 'Chats',
+  '/app/chats': 'Chats',
+  '/app/assistant': 'AXI Assistant',
+  '/app/revenue': 'Revenue',
   '/app/agents': 'Agents',
   '/app/studio': 'AXI Studio',
+  '/app/marketing': 'Marketing',
+  '/app/integrations': 'Integrations',
   '/app/account': 'Conta AXI',
 };
 

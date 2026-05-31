@@ -54,6 +54,7 @@ import { MarketingShell } from '../components/marketing/MarketingShell';
 import { MarketingProjectsPage } from '../components/marketing/MarketingProjectsPage';
 import { MarketingProjectWorkspace } from '../components/marketing/MarketingProjectWorkspace';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
+import { ChatPanel } from '../components/platform/ChatPanel';
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
 
 import { ProtectedRoute } from './ProtectedRoute';
@@ -61,7 +62,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   if (isAuthenticated) {
-    return <Navigate replace to="/app/dashboard" />;
+    return <Navigate replace to="/app/revenue?view=business-pulse" />;
   }
   return (
     <main className="flex min-h-screen items-center justify-center bg-ink px-6 py-12 text-[var(--text-primary)]">
@@ -98,10 +99,14 @@ export function AppRouter() {
         />
         <Route element={<ProtectedRoute />}>
           <Route element={<PlatformShell />} path="/app">
-            <Route element={<Navigate replace to="/app/revenue" />} index />
-            <Route element={<Navigate replace to="/app/revenue" />} path="dashboard" />
+            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} index />
+            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="dashboard" />
+            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="crm" />
+            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="analytics" />
             <Route element={<RevenueIntelligencePage />} path="revenue" />
-            <Route element={<Navigate replace to="/app/agents" />} path="chat" />
+            <Route element={<Navigate replace to="/app/chats" />} path="chat" />
+            <Route element={<ChatPanel />} path="chats" />
+            <Route element={<ChatPanel />} path="assistant" />
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
               <Route path="create" element={<AgentCreatePage />} />

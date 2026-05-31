@@ -70,9 +70,9 @@ export interface RevenueSeriesResponse {
 }
 
 export function getRevenueIntelligence(days = 30): Promise<RevenueIntelligenceSnapshot> {
-  return apiFetch<RevenueIntelligenceSnapshot>(`/dashboard/revenue-intelligence?days=${days}`);
+  return apiFetch<RevenueIntelligenceSnapshot>(`/revenue/overview?days=${days}`);
 }
 
 export function getRevenueSeries(days = 30, granularity: 'daily' | 'weekly' = 'daily'): Promise<RevenueSeriesResponse> {
-  return apiFetch<RevenueSeriesResponse>(`/dashboard/revenue-series?days=${days}&granularity=${granularity}`);
+  return apiFetch<RevenueSeriesResponse>(`/revenue/series?days=${days}&granularity=${granularity}`);
 }

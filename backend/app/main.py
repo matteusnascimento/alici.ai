@@ -20,6 +20,7 @@ from app.api.routes import (
     integrations,
     marketing,
     media,
+    revenue,
     settings as settings_routes,
     studio,
     subscriptions,
@@ -102,6 +103,7 @@ app.include_router(agents.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(marketing.router, prefix="/api")
 app.include_router(media.router, prefix="/api")
+app.include_router(revenue.router, prefix="/api")
 app.include_router(settings_routes.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
 app.include_router(subscriptions.router, prefix="/api")

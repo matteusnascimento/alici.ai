@@ -60,17 +60,16 @@ describe('RevenueIntelligencePage', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('heading', { name: /Revenue Intelligence/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /IA Insights/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Inbox Omnichannel/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Control Room em tempo real/i })).toBeInTheDocument();
-    expect(screen.getByText(/Receita total/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Reservas fechadas/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { name: /Remarketing/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Funil comercial/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Receita por canal/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Receita por agente/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Receita historica/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /7 dias/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Revenue$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Receita$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Origem das reservas/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Business Pulse/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Top cidades por receita/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Control Room/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /AXI Assistant/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Plano de Acao/i })).toBeInTheDocument();
+    expect(screen.getByText(/Receita no periodo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Reservas/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Business Pulse/i })).toBeInTheDocument();
   });
 });

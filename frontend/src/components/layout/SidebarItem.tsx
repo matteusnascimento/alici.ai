@@ -20,15 +20,15 @@ export function SidebarItem({ label, to, icon: Icon, expanded, onNavigate }: Sid
       className={({ isActive }) =>
         cn(
           'group relative flex items-center text-sm transition-all',
-          expanded ? 'h-14 rounded-2xl border px-3 gap-3 justify-start' : 'mx-auto h-14 w-14 items-center justify-center rounded-2xl border p-0',
+          expanded ? 'h-[3.75rem] min-h-[3.75rem] rounded-2xl border px-3 gap-3 justify-start' : 'mx-auto h-[3.75rem] w-[3.75rem] items-center justify-center rounded-2xl border p-0',
           isActive
-            ? 'border-fuchsia-400/45 bg-white/[0.075] text-[var(--text-primary)] shadow-[inset_0_0_24px_rgba(192,38,211,0.16),0_0_28px_rgba(34,211,238,0.08)] before:absolute before:bottom-3 before:left-0 before:top-3 before:w-1 before:rounded-r-full before:bg-[var(--studio-gradient)]'
+            ? 'border-violet-300/55 bg-[linear-gradient(135deg,rgba(124,58,237,0.95),rgba(192,38,211,0.82))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_18px_44px_rgba(124,58,237,0.32)] before:absolute before:bottom-3 before:left-0 before:top-3 before:w-1 before:rounded-r-full before:bg-cyan-200'
             : 'border-transparent bg-white/[0.03] text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--text-primary)]',
         )
       }
     >
-      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-ink/60 text-cyan shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-        <Icon size={18} className="shrink-0" />
+      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-ink/70 text-cyan shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+        <Icon size={21} strokeWidth={2.2} className="shrink-0" />
       </span>
       {expanded ? <span className="whitespace-nowrap text-sm font-medium transition-all duration-300">{label}</span> : null}
     </NavLink>

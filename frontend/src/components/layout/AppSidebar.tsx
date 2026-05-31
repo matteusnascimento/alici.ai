@@ -1,4 +1,4 @@
-import { BadgeDollarSign, ChartColumnBig, Link2, Megaphone, Menu, Settings2, Sparkles, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, ChartColumnBig, Link2, Megaphone, Menu, MessageSquare, Settings2, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { SidebarItem } from './SidebarItem';
@@ -12,13 +12,58 @@ interface AppSidebarProps {
 }
 
 const items = [
-  { label: 'Inteligencia', to: '/app/revenue', icon: BadgeDollarSign },
+  { label: 'Revenue', to: '/app/revenue?view=business-pulse', icon: BadgeDollarSign },
+  { label: 'Chats', to: '/app/chats', icon: MessageSquare },
+  { label: 'AXI Assistant', to: '/app/assistant', icon: Bot },
+  { label: 'Marketing', to: '/app/marketing', icon: Megaphone },
+  { label: 'Studio', to: '/app/studio', icon: Sparkles },
   { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
-  { label: 'AXI Studio', to: '/app/studio', icon: Megaphone },
-  { label: 'Marketing', to: '/app/marketing', icon: Sparkles },
-  { label: 'Integrações', to: '/app/integrations', icon: Link2 },
-  { label: 'Conta AXI', to: '/app/account', icon: Settings2 },
+  { label: 'Integrations', to: '/app/integrations', icon: Link2 },
+  { label: 'Account', to: '/app/account', icon: Settings2 },
 ];
+
+function SidebarFooter({ expanded }: { expanded: boolean }) {
+  return (
+    <div className={['mt-auto border-t border-white/10 pt-3', expanded ? 'space-y-3 px-0' : 'flex flex-col items-center gap-3 px-0'].join(' ')}>
+      <div
+        className={[
+          'border border-white/10 bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]',
+          expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0',
+        ].join(' ')}
+      >
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-200">
+            <Building2 size={20} />
+          </span>
+          {expanded ? (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">Empresa ativa</p>
+              <p className="truncate text-xs text-slate-400">Workspace AXI</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div
+        className={[
+          'border border-violet-300/20 bg-[linear-gradient(135deg,rgba(124,58,237,0.22),rgba(255,255,255,0.045))]',
+          expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0',
+        ].join(' ')}
+      >
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#7c3aed,#22d3ee)] text-white">
+            <UserCircle2 size={21} />
+          </span>
+          {expanded ? (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">Usuario logado</p>
+              <p className="truncate text-xs text-slate-400">Plano e perfil</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AppSidebar({
   mobileOpen,
@@ -74,6 +119,7 @@ export function AppSidebar({
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
         </nav>
+        <SidebarFooter expanded={expanded} />
       </aside>
 
       {mobileOpen ? (
@@ -99,11 +145,12 @@ export function AppSidebar({
           </button>
         </div>
         <SidebarLogo expanded />
-        <nav className="mt-5 flex flex-col gap-2.5 overflow-y-auto pb-2 pr-1">
+        <nav className="mt-5 flex max-h-[calc(100vh-310px)] flex-col gap-2.5 overflow-y-auto pb-2 pr-1">
           {items.map((item) => (
             <SidebarItem key={item.to} expanded onNavigate={onMobileClose} {...item} />
           ))}
         </nav>
+        <SidebarFooter expanded />
       </aside>
     </>
   );

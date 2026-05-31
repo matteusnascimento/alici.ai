@@ -19,7 +19,7 @@ export function RegisterForm() {
     event.preventDefault();
     try {
       await register(form);
-      navigate('/app/dashboard');
+      navigate('/app/revenue?view=business-pulse');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao cadastrar');
     }
