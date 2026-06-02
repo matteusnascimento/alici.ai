@@ -111,6 +111,7 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<PlatformShell />} path="/app">
             <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} index />
+            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="control-room" />
             <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="dashboard" />
             <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="crm" />
             <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="analytics" />
@@ -185,8 +186,9 @@ export function AppRouter() {
             <Route path="billing/cancel" element={<BillingCancelPage />} />
             <Route path="account" element={<AccountShell />}>
               <Route index element={<Navigate replace to="overview" />} />
-              <Route path="overview" element={<AccountHomePage />} />
+              <Route path="overview" element={<AccountProfilePage />} />
               <Route path="profile" element={<AccountProfilePage />} />
+              <Route path="billing" element={<AccountHomePage />} />
               <Route path="personalization" element={<AccountPersonalizationPage />} />
               <Route path="notifications" element={<AccountNotificationsPage />} />
               <Route path="applications" element={<AccountAppsPage />} />

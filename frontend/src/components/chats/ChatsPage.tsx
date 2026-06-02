@@ -1,20 +1,20 @@
 import {
   Bot,
   CalendarDays,
-  ChevronDown,
   ChevronRight,
   CircleDollarSign,
   Clock,
   FileText,
   Image,
-  Inbox,
-  Link2,
   Loader2,
+  Mail,
   MessageCircle,
-  MoreVertical,
+  MoreHorizontal,
   Paperclip,
+  Phone,
   Search,
   Send,
+  ShieldCheck,
   Smile,
   Sparkles,
   Star,
@@ -49,21 +49,18 @@ import type {
   OmnichannelMessage,
 } from '../../types/chats';
 
-const channelColors: Record<string, string> = {
+const filters = [
+  { key: 'all', label: 'Todas' },
+  { key: 'human', label: 'Nao lidas' },
+  { key: 'mine', label: 'Minhas' },
+] as const;
+
+const channelClass: Record<string, string> = {
   whatsapp: 'bg-emerald-500 text-white',
   instagram: 'bg-pink-500 text-white',
   messenger: 'bg-blue-500 text-white',
-  website_chat: 'bg-sky-500 text-white',
+  website_chat: 'bg-violet-500 text-white',
 };
-
-const filters = [
-  { key: 'all', label: 'Todas as conversas' },
-  { key: 'unassigned', label: 'Nao atribuidas' },
-  { key: 'mine', label: 'Minhas conversas' },
-  { key: 'ai', label: 'Com IA' },
-  { key: 'human', label: 'Aguardando humano' },
-  { key: 'closed', label: 'Finalizadas' },
-] as const;
 
 function timeLabel(value?: string | null) {
   if (!value) return '--:--';
@@ -71,7 +68,7 @@ function timeLabel(value?: string | null) {
 }
 
 function dateLabel(value?: string | null) {
-  if (!value) return 'Sem data';
+  if (!value) return '-';
   return new Date(value).toLocaleDateString('pt-BR');
 }
 
@@ -81,19 +78,15 @@ function money(value: number) {
 
 function ChannelIcon({ channel }: { channel: string }) {
   return (
-    <span className={`grid h-7 w-7 place-items-center rounded-full ${channelColors[channel] ?? 'bg-slate-600 text-white'}`}>
-      <MessageCircle size={15} />
+    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${channelClass[channel] ?? 'bg-slate-400 text-white'}`}>
+      <MessageCircle size={18} />
     </span>
   );
 }
 
-function SectionTitle({ children }: { children: string }) {
-  return <p className="px-3 text-xs uppercase tracking-[0.18em] text-slate-500">{children}</p>;
-}
-
-function EmptyPanel({ children }: { children: string }) {
+function EmptyCard({ children }: { children: string }) {
   return (
-    <div className="grid min-h-40 place-items-center rounded-lg border border-dashed border-white/10 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
+    <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
       {children}
     </div>
   );
@@ -102,13 +95,10 @@ function EmptyPanel({ children }: { children: string }) {
 function MessageBubble({ message }: { message: OmnichannelMessage }) {
   const outgoing = message.sender_type === 'assistant' || message.sender_type === 'human';
   return (
-    <article className={`max-w-[78%] rounded-lg border px-4 py-3 text-sm shadow-soft ${outgoing ? 'ml-auto border-violet-400/30 bg-violet-700/70 text-white' : 'border-white/10 bg-slate-900/90 text-slate-100'}`}>
-      <div className="mb-2 flex items-center justify-between gap-3 text-xs text-slate-300">
-        <span>{message.sender_type === 'assistant' ? 'IA respondeu' : message.sender_type === 'human' ? 'Atendente' : 'Cliente'}</span>
-        <span>{timeLabel(message.created_at)}</span>
-      </div>
-      <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-      <p className="mt-2 text-[11px] text-slate-400">{message.message_type} · {message.delivery_status} · {message.channel}</p>
+    <article className={`max-w-[78%] rounded-2xl px-5 py-4 text-sm shadow-sm ${outgoing ? 'ml-auto bg-violet-100 text-slate-950' : 'border border-slate-200 bg-white text-slate-950'}`}>
+      <p className="mb-1 text-xs font-semibold text-violet-700">{message.sender_type === 'assistant' ? 'AXI IA' : message.sender_type === 'human' ? 'Atendente' : 'Cliente'}</p>
+      <p className="whitespace-pre-wrap leading-6">{message.content}</p>
+      <p className="mt-2 text-right text-xs text-slate-400">{timeLabel(message.created_at)}</p>
     </article>
   );
 }
@@ -123,7 +113,7 @@ export function ChatsPage() {
   const [detail, setDetail] = useState<ConversationDetail | null>(null);
   const [reservations, setReservations] = useState<CustomerReservation[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [activeChannel, setActiveChannel] = useState<string>('all');
+  const [activeChannel, setActiveChannel] = useState('all');
   const [activeFilter, setActiveFilter] = useState<(typeof filters)[number]['key']>('all');
   const [mode, setMode] = useState<'ia' | 'humano' | 'hibrido'>('hibrido');
   const [draft, setDraft] = useState('');
@@ -154,9 +144,7 @@ export function ChatsPage() {
           setError(null);
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Falha ao carregar Chats');
-        }
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Falha ao carregar Chats');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -201,25 +189,17 @@ export function ChatsPage() {
   const filteredConversations = useMemo(() => {
     return conversations.filter((conversation) => {
       if (activeChannel !== 'all' && conversation.channel !== activeChannel) return false;
-      if (activeFilter === 'unassigned') return !conversation.assigned_to;
-      if (activeFilter === 'ai') return conversation.ai_mode === 'ia';
+      if (activeFilter === 'mine') return Boolean(conversation.assigned_to);
       if (activeFilter === 'human') return conversation.status === 'awaiting_human' || conversation.ai_mode === 'humano';
-      if (activeFilter === 'closed') return conversation.status === 'closed';
       return true;
     });
   }, [activeChannel, activeFilter, conversations]);
 
-  const filterCounts = useMemo(() => {
-    return {
-      all: conversations.length,
-      unassigned: conversations.filter((item) => !item.assigned_to).length,
-      mine: conversations.filter((item) => item.assigned_to).length,
-      ai: conversations.filter((item) => item.ai_mode === 'ia').length,
-      human: conversations.filter((item) => item.status === 'awaiting_human' || item.ai_mode === 'humano').length,
-      closed: conversations.filter((item) => item.status === 'closed').length,
-    };
-  }, [conversations]);
-
+  const counts = {
+    all: conversations.length,
+    mine: conversations.filter((item) => item.assigned_to).length,
+    human: conversations.filter((item) => item.status === 'awaiting_human' || item.ai_mode === 'humano').length,
+  };
   const currentConversation = detail?.conversation ?? conversations.find((item) => item.id === selectedId) ?? null;
   const totalSpent = reservations.reduce((sum, item) => sum + item.value, 0);
 
@@ -253,192 +233,146 @@ export function ChatsPage() {
       await sendOmnichannelMessage(currentConversation.id, draft.trim());
       setDraft('');
       setSendError(null);
-      const data = await getOmnichannelConversation(currentConversation.id);
-      setDetail(data);
+      setDetail(await getOmnichannelConversation(currentConversation.id));
     } catch (err) {
-      if (err instanceof ApiError) {
-        setSendError(err.message);
-      } else {
-        setSendError(err instanceof Error ? err.message : 'Mensagem nao enviada');
-      }
+      setSendError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Mensagem nao enviada');
     }
   }
 
   if (loading) {
-    return (
-      <div className="grid min-h-[70vh] place-items-center">
-        <Loader2 className="animate-spin text-cyan" size={28} />
-      </div>
-    );
+    return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="animate-spin text-violet-600" size={28} /></div>;
   }
 
   if (error) {
-    return <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-5 text-rose-100">{error}</div>;
+    return <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-700">{error}</div>;
   }
 
   return (
-    <div className="min-h-[calc(100vh-2rem)] rounded-xl border border-white/10 bg-[#050914] p-4 text-white shadow-[0_24px_90px_rgba(0,0,0,0.45)]">
+    <div className="min-h-[calc(100vh-2rem)] rounded-[1.75rem] bg-[#f7f8ff] p-4 text-slate-950 shadow-[0_24px_90px_rgba(15,23,42,0.18)]">
       <header className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <h1 className="font-display text-3xl">Chats</h1>
-          <p className="mt-1 text-sm text-slate-400">Central de atendimento omnichannel</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3">
-            <span className={`h-2.5 w-2.5 rounded-full ${summary?.provider_status === 'connected' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-            <div>
-              <p className="text-sm font-semibold">{summary?.provider_status === 'connected' ? 'IA ativa' : 'IA nao configurada'}</p>
-              <p className="text-xs text-slate-400">Sugestoes usam provider real</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-violet-600 text-white"><MessageCircle size={22} /></span>
+          <div>
+            <h1 className="font-display text-3xl">Chats</h1>
+            <p className="text-sm text-slate-600">Atendimento Omnichannel</p>
           </div>
-          <label className="flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-4 py-3 text-sm">
-            <Sparkles size={16} />
-            <select className="bg-transparent font-semibold outline-none" value={mode} onChange={(event) => void handleModeChange(event.target.value as typeof mode)}>
-              <option className="bg-slate-950" value="ia">Modo IA</option>
-              <option className="bg-slate-950" value="hibrido">Modo hibrido</option>
-              <option className="bg-slate-950" value="humano">Modo humano</option>
-            </select>
-          </label>
-          <label className="flex min-w-[260px] items-center gap-3 rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-400">
-            <Search size={17} />
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex min-w-[330px] items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+            <Search size={18} />
             <span>Buscar conversas...</span>
+            <span className="ml-auto text-xs text-slate-400">⌘ K</span>
           </label>
+          <div className="inline-flex rounded-xl bg-slate-950 p-1 text-sm font-semibold text-white shadow-sm">
+            {(['ia', 'humano', 'hibrido'] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => void handleModeChange(item)}
+                className={`rounded-lg px-5 py-2 capitalize ${mode === item ? 'bg-violet-600' : 'text-slate-300'}`}
+              >
+                {item === 'ia' ? 'IA' : item}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      <div className="grid gap-3 xl:grid-cols-[240px_330px_minmax(420px,1fr)_320px]">
-        <aside className="space-y-5 rounded-lg border border-white/10 bg-slate-950/55 p-3">
+      <div className="grid gap-3 xl:grid-cols-[300px_minmax(460px,1fr)_360px]">
+        <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-xl">Canais</h2>
+            <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-violet-700">+</button>
+          </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <SectionTitle>Canais</SectionTitle>
-              <button type="button" className="grid h-7 w-7 place-items-center rounded-lg border border-white/10 text-slate-300">+</button>
-            </div>
             {channels.map((channel) => (
               <button
                 key={channel.key}
                 type="button"
                 onClick={() => setActiveChannel(channel.key)}
-                className={`flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left text-sm transition ${activeChannel === channel.key ? 'border-violet-400/50 bg-violet-600/35 text-white' : 'border-transparent bg-white/[0.03] text-slate-300 hover:border-white/10'}`}
+                className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${activeChannel === channel.key ? 'bg-violet-50 text-violet-950' : 'hover:bg-slate-50'}`}
               >
                 <ChannelIcon channel={channel.key} />
                 <span className="flex-1">{channel.label}</span>
-                <span className="rounded-lg bg-white/10 px-2 py-1 text-xs">{channel.open_count}</span>
+                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">{channel.open_count}</span>
               </button>
             ))}
           </div>
 
-          <div className="space-y-2">
-            <SectionTitle>Filtros</SectionTitle>
-            {filters.map((filter) => (
-              <button
-                key={filter.key}
-                type="button"
-                onClick={() => setActiveFilter(filter.key)}
-                className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition ${activeFilter === filter.key ? 'border-violet-400/50 bg-violet-600/30 text-white' : 'border-transparent text-slate-300 hover:bg-white/[0.04]'}`}
-              >
-                <Inbox size={14} />
-                <span className="flex-1">{filter.label}</span>
-                <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">{filterCounts[filter.key]}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <SectionTitle>Equipes</SectionTitle>
-            <div className="flex items-center gap-2 rounded-lg border border-violet-400/40 bg-violet-600/25 px-3 py-2 text-sm">
-              <Users size={14} />
-              <span className="flex-1">Todos os atendentes</span>
-              <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">{conversations.length}</span>
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <h2 className="mb-3 font-display text-xl">Conversas</h2>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {filters.map((filter) => (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.key)}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold ${activeFilter === filter.key ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                >
+                  {filter.label} {counts[filter.key]}
+                </button>
+              ))}
             </div>
-            {team.map((member) => (
-              <div key={member.id} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-300">
-                <span className={`h-2.5 w-2.5 rounded-full ${member.status === 'online' ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-                <span className="flex-1 truncate">{member.name}</span>
-                <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs">{member.assigned_count}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <SectionTitle>Tags</SectionTitle>
-            {tags.map((tag) => (
-              <div key={tag.id} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-300">
-                <span className="h-2.5 w-2.5 rounded-full bg-violet-400" />
-                {tag.label}
-              </div>
-            ))}
-          </div>
-        </aside>
-
-        <aside className="rounded-lg border border-white/10 bg-slate-950/55">
-          <div className="flex items-center justify-between border-b border-white/10 p-4">
-            <h2 className="font-display text-xl">Conversas</h2>
-            <button type="button" className="flex items-center gap-1 text-xs text-slate-400">Mais recentes <ChevronDown size={14} /></button>
-          </div>
-          <div className="max-h-[calc(100vh-190px)] overflow-y-auto p-2">
-            {filteredConversations.length === 0 ? (
-              <EmptyPanel>Nenhuma conversa real encontrada. Conecte WhatsApp, Instagram, Messenger ou Website Chat para receber mensagens.</EmptyPanel>
-            ) : filteredConversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                type="button"
-                onClick={() => setSelectedId(conversation.id)}
-                className={`mb-2 flex w-full gap-3 rounded-lg border p-3 text-left transition ${selectedId === conversation.id ? 'border-violet-400/50 bg-violet-600/35' : 'border-transparent bg-white/[0.03] hover:border-white/10'}`}
-              >
-                <ChannelIcon channel={conversation.channel} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-semibold text-white">{conversation.customer_name}</p>
-                    <span className="text-xs text-slate-400">{timeLabel(conversation.last_message_at)}</span>
+            <div className="max-h-[calc(100vh-360px)] space-y-2 overflow-y-auto pr-1">
+              {filteredConversations.length === 0 ? (
+                <EmptyCard>Nenhuma conversa real encontrada. Conecte WhatsApp, Instagram, Messenger ou Website Chat.</EmptyCard>
+              ) : filteredConversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => setSelectedId(conversation.id)}
+                  className={`flex w-full gap-3 rounded-2xl p-3 text-left transition ${selectedId === conversation.id ? 'bg-violet-100' : 'hover:bg-slate-50'}`}
+                >
+                  <ChannelIcon channel={conversation.channel} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate font-bold">{conversation.customer_name}</p>
+                      <span className="text-xs text-slate-500">{timeLabel(conversation.last_message_at)}</span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-slate-500">{conversation.last_message_preview || 'Sem mensagens ainda.'}</p>
                   </div>
-                  <p className="mt-1 truncate text-xs text-slate-400">{conversation.last_message_preview || 'Sem mensagens ainda.'}</p>
-                  <p className="mt-2 text-[11px] text-violet-200">{conversation.ai_mode === 'ia' ? 'IA respondendo' : conversation.ai_mode === 'hibrido' ? 'Modo hibrido' : 'Humano'}</p>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
           </div>
         </aside>
 
-        <section className="flex min-h-[720px] flex-col rounded-lg border border-white/10 bg-slate-950/55">
+        <main className="flex min-h-[760px] flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
           {currentConversation ? (
             <>
-              <div className="flex items-center justify-between border-b border-white/10 p-4">
+              <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-3">
                   <ChannelIcon channel={currentConversation.channel} />
                   <div>
-                    <h2 className="font-display text-xl">{currentConversation.customer_name}</h2>
-                    <p className="text-xs text-slate-400">{currentConversation.city ?? 'Cidade nao informada'} · Contato via {currentConversation.channel}</p>
+                    <h2 className="font-display text-2xl">{currentConversation.customer_name}</h2>
+                    <p className="text-sm text-slate-500">{currentConversation.status} · {currentConversation.ai_mode}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-slate-300">
-                  <Star size={17} />
-                  <UserPlus size={17} />
-                  <Tag size={17} />
-                  <MoreVertical size={17} />
+                <div className="flex gap-2 text-slate-600">
+                  <span className="rounded-xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">{currentConversation.channel}</span>
+                  <Star size={20} />
+                  <Tag size={20} />
+                  <MoreHorizontal size={20} />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-b border-violet-400/20 bg-violet-600/20 px-4 py-3 text-sm">
-                <span className="flex items-center gap-2"><Sparkles size={16} /> {currentConversation.ai_mode === 'ia' ? 'IA ativa nesta conversa' : currentConversation.ai_mode === 'hibrido' ? 'IA sugere e humano aprova' : 'Atendimento humano'}</span>
-                <button type="button" onClick={handleSuggestions} className="rounded-lg border border-white/10 px-3 py-1 text-xs">Gerar sugestoes reais</button>
+              <div className="grid gap-3 border-b border-slate-100 p-4 md:grid-cols-4">
+                <div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-slate-500">Primeiro contato</p><p className="font-semibold">{dateLabel(currentConversation.last_message_at)}</p></div>
+                <div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-slate-500">Total de conversas</p><p className="font-semibold">{summary?.total ?? 0}</p></div>
+                <div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-slate-500">Ultima atividade</p><p className="font-semibold">{timeLabel(currentConversation.last_message_at)}</p></div>
+                <div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-slate-500">Responsavel</p><p className="font-semibold">{currentConversation.assigned_to ?? 'Nao atribuido'}</p></div>
               </div>
 
-              <div className="flex-1 space-y-4 overflow-y-auto bg-[radial-gradient(circle_at_20%_20%,rgba(124,58,237,0.10),transparent_28%)] p-4">
-                {detailLoading ? (
-                  <div className="grid h-full place-items-center"><Loader2 className="animate-spin text-cyan" /></div>
-                ) : detail?.messages.length ? (
-                  detail.messages.map((message) => <MessageBubble key={message.id} message={message} />)
-                ) : (
-                  <EmptyPanel>Sem mensagens reais nesta conversa.</EmptyPanel>
-                )}
+              <div className="flex-1 space-y-4 overflow-y-auto bg-[#fbfbff] p-5">
+                {detailLoading ? <Loader2 className="mx-auto mt-20 animate-spin text-violet-600" /> : null}
+                {!detailLoading && detail?.messages.length === 0 ? <EmptyCard>Sem mensagens reais nesta conversa.</EmptyCard> : null}
+                {detail?.messages.map((message) => <MessageBubble key={message.id} message={message} />)}
                 {suggestions.length > 0 ? (
-                  <div className="max-w-md rounded-lg border border-white/10 bg-slate-950/90 p-3">
-                    <div className="mb-3 flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 font-semibold"><Sparkles size={15} /> IA sugeriu {suggestions.length} respostas</span>
-                    </div>
+                  <div className="max-w-lg rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                    <p className="mb-3 flex items-center gap-2 font-bold text-violet-700"><Sparkles size={18} /> IA sugeriu {suggestions.length} respostas</p>
                     <div className="space-y-2">
                       {suggestions.map((suggestion) => (
-                        <button key={suggestion} type="button" onClick={() => setDraft(suggestion)} className="flex w-full items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left text-sm text-slate-200">
+                        <button key={suggestion} type="button" onClick={() => setDraft(suggestion)} className="flex w-full items-center justify-between rounded-xl border border-slate-100 px-3 py-2 text-left text-sm">
                           <span className="truncate">{suggestion}</span>
                           <ChevronRight size={15} />
                         </button>
@@ -448,99 +382,99 @@ export function ChatsPage() {
                 ) : null}
               </div>
 
-              <form onSubmit={handleSubmit} className="border-t border-white/10 p-4">
-                <div className="mb-3 flex gap-5 text-sm">
-                  <span className="border-b border-violet-400 pb-2 text-white">Responder</span>
+              <form onSubmit={handleSubmit} className="border-t border-slate-100 p-4">
+                <div className="mb-3 flex gap-6 text-sm font-semibold">
+                  <span className="border-b-2 border-violet-600 pb-2 text-violet-700">Responder</span>
                   <span className="pb-2 text-slate-400">Nota interna</span>
                 </div>
                 <textarea
-                  className="min-h-28 w-full resize-none rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-violet-400/60"
+                  className="min-h-24 w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-violet-400"
                   placeholder="Digite sua mensagem..."
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                 />
-                {sendError ? <p className="mt-2 text-sm text-amber-200">{sendError}</p> : null}
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-3 text-slate-400">
-                    <Smile size={17} />
-                    <Paperclip size={17} />
-                    <Image size={17} />
-                    <FileText size={17} />
-                    <Link2 size={17} />
-                    <CalendarDays size={17} />
-                    <Zap size={17} />
+                {sendError ? <p className="mt-2 text-sm text-amber-600">{sendError}</p> : null}
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex gap-3 text-slate-500">
+                    <Paperclip size={18} /><Smile size={18} /><Image size={18} /><FileText size={18} /><Star size={18} />
                   </div>
-                  <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={!draft.trim()}>
-                    Enviar <Send size={15} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={handleSuggestions} className="inline-flex items-center gap-2 rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700">
+                      <Sparkles size={16} /> IA
+                    </button>
+                    <button type="submit" disabled={!draft.trim()} className="grid h-12 w-14 place-items-center rounded-xl bg-violet-600 text-white disabled:opacity-50">
+                      <Send size={20} />
+                    </button>
+                  </div>
                 </div>
               </form>
             </>
           ) : (
-            <EmptyPanel>Selecione uma conversa real ou conecte um canal para iniciar atendimento.</EmptyPanel>
+            <EmptyCard>Selecione uma conversa real ou conecte um canal para iniciar atendimento.</EmptyCard>
           )}
-        </section>
+        </main>
 
-        <aside className="space-y-3 rounded-lg border border-white/10 bg-slate-950/55 p-3">
-          <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+        <aside className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg">Dados do cliente</h2>
-              <MoreVertical size={16} className="text-slate-400" />
+              <h2 className="font-display text-xl">Detalhes do contato</h2>
+              <MoreHorizontal size={18} />
             </div>
             {currentConversation ? (
-              <>
-                <div className="flex gap-3">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
                   <ChannelIcon channel={currentConversation.channel} />
                   <div>
-                    <p className="font-semibold">{currentConversation.customer_name}</p>
-                    <p className="text-xs text-slate-400">{currentConversation.phone ?? 'Telefone nao informado'}</p>
-                    <p className="text-xs text-slate-400">{currentConversation.email ?? 'Email nao informado'}</p>
+                    <p className="font-bold">{currentConversation.customer_name}</p>
+                    <p className="text-xs text-slate-500">Lead</p>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-slate-950/65 p-3"><p className="text-slate-400">Conversas</p><p className="font-semibold">{summary?.total ?? 0}</p></div>
-                  <div className="rounded-lg bg-slate-950/65 p-3"><p className="text-slate-400">Reservas</p><p className="font-semibold">{reservations.length}</p></div>
-                  <div className="rounded-lg bg-slate-950/65 p-3"><p className="text-slate-400">Gasto total</p><p className="font-semibold">{money(totalSpent)}</p></div>
-                  <div className="rounded-lg bg-slate-950/65 p-3"><p className="text-slate-400">Ultima reserva</p><p className="font-semibold">{dateLabel(reservations[0]?.check_in)}</p></div>
+                <div className="space-y-2 text-sm text-slate-600">
+                  <p className="flex items-center gap-2"><Phone size={15} /> {currentConversation.phone ?? 'Telefone nao informado'}</p>
+                  <p className="flex items-center gap-2"><Mail size={15} /> {currentConversation.email ?? 'Email nao informado'}</p>
+                  <p className="flex items-center gap-2"><ShieldCheck size={15} /> {currentConversation.city ?? 'Cidade nao informada'}</p>
                 </div>
-              </>
-            ) : <EmptyPanel>Sem cliente selecionado.</EmptyPanel>}
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="rounded-xl bg-slate-50 p-3"><p className="text-slate-500">Ticket</p><p className="font-bold">{money(totalSpent)}</p></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><p className="text-slate-500">Reservas</p><p className="font-bold">{reservations.length}</p></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><p className="text-slate-500">Ultima</p><p className="font-bold">{dateLabel(reservations[0]?.check_in)}</p></div>
+                </div>
+              </div>
+            ) : <EmptyCard>Sem contato selecionado.</EmptyCard>}
           </section>
 
-          <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-            <h2 className="font-display text-lg">Historico de reservas</h2>
-            <div className="mt-3 space-y-2">
-              {reservations.length === 0 ? <p className="text-sm text-slate-400">Sem historico de reservas para este cliente.</p> : reservations.map((item) => (
-                <div key={item.id} className="rounded-lg border border-white/10 p-3 text-sm">
-                  <p className="text-slate-300">{dateLabel(item.check_in)} a {dateLabel(item.check_out)}</p>
-                  <p className="mt-1 flex justify-between"><span>{money(item.value)}</span><span className="text-emerald-300">{item.status}</span></p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+          <section className="rounded-2xl border border-violet-100 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-lg">Acoes rapidas</h2>
-              <Clock size={15} className="text-slate-400" />
+              <h3 className="font-bold">Historico de reservas</h3>
+              <span className="text-xs text-violet-700">Ver todas</span>
             </div>
-            {['Criar reserva', 'Enviar orcamento', 'Enviar catalogo', 'Transferir conversa'].map((action) => (
-              <button key={action} type="button" className="mb-2 flex w-full items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-left text-sm text-slate-200">
-                <CircleDollarSign size={15} className="text-emerald-300" />
+            {reservations.length === 0 ? (
+              <p className="text-sm text-slate-500">Sem historico de reservas para este cliente.</p>
+            ) : reservations.map((item) => (
+              <div key={item.id} className="mb-2 rounded-xl bg-slate-50 p-3 text-sm">
+                <p>{dateLabel(item.check_in)} a {dateLabel(item.check_out)}</p>
+                <p className="mt-1 flex justify-between"><span>{money(item.value)}</span><span className="text-emerald-600">{item.status}</span></p>
+              </div>
+            ))}
+          </section>
+
+          <section className="rounded-2xl border border-slate-100 p-4">
+            <h3 className="mb-3 font-bold">Acoes rapidas</h3>
+            {['Agendar Follow-up', 'Enviar Promocao', 'Transferir para Humano', 'Ativar IA', 'Adicionar Tag'].map((action) => (
+              <button key={action} type="button" className="mb-2 flex w-full items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-700">
+                <Zap size={15} className="text-violet-600" />
                 {action}
               </button>
             ))}
           </section>
 
-          <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-            <h2 className="font-display text-lg">Informacoes da conversa</h2>
-            <dl className="mt-3 space-y-2 text-sm">
-              <div className="flex justify-between gap-3"><dt className="text-slate-400">Canal</dt><dd>{currentConversation?.channel ?? '-'}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-slate-400">Inicio</dt><dd>{dateLabel(currentConversation?.last_message_at)}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-slate-400">Atendente</dt><dd>{currentConversation?.assigned_to ?? 'Nao atribuido'}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-slate-400">Status</dt><dd>{currentConversation?.status ?? '-'}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-slate-400">Modo IA</dt><dd>{currentConversation?.ai_mode ?? '-'}</dd></div>
-            </dl>
+          <section className="rounded-2xl border border-slate-100 p-4">
+            <h3 className="mb-3 font-bold">Tags</h3>
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <span key={tag.id} className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">{tag.label}</span>
+              ))}
+            </div>
           </section>
         </aside>
       </div>

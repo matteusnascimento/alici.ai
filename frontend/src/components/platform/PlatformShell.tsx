@@ -10,7 +10,14 @@ export function PlatformShell() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopSidebarExpanded, setDesktopSidebarExpanded] = useState(false);
   const inStudioSection = location.pathname.startsWith('/app/studio');
-  const hidePlatformTopbar = inStudioSection || location.pathname.startsWith('/app/marketing') || location.pathname.startsWith('/app/revenue') || location.pathname.startsWith('/app/chats');
+  const hidePlatformTopbar =
+    inStudioSection ||
+    location.pathname.startsWith('/app/marketing') ||
+    location.pathname.startsWith('/app/revenue') ||
+    location.pathname.startsWith('/app/chats') ||
+    location.pathname.startsWith('/app/assistant') ||
+    location.pathname.startsWith('/app/admin') ||
+    location.pathname.startsWith('/app/account');
   const fullBleedModule = location.pathname.startsWith('/app/studio/editor');
 
   return (

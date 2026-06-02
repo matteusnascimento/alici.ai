@@ -51,7 +51,7 @@ const emptyOverview: StudioOverviewResponse = {
 const createTypes = [
   { label: 'Video', description: 'Editor de video', path: '/app/studio/editor/video?mode=new', icon: Video, tone: 'from-violet-500 to-fuchsia-500' },
   { label: 'Foto', description: 'Imagem e edicao', path: '/app/studio/tools/photo-editor', icon: FileImage, tone: 'from-sky-500 to-cyan-400' },
-  { label: 'Story', description: 'Formato vertical', path: '/app/studio/tools/story', icon: Clapperboard, tone: 'from-rose-500 to-pink-500' },
+  { label: 'Story', description: 'Formato vertical', path: '/app/studio/templates?category=Stories', icon: Clapperboard, tone: 'from-rose-500 to-pink-500' },
   { label: 'Post', description: 'Feed e carrossel', path: '/app/studio/tools/ad', icon: CopyPlus, tone: 'from-orange-500 to-amber-400' },
   { label: 'Banner', description: 'Web e anuncios', path: '/app/studio/templates?category=Ads', icon: MonitorPlay, tone: 'from-emerald-500 to-teal-400' },
   { label: 'Landing Page', description: 'Paginas e conversao', path: `/app/studio/templates?category=${encodeURIComponent('Landing Pages')}`, icon: LayoutDashboard, tone: 'from-cyan-500 to-sky-500' },
@@ -64,7 +64,7 @@ const quickActions = [
   { label: 'Gerar com IA', description: 'Criar conteudo em segundos', path: '/app/studio/ai-creative', icon: Sparkles, enabled: true, tone: 'from-violet-600 to-purple-500' },
   { label: 'Redimensionar', description: 'Ajustar para varios formatos', path: '/app/studio/tools/photo-editor?tool=resize', icon: Maximize2, enabled: true, tone: 'from-violet-600 to-indigo-500' },
   { label: 'Remover fundo', description: 'Requer provider real configurado', path: '/app/studio/tools/remove-background', icon: Images, enabled: true, tone: 'from-orange-600 to-rose-500' },
-  { label: 'Converter para video', description: 'Abrir editor de video', path: '/app/studio/editor/video?mode=new&entry=image-to-video', icon: Folder, enabled: true, tone: 'from-violet-600 to-indigo-500' },
+  { label: 'Converter imagem', description: 'Abrir editor', path: '/app/studio/editor/video?mode=new&entry=image-to-video', icon: Folder, enabled: true, tone: 'from-violet-600 to-indigo-500' },
 ];
 
 const templateCanvases = [
@@ -245,6 +245,12 @@ export function StudioHomePage() {
               <p className="mt-2 text-base text-slate-300">Inspire-se, escolha um template ou deixe a IA criar para voce.</p>
             </div>
             <div className="flex items-center gap-3">
+              <Link to="/app/studio/templates" className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white hover:bg-white/[0.08]">
+                Templates
+              </Link>
+              <Link to="/app/studio/assets" className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white hover:bg-white/[0.08]">
+                Uploads
+              </Link>
               <Link to="/app/studio/editor/video?mode=new" className="inline-flex h-11 items-center gap-2 rounded-lg border border-violet-400/45 bg-violet-500/10 px-4 text-sm font-semibold text-white hover:bg-violet-500/20">
                 <Plus size={17} className="text-fuchsia-300" /> Criar do zero
               </Link>
@@ -260,7 +266,7 @@ export function StudioHomePage() {
           <div className="mt-6 flex gap-3 rounded-lg border border-white/[0.08] bg-[#0B1220]/90 p-2 backdrop-blur-xl">
             <label className="flex min-w-0 flex-1 items-center gap-3 px-2">
               <Search size={20} className="text-fuchsia-300" />
-              <input className="h-10 min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500" placeholder="Buscar templates, posts, videos, campanhas, hoteis, ofertas..." />
+              <input aria-label="Buscar no Studio" className="h-10 min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500" placeholder="Buscar templates, posts, videos, campanhas, hoteis, ofertas..." />
             </label>
             <Link to="/app/studio/ai-creative" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-violet-700 px-4 text-sm font-semibold text-white hover:bg-violet-600">
               <Sparkles size={15} /> Magic Studio
@@ -330,7 +336,7 @@ export function StudioHomePage() {
               {recentProjects.length ? (
                 <div className="space-y-3">
                   {recentProjects.map((project) => (
-                    <Link key={project.id} to={resolveStudioProjectRoute(project.project_type, project.id)} className="flex items-center gap-3 rounded-lg hover:bg-white/[0.04]">
+                    <Link key={project.id} to={resolveStudioProjectRoute(project.project_type, project.id)} aria-label="Abrir projeto recente" className="flex items-center gap-3 rounded-lg hover:bg-white/[0.04]">
                       <ProjectVisual title={project.title} thumbnail={project.thumbnail_url} compact />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{project.title}</span>
@@ -353,6 +359,7 @@ export function StudioHomePage() {
           <div className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_0.9fr]">
             <Panel className="p-4">
               <SectionHeader title="Biblioteca" to="/app/studio/assets" />
+              <p className="mb-3 text-sm font-medium text-slate-300">Uploads recentes</p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <LibraryItem icon={Image} label="Imagens" value={`${overview.brand_summary.assets_count} arquivos`} />
                 <LibraryItem icon={Video} label="Videos" value="Indisponivel" />

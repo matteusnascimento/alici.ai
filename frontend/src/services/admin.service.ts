@@ -13,8 +13,17 @@ export interface AdminUser {
   plan: string;
 }
 
+export interface AdminCompany {
+  name: string;
+  email: string | null;
+  plan: string;
+  status: string;
+  users_count: number;
+  created_at: string | null;
+}
+
 export interface AdminOverview {
-  empresas: string[];
+  empresas: AdminCompany[];
   usuarios: AdminUser[];
   permissoes: string[];
   billing: AdminMetric[];

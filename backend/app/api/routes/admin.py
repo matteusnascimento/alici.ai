@@ -25,8 +25,17 @@ class AdminUserRead(BaseModel):
     plan: str
 
 
+class AdminCompanyRead(BaseModel):
+    name: str
+    email: str | None = None
+    plan: str
+    status: str
+    users_count: int
+    created_at: str | None = None
+
+
 class AdminOverviewResponse(BaseModel):
-    empresas: list[str]
+    empresas: list[AdminCompanyRead]
     usuarios: list[AdminUserRead]
     permissoes: list[str]
     billing: list[AdminMetric]
@@ -43,7 +52,24 @@ def require_owner(current_user: User = Depends(get_current_user)) -> User:
 @router.get("/overview", response_model=AdminOverviewResponse)
 def admin_overview(_: User = Depends(require_owner), db: Session = Depends(get_db)) -> AdminOverviewResponse:
     users = db.query(User).order_by(User.created_at.desc()).limit(50).all()
-    companies = sorted({user.company for user in users if user.company})
+    companies_by_name: dict[str, list[User]] = {}
+    for user in users:
+        if user.company:
+            companies_by_name.setdefault(user.company, []).append(user)
+
+    companies = []
+    for name, company_users in sorted(companies_by_name.items()):
+        owner = sorted(company_users, key=lambda item: item.created_at)[0]
+        companies.append(
+            AdminCompanyRead(
+                name=name,
+                email=owner.email,
+                plan=owner.plan,
+                status="Ativa" if company_users else "Pendente",
+                users_count=len(company_users),
+                created_at=owner.created_at.date().isoformat() if owner.created_at else None,
+            )
+        )
     subscription_count = db.query(func.count(Subscription.id)).scalar() or 0
     billing_event_count = db.query(func.count(BillingEvent.id)).scalar() or 0
 

@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Bot, Building2, ChartColumnBig, ChevronLeft, Link2, Megaphone, Menu, MessageSquare, Settings2, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, ChartColumnBig, ChevronLeft, Gauge, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -14,6 +14,7 @@ interface AppSidebarProps {
 }
 
 const items = [
+  { label: 'Control Room', to: '/app/control-room', icon: Gauge },
   { label: 'Revenue', to: '/app/revenue?view=business-pulse', icon: BadgeDollarSign },
   { label: 'Chats', to: '/app/chats', icon: MessageSquare },
   { label: 'AXI Assistant', to: '/app/assistant', icon: Bot },
@@ -21,10 +22,14 @@ const items = [
   { label: 'Studio', to: '/app/studio', icon: Sparkles },
   { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
   { label: 'Integrations', to: '/app/integrations', icon: Link2 },
-  { label: 'Account', to: '/app/account', icon: Settings2 },
 ];
 
 function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse: () => void }) {
+  const { user, logout } = useAuth();
+  const displayName = user?.name || 'Usuario AXI';
+  const role = user?.role === 'owner' ? 'Proprietario' : user?.role || 'Membro';
+  const companyLabel = user?.plan ? `Plano ${user.plan}` : 'Empresa ativa';
+
   return (
     <div className={['mt-auto border-t border-white/10 pt-3', expanded ? 'space-y-3 px-0' : 'flex flex-col items-center gap-3 px-0'].join(' ')}>
       <div
@@ -39,8 +44,8 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
           </span>
           {expanded ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">Pousada Mar & Sol</p>
-              <p className="truncate text-xs text-slate-400">Plano Enterprise</p>
+              <p className="truncate text-sm font-semibold text-white">Empresa</p>
+              <p className="truncate text-xs text-slate-400">{companyLabel}</p>
             </div>
           ) : null}
         </div>
@@ -62,12 +67,30 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
           </span>
           {expanded ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">Geovana Moreira</p>
-              <p className="truncate text-xs text-slate-400">Administrador</p>
+              <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+              <p className="truncate text-xs capitalize text-slate-400">{role}</p>
             </div>
           ) : null}
         </div>
+        {expanded ? (
+          <Link to="/app/account/overview" className="mt-3 flex h-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-slate-200 hover:bg-white/[0.08]">
+            Minha conta
+          </Link>
+        ) : null}
       </div>
+      {user?.role === 'owner' ? (
+        <SidebarItem expanded={expanded} label="Administracao" to="/app/admin" icon={ShieldCheck} />
+      ) : null}
+      {expanded ? (
+        <button
+          type="button"
+          onClick={logout}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 hover:bg-white/[0.05] hover:text-white"
+        >
+          <LogOut size={17} />
+          Sair
+        </button>
+      ) : null}
       {expanded ? (
         <button
           type="button"
@@ -88,13 +111,8 @@ export function AppSidebar({
   onMobileClose,
   onDesktopExpandedChange,
 }: AppSidebarProps) {
-  const { user } = useAuth();
   const [hoverCapable, setHoverCapable] = useState(false);
   const [expandedDesktop, setExpandedDesktop] = useState(true);
-  const visibleItems = useMemo(
-    () => (user?.role === 'owner' ? [...items, { label: 'Administracao', to: '/app/admin', icon: ShieldCheck }] : items),
-    [user?.role],
-  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') {
@@ -137,7 +155,7 @@ export function AppSidebar({
       >
         <SidebarLogo expanded={expanded} />
         <nav className={['mt-6 flex flex-1 flex-col overflow-y-auto pb-3', expanded ? 'gap-2.5 pr-1' : 'items-center gap-4 pr-0'].join(' ')}>
-          {visibleItems.map((item) => (
+          {items.map((item) => (
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
         </nav>
@@ -168,7 +186,7 @@ export function AppSidebar({
         </div>
         <SidebarLogo expanded />
         <nav className="mt-5 flex max-h-[calc(100vh-310px)] flex-col gap-2.5 overflow-y-auto pb-2 pr-1">
-          {visibleItems.map((item) => (
+          {items.map((item) => (
             <SidebarItem key={item.to} expanded onNavigate={onMobileClose} {...item} />
           ))}
         </nav>
