@@ -4,7 +4,6 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 vi.mock('../services/admin.service', () => ({
-  createAdminCompany: vi.fn(),
   getAdminOverview: () =>
     Promise.resolve({
       empresas: [
@@ -46,16 +45,24 @@ describe('AdminPage', () => {
     );
 
     expect(await screen.findByRole('heading', { name: /Administracao/i })).toBeInTheDocument();
-    expect(screen.getByText('Pousada Mar e Sol')).toBeInTheDocument();
+    expect(screen.getByText('Operacao administrativa')).toBeInTheDocument();
+    expect(screen.queryByText('Pousada Mar e Sol')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Ver detalhes/i }));
+    await user.click(screen.getAllByRole('button', { name: /Billing/i })[0]);
     expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/billing');
+    expect(screen.getByText(/eventos Stripe reais/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Nova empresa/i }));
-    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/companies?action=new');
-    expect(screen.getByRole('heading', { name: /Criar empresa no AXI/i })).toBeInTheDocument();
-
-    await user.click(screen.getAllByRole('button', { name: /^Gerenciar ->$/i })[0]);
+    await user.click(screen.getByRole('button', { name: /Usuarios/i }));
     expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/users');
+    expect(screen.getByText('Geovana Moreira')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Novo usuario/i }));
+    expect(screen.getByRole('heading', { name: /Novo usuario/i })).toBeInTheDocument();
+    expect(screen.getByText(/backend atual ainda nao expoe/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Cancelar/i }));
+    await user.click(screen.getByRole('button', { name: /Permissoes/i }));
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/permissions');
+    expect(screen.getByText('AXI Assistant')).toBeInTheDocument();
   });
 });

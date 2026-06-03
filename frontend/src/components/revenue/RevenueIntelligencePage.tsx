@@ -106,16 +106,16 @@ function KpiCard({
   tone: string;
 }) {
   return (
-    <article className="min-h-[154px] rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.9),rgba(2,6,23,0.72))] p-5 shadow-[0_22px_65px_rgba(0,0,0,0.30)]">
-      <div className="flex items-center gap-4">
-        <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] ${tone}`}>
-          <Icon size={25} strokeWidth={2.2} />
+    <article className="min-h-[154px] rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.9),rgba(2,6,23,0.72))] p-4 shadow-[0_22px_65px_rgba(0,0,0,0.30)]">
+      <div className="flex items-start gap-3">
+        <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] ${tone}`}>
+          <Icon size={21} strokeWidth={2.25} className="h-[21px] w-[21px] shrink-0" />
         </span>
-        <p className="text-sm font-medium leading-5 text-slate-300">{title}</p>
+        <p className="min-w-0 pt-1 text-sm font-medium leading-5 text-slate-300">{title}</p>
       </div>
       <p className="mt-5 font-display text-3xl text-white">{value}</p>
       <p className="mt-2 flex items-center gap-1 text-xs font-medium text-emerald-300">
-        <ArrowUpRight size={13} />
+        <ArrowUpRight size={13} className="h-[13px] w-[13px] shrink-0" />
         {detail}
       </p>
     </article>
@@ -235,8 +235,8 @@ function BusinessPulse({ snapshot }: { snapshot: RevenueIntelligenceSnapshot | n
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">Score 0-100</p>
           <h2 className="mt-1 font-display text-2xl text-white">Business Pulse</h2>
         </div>
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-violet-500/15 text-violet-200">
-          <Gauge size={23} />
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-200">
+          <Gauge size={20} className="h-5 w-5 shrink-0" />
         </span>
       </div>
       <div className="mt-6 grid gap-6 md:grid-cols-[190px_1fr] md:items-center">
@@ -562,8 +562,8 @@ export function RevenueIntelligencePage() {
             <article className="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_70%_20%,rgba(34,211,238,0.12),transparent_32%),linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] p-6 shadow-[0_22px_65px_rgba(0,0,0,0.24)]">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-2xl text-white">Top cidades por receita</h2>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-cyan-400/12 text-cyan-200">
-                  <MapPinned size={22} />
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-cyan-400/12 text-cyan-200">
+                  <MapPinned size={20} className="h-5 w-5 shrink-0" />
                 </span>
               </div>
               <div className="mt-5 grid gap-5 md:grid-cols-[220px_1fr] md:items-center">
@@ -571,8 +571,8 @@ export function RevenueIntelligencePage() {
                   <div className="absolute left-8 top-8 h-20 w-28 rounded-[45%] border border-cyan-200/20 bg-cyan-300/10" />
                   <div className="absolute bottom-8 right-8 h-24 w-24 rounded-[45%] border border-violet-200/20 bg-violet-300/10" />
                   <div className="absolute left-20 top-24 h-16 w-20 rounded-[45%] border border-emerald-200/20 bg-emerald-300/10" />
-                  <span className="absolute left-[48%] top-[42%] grid h-12 w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_12px_34px_rgba(124,58,237,0.4)]">
-                    <MapPin size={24} />
+                  <span className="absolute left-[48%] top-[42%] grid h-11 w-11 place-items-center rounded-2xl bg-violet-500 text-white shadow-[0_12px_34px_rgba(124,58,237,0.4)]">
+                    <MapPin size={21} className="h-[21px] w-[21px] shrink-0" />
                   </span>
                 </div>
                 <EmptyState>Sem dados geograficos consolidados para exibir cidades.</EmptyState>
@@ -618,8 +618,8 @@ export function RevenueIntelligencePage() {
         <aside className="space-y-7">
           <section className="rounded-[1.5rem] border border-violet-300/20 bg-[radial-gradient(circle_at_20%_0%,rgba(168,85,247,0.24),transparent_38%),linear-gradient(160deg,rgba(15,23,42,0.95),rgba(2,6,23,0.82))] p-6 shadow-[0_26px_78px_rgba(76,29,149,0.24)]">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-violet-500/20 text-violet-100">
-                <Sparkles size={24} />
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-500/20 text-violet-100">
+                <Sparkles size={21} className="h-[21px] w-[21px] shrink-0" />
               </span>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">IA Insights</p>
@@ -652,7 +652,7 @@ export function RevenueIntelligencePage() {
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white shadow-[0_12px_28px_rgba(124,58,237,0.35)] transition hover:bg-violet-500"
                   aria-label="Enviar pergunta ao AXI Assistant"
                 >
-                  <Send size={17} />
+                  <Send size={17} className="h-[17px] w-[17px] shrink-0" />
                 </Link>
               </div>
             </div>
@@ -661,7 +661,7 @@ export function RevenueIntelligencePage() {
               className="mt-5 flex items-center justify-between rounded-2xl border border-violet-300/35 bg-[linear-gradient(135deg,#7c3aed,#c026d3)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_18px_42px_rgba(124,58,237,0.32)] transition hover:brightness-110"
             >
               Abrir AXI Assistant
-              <ChevronRight size={17} />
+              <ChevronRight size={17} className="h-[17px] w-[17px] shrink-0" />
             </Link>
           </section>
 
@@ -671,8 +671,8 @@ export function RevenueIntelligencePage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Execucao</p>
                 <h2 className="font-display text-2xl text-white">Plano de Acao</h2>
               </div>
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400/12 text-emerald-200">
-                <Target size={20} />
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/12 text-emerald-200">
+                <Target size={19} className="h-[19px] w-[19px] shrink-0" />
               </span>
             </div>
             <div className="mb-5 grid grid-cols-3 rounded-2xl border border-white/10 bg-slate-950/65 p-1">
@@ -697,8 +697,8 @@ export function RevenueIntelligencePage() {
             {actionPlans.length === 0 ? (
               <div className="grid min-h-[220px] place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.035] p-5 text-center">
                 <div>
-                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-violet-500/15 text-violet-200">
-                    <ClipboardList size={25} />
+                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-violet-500/15 text-violet-200">
+                    <ClipboardList size={22} className="h-[22px] w-[22px] shrink-0" />
                   </div>
                   <p className="mt-4 text-sm font-semibold text-white">Sem acoes reais para este periodo</p>
                   <p className="mt-2 text-sm leading-5 text-slate-400">Quando houver sinais suficientes, esta area mostra titulo, descricao, progresso, status e data.</p>

@@ -22,10 +22,6 @@ vi.mock('../services/account.service', () => ({
   confirmPhoneVerification: (...args: unknown[]) => confirmPhoneVerificationMock(...args),
 }));
 
-vi.mock('../hooks/useBilling', () => ({
-  useBilling: () => ({ current: { plan_name: 'Pro' } }),
-}));
-
 vi.mock('../hooks/useToast', () => ({
   useToast: () => ({ pushToast: vi.fn() }),
 }));
@@ -40,9 +36,9 @@ describe('AccountProfilePage', () => {
       email: 'ana@example.com',
       phone: '11988887777',
       avatar_url: null,
-      bio: 'Lidero a operação de atendimento com IA na empresa.',
+      bio: 'Lidero a operacao de atendimento com IA na empresa.',
       company: 'AXI Labs',
-      job_title: 'Head de Operações',
+      job_title: 'Head de Operacoes',
       timezone: 'America/Sao_Paulo',
       language: 'pt-BR',
       email_verified: false,
@@ -55,7 +51,7 @@ describe('AccountProfilePage', () => {
     });
   });
 
-  it('renderiza contexto, status e completude do perfil', async () => {
+  it('renderiza somente dados pessoais e verificacoes da conta', async () => {
     render(
       <MemoryRouter>
         <AccountProfilePage />
@@ -69,16 +65,17 @@ describe('AccountProfilePage', () => {
     });
 
     expect(screen.getByText('@ana.souza')).toBeInTheDocument();
-    expect(screen.getByText(/Perfil \d+% concluído/i)).toBeInTheDocument();
-    expect(screen.getByText('Dados principais')).toBeInTheDocument();
-    expect(screen.getByText('Conta e contexto profissional')).toBeInTheDocument();
-    expect(screen.getAllByText('Status da conta')).toHaveLength(2);
-    expect(screen.getByText('Verificações')).toBeInTheDocument();
-    expect(screen.getByText('Verificação de email')).toBeInTheDocument();
-    expect(screen.getByText('Verificação de telefone')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('AXI Labs')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Head de Operações')).toBeInTheDocument();
-    expect(screen.getByText('Não verificado')).toBeInTheDocument();
-    expect(screen.getByText('Ainda não confirmado')).toBeInTheDocument();
+    expect(screen.getByText('Informacoes pessoais')).toBeInTheDocument();
+    expect(screen.getByText('Verificacoes')).toBeInTheDocument();
+    expect(screen.getAllByText('Email')).toHaveLength(2);
+    expect(screen.getAllByText('Telefone')).toHaveLength(2);
+    expect(screen.getAllByText('Pendente')).toHaveLength(2);
+    expect(screen.getByDisplayValue('ana@example.com')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('11988887777')).toBeInTheDocument();
+    expect(screen.queryByText(/Perfil \d+%/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Conta e contexto profissional')).not.toBeInTheDocument();
+    expect(screen.queryByText('Status da conta')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('AXI Labs')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Head de Operacoes')).not.toBeInTheDocument();
   });
 });

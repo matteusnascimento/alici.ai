@@ -15,16 +15,17 @@ import {
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { ApiError } from '../../services/api';
 import {
   createProject,
   listCampaigns,
+  listProjects,
   listMarketingResource,
 } from '../../services/marketing.service';
-import type { MarketingCampaignListItem, MarketingDataStatus, MarketingProjectCreate } from '../../types/marketing';
+import type { MarketingCampaignListItem, MarketingDataStatus, MarketingProject, MarketingProjectCreate } from '../../types/marketing';
 
 const marketingNav = [
   { label: 'Planejamento', to: '/app/marketing/planning', icon: Target },
@@ -38,6 +39,10 @@ const marketingNav = [
 ];
 
 const campaignStatuses = ['Rascunho', 'Agendada', 'Ativa', 'Pausada', 'Finalizada'];
+const originOptions = ['Salvador', 'Feira', 'Sao Paulo', 'Brasilia', 'Belo Horizonte'];
+const ageOptions = ['18-25', '26-35', '36-45', '46+'];
+const channelOptions = ['Instagram', 'Meta Ads', 'Google Ads', 'WhatsApp', 'Email', 'Website'];
+const objectiveOptions = ['Gerar Leads', 'Gerar Reservas', 'Aumentar Ocupacao', 'Baixa Temporada', 'Remarketing', 'Clientes antigos'];
 
 function Shell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
@@ -101,6 +106,176 @@ function DataCard({ title, icon: Icon, children }: { title: string; icon: Lucide
   );
 }
 
+function StatTile({ label, value, description, icon: Icon }: { label: string; value: string; description: string; icon: LucideIcon }) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500/15 text-violet-200">
+          <Icon size={18} />
+        </span>
+        <div>
+          <p className="text-xs text-slate-400">{label}</p>
+          <p className="text-xl font-semibold text-white">{value}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-5 text-slate-500">{description}</p>
+    </section>
+  );
+}
+
+function FormInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+  className = '',
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
+}) {
+  return (
+    <label className={`text-sm text-slate-300 ${className}`}>
+      {label}
+      <input
+        required={required}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="mt-1 h-12 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-300"
+      />
+    </label>
+  );
+}
+
+function OptionGroup({
+  title,
+  options,
+  selected,
+  onToggle,
+}: {
+  title: string;
+  options: string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-semibold text-slate-300">{title}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const active = selected.includes(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onToggle(option)}
+              className={[
+                'rounded-full border px-3 py-2 text-xs font-semibold transition',
+                active ? 'border-violet-300 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-violet-300/35 hover:text-white',
+              ].join(' ')}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PlanningSummary({
+  form,
+  period,
+  budget,
+  complete,
+  saving,
+}: {
+  form: MarketingProjectCreate;
+  period: string;
+  budget: string;
+  complete: boolean;
+  saving: boolean;
+}) {
+  const rows = [
+    ['Objetivo', form.objective || '-'],
+    ['Periodo', period || '-'],
+    ['Orcamento', budget || '-'],
+    ['Publico', form.audience || '-'],
+    ['Oferta', form.offer || '-'],
+  ];
+
+  return (
+    <DataCard title="Resumo" icon={CheckCircle2}>
+      <div className="space-y-3 text-sm text-slate-300">
+        {rows.map(([label, value]) => (
+          <p key={label} className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2">
+            <span className="text-slate-500">{label}</span>
+            <span className="max-w-[12rem] text-right text-white">{value}</span>
+          </p>
+        ))}
+      </div>
+      <button
+        type="submit"
+        disabled={saving || !complete}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Plus size={16} /> {saving ? 'Criando...' : 'Criar plano'}
+      </button>
+      <p className="mt-3 text-xs leading-5 text-slate-500">
+        O plano sera salvo como projeto real de Marketing e depois podera alimentar campanhas, calendario e conteudo.
+      </p>
+    </DataCard>
+  );
+}
+
+function RecentPlans({ projects, loading }: { projects: MarketingProject[]; loading: boolean }) {
+  return (
+    <DataCard title="Planos reais" icon={Megaphone}>
+      {loading ? (
+        <Loader2 className="animate-spin text-violet-300" />
+      ) : projects.length ? (
+        <div className="space-y-2">
+          {projects.slice(0, 4).map((project) => (
+            <Link key={project.id} to={`/app/marketing/projects/${project.id}`} className="block rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 transition hover:border-violet-300/40">
+              <p className="truncate text-sm font-semibold text-white">{project.name}</p>
+              <p className="mt-1 truncate text-xs text-slate-400">{project.objective}</p>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <EmptyState message="Nenhum plano real criado ainda. Preencha o planejamento para iniciar." />
+      )}
+    </DataCard>
+  );
+}
+
+function PlanningNextSteps() {
+  const steps = [
+    { label: 'Criar criativos', to: '/app/marketing/creatives', icon: Image },
+    { label: 'Agendar conteudo', to: '/app/marketing/calendar', icon: CalendarDays },
+    { label: 'Abrir campanhas', to: '/app/marketing/campaigns', icon: Megaphone },
+    { label: 'Medir em Revenue', to: '/app/revenue?view=marketing', icon: BarChart3 },
+  ];
+
+  return (
+    <DataCard title="Proximos passos" icon={GitBranch}>
+      <div className="grid gap-2">
+        {steps.map(({ label, to, icon: Icon }) => (
+          <Link key={label} to={to} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-semibold text-slate-200 transition hover:border-violet-300/40 hover:text-white">
+            <span className="flex items-center gap-2"><Icon size={16} className="text-violet-300" /> {label}</span>
+            <Send size={14} className="text-slate-500" />
+          </Link>
+        ))}
+      </div>
+    </DataCard>
+  );
+}
+
 function ResourceList({ resource, emptyMessage }: { resource: 'action-plans' | 'calendar' | 'content' | 'audiences' | 'automations' | 'reports' | 'insights'; emptyMessage: string }) {
   const [items, setItems] = useState<MarketingDataStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +308,7 @@ function ResourceList({ resource, emptyMessage }: { resource: 'action-plans' | '
 }
 
 export function MarketingPlanningPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const [form, setForm] = useState<MarketingProjectCreate>({
     name: '',
@@ -144,8 +320,41 @@ export function MarketingPlanningPage() {
   });
   const [budget, setBudget] = useState('');
   const [period, setPeriod] = useState('');
+  const [origins, setOrigins] = useState<string[]>([]);
+  const [ages, setAges] = useState<string[]>([]);
+  const [channels, setChannels] = useState<string[]>([]);
+  const [projects, setProjects] = useState<MarketingProject[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setProjectsLoading(true);
+    listProjects()
+      .then((rows) => setProjects(Array.isArray(rows) ? rows : []))
+      .catch(() => setProjects([]))
+      .finally(() => setProjectsLoading(false));
+  }, []);
+
+  const complete = Boolean(form.name.trim() && form.objective.trim() && form.audience.trim() && form.offer.trim());
+
+  const isCampaignForm = location.pathname.includes('/campaigns/new');
+
+  function toggleList(setter: Dispatch<SetStateAction<string[]>>, value: string) {
+    setter((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
+  }
+
+  function applyObjective(value: string) {
+    setForm((current) => ({ ...current, objective: value }));
+  }
+
+  function syncAudience(nextOrigins = origins, nextAges = ages) {
+    const parts = [
+      nextOrigins.length ? `Origem: ${nextOrigins.join(' + ')}` : '',
+      nextAges.length ? `Idade: ${nextAges.join(' / ')}` : '',
+    ].filter(Boolean);
+    setForm((current) => ({ ...current, audience: parts.join(' | ') }));
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -154,7 +363,12 @@ export function MarketingPlanningPage() {
     try {
       const project = await createProject({
         ...form,
-        notes: [form.notes, budget ? `Orcamento: ${budget}` : '', period ? `Periodo: ${period}` : ''].filter(Boolean).join('\n'),
+        notes: [
+          form.notes,
+          budget ? `Orcamento: ${budget}` : '',
+          period ? `Periodo: ${period}` : '',
+          channels.length ? `Canais: ${channels.join(', ')}` : '',
+        ].filter(Boolean).join('\n'),
       });
       navigate(`/app/marketing/projects/${project.id}`);
     } catch (err) {
@@ -165,30 +379,112 @@ export function MarketingPlanningPage() {
   }
 
   return (
-    <Shell title="Planejamento" subtitle="Crie planos reais com objetivo, datas, orcamento e publico alvo.">
-      <form onSubmit={submit} className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <DataCard title="Criar plano" icon={Target}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-slate-300">Nome da campanha<input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-violet-300" /></label>
-            <label className="text-sm text-slate-300">Objetivo<input required value={form.objective} onChange={(event) => setForm((current) => ({ ...current, objective: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-violet-300" /></label>
-            <label className="text-sm text-slate-300">Datas<input value={period} onChange={(event) => setPeriod(event.target.value)} placeholder="01/07/2026 a 31/07/2026" className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-violet-300" /></label>
-            <label className="text-sm text-slate-300">Orcamento<input value={budget} onChange={(event) => setBudget(event.target.value)} placeholder="R$ 3.000" className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-violet-300" /></label>
-            <label className="text-sm text-slate-300 md:col-span-2">Publico alvo<input required value={form.audience} onChange={(event) => setForm((current) => ({ ...current, audience: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-violet-300" /></label>
-            <label className="text-sm text-slate-300 md:col-span-2">Oferta<input required value={form.offer} onChange={(event) => setForm((current) => ({ ...current, offer: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-violet-300" /></label>
-          </div>
-          {error ? <p className="mt-4 rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-100">{error}</p> : null}
-        </DataCard>
-        <DataCard title="Resumo" icon={CheckCircle2}>
-          <div className="space-y-3 text-sm text-slate-300">
-            <p>Objetivo: <span className="text-white">{form.objective || '-'}</span></p>
-            <p>Periodo: <span className="text-white">{period || '-'}</span></p>
-            <p>Orcamento: <span className="text-white">{budget || '-'}</span></p>
-            <p>Publico: <span className="text-white">{form.audience || '-'}</span></p>
-          </div>
-          <button type="submit" disabled={saving} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
-            <Plus size={16} /> {saving ? 'Criando...' : 'Criar plano'}
-          </button>
-        </DataCard>
+    <Shell
+      title={isCampaignForm ? 'Nova Campanha' : 'Criar Plano de Marketing'}
+      subtitle="Crie planos reais em uma tela secundaria, mantendo o dashboard principal como HUB de Marketing."
+    >
+      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatTile label="Planos criados" value={projectsLoading ? '...' : String(projects.length)} description="Projetos reais salvos no backend de Marketing." icon={Target} />
+        <StatTile label="Campanhas" value="Real" description="A aba Campanhas lista somente projetos persistidos." icon={Megaphone} />
+        <StatTile label="Criativos" value="Studio" description="Criacao visual abre o editor correto no AXI Studio." icon={Image} />
+        <StatTile label="Analise" value="Revenue" description="ROI, funil e performance ficam centralizados em Revenue." icon={BarChart3} />
+      </div>
+
+      <form onSubmit={submit} className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <main className="space-y-5">
+          <DataCard title="Criar plano" icon={Target}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormInput required label="Nome da campanha" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="Ferias Julho - Pousada Mar & Sol" />
+              <FormInput label="Datas" value={period} onChange={setPeriod} placeholder="01/07/2026 a 31/07/2026" />
+              <FormInput label="Orcamento" value={budget} onChange={setBudget} placeholder="R$ 3.000" />
+              <div className="md:col-span-2">
+                <OptionGroup title="Objetivo" options={objectiveOptions} selected={form.objective ? [form.objective] : []} onToggle={applyObjective} />
+                <FormInput required className="mt-3 block" label="Objetivo detalhado" value={form.objective} onChange={(value) => setForm((current) => ({ ...current, objective: value }))} placeholder="Aumentar reservas diretas em julho" />
+              </div>
+              <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 md:col-span-2">
+                <OptionGroup
+                  title="Origem do publico"
+                  options={originOptions}
+                  selected={origins}
+                  onToggle={(value) => {
+                    const next = origins.includes(value) ? origins.filter((item) => item !== value) : [...origins, value];
+                    setOrigins(next);
+                    syncAudience(next, ages);
+                  }}
+                />
+                <OptionGroup
+                  title="Idade"
+                  options={ageOptions}
+                  selected={ages}
+                  onToggle={(value) => {
+                    const next = ages.includes(value) ? ages.filter((item) => item !== value) : [...ages, value];
+                    setAges(next);
+                    syncAudience(origins, next);
+                  }}
+                />
+                <FormInput required label="Publico alvo" value={form.audience} onChange={(value) => setForm((current) => ({ ...current, audience: value }))} placeholder="Casais 25-45 de Salvador e Feira" />
+              </div>
+              <div className="md:col-span-2">
+                <OptionGroup title="Canais" options={channelOptions} selected={channels} onToggle={(value) => toggleList(setChannels, value)} />
+              </div>
+              <FormInput required className="md:col-span-2" label="Oferta" value={form.offer} onChange={(value) => setForm((current) => ({ ...current, offer: value }))} placeholder="2 diarias com cafe da manha incluso e late checkout" />
+              <label className="text-sm text-slate-300 md:col-span-2">
+                Observacoes
+                <textarea
+                  value={form.notes}
+                  onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder="Canais, restricoes, diferenciais, tom da marca..."
+                  className="mt-1 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-300"
+                />
+              </label>
+            </div>
+            {error ? <p className="mt-4 rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-100">{error}</p> : null}
+          </DataCard>
+
+          <section className="grid gap-5 xl:grid-cols-3">
+            <DataCard title="Fluxo do plano" icon={GitBranch}>
+              <div className="space-y-3 text-sm">
+                {['Planejamento salvo', 'Criativos no Studio', 'Calendario de publicacao', 'Campanha acompanhada no Revenue'].map((step, index) => (
+                  <div key={step} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-slate-300">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-violet-500/15 text-xs font-semibold text-violet-100">{index + 1}</span>
+                    {step}
+                  </div>
+                ))}
+              </div>
+            </DataCard>
+            <RecentPlans projects={projects} loading={projectsLoading} />
+            <PlanningNextSteps />
+          </section>
+        </main>
+
+        <aside className="space-y-5">
+          <PlanningSummary form={form} period={period} budget={budget} complete={complete} saving={saving} />
+          <DataCard title="AXI Assistant" icon={Bot}>
+            <div className="space-y-3 text-sm text-slate-300">
+              <p className="rounded-xl border border-violet-300/20 bg-violet-500/10 px-3 py-2 text-violet-100">
+                O AXI Assistant pode transformar este briefing em recomendacao de publico, canais e investimento sem simular resultado.
+              </p>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Briefing atual</p>
+                <p className="mt-2">Objetivo: {form.objective || '-'}</p>
+                <p>Publico: {form.audience || '-'}</p>
+                <p>Canais: {channels.length ? channels.join(' + ') : '-'}</p>
+                <p>Investimento: {budget || '-'}</p>
+              </div>
+              <Link to="/app/assistant" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white">
+                <Send size={16} /> Abrir AXI Assistant
+              </Link>
+            </div>
+          </DataCard>
+          <DataCard title="Contrato de dados" icon={CheckCircle2}>
+            <div className="space-y-2 text-sm text-slate-300">
+              <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-emerald-100">Salva plano real no backend.</p>
+              <p className="rounded-xl border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-violet-100">Criativos abrem no Studio.</p>
+              <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-cyan-100">Analise fica em Revenue.</p>
+              <p className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-rose-100">Sem simular resultado.</p>
+            </div>
+          </DataCard>
+        </aside>
       </form>
     </Shell>
   );
@@ -213,10 +509,10 @@ export function MarketingCampaignsPage() {
       <DataCard title="Campanhas" icon={Megaphone}>
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-slate-400"><Search size={16} /> Buscar campanha</label>
-          <Link to="/app/marketing/planning" className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white"><Plus size={16} /> Nova campanha</Link>
+          <Link to="/app/marketing/campaigns/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white"><Plus size={16} /> Nova campanha</Link>
         </div>
         {loading ? <Loader2 className="animate-spin text-violet-300" /> : campaigns.length === 0 ? (
-          <EmptyState message={message || 'Nenhuma campanha real cadastrada.'} actionTo="/app/marketing/planning" actionLabel="Criar campanha" />
+          <EmptyState message={message || 'Nenhuma campanha real cadastrada.'} actionTo="/app/marketing/campaigns/new" actionLabel="Criar campanha" />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="min-w-full text-sm">

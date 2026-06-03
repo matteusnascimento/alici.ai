@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Bot, Building2, ChevronLeft, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, ChevronLeft, CreditCard, Home, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -14,29 +14,25 @@ interface AppSidebarProps {
 }
 
 const items = [
+  { label: 'Home', to: '/app', icon: Home, roles: ['owner', 'admin', 'gerente', 'marketing', 'atendimento', 'member'] },
   { label: 'Revenue', to: '/app/revenue?view=business-pulse', icon: BadgeDollarSign },
-  { label: 'Chats', to: '/app/chats', icon: MessageSquare },
-  { label: 'AXI Assistant', to: '/app/assistant', icon: Bot },
-  { label: 'Marketing', to: '/app/marketing', icon: Megaphone },
-  { label: 'Studio', to: '/app/studio', icon: Sparkles },
-  { label: 'Integrations', to: '/app/integrations', icon: Link2 },
-  { label: 'Account', to: '/app/account/overview', icon: UserCircle2 },
+  { label: 'Chats', to: '/app/chats', icon: MessageSquare, roles: ['owner', 'admin', 'gerente', 'atendimento', 'member'] },
+  { label: 'AXI Assistant', to: '/app/assistant', icon: Bot, roles: ['owner', 'admin', 'gerente', 'marketing', 'atendimento', 'member'] },
+  { label: 'Marketing', to: '/app/marketing', icon: Megaphone, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'] },
+  { label: 'Studio', to: '/app/studio', icon: Sparkles, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'] },
+  { label: 'Integrations', to: '/app/integrations', icon: Link2, roles: ['owner', 'admin', 'member'] },
 ];
 
 function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse: () => void }) {
   const { user, logout } = useAuth();
   const displayName = user?.name || 'Usuario AXI';
   const role = user?.role === 'owner' ? 'Proprietario' : user?.role || 'Membro';
-  const companyLabel = user?.plan ? `Plano ${user.plan}` : 'Empresa ativa';
+  const companyLabel = (user as { company?: string } | null)?.company || 'Pousada Mar & Sol';
+  const canAdmin = user?.role === 'owner' || user?.role === 'admin';
 
   return (
-    <div className={['mt-auto border-t border-white/10 pt-3', expanded ? 'space-y-3 px-0' : 'flex flex-col items-center gap-3 px-0'].join(' ')}>
-      <div
-        className={[
-          'border border-white/10 bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]',
-          expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0',
-        ].join(' ')}
-      >
+    <div className={['mt-auto border-t border-white/10 pt-3', expanded ? 'space-y-2 px-0' : 'flex flex-col items-center gap-3 px-0'].join(' ')}>
+      <div className={['border border-white/10 bg-white/[0.035]', expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0'].join(' ')}>
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-200">
             <Building2 size={20} />
@@ -48,15 +44,11 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
             </div>
           ) : null}
         </div>
-        {expanded ? (
-          <Link to="/app/account/overview" className="mt-3 flex h-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-slate-200 hover:bg-white/[0.08]">
-            Ver meu plano
-          </Link>
-        ) : null}
       </div>
-      <div
+      <Link
+        to="/app/account/overview"
         className={[
-          'border border-violet-300/20 bg-[linear-gradient(135deg,rgba(124,58,237,0.22),rgba(255,255,255,0.045))]',
+          'block border border-violet-300/20 bg-[linear-gradient(135deg,rgba(124,58,237,0.20),rgba(255,255,255,0.04))] transition hover:border-violet-200/35',
           expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0',
         ].join(' ')}
       >
@@ -71,14 +63,12 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
             </div>
           ) : null}
         </div>
-        {expanded ? (
-          <Link to="/app/account/overview" className="mt-3 flex h-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-slate-200 hover:bg-white/[0.08]">
-            Minha conta
-          </Link>
-        ) : null}
-      </div>
-      {user?.role === 'owner' || user?.role === 'admin' ? (
+      </Link>
+      {canAdmin ? (
         <SidebarItem expanded={expanded} label="Administracao" to="/app/admin" icon={ShieldCheck} />
+      ) : null}
+      {canAdmin ? (
+        <SidebarItem expanded={expanded} label="Gerenciar Plano" to="/app/admin/billing" icon={CreditCard} />
       ) : null}
       {expanded ? (
         <button
@@ -89,7 +79,16 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
           <LogOut size={17} />
           Sair
         </button>
-      ) : null}
+      ) : (
+        <button
+          type="button"
+          onClick={logout}
+          className="grid h-12 w-12 place-items-center rounded-full text-slate-400 hover:bg-white/[0.05] hover:text-white"
+          aria-label="Sair"
+        >
+          <LogOut size={17} />
+        </button>
+      )}
       {expanded ? (
         <button
           type="button"
@@ -112,6 +111,12 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const [hoverCapable, setHoverCapable] = useState(false);
   const [expandedDesktop, setExpandedDesktop] = useState(true);
+  const { user } = useAuth();
+  const roleKey = user?.role ?? 'member';
+  const navigationItems = useMemo(
+    () => items.filter((item) => !item.roles || item.roles.includes(roleKey) || roleKey === 'owner' || roleKey === 'admin'),
+    [roleKey],
+  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') {
@@ -154,7 +159,7 @@ export function AppSidebar({
       >
         <SidebarLogo expanded={expanded} />
         <nav className={['mt-6 flex flex-1 flex-col overflow-y-auto pb-3', expanded ? 'gap-2.5 pr-1' : 'items-center gap-4 pr-0'].join(' ')}>
-          {items.map((item) => (
+          {navigationItems.map((item) => (
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
         </nav>
@@ -185,7 +190,7 @@ export function AppSidebar({
         </div>
         <SidebarLogo expanded />
         <nav className="mt-5 flex max-h-[calc(100vh-310px)] flex-col gap-2.5 overflow-y-auto pb-2 pr-1">
-          {items.map((item) => (
+          {navigationItems.map((item) => (
             <SidebarItem key={item.to} expanded onNavigate={onMobileClose} {...item} />
           ))}
         </nav>

@@ -4,6 +4,7 @@ import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
 import { LandingPage } from '../components/landing/LandingPage';
 import { PlatformShell } from '../components/platform/PlatformShell';
+import { HomePage } from '../components/platform/HomePage';
 import { AdminPage } from '../components/admin/AdminPage';
 import { AccountShell } from '../components/account/AccountShell';
 import { AccountAppsPage } from '../components/account/pages/AccountAppsPage';
@@ -75,7 +76,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (user?.role !== 'owner') {
-    return <Navigate replace to="/app/revenue?view=business-pulse" />;
+    return <Navigate replace to="/app" />;
   }
   return children;
 }
@@ -83,7 +84,7 @@ function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
 function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   if (isAuthenticated) {
-    return <Navigate replace to="/app/revenue?view=business-pulse" />;
+    return <Navigate replace to="/app" />;
   }
   return (
     <main className="flex min-h-screen items-center justify-center bg-ink px-6 py-12 text-[var(--text-primary)]">
@@ -120,9 +121,10 @@ export function AppRouter() {
         />
         <Route element={<ProtectedRoute />}>
           <Route element={<PlatformShell />} path="/app">
-            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} index />
-            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="control-room" />
-            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="dashboard" />
+            <Route element={<HomePage />} index />
+            <Route element={<Navigate replace to="/app" />} path="home" />
+            <Route element={<Navigate replace to="/app" />} path="control-room" />
+            <Route element={<Navigate replace to="/app" />} path="dashboard" />
             <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="crm" />
             <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="analytics" />
             <Route element={<RevenueIntelligencePage />} path="revenue" />
@@ -130,11 +132,11 @@ export function AppRouter() {
             <Route element={<ChatsPage />} path="chats" />
             <Route element={<AxiAssistantPage />} path="assistant" />
             <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/companies" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/companies/:companyId" />
+            <Route element={<Navigate replace to="/app/admin" />} path="admin/companies" />
+            <Route element={<Navigate replace to="/app/admin" />} path="admin/companies/:companyId" />
             <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/users" />
             <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/users/:userId" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/roles" />
+            <Route element={<Navigate replace to="/app/admin/permissions" />} path="admin/roles" />
             <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/permissions" />
             <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/billing" />
             <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/security" />
@@ -197,9 +199,11 @@ export function AppRouter() {
               <Route path="brand" element={<BrandStudioPage />} />
             </Route>
             <Route path="marketing" element={<MarketingShell />}>
-              <Route index element={<Navigate replace to="planning" />} />
+              <Route index element={<MarketingProjectsPage />} />
               <Route path="planning" element={<MarketingPlanningPage />} />
+              <Route path="plans/new" element={<MarketingPlanningPage />} />
               <Route path="campaigns" element={<MarketingCampaignsPage />} />
+              <Route path="campaigns/new" element={<MarketingPlanningPage />} />
               <Route path="audiences" element={<MarketingAudiencesPage />} />
               <Route path="creatives" element={<MarketingCreativesPage />} />
               <Route path="automations" element={<MarketingAutomationsPage />} />
@@ -216,7 +220,7 @@ export function AppRouter() {
               <Route index element={<Navigate replace to="overview" />} />
               <Route path="overview" element={<AccountProfilePage />} />
               <Route path="profile" element={<AccountProfilePage />} />
-              <Route path="billing" element={<AccountHomePage />} />
+              <Route path="billing" element={<Navigate replace to="/app/admin/billing" />} />
               <Route path="personalization" element={<AccountPersonalizationPage />} />
               <Route path="notifications" element={<AccountNotificationsPage />} />
               <Route path="applications" element={<AccountAppsPage />} />

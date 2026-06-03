@@ -1,4 +1,4 @@
-import { Archive, Bell, Database, Menu, Palette, Receipt, Shield, User, X, type LucideIcon } from 'lucide-react';
+import { Archive, Bell, Database, Menu, Palette, Shield, User, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -46,7 +46,6 @@ const links = [
   { to: '/app/account/notifications', label: 'Notificacoes', subtitle: 'Alertas e comunicacoes', icon: Bell },
   { to: '/app/account/archived-chats', label: 'Sessoes', subtitle: 'Dispositivos conectados', icon: Archive },
   { to: '/app/account/data-controls', label: 'Privacidade', subtitle: 'Dados e permissoes', icon: Database },
-  { to: '/app/account/billing', label: 'Billing', subtitle: 'Plano e cobranca Stripe', icon: Receipt },
 ];
 
 export function AccountShell() {
