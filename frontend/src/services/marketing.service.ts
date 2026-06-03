@@ -1,7 +1,12 @@
 import { apiFetch } from './api';
 import type {
   MarketingCampaignInput,
+  MarketingCampaignList,
   MarketingCampaignResult,
+  MarketingDataStatus,
+  MarketingFunnel,
+  MarketingKpi,
+  MarketingOverview,
   MarketingProject,
   MarketingProjectCreate,
   MarketingProjectUpdate,
@@ -44,6 +49,26 @@ export function generateCampaign(payload: MarketingCampaignInput) {
 
 export function listProjects(): Promise<MarketingProject[]> {
   return apiFetch<MarketingProject[]>('/marketing/projects');
+}
+
+export function getMarketingOverview(): Promise<MarketingOverview> {
+  return apiFetch<MarketingOverview>('/marketing/overview');
+}
+
+export function getMarketingKpis(): Promise<MarketingKpi[]> {
+  return apiFetch<MarketingKpi[]>('/marketing/kpis');
+}
+
+export function listCampaigns(): Promise<MarketingCampaignList> {
+  return apiFetch<MarketingCampaignList>('/marketing/campaigns');
+}
+
+export function getMarketingFunnel(): Promise<MarketingFunnel> {
+  return apiFetch<MarketingFunnel>('/marketing/funnel');
+}
+
+export function listMarketingResource(resource: 'action-plans' | 'calendar' | 'content' | 'audiences' | 'automations' | 'reports' | 'insights') {
+  return apiFetch<MarketingDataStatus[]>(`/marketing/${resource}`);
 }
 
 export function createProject(data: MarketingProjectCreate): Promise<MarketingProject> {

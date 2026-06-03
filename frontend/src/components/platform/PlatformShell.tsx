@@ -9,15 +9,6 @@ export function PlatformShell() {
   const location = useLocation();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopSidebarExpanded, setDesktopSidebarExpanded] = useState(false);
-  const inStudioSection = location.pathname.startsWith('/app/studio');
-  const hidePlatformTopbar =
-    inStudioSection ||
-    location.pathname.startsWith('/app/marketing') ||
-    location.pathname.startsWith('/app/revenue') ||
-    location.pathname.startsWith('/app/chats') ||
-    location.pathname.startsWith('/app/assistant') ||
-    location.pathname.startsWith('/app/admin') ||
-    location.pathname.startsWith('/app/account');
   const fullBleedModule = location.pathname.startsWith('/app/studio/editor');
 
   return (
@@ -35,13 +26,11 @@ export function PlatformShell() {
           className={[
             fullBleedModule
               ? 'min-w-0 flex-1 p-0'
-              : hidePlatformTopbar
-                ? 'min-w-0 flex-1 px-4 pb-4 pt-4 transition-[margin] duration-300 md:px-6 md:pb-6'
-                : 'min-w-0 flex-1 space-y-6 px-4 pb-4 pt-14 transition-[margin] duration-300 md:px-6 md:pb-6',
+              : 'min-w-0 flex-1 space-y-6 px-4 pb-4 pt-14 transition-[margin] duration-300 md:px-6 md:pb-6',
             fullBleedModule ? '' : desktopSidebarExpanded ? 'lg:ml-[260px] lg:pt-6' : 'lg:ml-[92px] lg:pt-6',
           ].join(' ')}
         >
-          {hidePlatformTopbar || fullBleedModule ? null : <Topbar />}
+          {fullBleedModule ? null : <Topbar />}
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

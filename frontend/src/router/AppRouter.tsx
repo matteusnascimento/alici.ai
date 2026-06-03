@@ -54,6 +54,16 @@ import { AgentWorkspaceShell } from '../components/agents/v2/AgentWorkspaceShell
 import { MarketingShell } from '../components/marketing/MarketingShell';
 import { MarketingProjectsPage } from '../components/marketing/MarketingProjectsPage';
 import { MarketingProjectWorkspace } from '../components/marketing/MarketingProjectWorkspace';
+import {
+  MarketingAudiencesPage,
+  MarketingAutomationsPage,
+  MarketingCalendarPage,
+  MarketingCampaignsPage,
+  MarketingCreativesPage,
+  MarketingInsightsPage,
+  MarketingPlanningPage,
+  MarketingReportsPage,
+} from '../components/marketing/MarketingOperationsPages';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
 import { ChatsPage } from '../components/chats/ChatsPage';
 import { ChatPanel } from '../components/platform/ChatPanel';
@@ -187,7 +197,16 @@ export function AppRouter() {
               <Route path="brand" element={<BrandStudioPage />} />
             </Route>
             <Route path="marketing" element={<MarketingShell />}>
-              <Route index element={<MarketingProjectsPage />} />
+              <Route index element={<Navigate replace to="planning" />} />
+              <Route path="planning" element={<MarketingPlanningPage />} />
+              <Route path="campaigns" element={<MarketingCampaignsPage />} />
+              <Route path="audiences" element={<MarketingAudiencesPage />} />
+              <Route path="creatives" element={<MarketingCreativesPage />} />
+              <Route path="automations" element={<MarketingAutomationsPage />} />
+              <Route path="calendar" element={<MarketingCalendarPage />} />
+              <Route path="reports" element={<MarketingReportsPage />} />
+              <Route path="insights" element={<MarketingInsightsPage />} />
+              <Route path="operations" element={<MarketingProjectsPage />} />
               <Route path="projects/:projectId" element={<MarketingProjectWorkspace />} />
             </Route>
             <Route path="integrations" element={<IntegrationsPage />} />

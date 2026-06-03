@@ -20,6 +20,53 @@ export interface MarketingProject {
   created_at: string;
 }
 
+export interface MarketingKpi {
+  key: string;
+  label: string;
+  value?: number | null;
+  variation?: number | null;
+  status: string;
+  message: string;
+}
+
+export interface MarketingOverview {
+  status: string;
+  projects_count: number;
+  kpis: MarketingKpi[];
+  message: string;
+}
+
+export interface MarketingDataStatus {
+  status: string;
+  message: string;
+}
+
+export interface MarketingCampaignListItem {
+  id: number;
+  name: string;
+  objective: string;
+  audience: string;
+  status: string;
+  source: string;
+}
+
+export interface MarketingCampaignList {
+  status: string;
+  campaigns: MarketingCampaignListItem[];
+  message: string;
+}
+
+export interface MarketingFunnel {
+  status: string;
+  stages: Array<{
+    stage: string;
+    count?: number | null;
+    conversion_rate?: number | null;
+    amount?: number | null;
+  }>;
+  message: string;
+}
+
 export interface MarketingProjectCreate {
   name: string;
   audience: string;
