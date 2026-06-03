@@ -4,21 +4,37 @@ interface SidebarLogoProps {
 
 export function SidebarLogo({ expanded }: SidebarLogoProps) {
   return (
-    <div className="rounded-[1.4rem] border border-violet-300/20 bg-[radial-gradient(circle_at_20%_15%,rgba(168,85,247,0.36),transparent_42%),linear-gradient(145deg,rgba(255,255,255,0.14),rgba(255,255,255,0.035))] p-4 shadow-[0_22px_55px_rgba(88,28,135,0.26)]">
-      <div className="flex items-center gap-3">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-white/15 bg-[linear-gradient(135deg,#7c3aed,#c026d3_55%,#22d3ee)] font-display text-2xl text-white shadow-[0_16px_42px_rgba(168,85,247,0.36)]">
+    <div
+      className={[
+        'relative overflow-hidden border border-white/10 bg-[linear-gradient(135deg,rgba(109,40,217,0.28)_0%,rgba(124,58,237,0.18)_45%,rgba(37,99,235,0.20)_100%)] shadow-[0_18px_45px_rgba(124,58,237,0.18)] backdrop-blur-[18px]',
+        expanded ? 'rounded-[1.4rem] p-4' : 'mx-auto grid h-14 w-14 place-items-center rounded-2xl p-0',
+      ].join(' ')}
+    >
+      <div className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-cyan-300/10 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full bg-violet-400/12 blur-2xl" />
+
+      {expanded ? (
+        <div className="relative">
+          <h1 className="bg-[linear-gradient(90deg,#ffffff_0%,#a78bfa_45%,#67e8f9_100%)] bg-clip-text font-display text-[32px] font-extrabold leading-none tracking-[-0.04em] text-transparent">
+            AXI
+          </h1>
+          <p className="mt-3 text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-white/80">
+            Artificial eXtreme<br />
+            Intelligence
+          </p>
+          <p className="mt-4 text-xs font-medium leading-5 text-slate-300/85">
+            Revenue Intelligence<br />
+            Platform
+          </p>
+          <span className="mt-4 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-cyan-200">
+            Business Pulse
+          </span>
+        </div>
+      ) : (
+        <span className="relative bg-[linear-gradient(90deg,#ffffff_0%,#a78bfa_45%,#67e8f9_100%)] bg-clip-text font-display text-2xl font-extrabold tracking-[-0.04em] text-transparent">
           A
         </span>
-        {expanded ? (
-          <div className="min-w-0">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-cyan-200">AXI</p>
-            <h1 className="truncate font-display text-2xl leading-tight text-[var(--text-primary)]">Business Pulse</h1>
-          </div>
-        ) : null}
-      </div>
-      <div className={['overflow-hidden transition-all duration-300', expanded ? 'mt-3 max-h-24 opacity-100' : 'mt-0 max-h-0 opacity-0'].join(' ')}>
-        <p className="text-xs leading-5 text-slate-300">Inteligencia comercial, receita e operacao em tempo real.</p>
-      </div>
+      )}
     </div>
   );
 }
