@@ -18,18 +18,36 @@ import {
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ApiError } from '../../services/api';
-import { getAdminOverview, type AdminMetric, type AdminOverview } from '../../services/admin.service';
+import { createAdminCompany, getAdminOverview, type AdminMetric, type AdminOverview } from '../../services/admin.service';
 
 const adminTabs = ['Dashboard', 'Empresas', 'Usuarios', 'Papeis', 'Permissoes', 'Billing', 'Seguranca', 'Auditoria'] as const;
 type AdminTab = (typeof adminTabs)[number];
+const companyModules = ['Revenue', 'Chats', 'AXI Assistant', 'Marketing', 'Studio', 'Integrations'];
 
-function normalizeTab(value: string | null): AdminTab {
-  const tab = adminTabs.find((item) => item.toLowerCase() === value?.toLowerCase());
-  return tab ?? 'Dashboard';
+const tabToPath: Record<AdminTab, string> = {
+  Dashboard: '/app/admin',
+  Empresas: '/app/admin/companies',
+  Usuarios: '/app/admin/users',
+  Papeis: '/app/admin/roles',
+  Permissoes: '/app/admin/permissions',
+  Billing: '/app/admin/billing',
+  Seguranca: '/app/admin/security',
+  Auditoria: '/app/admin/audit',
+};
+
+function tabFromPath(pathname: string): AdminTab {
+  if (pathname.startsWith('/app/admin/companies')) return 'Empresas';
+  if (pathname.startsWith('/app/admin/users')) return 'Usuarios';
+  if (pathname.startsWith('/app/admin/roles')) return 'Papeis';
+  if (pathname.startsWith('/app/admin/permissions')) return 'Permissoes';
+  if (pathname.startsWith('/app/admin/billing')) return 'Billing';
+  if (pathname.startsWith('/app/admin/security')) return 'Seguranca';
+  if (pathname.startsWith('/app/admin/audit')) return 'Auditoria';
+  return 'Dashboard';
 }
 
 function metricValue(items: AdminMetric[] | undefined, label: string) {
@@ -104,27 +122,43 @@ function ModuleCard({ icon: Icon, title, description, tone, onAction }: { icon: 
 
 export function AdminPage() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<AdminTab>(() => normalizeTab(searchParams.get('tab')));
+  const [savingCompany, setSavingCompany] = useState(false);
+  const [newCompany, setNewCompany] = useState({
+    nome: '',
+    razao_social: '',
+    cnpj: '',
+    email: '',
+    telefone: '',
+    plano: 'pro' as 'basic' | 'pro' | 'enterprise',
+    modules: ['Revenue', 'Chats', 'AXI Assistant', 'Marketing', 'Studio', 'Integrations'],
+  });
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => tabFromPath(location.pathname));
 
   useEffect(() => {
-    setActiveTab(normalizeTab(searchParams.get('tab')));
-  }, [searchParams]);
+    setActiveTab(tabFromPath(location.pathname));
+  }, [location.pathname]);
 
   function goToAdmin(tab: AdminTab, action?: string, extra?: Record<string, string>) {
     const params = new URLSearchParams();
-    params.set('tab', tab.toLowerCase());
     if (action) params.set('action', action);
     Object.entries(extra ?? {}).forEach(([key, value]) => params.set(key, value));
-    setSearchParams(params);
+    navigate(`${tabToPath[tab]}${params.toString() ? `?${params}` : ''}`);
     setActiveTab(tab);
   }
 
-  useEffect(() => {
-    void getAdminOverview()
+  function openCompany(companyName: string) {
+    navigate(`/app/admin/companies/${encodeURIComponent(companyName)}`);
+  }
+
+  function loadOverview() {
+    setLoading(true);
+    return getAdminOverview()
       .then((data) => {
         setOverview(data);
         setError(null);
@@ -133,7 +167,35 @@ export function AdminPage() {
         setError(err instanceof ApiError ? err.message : 'Falha ao carregar Administracao');
       })
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    void loadOverview();
   }, []);
+
+  async function handleCreateCompany(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingCompany(true);
+    setActionError(null);
+    try {
+      await createAdminCompany(newCompany);
+      await loadOverview();
+      navigate('/app/admin/companies');
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Empresa nao foi criada.');
+    } finally {
+      setSavingCompany(false);
+    }
+  }
+
+  function toggleCompanyModule(module: string) {
+    setNewCompany((current) => ({
+      ...current,
+      modules: current.modules.includes(module)
+        ? current.modules.filter((item) => item !== module)
+        : [...current.modules, module],
+    }));
+  }
 
   const cards = useMemo(() => {
     const empresas = overview?.empresas.length ?? 0;
@@ -157,7 +219,9 @@ export function AdminPage() {
     users: overview?.usuarios.filter((user) => user.role === role).length ?? 0,
   }));
   const selectedAction = searchParams.get('action');
-  const selectedCompany = searchParams.get('empresa');
+  const selectedCompany = location.pathname.startsWith('/app/admin/companies/')
+    ? decodeURIComponent(location.pathname.split('/').pop() ?? '')
+    : searchParams.get('empresa');
 
   if (loading) {
     return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="animate-spin text-violet-300" size={28} /></div>;
@@ -207,7 +271,83 @@ export function AdminPage() {
         ))}
       </nav>
 
-      {selectedAction ? (
+      {selectedAction === 'new' && activeTab === 'Empresas' ? (
+        <form onSubmit={handleCreateCompany} className="mt-5 grid gap-4 rounded-2xl border border-violet-300/25 bg-violet-500/10 p-5">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-200">Nova empresa</p>
+            <h2 className="mt-1 font-display text-2xl text-white">Criar empresa no AXI</h2>
+            <p className="mt-1 text-sm text-violet-100/80">O cadastro cria um registro real vinculado a um usuario proprietario inicial.</p>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-4">
+            <section className="rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+              <p className="font-semibold text-white">1. Dados da empresa</p>
+              <div className="mt-3 grid gap-3">
+                <label className="text-sm text-slate-300">
+                  Nome
+                  <input required value={newCompany.nome} onChange={(event) => setNewCompany((current) => ({ ...current, nome: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-violet-300" />
+                </label>
+                <label className="text-sm text-slate-300">
+                  Razao social
+                  <input value={newCompany.razao_social} onChange={(event) => setNewCompany((current) => ({ ...current, razao_social: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-violet-300" />
+                </label>
+                <label className="text-sm text-slate-300">
+                  CNPJ
+                  <input value={newCompany.cnpj} onChange={(event) => setNewCompany((current) => ({ ...current, cnpj: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-violet-300" />
+                </label>
+                <label className="text-sm text-slate-300">
+                  Email institucional
+                  <input required type="email" value={newCompany.email} onChange={(event) => setNewCompany((current) => ({ ...current, email: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-violet-300" />
+                </label>
+                <label className="text-sm text-slate-300">
+                  Telefone
+                  <input value={newCompany.telefone} onChange={(event) => setNewCompany((current) => ({ ...current, telefone: event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-violet-300" />
+                </label>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+              <p className="font-semibold text-white">2. Plano</p>
+              <div className="mt-3 grid gap-2">
+                {(['basic', 'pro', 'enterprise'] as const).map((plan) => (
+                  <label key={plan} className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-3 text-sm capitalize text-slate-200">
+                    <input type="radio" name="plano" checked={newCompany.plano === plan} onChange={() => setNewCompany((current) => ({ ...current, plano: plan }))} />
+                    {plan}
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+              <p className="font-semibold text-white">3. Modulos habilitados</p>
+              <div className="mt-3 grid gap-2">
+                {companyModules.map((module) => (
+                  <label key={module} className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-200">
+                    <input type="checkbox" checked={newCompany.modules.includes(module)} onChange={() => toggleCompanyModule(module)} />
+                    {module}
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+              <p className="font-semibold text-white">4. Confirmacao</p>
+              <div className="mt-3 space-y-2 text-sm text-slate-300">
+                <p>Empresa: <span className="text-white">{newCompany.nome || '-'}</span></p>
+                <p>Plano: <span className="capitalize text-white">{newCompany.plano}</span></p>
+                <p>Modulos: <span className="text-white">{newCompany.modules.length}</span></p>
+              </div>
+              {actionError ? <p className="mt-3 rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-100">{actionError}</p> : null}
+              <div className="mt-5 flex gap-2">
+                <button type="button" onClick={() => navigate('/app/admin/companies')} className="flex-1 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Cancelar</button>
+                <button type="submit" disabled={savingCompany} className="flex-1 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+                  {savingCompany ? 'Salvando...' : 'Salvar empresa'}
+                </button>
+              </div>
+            </section>
+          </div>
+        </form>
+      ) : selectedAction ? (
         <section className="mt-5 rounded-2xl border border-violet-300/25 bg-violet-500/10 p-4 text-sm text-violet-100">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -264,7 +404,9 @@ export function AdminPage() {
                     <tr key={empresa.name} className="border-t border-white/10">
                       <td className="px-4 py-4">
                         <div>
-                          <p className="font-semibold text-white">{empresa.name}</p>
+                          <button type="button" onClick={() => openCompany(empresa.name)} className="font-semibold text-white hover:text-violet-200">
+                            {empresa.name}
+                          </button>
                           <p className="text-xs text-slate-400">{empresa.email ?? 'Sem email principal'}</p>
                         </div>
                       </td>
@@ -274,7 +416,7 @@ export function AdminPage() {
                       <td className="px-4 py-4 text-slate-300">{empresa.created_at ?? '-'}</td>
                       <td className="px-4 py-4">
                         <div className="flex gap-2 text-slate-300">
-                          <button className="grid h-9 w-9 place-items-center rounded-lg border border-white/10" onClick={() => goToAdmin('Empresas', 'view', { empresa: empresa.name })} type="button" aria-label="Visualizar"><Eye size={16} /></button>
+                          <button className="grid h-9 w-9 place-items-center rounded-lg border border-white/10" onClick={() => openCompany(empresa.name)} type="button" aria-label="Visualizar"><Eye size={16} /></button>
                           <button className="grid h-9 w-9 place-items-center rounded-lg border border-white/10" onClick={() => goToAdmin('Empresas', 'edit', { empresa: empresa.name })} type="button" aria-label="Editar"><Pencil size={16} /></button>
                           <button className="grid h-9 w-9 place-items-center rounded-lg border border-white/10" onClick={() => goToAdmin('Empresas', 'more', { empresa: empresa.name })} type="button" aria-label="Mais opcoes"><MoreHorizontal size={16} /></button>
                         </div>
@@ -287,9 +429,9 @@ export function AdminPage() {
             <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
               <span>Mostrando {(overview?.empresas ?? []).length} empresas reais</span>
               <div className="flex gap-2">
-                <button type="button" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10"><ChevronLeft size={15} /></button>
+                <button type="button" disabled className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 opacity-50"><ChevronLeft size={15} /></button>
                 <button type="button" className="grid h-9 w-9 place-items-center rounded-lg border border-violet-400/40 bg-violet-600 text-white">1</button>
-                <button type="button" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10"><ChevronRight size={15} /></button>
+                <button type="button" disabled className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 opacity-50"><ChevronRight size={15} /></button>
               </div>
             </div>
           </section>

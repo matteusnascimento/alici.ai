@@ -4,6 +4,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 vi.mock('../services/admin.service', () => ({
+  createAdminCompany: vi.fn(),
   getAdminOverview: () =>
     Promise.resolve({
       empresas: [
@@ -48,13 +49,13 @@ describe('AdminPage', () => {
     expect(screen.getByText('Pousada Mar e Sol')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Ver detalhes/i }));
-    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin?tab=billing');
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/billing');
 
     await user.click(screen.getByRole('button', { name: /Nova empresa/i }));
-    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin?tab=empresas&action=new');
-    expect(screen.getByText(/Fluxo selecionado: Empresas/i)).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/companies?action=new');
+    expect(screen.getByRole('heading', { name: /Criar empresa no AXI/i })).toBeInTheDocument();
 
     await user.click(screen.getAllByRole('button', { name: /^Gerenciar ->$/i })[0]);
-    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin?tab=usuarios');
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/users');
   });
 });

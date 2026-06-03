@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Bot, Building2, ChartColumnBig, ChevronLeft, Gauge, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, ChevronLeft, Gauge, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -20,7 +20,6 @@ const items = [
   { label: 'AXI Assistant', to: '/app/assistant', icon: Bot },
   { label: 'Marketing', to: '/app/marketing', icon: Megaphone },
   { label: 'Studio', to: '/app/studio', icon: Sparkles },
-  { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
   { label: 'Integrations', to: '/app/integrations', icon: Link2 },
 ];
 

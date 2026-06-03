@@ -120,6 +120,15 @@ export function AppRouter() {
             <Route element={<ChatsPage />} path="chats" />
             <Route element={<AxiAssistantPage />} path="assistant" />
             <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/companies" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/companies/:companyId" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/users" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/users/:userId" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/roles" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/permissions" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/billing" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/security" />
+            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/audit" />
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
               <Route path="create" element={<AgentCreatePage />} />

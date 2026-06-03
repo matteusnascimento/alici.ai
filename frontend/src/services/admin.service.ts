@@ -34,3 +34,20 @@ export interface AdminOverview {
 export function getAdminOverview() {
   return apiFetch<AdminOverview>('/admin/overview');
 }
+
+export interface AdminCompanyCreatePayload {
+  nome: string;
+  razao_social?: string;
+  cnpj?: string;
+  email: string;
+  telefone?: string;
+  plano: 'basic' | 'pro' | 'enterprise';
+  modules: string[];
+}
+
+export function createAdminCompany(payload: AdminCompanyCreatePayload) {
+  return apiFetch<AdminCompany>('/admin/companies', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
