@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Bot, Building2, ChevronLeft, Gauge, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, ChevronLeft, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -14,13 +14,13 @@ interface AppSidebarProps {
 }
 
 const items = [
-  { label: 'Control Room', to: '/app/control-room', icon: Gauge },
   { label: 'Revenue', to: '/app/revenue?view=business-pulse', icon: BadgeDollarSign },
   { label: 'Chats', to: '/app/chats', icon: MessageSquare },
   { label: 'AXI Assistant', to: '/app/assistant', icon: Bot },
   { label: 'Marketing', to: '/app/marketing', icon: Megaphone },
   { label: 'Studio', to: '/app/studio', icon: Sparkles },
   { label: 'Integrations', to: '/app/integrations', icon: Link2 },
+  { label: 'Account', to: '/app/account/overview', icon: UserCircle2 },
 ];
 
 function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse: () => void }) {
@@ -77,7 +77,7 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
           </Link>
         ) : null}
       </div>
-      {user?.role === 'owner' ? (
+      {user?.role === 'owner' || user?.role === 'admin' ? (
         <SidebarItem expanded={expanded} label="Administracao" to="/app/admin" icon={ShieldCheck} />
       ) : null}
       {expanded ? (

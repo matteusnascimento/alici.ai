@@ -1,7 +1,5 @@
-import { Bell, CircleHelp, Search, Settings } from 'lucide-react';
+import { Bell, CircleHelp, Search } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-
-import { useAuth } from '../../hooks/useAuth';
 
 const titleRules: Array<[string, string, string]> = [
   ['/app/revenue', 'Revenue', 'Visao geral do seu negocio'],
@@ -20,14 +18,7 @@ function resolveTitle(pathname: string) {
 
 export function Topbar() {
   const location = useLocation();
-  const { user } = useAuth();
   const [, title, subtitle] = resolveTitle(location.pathname);
-  const initials = (user?.name || 'AXI')
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 
   return (
     <header className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] px-5 py-4 shadow-[0_18px_60px_rgba(0,0,0,0.26)] backdrop-blur-xl xl:flex-row xl:items-center xl:justify-between">
@@ -46,12 +37,6 @@ export function Topbar() {
         </Link>
         <Link to="/app/account/help" className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/[0.05]" aria-label="Ajuda">
           <CircleHelp size={18} />
-        </Link>
-        <Link to="/app/account/personalization" className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/[0.05]" aria-label="Configuracoes">
-          <Settings size={18} />
-        </Link>
-        <Link to="/app/account/overview" className="grid h-11 w-11 place-items-center rounded-full bg-blue-700 text-sm font-semibold text-white" aria-label="Perfil">
-          {initials}
         </Link>
       </div>
     </header>

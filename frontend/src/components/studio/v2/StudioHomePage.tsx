@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
-  Bell,
-  Check,
   ChevronRight,
   Clapperboard,
   CopyPlus,
@@ -244,7 +242,7 @@ export function StudioHomePage() {
               <h1 className="text-4xl font-black tracking-tight md:text-5xl">O que vamos criar hoje?</h1>
               <p className="mt-2 text-base text-slate-300">Inspire-se, escolha um template ou deixe a IA criar para voce.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Link to="/app/studio/templates" className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white hover:bg-white/[0.08]">
                 Templates
               </Link>
@@ -254,12 +252,9 @@ export function StudioHomePage() {
               <Link to="/app/studio/editor/video?mode=new" className="inline-flex h-11 items-center gap-2 rounded-lg border border-violet-400/45 bg-violet-500/10 px-4 text-sm font-semibold text-white hover:bg-violet-500/20">
                 <Plus size={17} className="text-fuchsia-300" /> Criar do zero
               </Link>
-              <Link to="/app/account" className="grid h-10 w-10 place-items-center rounded-full border border-white/15 text-slate-200 hover:bg-white/10" aria-label="Ajuda">?</Link>
-              <button type="button" className="relative grid h-10 w-10 place-items-center rounded-full border border-white/15 text-slate-200 hover:bg-white/10" aria-label="Notificacoes">
-                <Bell size={17} />
-                <span className="absolute right-1 top-0 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-[10px] font-bold">5</span>
-              </button>
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-blue-700 text-sm font-semibold">GM</span>
+              <Link to="/app/studio/ai-creative" className="inline-flex h-11 items-center gap-2 rounded-lg bg-violet-700 px-4 text-sm font-semibold text-white hover:bg-violet-600">
+                <Sparkles size={15} /> Magic Studio
+              </Link>
             </div>
           </header>
 
@@ -268,9 +263,6 @@ export function StudioHomePage() {
               <Search size={20} className="text-fuchsia-300" />
               <input aria-label="Buscar no Studio" className="h-10 min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500" placeholder="Buscar templates, posts, videos, campanhas, hoteis, ofertas..." />
             </label>
-            <Link to="/app/studio/ai-creative" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-violet-700 px-4 text-sm font-semibold text-white hover:bg-violet-600">
-              <Sparkles size={15} /> Magic Studio
-            </Link>
           </div>
 
           <section className="mt-5">
@@ -397,20 +389,6 @@ export function StudioHomePage() {
           <Panel className="mt-4 p-4">
             <SectionHeader title="Aprovacoes" to="/app/marketing" />
             <EmptyBlock message="Aprovacoes dependem de endpoint real. Nada foi simulado." />
-          </Panel>
-
-          <Panel className="mt-4 p-4">
-            <SectionHeader title="Atividade recente" to="/app/studio/projects" />
-            {recentProjects.length ? (
-              <div className="space-y-3">
-                {recentProjects.map((project) => (
-                  <div key={project.id} className="flex items-center gap-3 text-sm text-slate-300">
-                    <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-500/15 text-emerald-200"><Check size={14} /></span>
-                    <span className="min-w-0 flex-1 truncate">Projeto atualizado: {project.title}</span>
-                  </div>
-                ))}
-              </div>
-            ) : <EmptyBlock message="Atividade aparece quando o backend retornar eventos reais." />}
           </Panel>
 
           <Panel className="mt-4 p-4">
