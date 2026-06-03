@@ -1,6 +1,5 @@
 import {
   ArrowUpRight,
-  Bell,
   Bot,
   CalendarDays,
   ChevronRight,
@@ -9,13 +8,11 @@ import {
   ClipboardList,
   Clock3,
   Gauge,
-  HelpCircle,
   Loader2,
   MapPinned,
   MapPin,
   MessageCircle,
   Percent,
-  Search,
   Send,
   Sparkles,
   Target,
@@ -92,6 +89,25 @@ function EmptyState({ children }: { children: string }) {
   );
 }
 
+function IconFrame({
+  icon: Icon,
+  tone,
+  size = 'md',
+}: {
+  icon: LucideIcon;
+  tone: string;
+  size?: 'sm' | 'md' | 'lg';
+}) {
+  const frameSize = size === 'lg' ? 'h-12 w-12' : size === 'sm' ? 'h-10 w-10' : 'h-11 w-11';
+  const iconSize = size === 'lg' ? 'h-[21px] w-[21px]' : size === 'sm' ? 'h-[18px] w-[18px]' : 'h-5 w-5';
+
+  return (
+    <span className={`grid ${frameSize} shrink-0 place-items-center rounded-full border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] ${tone}`}>
+      <Icon strokeWidth={2.2} className={`${iconSize} shrink-0`} />
+    </span>
+  );
+}
+
 function KpiCard({
   icon: Icon,
   title,
@@ -108,9 +124,7 @@ function KpiCard({
   return (
     <article className="min-h-[154px] rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.9),rgba(2,6,23,0.72))] p-4 shadow-[0_22px_65px_rgba(0,0,0,0.30)]">
       <div className="flex items-start gap-3">
-        <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] ${tone}`}>
-          <Icon size={21} strokeWidth={2.25} className="h-[21px] w-[21px] shrink-0" />
-        </span>
+        <IconFrame icon={Icon} tone={tone} size="lg" />
         <p className="min-w-0 pt-1 text-sm font-medium leading-5 text-slate-300">{title}</p>
       </div>
       <p className="mt-5 font-display text-3xl text-white">{value}</p>
@@ -235,9 +249,7 @@ function BusinessPulse({ snapshot }: { snapshot: RevenueIntelligenceSnapshot | n
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">Score 0-100</p>
           <h2 className="mt-1 font-display text-2xl text-white">Business Pulse</h2>
         </div>
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-200">
-          <Gauge size={20} className="h-5 w-5 shrink-0" />
-        </span>
+        <IconFrame icon={Gauge} tone="bg-violet-500/15 text-violet-200" size="sm" />
       </div>
       <div className="mt-6 grid gap-6 md:grid-cols-[190px_1fr] md:items-center">
         <div className="mx-auto grid h-44 w-44 place-items-center rounded-full p-2 shadow-[0_0_45px_rgba(34,197,94,0.13)]" style={{ background: `conic-gradient(#22c55e ${score * 3.6}deg, rgba(255,255,255,0.08) 0deg)` }}>
@@ -480,10 +492,6 @@ export function RevenueIntelligencePage() {
               <p className="mt-1 text-sm text-slate-400">Visao geral do seu negocio</p>
             </div>
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <label className="flex min-w-[280px] items-center gap-3 rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-400">
-                <Search size={17} />
-                <span>Buscar reservas, clientes, metricas...</span>
-              </label>
               <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-300">
                 <CalendarDays size={16} />
                 <select
@@ -498,12 +506,6 @@ export function RevenueIntelligencePage() {
                   ))}
                 </select>
               </div>
-              <button type="button" className="hidden h-11 w-11 items-center justify-center rounded-full border border-white/10 text-slate-300 lg:inline-flex" aria-label="Notificacoes">
-                <Bell size={18} />
-              </button>
-              <button type="button" className="hidden h-11 w-11 items-center justify-center rounded-full border border-white/10 text-slate-300 lg:inline-flex" aria-label="Ajuda">
-                <HelpCircle size={18} />
-              </button>
             </div>
           </header>
 
@@ -562,17 +564,15 @@ export function RevenueIntelligencePage() {
             <article className="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_70%_20%,rgba(34,211,238,0.12),transparent_32%),linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] p-6 shadow-[0_22px_65px_rgba(0,0,0,0.24)]">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-2xl text-white">Top cidades por receita</h2>
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-cyan-400/12 text-cyan-200">
-                  <MapPinned size={20} className="h-5 w-5 shrink-0" />
-                </span>
+                <IconFrame icon={MapPinned} tone="bg-cyan-400/12 text-cyan-200" size="sm" />
               </div>
               <div className="mt-5 grid gap-5 md:grid-cols-[220px_1fr] md:items-center">
                 <div className="relative h-48 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.9),rgba(8,47,73,0.25))]">
                   <div className="absolute left-8 top-8 h-20 w-28 rounded-[45%] border border-cyan-200/20 bg-cyan-300/10" />
                   <div className="absolute bottom-8 right-8 h-24 w-24 rounded-[45%] border border-violet-200/20 bg-violet-300/10" />
                   <div className="absolute left-20 top-24 h-16 w-20 rounded-[45%] border border-emerald-200/20 bg-emerald-300/10" />
-                  <span className="absolute left-[48%] top-[42%] grid h-11 w-11 place-items-center rounded-2xl bg-violet-500 text-white shadow-[0_12px_34px_rgba(124,58,237,0.4)]">
-                    <MapPin size={21} className="h-[21px] w-[21px] shrink-0" />
+                  <span className="absolute left-[48%] top-[42%] grid h-11 w-11 place-items-center rounded-full bg-violet-500 text-white shadow-[0_12px_34px_rgba(124,58,237,0.4)]">
+                    <MapPin strokeWidth={2.2} className="h-5 w-5 shrink-0" />
                   </span>
                 </div>
                 <EmptyState>Sem dados geograficos consolidados para exibir cidades.</EmptyState>
@@ -618,9 +618,7 @@ export function RevenueIntelligencePage() {
         <aside className="space-y-7">
           <section className="rounded-[1.5rem] border border-violet-300/20 bg-[radial-gradient(circle_at_20%_0%,rgba(168,85,247,0.24),transparent_38%),linear-gradient(160deg,rgba(15,23,42,0.95),rgba(2,6,23,0.82))] p-6 shadow-[0_26px_78px_rgba(76,29,149,0.24)]">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-500/20 text-violet-100">
-                <Sparkles size={21} className="h-[21px] w-[21px] shrink-0" />
-              </span>
+              <IconFrame icon={Sparkles} tone="bg-violet-500/20 text-violet-100" />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">IA Insights</p>
                 <h2 className="font-display text-2xl text-white">AXI Assistant</h2>
@@ -671,9 +669,7 @@ export function RevenueIntelligencePage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Execucao</p>
                 <h2 className="font-display text-2xl text-white">Plano de Acao</h2>
               </div>
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/12 text-emerald-200">
-                <Target size={19} className="h-[19px] w-[19px] shrink-0" />
-              </span>
+              <IconFrame icon={Target} tone="bg-emerald-400/12 text-emerald-200" size="sm" />
             </div>
             <div className="mb-5 grid grid-cols-3 rounded-2xl border border-white/10 bg-slate-950/65 p-1">
               {[
@@ -697,8 +693,8 @@ export function RevenueIntelligencePage() {
             {actionPlans.length === 0 ? (
               <div className="grid min-h-[220px] place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.035] p-5 text-center">
                 <div>
-                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-violet-500/15 text-violet-200">
-                    <ClipboardList size={22} className="h-[22px] w-[22px] shrink-0" />
+                  <div className="mx-auto w-fit">
+                    <IconFrame icon={ClipboardList} tone="bg-violet-500/15 text-violet-200" size="lg" />
                   </div>
                   <p className="mt-4 text-sm font-semibold text-white">Sem acoes reais para este periodo</p>
                   <p className="mt-2 text-sm leading-5 text-slate-400">Quando houver sinais suficientes, esta area mostra titulo, descricao, progresso, status e data.</p>

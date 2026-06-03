@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Bell,
   Bot,
   CalendarDays,
   CheckCircle2,
@@ -9,13 +8,11 @@ import {
   Clock3,
   FileSpreadsheet,
   FileText,
-  HelpCircle,
   Instagram,
   Loader2,
   Megaphone,
   MoreVertical,
   Plus,
-  Search,
   Send,
   ShoppingCart,
   Target,
@@ -390,18 +387,8 @@ export function MarketingProjectsPage() {
           <p className="mt-1 text-sm text-slate-300">Planeje, execute e acompanhe campanhas e acoes.</p>
         </div>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <label className="flex min-w-[320px] items-center gap-3 rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-400">
-            <Search size={17} />
-            <span>Buscar campanhas, planos, conteudos...</span>
-          </label>
           <button type="button" className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm font-semibold text-white">
             <CalendarDays size={16} /> 24 Mai - 23 Jun 2026 <ChevronDown size={14} />
-          </button>
-          <button type="button" className="hidden h-11 w-11 items-center justify-center rounded-full border border-white/10 text-slate-300 lg:inline-flex" aria-label="Notificacoes">
-            <Bell size={18} />
-          </button>
-          <button type="button" className="hidden h-11 w-11 items-center justify-center rounded-full border border-white/10 text-slate-300 lg:inline-flex" aria-label="Ajuda">
-            <HelpCircle size={18} />
           </button>
         </div>
       </header>

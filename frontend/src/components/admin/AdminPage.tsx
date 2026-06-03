@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  Bell,
   CreditCard,
   KeyRound,
   Loader2,
@@ -20,6 +19,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ApiError } from '../../services/api';
 import { getAdminOverview, type AdminMetric, type AdminOverview, type AdminUser } from '../../services/admin.service';
+import { AdminBillingPage } from './AdminBillingPage';
 
 const adminPages = [
   { id: 'dashboard', label: 'Dashboard', path: '/app/admin', icon: ShieldCheck },
@@ -287,18 +287,7 @@ export function AdminPage() {
       ) : null}
 
       {activePage === 'billing' ? (
-        <Section title="Billing" description="Plano, consumo, faturas e eventos Stripe reais ficam na Administracao.">
-          {(overview?.billing ?? []).length === 0 ? <EmptyState>Sem eventos reais de billing retornados.</EmptyState> : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {overview!.billing.map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-sm text-slate-400">{item.label}</p>
-                  <p className="mt-2 font-display text-3xl text-white">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </Section>
+        <AdminBillingPage />
       ) : null}
 
       {activePage === 'security' ? (

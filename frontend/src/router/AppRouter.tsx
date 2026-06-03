@@ -73,9 +73,9 @@ import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligen
 
 import { ProtectedRoute } from './ProtectedRoute';
 
-function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
+function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  if (user?.role !== 'owner') {
+  if (user?.role !== 'owner' && user?.role !== 'admin') {
     return <Navigate replace to="/app" />;
   }
   return children;
@@ -120,6 +120,8 @@ export function AppRouter() {
           path="/register"
         />
         <Route element={<ProtectedRoute />}>
+          <Route element={<AdminOnlyRoute><Navigate replace to="/app/admin" /></AdminOnlyRoute>} path="admin" />
+          <Route element={<AdminOnlyRoute><Navigate replace to="/app/admin/billing" /></AdminOnlyRoute>} path="admin/billing" />
           <Route element={<PlatformShell />} path="/app">
             <Route element={<HomePage />} index />
             <Route element={<Navigate replace to="/app" />} path="home" />
@@ -131,16 +133,16 @@ export function AppRouter() {
             <Route element={<Navigate replace to="/app/chats" />} path="chat" />
             <Route element={<ChatsPage />} path="chats" />
             <Route element={<AxiAssistantPage />} path="assistant" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin" />
             <Route element={<Navigate replace to="/app/admin" />} path="admin/companies" />
             <Route element={<Navigate replace to="/app/admin" />} path="admin/companies/:companyId" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/users" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/users/:userId" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users/:userId" />
             <Route element={<Navigate replace to="/app/admin/permissions" />} path="admin/roles" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/permissions" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/billing" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/security" />
-            <Route element={<OwnerOnlyRoute><AdminPage /></OwnerOnlyRoute>} path="admin/audit" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/permissions" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/billing" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/security" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/audit" />
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
               <Route path="create" element={<AgentCreatePage />} />

@@ -26,6 +26,73 @@ vi.mock('../services/admin.service', () => ({
     }),
 }));
 
+vi.mock('../hooks/useBilling', () => ({
+  useBilling: () => ({
+    plans: [
+      {
+        id: 'free',
+        name: 'Free',
+        monthly_price: 0,
+        yearly_price: 0,
+        features: ['Mensagens basicas'],
+        limits: [{ key: 'messages', value: 500 }],
+        active: true,
+        checkout_available: false,
+        stripe_prices: { monthly: false, yearly: false },
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        monthly_price: 197,
+        yearly_price: 1970,
+        features: ['Mais mensagens'],
+        limits: [{ key: 'messages', value: 5000 }],
+        active: true,
+        checkout_available: true,
+        stripe_prices: { monthly: true, yearly: true },
+      },
+    ],
+    current: {
+      plan_id: 'free',
+      plan_name: 'Free',
+      status: 'active',
+      billing_cycle: 'monthly',
+      monthly_price: 0,
+      yearly_price: 0,
+      auto_renew: true,
+      cancel_at_period_end: false,
+      started_at: '2026-05-01T00:00:00Z',
+      next_renewal_at: null,
+      provider: 'stripe',
+      stripe_customer_id: null,
+    },
+    usage: { items: [{ metric: 'messages', used: 12, limit: 500 }] },
+    history: {
+      events: [
+        {
+          id: 1,
+          event_type: 'invoice_paid',
+          amount: 197,
+          currency: 'BRL',
+          description: 'Fatura Pro',
+          stripe_event_id: 'evt_test',
+          status: 'paid',
+          created_at: '2026-05-01T00:00:00Z',
+        },
+      ],
+    },
+    loading: false,
+    upgrading: false,
+    error: null,
+    upgrade: vi.fn(),
+    startCheckout: vi.fn(),
+    openPortal: vi.fn(),
+    cancel: vi.fn(),
+    resume: vi.fn(),
+    reload: vi.fn(),
+  }),
+}));
+
 import { AdminPage } from '../components/admin/AdminPage';
 
 function LocationProbe() {
@@ -50,7 +117,9 @@ describe('AdminPage', () => {
 
     await user.click(screen.getAllByRole('button', { name: /Billing/i })[0]);
     expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/billing');
-    expect(screen.getByText(/eventos Stripe reais/i)).toBeInTheDocument();
+    expect(screen.getByText('Plano Atual')).toBeInTheDocument();
+    expect(screen.getByText('Metodo de Pagamento')).toBeInTheDocument();
+    expect(screen.getByText('Upgrade')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Usuarios/i }));
     expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/users');

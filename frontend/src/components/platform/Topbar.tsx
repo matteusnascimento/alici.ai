@@ -7,7 +7,7 @@ export function Topbar() {
       <div className="flex w-full flex-wrap items-center justify-end gap-3">
         <label className="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-400 md:max-w-[460px]">
           <Search size={17} />
-          <span className="min-w-0 flex-1 truncate">Buscar reservas, clientes, metricas...</span>
+          <span className="min-w-0 flex-1 truncate"><span className="font-semibold text-slate-200">Busca Global</span> reservas, clientes, metricas...</span>
           <span className="text-xs text-slate-500">Ctrl K</span>
         </label>
         <Link to="/app/account/notifications" className="relative grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/[0.05]" aria-label="Notificacoes">

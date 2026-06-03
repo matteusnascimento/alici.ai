@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Bot, Building2, ChevronLeft, CreditCard, Home, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, Home, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -23,10 +23,9 @@ const items = [
   { label: 'Integrations', to: '/app/integrations', icon: Link2, roles: ['owner', 'admin', 'member'] },
 ];
 
-function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse: () => void }) {
+function SidebarFooter({ expanded }: { expanded: boolean }) {
   const { user, logout } = useAuth();
   const displayName = user?.name || 'Usuario AXI';
-  const role = user?.role === 'owner' ? 'Proprietario' : user?.role || 'Membro';
   const companyLabel = (user as { company?: string } | null)?.company || 'Pousada Mar & Sol';
   const canAdmin = user?.role === 'owner' || user?.role === 'admin';
 
@@ -34,13 +33,13 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
     <div className={['mt-auto border-t border-white/10 pt-3', expanded ? 'space-y-2 px-0' : 'flex flex-col items-center gap-3 px-0'].join(' ')}>
       <div className={['border border-white/10 bg-white/[0.035]', expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0'].join(' ')}>
         <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-200">
-            <Building2 size={20} />
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-cyan-400/15 text-cyan-200">
+            <Building2 strokeWidth={2.2} className="h-5 w-5 shrink-0" />
           </span>
           {expanded ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">Empresa</p>
-              <p className="truncate text-xs text-slate-400">{companyLabel}</p>
+              <p className="truncate text-sm font-semibold text-white">{companyLabel}</p>
+              <p className="truncate text-xs text-slate-400">Empresa atual</p>
             </div>
           ) : null}
         </div>
@@ -53,13 +52,13 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
         ].join(' ')}
       >
         <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#7c3aed,#22d3ee)] text-white">
-            <UserCircle2 size={21} />
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-[linear-gradient(135deg,#7c3aed,#22d3ee)] text-white">
+            <UserCircle2 strokeWidth={2.2} className="h-5 w-5 shrink-0" />
           </span>
           {expanded ? (
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white">{displayName}</p>
-              <p className="truncate text-xs capitalize text-slate-400">{role}</p>
+              <p className="truncate text-xs text-slate-400">Minha Conta</p>
             </div>
           ) : null}
         </div>
@@ -67,16 +66,13 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
       {canAdmin ? (
         <SidebarItem expanded={expanded} label="Administracao" to="/app/admin" icon={ShieldCheck} />
       ) : null}
-      {canAdmin ? (
-        <SidebarItem expanded={expanded} label="Gerenciar Plano" to="/app/admin/billing" icon={CreditCard} />
-      ) : null}
       {expanded ? (
         <button
           type="button"
           onClick={logout}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 hover:bg-white/[0.05] hover:text-white"
         >
-          <LogOut size={17} />
+          <LogOut strokeWidth={2.2} className="h-[18px] w-[18px] shrink-0" />
           Sair
         </button>
       ) : (
@@ -86,19 +82,9 @@ function SidebarFooter({ expanded, onCollapse }: { expanded: boolean; onCollapse
           className="grid h-12 w-12 place-items-center rounded-full text-slate-400 hover:bg-white/[0.05] hover:text-white"
           aria-label="Sair"
         >
-          <LogOut size={17} />
+          <LogOut strokeWidth={2.2} className="h-[18px] w-[18px] shrink-0" />
         </button>
       )}
-      {expanded ? (
-        <button
-          type="button"
-          onClick={onCollapse}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 hover:bg-white/[0.05] hover:text-white"
-        >
-          <ChevronLeft size={17} />
-          Recolher menu
-        </button>
-      ) : null}
     </div>
   );
 }
@@ -163,7 +149,7 @@ export function AppSidebar({
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
         </nav>
-        <SidebarFooter expanded={expanded} onCollapse={() => setExpandedDesktop(false)} />
+        <SidebarFooter expanded={expanded} />
       </aside>
 
       {mobileOpen ? (
@@ -194,7 +180,7 @@ export function AppSidebar({
             <SidebarItem key={item.to} expanded onNavigate={onMobileClose} {...item} />
           ))}
         </nav>
-        <SidebarFooter expanded onCollapse={onMobileClose} />
+        <SidebarFooter expanded />
       </aside>
     </>
   );
