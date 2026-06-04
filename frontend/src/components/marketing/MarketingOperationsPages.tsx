@@ -643,7 +643,7 @@ export function MarketingAutomationsPage() {
 }
 
 export function MarketingCalendarPage() {
-  const [cursor, setCursor] = useState(() => new Date(2026, 5, 1));
+  const [cursor, setCursor] = useState(() => new Date());
   const [mode, setMode] = useState<'mes' | 'semana' | 'dia'>('mes');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [events, setEvents] = useState<MarketingCalendarEvent[]>([]);

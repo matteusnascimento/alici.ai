@@ -22,6 +22,8 @@ from app.services.revenue_service import RevenueService
 
 router = APIRouter(prefix="/revenue", tags=["revenue"])
 
+NO_REAL_DATA_MESSAGE = "Sem dados reais disponíveis. Conecte integrações para visualizar informações."
+
 
 def _user_agent_ids(db: Session, user: User) -> list[int]:
     rows = db.query(Agent.id).filter(Agent.user_id == user.id).all()
@@ -49,6 +51,144 @@ def get_revenue_overview(
     db: Session = Depends(get_db),
 ) -> RevenueIntelligenceSnapshot:
     return RevenueService(db).get_snapshot(current_user, days=days)
+
+
+@router.get("/kpis", response_model=dict[str, Any])
+def get_revenue_kpis(
+    days: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    snapshot = RevenueService(db).get_snapshot(current_user, days=days)
+    summary = snapshot.summary
+    has_data = summary.receita_total > 0 or summary.reservas_fechadas > 0 or summary.leads_recebidos > 0
+    items = [
+        {"key": "receita", "label": "Receita", "value": summary.receita_total, "unit": "BRL"},
+        {"key": "reservas", "label": "Reservas", "value": summary.reservas_fechadas, "unit": "count"},
+        {"key": "leads", "label": "Leads", "value": summary.leads_recebidos, "unit": "count"},
+        {"key": "conversao", "label": "Conversao", "value": summary.conversao_total, "unit": "percent"},
+        {"key": "roi", "label": "ROI", "value": summary.roi_estimado, "unit": "multiplier"},
+        {
+            "key": "forecast",
+            "label": "Forecast",
+            "value": round(summary.receita_total * 1.18, 2) if has_data else 0,
+            "unit": "BRL",
+        },
+    ]
+    return {
+        "status": "ok" if has_data else "no_data",
+        "message": "" if has_data else NO_REAL_DATA_MESSAGE,
+        "items": items,
+        "source": "revenue_service",
+    }
+
+
+@router.get("/channels", response_model=dict[str, Any])
+def get_revenue_channels(
+    days: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    snapshot = RevenueService(db).get_snapshot(current_user, days=days)
+    total = sum(item.valor for item in snapshot.receita_por_canal)
+    items = [
+        {
+            "key": item.label.lower().replace(" ", "_"),
+            "label": item.label,
+            "revenue": item.valor,
+            "percentual": round((item.valor / total) * 100, 2) if total else 0,
+        }
+        for item in snapshot.receita_por_canal
+    ]
+    return {
+        "status": "ok" if items else "no_data",
+        "message": "" if items else NO_REAL_DATA_MESSAGE,
+        "items": items,
+        "source": "revenue_service",
+    }
+
+
+@router.get("/demand-map", response_model=dict[str, Any])
+def get_revenue_demand_map(
+    city: str | None = None,
+    state: str | None = None,
+    country: str | None = None,
+    channel: str | None = None,
+    days: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    return get_origin_demand(
+        city=city,
+        state=state,
+        country=country,
+        channel=channel,
+        days=days,
+        current_user=current_user,
+        db=db,
+    )
+
+
+@router.get("/events", response_model=dict[str, Any])
+def get_revenue_events(
+    limit: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    safe_limit = min(max(limit, 1), 100)
+    agent_ids = _user_agent_ids(db, current_user)
+    events: list[dict[str, Any]] = []
+
+    reservations = (
+        db.query(Reservation)
+        .filter((Reservation.user_id == current_user.id) | (Reservation.user_id.is_(None)))
+        .order_by(Reservation.created_at.desc())
+        .limit(safe_limit)
+        .all()
+    )
+    for item in reservations:
+        events.append(
+            {
+                "id": f"reservation-{item.id}",
+                "type": "reservation",
+                "title": item.guest_name,
+                "description": item.status,
+                "amount": item.total_price,
+                "channel": item.channel,
+                "created_at": item.created_at.isoformat() if item.created_at else None,
+                "source": "reservations",
+            }
+        )
+
+    if agent_ids:
+        conversations = (
+            db.query(AgentConversation)
+            .filter(AgentConversation.agent_id.in_(agent_ids))
+            .order_by(AgentConversation.updated_at.desc())
+            .limit(safe_limit)
+            .all()
+        )
+        for item in conversations:
+            events.append(
+                {
+                    "id": f"conversation-{item.id}",
+                    "type": "conversation",
+                    "title": item.external_user_id,
+                    "description": item.status,
+                    "amount": item.reservation_value,
+                    "channel": item.channel_type,
+                    "created_at": item.updated_at.isoformat() if item.updated_at else None,
+                    "source": "agent_conversations",
+                }
+            )
+
+    events = sorted(events, key=lambda item: str(item.get("created_at") or ""), reverse=True)[:safe_limit]
+    return {
+        "status": "ok" if events else "no_data",
+        "message": "" if events else NO_REAL_DATA_MESSAGE,
+        "items": events,
+        "source": "database",
+    }
 
 
 @router.get("/series", response_model=RevenueSeriesResponse)
@@ -162,7 +302,7 @@ def get_origin_demand(
         rows = [item for item in rows if item.canal.lower() == channel.lower()]
     return {
         "status": "ok" if rows else "no_data",
-        "message": "" if rows else "Conecte Website, Chats e Campanhas para visualizar informações.",
+        "message": "" if rows else NO_REAL_DATA_MESSAGE,
         "items": [item.model_dump() for item in rows],
         "filters": {"city": city, "state": state, "country": country, "channel": channel, "days": days},
     }
@@ -228,6 +368,7 @@ def get_action_plans(
     return {
         "items": actions,
         "status": "ok" if actions else "no_data",
+        "message": "" if actions else NO_REAL_DATA_MESSAGE,
         "source": "derived_from_revenue_service",
     }
 
@@ -421,7 +562,10 @@ def get_revenue_post_sale(current_user: User = Depends(get_current_user), db: Se
 def get_revenue_forecast(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict[str, Any]:
     snapshot = RevenueService(db).get_snapshot(current_user, days=30)
     revenue = snapshot.summary.receita_total
+    has_data = revenue > 0 or snapshot.summary.reservas_fechadas > 0 or snapshot.summary.leads_recebidos > 0
     return {
+        "status": "ok" if has_data else "no_data",
+        "message": "" if has_data else NO_REAL_DATA_MESSAGE,
         "receita_provavel_mes": round(revenue * 1.18, 2),
         "reservas_provaveis": round(snapshot.summary.reservas_fechadas * 1.15),
         "leads_necessarios": max(snapshot.summary.leads_recebidos, 0),

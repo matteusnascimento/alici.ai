@@ -4,7 +4,7 @@ import { ChevronRight, Loader2, Send, Sparkles } from 'lucide-react';
 
 import { useChat } from '../../hooks/useChat';
 
-type MiniAssistantContext = 'revenue' | 'marketing' | 'studio';
+type MiniAssistantContext = 'revenue' | 'marketing' | 'studio' | 'chats';
 
 const quickActions = [
   'Criar campanha',
@@ -21,6 +21,7 @@ const contextCopy: Record<MiniAssistantContext, string> = {
   revenue: 'revenue, reservas, leads, forecast, conversoes',
   marketing: 'campanhas, calendario, conteudo, audiencias, ROI',
   studio: 'design, criativos, posts, videos, templates',
+  chats: 'mensagens, clientes, atendimento, tags, historico e controle IA humano',
 };
 
 export function MiniAssistantCard({ context }: { context: MiniAssistantContext }) {

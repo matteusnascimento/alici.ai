@@ -13,7 +13,6 @@ import { AccountAppsStatusPage } from '../components/account/pages/AccountAppsSt
 import { AccountChatsPage } from '../components/account/pages/AccountChatsPage';
 import { AccountDataPage } from '../components/account/pages/AccountDataPage';
 import { AccountHelpPage } from '../components/account/pages/AccountHelpPage';
-import { AccountHomePage } from '../components/account/pages/AccountHomePage';
 import { AccountLegalPage } from '../components/account/pages/AccountLegalPage';
 import { AccountNotificationsPage } from '../components/account/pages/AccountNotificationsPage';
 import { AccountPersonalizationPage } from '../components/account/pages/AccountPersonalizationPage';
@@ -222,16 +221,19 @@ export function AppRouter() {
               <Route index element={<Navigate replace to="overview" />} />
               <Route path="overview" element={<AccountProfilePage />} />
               <Route path="profile" element={<AccountProfilePage />} />
-              <Route path="billing" element={<Navigate replace to="/app/admin/billing" />} />
-              <Route path="personalization" element={<AccountPersonalizationPage />} />
+              <Route path="billing" element={<Navigate replace to="/app/account/overview" />} />
+              <Route path="preferences" element={<AccountPersonalizationPage />} />
+              <Route path="personalization" element={<Navigate replace to="/app/account/preferences" />} />
               <Route path="notifications" element={<AccountNotificationsPage />} />
               <Route path="applications" element={<AccountAppsPage />} />
               <Route path="applications/status" element={<AccountAppsStatusPage />} />
               <Route path="applications/actions" element={<AccountAppsActionsPage />} />
-              <Route path="data-controls" element={<AccountDataPage />} />
+              <Route path="privacy" element={<AccountDataPage />} />
+              <Route path="data-controls" element={<Navigate replace to="/app/account/privacy" />} />
               <Route path="security" element={<AccountSecurityPage />} />
+              <Route path="sessions" element={<AccountSecurityPage />} />
               <Route path="archived-chats" element={<AccountChatsPage />} />
-              <Route path="language-appearance" element={<Navigate replace to="/app/account/personalization" />} />
+              <Route path="language-appearance" element={<Navigate replace to="/app/account/preferences" />} />
               <Route path="help" element={<AccountHelpPage />} />
               <Route path="help/status" element={<AccountPlatformStatusPage />} />
               <Route path="legal" element={<AccountLegalPage />} />
@@ -239,9 +241,9 @@ export function AppRouter() {
               <Route path="apps" element={<Navigate replace to="/app/account/applications" />} />
               <Route path="apps/status" element={<Navigate replace to="/app/account/applications/status" />} />
               <Route path="apps/actions" element={<Navigate replace to="/app/account/applications/actions" />} />
-              <Route path="data" element={<Navigate replace to="/app/account/data-controls" />} />
+              <Route path="data" element={<Navigate replace to="/app/account/privacy" />} />
               <Route path="chats" element={<Navigate replace to="/app/account/archived-chats" />} />
-              <Route path="language" element={<Navigate replace to="/app/account/personalization" />} />
+              <Route path="language" element={<Navigate replace to="/app/account/preferences" />} />
             </Route>
           </Route>
         </Route>

@@ -79,14 +79,14 @@ def _company_rows(db: Session) -> list[AdminCompanyRead]:
     return companies
 
 
-def require_owner(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role != "owner":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administracao restrita ao owner.")
+def require_admin_access(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role not in {"owner", "admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administracao restrita ao owner/admin.")
     return current_user
 
 
 @router.get("/overview", response_model=AdminOverviewResponse)
-def admin_overview(_: User = Depends(require_owner), db: Session = Depends(get_db)) -> AdminOverviewResponse:
+def admin_overview(_: User = Depends(require_admin_access), db: Session = Depends(get_db)) -> AdminOverviewResponse:
     users = db.query(User).order_by(User.created_at.desc()).limit(50).all()
     companies = _company_rows(db)
     subscription_count = db.query(func.count(Subscription.id)).scalar() or 0
@@ -115,12 +115,12 @@ def admin_overview(_: User = Depends(require_owner), db: Session = Depends(get_d
 
 
 @router.get("/companies", response_model=list[AdminCompanyRead])
-def list_admin_companies(_: User = Depends(require_owner), db: Session = Depends(get_db)) -> list[AdminCompanyRead]:
+def list_admin_companies(_: User = Depends(require_admin_access), db: Session = Depends(get_db)) -> list[AdminCompanyRead]:
     return _company_rows(db)
 
 
 @router.post("/companies", response_model=AdminCompanyRead, status_code=status.HTTP_201_CREATED)
-def create_admin_company(payload: AdminCompanyCreate, _: User = Depends(require_owner), db: Session = Depends(get_db)) -> AdminCompanyRead:
+def create_admin_company(payload: AdminCompanyCreate, _: User = Depends(require_admin_access), db: Session = Depends(get_db)) -> AdminCompanyRead:
     existing_email = db.query(User).filter(User.email == payload.email).first()
     if existing_email:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="E-mail institucional ja cadastrado.")

@@ -26,7 +26,7 @@ const items = [
 function SidebarFooter({ expanded }: { expanded: boolean }) {
   const { user, logout } = useAuth();
   const displayName = user?.name || 'Usuario AXI';
-  const companyLabel = (user as { company?: string } | null)?.company || 'Pousada Mar & Sol';
+  const companyLabel = (user as { company?: string } | null)?.company || 'Empresa nao configurada';
   const canAdmin = user?.role === 'owner' || user?.role === 'admin';
 
   return (

@@ -249,6 +249,63 @@ def request_human_chat(
     return _serialize_conversation(conversation)
 
 
+@router.post("/conversations/{conversation_id}/transfer", response_model=dict[str, Any])
+def transfer_chat_to_human(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    return request_human_chat(conversation_id=conversation_id, current_user=current_user, db=db)
+
+
+@router.post("/conversations/{conversation_id}/quote", response_model=dict[str, Any])
+def send_chat_quote(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    conversation = _conversation_or_404(db, current_user, conversation_id)
+    if _connected_channel(db, conversation) is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Envio de cotacao requer canal conectado. Nenhum provider foi acionado.",
+        )
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Envio externo de cotacao ainda nao implementado para este provider.",
+    )
+
+
+@router.post("/conversations/{conversation_id}/tasks", response_model=dict[str, Any])
+def create_chat_task(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    _conversation_or_404(db, current_user, conversation_id)
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Criacao de tarefas de atendimento ainda nao possui modelo persistente no backend.",
+    )
+
+
+@router.post("/conversations/{conversation_id}/tags", response_model=dict[str, Any])
+def add_chat_tag(
+    conversation_id: int,
+    payload: dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    _conversation_or_404(db, current_user, conversation_id)
+    tag = str(payload.get("tag") or "").strip()
+    if not tag:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Tag obrigatoria")
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Tags persistentes por conversa ainda nao foram implementadas no backend.",
+    )
+
+
 @router.post("/conversations/{conversation_id}/messages", response_model=dict[str, Any])
 def send_chat_message(
     conversation_id: int,
@@ -355,4 +412,3 @@ def get_customer_reservations(
         ],
         "source": "reservations",
     }
-

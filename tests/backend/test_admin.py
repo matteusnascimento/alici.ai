@@ -1,8 +1,11 @@
+from app.core.config import settings
+
+
 def test_admin_overview_rejects_non_owner(client, auth_headers):
     response = client.get("/api/admin/overview", headers=auth_headers)
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "Administracao restrita ao owner."
+    assert response.json()["detail"] == "Administracao restrita ao owner/admin."
 
 
 def test_admin_overview_allows_dev_owner(client):
@@ -24,6 +27,15 @@ def test_admin_overview_allows_dev_owner(client):
     assert "billing" in payload
     assert "seguranca" in payload
     assert "auditoria" in payload
+
+
+def test_admin_overview_allows_admin_role(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(settings, "admin_emails", ["ana@example.com"])
+
+    response = client.get("/api/admin/overview", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert "usuarios" in response.json()
 
 
 def test_admin_owner_creates_company_and_blocks_duplicates(client):

@@ -102,6 +102,22 @@ def test_revenue_series_endpoint(client, auth_headers):
     assert isinstance(body['points'], list)
 
 
+def test_revenue_axi_1_contract_endpoints_return_empty_state(client, auth_headers):
+    for path in [
+        '/api/revenue/kpis',
+        '/api/revenue/channels',
+        '/api/revenue/demand-map',
+        '/api/revenue/forecast',
+        '/api/revenue/events',
+    ]:
+        response = client.get(path, headers=auth_headers)
+        assert response.status_code == 200
+        body = response.json()
+        assert body['status'] in {'ok', 'no_data'}
+        if body['status'] == 'no_data':
+            assert 'Sem dados reais' in body['message']
+
+
 def test_runtime_persists_structured_commercial_fields(client, auth_headers):
     db = SessionLocal()
     try:

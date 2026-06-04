@@ -32,6 +32,31 @@ export function updateConversationAiMode(id: number, mode: 'ia' | 'humano' | 'hi
   });
 }
 
+export function transferConversationToHuman(id: number) {
+  return apiFetch<OmnichannelConversation>(`/chats/conversations/${id}/transfer`, {
+    method: 'POST',
+  });
+}
+
+export function sendConversationQuote(id: number) {
+  return apiFetch<{ status: string }>(`/chats/conversations/${id}/quote`, {
+    method: 'POST',
+  });
+}
+
+export function createConversationTask(id: number) {
+  return apiFetch<{ status: string }>(`/chats/conversations/${id}/tasks`, {
+    method: 'POST',
+  });
+}
+
+export function addConversationTag(id: number, tag: string) {
+  return apiFetch<{ status: string }>(`/chats/conversations/${id}/tags`, {
+    method: 'POST',
+    body: JSON.stringify({ tag }),
+  });
+}
+
 export function sendOmnichannelMessage(id: number, content: string) {
   return apiFetch<{ message: unknown }>(`/chats/conversations/${id}/messages`, {
     method: 'POST',

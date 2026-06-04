@@ -26,7 +26,10 @@ import {
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { ApiError } from '../../services/api';
+import { MiniAssistantCard } from '../assistant/MiniAssistantCard';
 import {
+  addConversationTag,
+  createConversationTask,
   getAiSuggestions,
   getChatChannels,
   getChatSummary,
@@ -35,7 +38,9 @@ import {
   getCustomerReservations,
   getOmnichannelConversation,
   getOmnichannelConversations,
+  sendConversationQuote,
   sendOmnichannelMessage,
+  transferConversationToHuman,
   updateConversationAiMode,
 } from '../../services/chats.service';
 import type {
@@ -53,6 +58,14 @@ const filters = [
   { key: 'all', label: 'Todas' },
   { key: 'human', label: 'Nao lidas' },
   { key: 'mine', label: 'Minhas' },
+] as const;
+
+const quickActions = [
+  { key: 'quote', label: 'Enviar cotacao' },
+  { key: 'task', label: 'Criar tarefa' },
+  { key: 'human', label: 'Transferir para Humano' },
+  { key: 'ia', label: 'Ativar IA' },
+  { key: 'tag', label: 'Adicionar tag' },
 ] as const;
 
 const channelClass: Record<string, string> = {
@@ -212,6 +225,35 @@ export function ChatsPage() {
       setDetail((current) => current ? { ...current, conversation: { ...current.conversation, ...updated } } : current);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'Falha ao atualizar modo');
+    }
+  }
+
+  async function handleQuickAction(action: (typeof quickActions)[number]['key']) {
+    if (!currentConversation) return;
+    try {
+      setSendError(null);
+      if (action === 'human') {
+        const updated = await transferConversationToHuman(currentConversation.id);
+        setMode(updated.ai_mode);
+        setConversations((items) => items.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+        setDetail((current) => current ? { ...current, conversation: { ...current.conversation, ...updated } } : current);
+        return;
+      }
+      if (action === 'ia') {
+        await handleModeChange('ia');
+        return;
+      }
+      if (action === 'quote') {
+        await sendConversationQuote(currentConversation.id);
+        return;
+      }
+      if (action === 'task') {
+        await createConversationTask(currentConversation.id);
+        return;
+      }
+      await addConversationTag(currentConversation.id, 'follow_up');
+    } catch (err) {
+      setSendError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Acao indisponivel');
     }
   }
 
@@ -460,13 +502,21 @@ export function ChatsPage() {
 
           <section className="rounded-2xl border border-slate-100 p-4">
             <h3 className="mb-3 font-bold">Acoes rapidas</h3>
-            {['Agendar Follow-up', 'Enviar Promocao', 'Transferir para Humano', 'Ativar IA', 'Adicionar Tag'].map((action) => (
-              <button key={action} type="button" className="mb-2 flex w-full items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-700">
+            {quickActions.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                disabled={!currentConversation}
+                onClick={() => void handleQuickAction(action.key)}
+                className="mb-2 flex w-full items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 <Zap size={15} className="text-violet-600" />
-                {action}
+                {action.label}
               </button>
             ))}
           </section>
+
+          <MiniAssistantCard context="chats" />
 
           <section className="rounded-2xl border border-slate-100 p-4">
             <h3 className="mb-3 font-bold">Tags</h3>

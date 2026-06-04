@@ -443,9 +443,6 @@ export function IntegrationsPage() {
               <button type="button" onClick={testWidget} disabled={busy === 'test:website_chat'} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-200 disabled:opacity-50">
                 <TestTube2 size={15} /> Testar instalacao
               </button>
-              <a href="mailto:dev@seudominio.com" className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-200">
-                Enviar para desenvolvedor
-              </a>
               <button type="button" onClick={() => setWidgetScript(null)} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-300">Fechar</button>
             </div>
           </div>

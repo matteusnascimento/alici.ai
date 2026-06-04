@@ -1,5 +1,9 @@
 from pathlib import Path
 
+from app.core.database import SessionLocal
+from app.models.agent import Agent
+from app.models.agent_conversation import AgentConversation
+from app.models.user import User
 from app.services.ai_service import AIService, AIServiceError
 
 
@@ -57,3 +61,59 @@ def test_chat_send_returns_ai_error_when_openai_rate_limited(client, auth_header
 
     assert send_response.status_code == 429
     assert send_response.json()['detail'] == 'rate'
+
+
+def test_omnichannel_quick_actions_do_not_fake_external_success(client, auth_headers):
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == 'ana@example.com').first()
+        assert user is not None
+
+        agent = Agent(
+            user_id=user.id,
+            nome='Atendimento',
+            funcao='Comercial',
+            tipo='sales',
+            linguagem='pt-BR',
+            prompt='Responder clientes.',
+            ativo=True,
+        )
+        db.add(agent)
+        db.commit()
+        db.refresh(agent)
+
+        conversation = AgentConversation(
+            agent_id=agent.id,
+            channel_type='whatsapp',
+            channel_id='wa-1',
+            external_user_id='11999999999',
+            external_conversation_id='conv-chat-1',
+            status='active_ai',
+            sales_stage='novo_lead',
+        )
+        db.add(conversation)
+        db.commit()
+        db.refresh(conversation)
+        conversation_id = conversation.id
+    finally:
+        db.close()
+
+    transfer_response = client.post(f'/api/chats/conversations/{conversation_id}/transfer', headers=auth_headers)
+    assert transfer_response.status_code == 200
+    assert transfer_response.json()['status'] == 'awaiting_human'
+    assert transfer_response.json()['ai_mode'] == 'humano'
+
+    quote_response = client.post(f'/api/chats/conversations/{conversation_id}/quote', headers=auth_headers)
+    assert quote_response.status_code == 503
+    assert 'canal conectado' in quote_response.json()['detail'].lower()
+
+    task_response = client.post(f'/api/chats/conversations/{conversation_id}/tasks', headers=auth_headers)
+    assert task_response.status_code == 501
+    assert 'tarefas' in task_response.json()['detail'].lower()
+
+    empty_tag_response = client.post(f'/api/chats/conversations/{conversation_id}/tags', headers=auth_headers, json={'tag': ''})
+    assert empty_tag_response.status_code == 422
+
+    tag_response = client.post(f'/api/chats/conversations/{conversation_id}/tags', headers=auth_headers, json={'tag': 'follow_up'})
+    assert tag_response.status_code == 501
+    assert 'tags persistentes' in tag_response.json()['detail'].lower()
