@@ -3,9 +3,12 @@
  * Mapeia nomes de cores para valores HEX
  */
 export const colorMap: Record<string, string> = {
+  axi: '#7c3aed',
+  purple: '#7c3aed',
   cyan: '#6ee7f9',
   blue: '#3b82f6',
   green: '#10b981',
+  gold: '#f5c542',
   orange: '#f97316',
   amber: '#fbbf24',
 };

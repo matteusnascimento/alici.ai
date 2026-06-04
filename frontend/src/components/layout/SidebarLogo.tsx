@@ -18,13 +18,8 @@ export function SidebarLogo({ expanded }: SidebarLogoProps) {
           <h1 className="bg-[linear-gradient(90deg,#ffffff_0%,#a78bfa_45%,#67e8f9_100%)] bg-clip-text font-display text-[32px] font-extrabold leading-none tracking-[-0.04em] text-transparent">
             AXI
           </h1>
-          <p className="mt-3 text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-white/80">
-            Artificial eXtreme<br />
-            Intelligence
-          </p>
-          <p className="mt-4 text-xs font-medium leading-5 text-slate-300/85">
-            Revenue Intelligence<br />
-            Platform
+          <p className="mt-3 text-[11px] font-semibold leading-4 tracking-[0.12em] text-white/80">
+            Artificial eXtreme Intelligence
           </p>
           <span className="mt-4 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-cyan-200">
             Business Pulse
@@ -32,7 +27,7 @@ export function SidebarLogo({ expanded }: SidebarLogoProps) {
         </div>
       ) : (
         <span className="relative bg-[linear-gradient(90deg,#ffffff_0%,#a78bfa_45%,#67e8f9_100%)] bg-clip-text font-display text-2xl font-extrabold tracking-[-0.04em] text-transparent">
-          A
+          AXI
         </span>
       )}
     </div>

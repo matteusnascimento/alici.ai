@@ -142,6 +142,25 @@ def _parse_bool_form(value: str | None, default: bool = True) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "sim", "on"}
 
 
+def _agent_template_catalog() -> list[AgentsTemplateRead]:
+    return [
+        AgentsTemplateRead(
+            id="support",
+            nome="Atendimento Premium",
+            descricao="Fluxo para suporte e duvidas frequentes.",
+            funcao="Atendimento",
+            objetivos=["Responder clientes", "Encaminhar para humano"],
+        ),
+        AgentsTemplateRead(
+            id="sales",
+            nome="Vendas Conversao",
+            descricao="Fluxo de captacao e qualificacao de leads.",
+            funcao="Vendas",
+            objetivos=["Converter leads", "Gerar oportunidades"],
+        ),
+    ]
+
+
 @router.get("", response_model=list[AgentRead])
 def list_agents(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[AgentRead]:
     return [AgentRead.model_validate(item) for item in AgentService(db).list_agents(current_user)]
@@ -172,6 +191,11 @@ def create_agent(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao criar agente: {error_msg}"
         )
+
+
+@router.get("/templates", response_model=list[AgentsTemplateRead])
+def get_global_agent_templates() -> list[AgentsTemplateRead]:
+    return _agent_template_catalog()
 
 
 @router.get("/{agent_id}", response_model=AgentRead)
@@ -875,42 +899,7 @@ def get_test_session(
 @router.get("/{agent_id}/templates", response_model=list[AgentsTemplateRead])
 def get_agent_templates(agent_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[AgentsTemplateRead]:
     _agent_or_404(db, current_user, agent_id)
-    return [
-        AgentsTemplateRead(
-            id="support",
-            nome="Atendimento Premium",
-            descricao="Fluxo para suporte e duvidas frequentes.",
-            funcao="Atendimento",
-            objetivos=["Responder clientes", "Encaminhar para humano"],
-        ),
-        AgentsTemplateRead(
-            id="sales",
-            nome="Vendas Conversao",
-            descricao="Fluxo de captacao e qualificacao de leads.",
-            funcao="Vendas",
-            objetivos=["Converter leads", "Gerar oportunidades"],
-        ),
-    ]
-
-
-@router.get("/templates", response_model=list[AgentsTemplateRead])
-def get_global_agent_templates() -> list[AgentsTemplateRead]:
-    return [
-        AgentsTemplateRead(
-            id="support",
-            nome="Atendimento Premium",
-            descricao="Fluxo para suporte e duvidas frequentes.",
-            funcao="Atendimento",
-            objetivos=["Responder clientes", "Encaminhar para humano"],
-        ),
-        AgentsTemplateRead(
-            id="sales",
-            nome="Vendas Conversao",
-            descricao="Fluxo de captacao e qualificacao de leads.",
-            funcao="Vendas",
-            objetivos=["Converter leads", "Gerar oportunidades"],
-        ),
-    ]
+    return _agent_template_catalog()
 
 
 @router.post("/import-config", response_model=AgentRead)

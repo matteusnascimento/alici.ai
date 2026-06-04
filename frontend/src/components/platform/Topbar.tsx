@@ -1,5 +1,7 @@
-import { Bell, CircleHelp, Search } from 'lucide-react';
+import { CircleHelp, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+import { NotificationDropdown } from './NotificationDropdown';
 
 export function Topbar() {
   return (
@@ -10,9 +12,7 @@ export function Topbar() {
           <span className="min-w-0 flex-1 truncate"><span className="font-semibold text-slate-200">Busca Global</span> reservas, clientes, metricas...</span>
           <span className="text-xs text-slate-500">Ctrl K</span>
         </label>
-        <Link to="/app/account/notifications" className="relative grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/[0.05]" aria-label="Notificacoes">
-          <Bell size={18} />
-        </Link>
+        <NotificationDropdown />
         <Link to="/app/account/help" className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/[0.05]" aria-label="Ajuda">
           <CircleHelp size={18} />
         </Link>

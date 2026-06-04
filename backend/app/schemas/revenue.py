@@ -46,6 +46,19 @@ class RevenueOpportunityStatusItem(BaseModel):
     total: int
 
 
+class RevenueOriginDemandItem(BaseModel):
+    cidade: str | None = None
+    estado: str | None = None
+    pais: str | None = None
+    canal: str
+    visitantes: int
+    buscas: int
+    cotacoes: int
+    reservas: int
+    receita: float
+    conversao: float
+
+
 class RevenueIntelligenceSnapshot(BaseModel):
     summary: RevenueSummary
     reservas: list[RevenueReservationItem]
@@ -54,6 +67,7 @@ class RevenueIntelligenceSnapshot(BaseModel):
     receita_por_canal: list[RevenueBreakdownItem]
     receita_por_agente: list[RevenueBreakdownItem]
     status_oportunidades: list[RevenueOpportunityStatusItem]
+    mapa_origem_demanda: list[RevenueOriginDemandItem] = []
 
 
 class RevenueSeriesPoint(BaseModel):

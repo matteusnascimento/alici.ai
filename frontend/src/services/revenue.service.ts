@@ -45,6 +45,19 @@ export interface RevenueOpportunityStatusItem {
   total: number;
 }
 
+export interface RevenueOriginDemandItem {
+  cidade?: string | null;
+  estado?: string | null;
+  pais?: string | null;
+  canal: string;
+  visitantes: number;
+  buscas: number;
+  cotacoes: number;
+  reservas: number;
+  receita: number;
+  conversao: number;
+}
+
 export interface RevenueIntelligenceSnapshot {
   summary: RevenueSummary;
   reservas: RevenueReservationItem[];
@@ -53,6 +66,7 @@ export interface RevenueIntelligenceSnapshot {
   receita_por_canal: RevenueBreakdownItem[];
   receita_por_agente: RevenueBreakdownItem[];
   status_oportunidades: RevenueOpportunityStatusItem[];
+  mapa_origem_demanda: RevenueOriginDemandItem[];
 }
 
 export interface RevenueSeriesPoint {

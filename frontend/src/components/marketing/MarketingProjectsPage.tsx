@@ -18,28 +18,26 @@ import {
   Target,
   TrendingUp,
   Users,
-  Wand2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 
+import { MiniAssistantCard } from '../assistant/MiniAssistantCard';
 import { listProjects } from '../../services/marketing.service';
 import type { MarketingProject } from '../../types/marketing';
 
-const marketingViews = [
-  { key: 'overview', label: 'Visao Geral' },
-  { key: 'action-plan', label: 'Plano de Acao' },
-  { key: 'campaigns', label: 'Campanhas' },
-  { key: 'calendar', label: 'Calendario' },
-  { key: 'content', label: 'Conteudo' },
-  { key: 'audiences', label: 'Audiencias' },
-  { key: 'automations', label: 'Automacoes' },
-  { key: 'reports', label: 'Relatorios' },
-  { key: 'insights', label: 'Insights IA' },
+const marketingViews: Array<{ to: string; label: string; end?: boolean }> = [
+  { to: '/app/marketing', label: 'Visao Geral', end: true },
+  { to: '/app/marketing/planning', label: 'Planejamento' },
+  { to: '/app/marketing/campaigns', label: 'Campanhas' },
+  { to: '/app/marketing/calendar', label: 'Calendario' },
+  { to: '/app/marketing/creatives', label: 'Criativos' },
+  { to: '/app/marketing/audiences', label: 'Audiencias' },
+  { to: '/app/marketing/automations', label: 'Automacoes' },
+  { to: '/app/marketing/reports', label: 'Relatorios' },
+  { to: '/app/assistant', label: 'AXI Assistant' },
 ] as const;
-
-type MarketingView = (typeof marketingViews)[number]['key'];
 
 const kpiCards: Array<{ label: string; icon: LucideIcon; tone: string; empty: string }> = [
   { label: 'Investimento', icon: CircleDollarSign, tone: 'from-violet-600 to-purple-500', empty: 'Conecte Meta Ads ou Google Ads' },
@@ -167,7 +165,7 @@ function ActionPlanCard() {
           <Link to="/app/marketing/plans/new" className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white">
             <Plus size={14} /> Novo Plano
           </Link>
-          <button type="button" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Importar do Revenue</button>
+          <Link to="/app/marketing/plans/new?source=revenue" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Importar do Revenue</Link>
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
@@ -263,7 +261,7 @@ function CalendarCard() {
     <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-xl text-white">Calendario</h2>
-        <button type="button" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Ver calendario</button>
+        <Link to="/app/marketing/calendar" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Ver calendario</Link>
       </div>
       <div className="grid grid-cols-7 gap-2">
         {days.map((day) => (
@@ -281,7 +279,7 @@ function ContentCard() {
     <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-xl text-white">Conteudo</h2>
-        <Link to="/app/studio" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Criar no Studio</Link>
+        <Link to="/app/studio/editor/new?source=marketing" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Criar no Studio</Link>
       </div>
       <EmptyPanel min="min-h-28">Nenhum conteudo real associado a campanhas.</EmptyPanel>
     </section>
@@ -307,26 +305,7 @@ function CompactListCard({ title, icon: Icon, items }: { title: string; icon: Lu
 function RightRail() {
   return (
     <aside className="space-y-5">
-      <section className="rounded-2xl border border-violet-300/20 bg-[radial-gradient(circle_at_15%_0%,rgba(124,58,237,0.24),transparent_38%),linear-gradient(145deg,rgba(15,23,42,0.94),rgba(2,6,23,0.78))] p-5 shadow-[0_20px_60px_rgba(76,29,149,0.22)]">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-violet-500/20 text-violet-100">
-              <Wand2 size={21} />
-            </span>
-            <h2 className="font-display text-xl text-white">Insights IA</h2>
-          </div>
-          <MoreVertical size={17} className="text-slate-500" />
-        </div>
-        <EmptyPanel min="min-h-52">Sem dados suficientes para gerar insights confiaveis. Conecte Revenue e canais reais.</EmptyPanel>
-        <div className="mt-4 grid gap-2">
-          <Link to="/app/marketing/plans/new" className="w-full rounded-xl bg-violet-600 px-4 py-3 text-center text-sm font-semibold text-white">
-            Criar Plano
-          </Link>
-          <Link to="/app/assistant" className="w-full rounded-xl border border-violet-300/30 px-4 py-3 text-center text-sm font-semibold text-violet-100">
-            Abrir AXI Assistant
-          </Link>
-        </div>
-      </section>
+      <MiniAssistantCard context="marketing" />
 
       <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
         <h2 className="font-display text-xl text-white">Proximas acoes</h2>
@@ -345,8 +324,6 @@ export function MarketingProjectsPage() {
   const [projects, setProjects] = useState<MarketingProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const currentView = (searchParams.get('view') ?? 'overview') as MarketingView;
   const selectedProject = projects[0] ?? null;
 
   useEffect(() => {
@@ -364,12 +341,6 @@ export function MarketingProjectsPage() {
   }, []);
 
   const visibleProjects = useMemo(() => projects.slice(0, 6), [projects]);
-
-  function selectView(view: MarketingView) {
-    const next = new URLSearchParams(searchParams);
-    next.set('view', view);
-    setSearchParams(next, { replace: true });
-  }
 
   if (loading) {
     return (
@@ -395,17 +366,17 @@ export function MarketingProjectsPage() {
 
       <nav className="mt-6 flex gap-2 overflow-x-auto border-b border-white/10 pb-0">
         {marketingViews.map((view) => (
-          <button
-            key={view.key}
-            type="button"
-            onClick={() => selectView(view.key)}
-            className={[
+          <NavLink
+            key={view.to}
+            to={view.to}
+            end={view.end}
+            className={({ isActive }) => [
               'shrink-0 border-b-2 px-2 pb-3 text-sm font-semibold transition',
-              currentView === view.key ? 'border-violet-400 text-violet-200' : 'border-transparent text-slate-400 hover:text-white',
+              isActive ? 'border-violet-400 text-violet-200' : 'border-transparent text-slate-400 hover:text-white',
             ].join(' ')}
           >
             {view.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
 
@@ -415,15 +386,17 @@ export function MarketingProjectsPage() {
         {kpiCards.map((card) => <KpiCard key={card.label} {...card} />)}
       </section>
 
-      <div className="mt-5 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="mt-5 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <main className="space-y-5">
-          <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr_0.9fr]">
+          <section className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
             <RevenueInvestmentCard />
             <ChannelsCard />
-            <FunnelCard />
+            <div className="xl:col-span-2 2xl:col-span-1">
+              <FunnelCard />
+            </div>
           </section>
 
-          <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr_0.8fr]">
+          <section className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)_minmax(280px,0.8fr)]">
             <ActionPlanCard />
             <CampaignsCard projects={visibleProjects} />
             <PlanDetailsCard selected={selectedProject} />

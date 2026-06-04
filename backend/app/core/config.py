@@ -86,6 +86,9 @@ class Settings(BaseSettings):
     meta_oauth_redirect_uri: str = ""
     meta_app_secret: str = ""
     meta_webhook_verify_token: str = ""
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    google_oauth_redirect_uri: str = ""
 
     redis_url: str = ""
     redis_required: bool = False

@@ -1,5 +1,3 @@
-import os
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -119,15 +117,15 @@ async def billing_webhook(request: Request, db: Session = Depends(get_db)) -> di
 @router.get("/health")
 def billing_health() -> dict:
     """Verifica o estado da integração Stripe (para monitoramento em produção)."""
-    stripe_key = os.getenv("STRIPE_SECRET_KEY", "")
+    stripe_key = settings.stripe_secret_key
     prices_configured = all([
-        os.getenv("STRIPE_PRICE_PRO_MONTHLY"),
-        os.getenv("STRIPE_PRICE_PRO_YEARLY"),
-        os.getenv("STRIPE_PRICE_BUSINESS_MONTHLY"),
-        os.getenv("STRIPE_PRICE_BUSINESS_YEARLY"),
+        settings.stripe_price_pro_monthly,
+        settings.stripe_price_pro_yearly,
+        settings.stripe_price_business_monthly,
+        settings.stripe_price_business_yearly,
     ])
     return {
         "stripe_configured": bool(stripe_key),
         "prices_loaded": prices_configured,
-        "webhook_ready": bool(os.getenv("STRIPE_WEBHOOK_SECRET")),
+        "webhook_ready": bool(settings.stripe_webhook_secret),
     }

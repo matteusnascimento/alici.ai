@@ -15,19 +15,26 @@ import {
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useState } from 'react';
+import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
+import { MiniAssistantCard } from '../assistant/MiniAssistantCard';
 import { ApiError } from '../../services/api';
 import {
-  createProject,
+  createCampaign,
+  createPlan,
+  createAudience,
+  createCalendarEvent,
+  listAudiences,
   listCampaigns,
+  listCalendarEvents,
   listProjects,
   listMarketingResource,
 } from '../../services/marketing.service';
-import type { MarketingCampaignListItem, MarketingDataStatus, MarketingProject, MarketingProjectCreate } from '../../types/marketing';
+import type { MarketingAudience, MarketingCalendarEvent, MarketingCampaignListItem, MarketingDataStatus, MarketingProject, MarketingProjectCreate } from '../../types/marketing';
 
 const marketingNav = [
+  { label: 'Visao Geral', to: '/app/marketing', icon: BarChart3 },
   { label: 'Planejamento', to: '/app/marketing/planning', icon: Target },
   { label: 'Campanhas', to: '/app/marketing/campaigns', icon: Megaphone },
   { label: 'Audiencias', to: '/app/marketing/audiences', icon: Users },
@@ -35,7 +42,7 @@ const marketingNav = [
   { label: 'Automacoes', to: '/app/marketing/automations', icon: GitBranch },
   { label: 'Calendario', to: '/app/marketing/calendar', icon: CalendarDays },
   { label: 'Relatorios', to: '/app/marketing/reports', icon: BarChart3 },
-  { label: 'Insights IA', to: '/app/marketing/insights', icon: Bot },
+  { label: 'AXI Assistant', to: '/app/assistant', icon: Bot },
 ];
 
 const campaignStatuses = ['Rascunho', 'Agendada', 'Ativa', 'Pausada', 'Finalizada'];
@@ -194,12 +201,14 @@ function PlanningSummary({
   budget,
   complete,
   saving,
+  submitLabel,
 }: {
   form: MarketingProjectCreate;
   period: string;
   budget: string;
   complete: boolean;
   saving: boolean;
+  submitLabel: string;
 }) {
   const rows = [
     ['Objetivo', form.objective || '-'],
@@ -224,7 +233,7 @@ function PlanningSummary({
         disabled={saving || !complete}
         className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Plus size={16} /> {saving ? 'Criando...' : 'Criar plano'}
+        <Plus size={16} /> {saving ? 'Criando...' : submitLabel}
       </button>
       <p className="mt-3 text-xs leading-5 text-slate-500">
         O plano sera salvo como projeto real de Marketing e depois podera alimentar campanhas, calendario e conteudo.
@@ -276,7 +285,7 @@ function PlanningNextSteps() {
   );
 }
 
-function ResourceList({ resource, emptyMessage }: { resource: 'action-plans' | 'calendar' | 'content' | 'audiences' | 'automations' | 'reports' | 'insights'; emptyMessage: string }) {
+function ResourceList({ resource, emptyMessage }: { resource: 'action-plans' | 'content' | 'automations' | 'reports' | 'insights'; emptyMessage: string }) {
   const [items, setItems] = useState<MarketingDataStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -339,6 +348,7 @@ export function MarketingPlanningPage() {
   const complete = Boolean(form.name.trim() && form.objective.trim() && form.audience.trim() && form.offer.trim());
 
   const isCampaignForm = location.pathname.includes('/campaigns/new');
+  const entityLabel = isCampaignForm ? 'campanha' : 'plano';
 
   function toggleList(setter: Dispatch<SetStateAction<string[]>>, value: string) {
     setter((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
@@ -361,7 +371,7 @@ export function MarketingPlanningPage() {
     setSaving(true);
     setError(null);
     try {
-      const project = await createProject({
+      const payload = {
         ...form,
         notes: [
           form.notes,
@@ -369,10 +379,14 @@ export function MarketingPlanningPage() {
           period ? `Periodo: ${period}` : '',
           channels.length ? `Canais: ${channels.join(', ')}` : '',
         ].filter(Boolean).join('\n'),
+      };
+      const project = isCampaignForm ? await createCampaign(payload) : await createPlan(payload);
+      navigate(isCampaignForm ? '/app/marketing/campaigns' : '/app/marketing/planning', {
+        replace: true,
+        state: { createdProjectId: project.id },
       });
-      navigate(`/app/marketing/projects/${project.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Plano nao foi criado.');
+      setError(err instanceof ApiError ? err.message : isCampaignForm ? 'Campanha nao foi criada.' : 'Plano nao foi criado.');
     } finally {
       setSaving(false);
     }
@@ -392,9 +406,17 @@ export function MarketingPlanningPage() {
 
       <form onSubmit={submit} className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <main className="space-y-5">
-          <DataCard title="Criar plano" icon={Target}>
+          <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 md:grid-cols-4">
+            {['Briefing', 'Publico', 'Canais', 'Revisao'].map((step, index) => (
+              <div key={step} className="flex items-center gap-3 rounded-xl bg-slate-950/60 px-3 py-2 text-sm text-slate-300">
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-violet-500/20 text-xs font-semibold text-violet-100">{index + 1}</span>
+                {step}
+              </div>
+            ))}
+          </div>
+          <DataCard title={isCampaignForm ? 'Criar campanha' : 'Criar plano'} icon={Target}>
             <div className="grid gap-4 md:grid-cols-2">
-              <FormInput required label="Nome da campanha" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="Ferias Julho - Pousada Mar & Sol" />
+              <FormInput required label={`Nome da ${entityLabel}`} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="Ferias Julho - Pousada Mar & Sol" />
               <FormInput label="Datas" value={period} onChange={setPeriod} placeholder="01/07/2026 a 31/07/2026" />
               <FormInput label="Orcamento" value={budget} onChange={setBudget} placeholder="R$ 3.000" />
               <div className="md:col-span-2">
@@ -458,24 +480,8 @@ export function MarketingPlanningPage() {
         </main>
 
         <aside className="space-y-5">
-          <PlanningSummary form={form} period={period} budget={budget} complete={complete} saving={saving} />
-          <DataCard title="AXI Assistant" icon={Bot}>
-            <div className="space-y-3 text-sm text-slate-300">
-              <p className="rounded-xl border border-violet-300/20 bg-violet-500/10 px-3 py-2 text-violet-100">
-                O AXI Assistant pode transformar este briefing em recomendacao de publico, canais e investimento sem simular resultado.
-              </p>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Briefing atual</p>
-                <p className="mt-2">Objetivo: {form.objective || '-'}</p>
-                <p>Publico: {form.audience || '-'}</p>
-                <p>Canais: {channels.length ? channels.join(' + ') : '-'}</p>
-                <p>Investimento: {budget || '-'}</p>
-              </div>
-              <Link to="/app/assistant" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white">
-                <Send size={16} /> Abrir AXI Assistant
-              </Link>
-            </div>
-          </DataCard>
+          <PlanningSummary form={form} period={period} budget={budget} complete={complete} saving={saving} submitLabel={isCampaignForm ? 'Criar campanha' : 'Criar plano'} />
+          <MiniAssistantCard context="marketing" />
           <DataCard title="Contrato de dados" icon={CheckCircle2}>
             <div className="space-y-2 text-sm text-slate-300">
               <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-emerald-100">Salva plano real no backend.</p>
@@ -528,20 +534,105 @@ export function MarketingCampaignsPage() {
 }
 
 export function MarketingAudiencesPage() {
-  return <Shell title="Audiencias" subtitle="Crie publicos por cidade, estado, pais, ticket, origem, reservas e comportamento."><DataCard title="Publicos" icon={Users}><ResourceList resource="audiences" emptyMessage="Nenhuma audiencia real criada ou importada do Revenue ainda." /></DataCard></Shell>;
+  const [audiences, setAudiences] = useState<MarketingAudience[]>([]);
+  const [form, setForm] = useState({
+    name: '',
+    city: '',
+    state: '',
+    country: 'Brasil',
+    ticket: '',
+    source: '',
+    reservations: '',
+    behavior: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    listAudiences()
+      .then((rows) => setAudiences(rows))
+      .catch((err) => setError(err instanceof ApiError ? err.message : 'Falha ao carregar audiencias.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const created = await createAudience(form);
+      setAudiences((current) => [created, ...current]);
+      setForm({ name: '', city: '', state: '', country: 'Brasil', ticket: '', source: '', reservations: '', behavior: '' });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Audiencia nao foi criada.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Shell title="Audiencias" subtitle="Crie publicos por cidade, estado, pais, ticket, origem, reservas e comportamento.">
+      <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <DataCard title="Criar publico" icon={Users}>
+          <form onSubmit={submit} className="grid gap-3">
+            <FormInput required label="Nome" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="Casais Salvador alto ticket" />
+            <div className="grid gap-3 md:grid-cols-2">
+              <FormInput label="Cidade" value={form.city} onChange={(value) => setForm((current) => ({ ...current, city: value }))} />
+              <FormInput label="Estado" value={form.state} onChange={(value) => setForm((current) => ({ ...current, state: value }))} />
+              <FormInput label="Pais" value={form.country} onChange={(value) => setForm((current) => ({ ...current, country: value }))} />
+              <FormInput label="Ticket" value={form.ticket} onChange={(value) => setForm((current) => ({ ...current, ticket: value }))} placeholder="R$ 800+" />
+              <FormInput label="Origem" value={form.source} onChange={(value) => setForm((current) => ({ ...current, source: value }))} placeholder="Instagram, WhatsApp..." />
+              <FormInput label="Reservas" value={form.reservations} onChange={(value) => setForm((current) => ({ ...current, reservations: value }))} placeholder="2+ reservas" />
+            </div>
+            <label className="text-sm text-slate-300">
+              Comportamento
+              <textarea value={form.behavior} onChange={(event) => setForm((current) => ({ ...current, behavior: event.target.value }))} className="mt-1 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-violet-300" />
+            </label>
+            {error ? <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-100">{error}</p> : null}
+            <button disabled={saving || !form.name.trim()} type="submit" className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Salvando...' : 'Criar publico'}</button>
+          </form>
+        </DataCard>
+        <DataCard title="Publicos" icon={Users}>
+          {loading ? <Loader2 className="animate-spin text-violet-300" /> : audiences.length ? (
+            <div className="grid gap-3">
+              {audiences.map((audience) => (
+                <article key={audience.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm">
+                  <p className="font-semibold text-white">{audience.name}</p>
+                  <p className="mt-1 text-slate-400">{[audience.city, audience.state, audience.country].filter(Boolean).join(' / ') || 'Sem localidade'}</p>
+                  <p className="mt-2 text-slate-500">Ticket: {audience.ticket || '-'} | Origem: {audience.source || '-'} | Reservas: {audience.reservations || '-'}</p>
+                  {audience.behavior ? <p className="mt-2 text-slate-300">{audience.behavior}</p> : null}
+                </article>
+              ))}
+            </div>
+          ) : <EmptyState message="Nenhuma audiencia real criada ou importada do Revenue ainda." />}
+        </DataCard>
+      </div>
+    </Shell>
+  );
 }
 
 export function MarketingCreativesPage() {
   const creativeTypes = [
-    { label: 'Story', to: '/app/studio/templates?category=Stories' },
-    { label: 'Poster', to: '/app/studio/tools/ad' },
-    { label: 'Video', to: '/app/studio/editor/video?mode=new' },
-    { label: 'Banner', to: '/app/studio/templates?category=Ads' },
+    { label: 'Story', editor: '/app/studio/editor/new?source=marketing&type=story', template: '/app/studio/templates?category=Stories' },
+    { label: 'Poster', editor: '/app/studio/editor/new?source=marketing&type=poster', template: '/app/studio/tools/ad' },
+    { label: 'Video', editor: '/app/studio/editor/video?source=marketing&type=video', template: '/app/studio/templates?category=Video' },
+    { label: 'Banner', editor: '/app/studio/editor/new?source=marketing&type=banner', template: '/app/studio/templates?category=Ads' },
   ];
   return (
     <Shell title="Criativos" subtitle="Abra o Studio no editor correto conforme o tipo do criativo.">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {creativeTypes.map((item) => <Link key={item.label} to={item.to} className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 text-white hover:border-violet-300/40"><Image className="mb-4 text-violet-300" /><span className="font-display text-xl">{item.label}</span><p className="mt-2 text-sm text-slate-400">Abrir no Studio</p></Link>)}
+        {creativeTypes.map((item) => (
+          <article key={item.label} className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 text-white">
+            <Image className="mb-4 text-violet-300" />
+            <span className="font-display text-xl">{item.label}</span>
+            <div className="mt-5 grid gap-2">
+              <Link to={item.editor} className="rounded-xl bg-violet-600 px-3 py-2 text-center text-sm font-semibold text-white">Criar no Studio</Link>
+              <Link to={item.template} className="rounded-xl border border-white/10 px-3 py-2 text-center text-sm font-semibold text-slate-200">Usar template</Link>
+              <Link to="/app/marketing/campaigns" className="rounded-xl border border-white/10 px-3 py-2 text-center text-sm font-semibold text-slate-300">Vincular campanha</Link>
+            </div>
+          </article>
+        ))}
       </div>
     </Shell>
   );
@@ -552,12 +643,141 @@ export function MarketingAutomationsPage() {
 }
 
 export function MarketingCalendarPage() {
-  const days = Array.from({ length: 35 }, (_, index) => index + 1);
+  const [cursor, setCursor] = useState(() => new Date(2026, 5, 1));
+  const [mode, setMode] = useState<'mes' | 'semana' | 'dia'>('mes');
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [events, setEvents] = useState<MarketingCalendarEvent[]>([]);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventChannel, setEventChannel] = useState('Instagram');
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [eventError, setEventError] = useState<string | null>(null);
+  const label = cursor.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+  const firstWeekday = new Date(cursor.getFullYear(), cursor.getMonth(), 1).getDay();
+  const days = useMemo(() => {
+    const blanks = Array.from({ length: firstWeekday }, () => null);
+    const monthDays = Array.from({ length: daysInMonth }, (_, index) => index + 1);
+    return [...blanks, ...monthDays];
+  }, [daysInMonth, firstWeekday]);
+
+  function shiftMonth(delta: number) {
+    setCursor((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
+    setSelectedDay(null);
+  }
+
+  useEffect(() => {
+    listCalendarEvents()
+      .then((rows) => setEvents(rows))
+      .catch((err) => setEventError(err instanceof ApiError ? err.message : 'Falha ao carregar calendario.'))
+      .finally(() => setLoadingEvents(false));
+  }, []);
+
+  function eventsForDay(day: number) {
+    const dateKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return events.filter((event) => event.date === dateKey);
+  }
+
+  async function createSelectedEvent() {
+    if (!selectedDay || !eventTitle.trim()) return;
+    const dateKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+    setEventError(null);
+    try {
+      const created = await createCalendarEvent({
+        title: eventTitle,
+        date: dateKey,
+        channel: eventChannel,
+        status: 'scheduled',
+        notes: '',
+      });
+      setEvents((current) => [...current, created]);
+      setEventTitle('');
+    } catch (err) {
+      setEventError(err instanceof ApiError ? err.message : 'Evento nao foi criado.');
+    }
+  }
+
   return (
     <Shell title="Calendario" subtitle="Visual mensal de campanhas agendadas e conteudo programado.">
-      <DataCard title="Junho 2026" icon={CalendarDays}>
-        <ResourceList resource="calendar" emptyMessage="Nenhuma campanha agendada ou conteudo programado." />
-        <div className="mt-5 grid grid-cols-7 gap-2">{days.map((day) => <div key={day} className="min-h-24 rounded-xl border border-white/10 bg-white/[0.025] p-2 text-xs text-slate-400">{day}</div>)}</div>
+      <DataCard title={label.charAt(0).toUpperCase() + label.slice(1)} icon={CalendarDays}>
+        <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {(['mes', 'semana', 'dia'] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setMode(item)}
+                className={[
+                  'rounded-xl px-3 py-2 text-sm font-semibold',
+                  mode === item ? 'bg-violet-600 text-white' : 'border border-white/10 text-slate-300',
+                ].join(' ')}
+              >
+                {item === 'mes' ? 'Mes' : item === 'semana' ? 'Semana' : 'Dia'}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => shiftMonth(-1)} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300">Anterior</button>
+            <button type="button" onClick={() => setCursor(new Date())} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300">Hoje</button>
+            <button type="button" onClick={() => shiftMonth(1)} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300">Proximo</button>
+          </div>
+        </div>
+        {loadingEvents ? <Loader2 className="animate-spin text-violet-300" /> : eventError ? <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-100">{eventError}</p> : events.length === 0 ? <EmptyState message="Nenhuma campanha agendada ou conteudo programado." /> : null}
+        <div className="mt-5 grid grid-cols-7 gap-2">
+          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map((day) => (
+            <div key={day} className="px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{day}</div>
+          ))}
+          {days.map((day, index) => (
+            <button
+              key={`${day ?? 'blank'}-${index}`}
+              type="button"
+              disabled={!day}
+              onClick={() => setSelectedDay(day)}
+              className={[
+                'min-h-24 rounded-xl border p-2 text-left text-xs transition',
+                day ? 'border-white/10 bg-white/[0.025] text-slate-300 hover:border-violet-300/40' : 'border-transparent bg-transparent',
+              ].join(' ')}
+            >
+              {day ? (
+                <>
+                  <span className="font-semibold text-white">{day}</span>
+                  {eventsForDay(day).length ? (
+                    <div className="mt-3 space-y-1">
+                      {eventsForDay(day).slice(0, 2).map((event) => (
+                        <p key={event.id} className="truncate rounded-lg bg-violet-500/15 px-2 py-1 text-violet-100">{event.title}</p>
+                      ))}
+                    </div>
+                  ) : <p className="mt-3 text-slate-500">Sem evento real</p>}
+                </>
+              ) : null}
+            </button>
+          ))}
+        </div>
+        {selectedDay ? (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4">
+            <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 p-5 shadow-[0_30px_100px_rgba(0,0,0,0.5)]">
+              <h3 className="font-display text-2xl text-white">Eventos de {String(selectedDay).padStart(2, '0')}/{String(cursor.getMonth() + 1).padStart(2, '0')}</h3>
+              {eventsForDay(selectedDay).length ? (
+                <div className="mt-4 space-y-2">
+                  {eventsForDay(selectedDay).map((event) => (
+                    <div key={event.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-slate-300">
+                      <p className="font-semibold text-white">{event.title}</p>
+                      <p className="text-slate-500">{event.channel || 'Sem canal'} | {event.status}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="mt-2 text-sm text-slate-400">Nao ha campanhas ou conteudos reais agendados para este dia.</p>}
+              <div className="mt-5 grid gap-3">
+                <FormInput label="Novo evento" value={eventTitle} onChange={setEventTitle} placeholder="Post Instagram - Pacote romantico" />
+                <FormInput label="Canal" value={eventChannel} onChange={setEventChannel} placeholder="Instagram" />
+              </div>
+              <div className="mt-5 flex gap-2">
+                <button type="button" onClick={createSelectedEvent} className="flex-1 rounded-xl bg-violet-600 px-4 py-3 text-center text-sm font-semibold text-white">Salvar evento</button>
+                <Link to="/app/marketing/campaigns/new" className="rounded-xl border border-violet-300/30 px-4 py-3 text-center text-sm font-semibold text-violet-100">Criar campanha</Link>
+                <button type="button" onClick={() => setSelectedDay(null)} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-300">Fechar</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </DataCard>
     </Shell>
   );
@@ -568,7 +788,7 @@ export function MarketingReportsPage() {
 }
 
 export function MarketingInsightsPage() {
-  return <Shell title="Insights IA" subtitle="Recomendacoes com dados do Revenue, sugestoes de campanhas, publico e orcamento."><DataCard title="Recomendacoes" icon={Bot}><ResourceList resource="insights" emptyMessage="Sem dados suficientes para gerar insights confiaveis sem simular resultado." /><Link to="/app/revenue?view=business-pulse" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-300/30 px-4 py-3 text-sm font-semibold text-violet-100"><Send size={16} /> Abrir Revenue</Link></DataCard></Shell>;
+  return <Shell title="AXI Assistant" subtitle="Assistente executivo para criar, analisar e executar com contexto de Marketing."><MiniAssistantCard context="marketing" /></Shell>;
 }
 
 export function MarketingOverviewRedirect() {

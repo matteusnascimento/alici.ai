@@ -50,6 +50,16 @@ vi.mock('../services/revenue.service', () => ({
     }),
 }));
 
+vi.mock('../hooks/useChat', () => ({
+  useChat: () => ({
+    messages: [],
+    loading: false,
+    sending: false,
+    error: null,
+    sendMessage: vi.fn(),
+  }),
+}));
+
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
 
 describe('RevenueIntelligencePage', () => {
@@ -64,7 +74,7 @@ describe('RevenueIntelligencePage', () => {
     expect(screen.getByRole('heading', { name: /^Receita$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Origem das reservas/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Business Pulse/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Top cidades por receita/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Mapa de Origem e Demanda/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Control Room/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /AXI Assistant/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Plano de Acao/i })).toBeInTheDocument();

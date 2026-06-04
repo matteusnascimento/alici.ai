@@ -7,6 +7,10 @@ from app.models.user import User
 from app.schemas.marketing import (
     MarketingCampaignRequest,
     MarketingCampaignResponse,
+    MarketingAudienceCreate,
+    MarketingAudienceRead,
+    MarketingCalendarEventCreate,
+    MarketingCalendarEventRead,
     MarketingCampaignListItem,
     MarketingCampaignListResponse,
     MarketingChannelRevenueResponse,
@@ -102,9 +106,37 @@ def marketing_campaigns(current_user: User = Depends(get_current_user), db: Sess
     )
 
 
-@router.get("/calendar", response_model=list[MarketingDataStatus])
-def marketing_calendar(_: User = Depends(get_current_user)) -> list[MarketingDataStatus]:
-    return []
+@router.post("/campaigns", response_model=MarketingProjectRead)
+def create_campaign(
+    payload: MarketingProjectCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingProjectRead:
+    return MarketingService(db).create_project(current_user, payload)
+
+
+@router.patch("/campaigns/{campaign_id}", response_model=MarketingProjectRead)
+def update_campaign(
+    campaign_id: int,
+    payload: MarketingProjectUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingProjectRead:
+    return MarketingService(db).update_project(current_user, campaign_id, payload)
+
+
+@router.get("/calendar", response_model=list[MarketingCalendarEventRead])
+def marketing_calendar(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[MarketingCalendarEventRead]:
+    return MarketingService(db).list_calendar_events(current_user)
+
+
+@router.post("/calendar/events", response_model=MarketingCalendarEventRead)
+def create_calendar_event(
+    payload: MarketingCalendarEventCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingCalendarEventRead:
+    return MarketingService(db).create_calendar_event(current_user, payload)
 
 
 @router.get("/content", response_model=list[MarketingDataStatus])
@@ -112,9 +144,18 @@ def marketing_content(_: User = Depends(get_current_user)) -> list[MarketingData
     return []
 
 
-@router.get("/audiences", response_model=list[MarketingDataStatus])
-def marketing_audiences(_: User = Depends(get_current_user)) -> list[MarketingDataStatus]:
-    return []
+@router.get("/audiences", response_model=list[MarketingAudienceRead])
+def marketing_audiences(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[MarketingAudienceRead]:
+    return MarketingService(db).list_audiences(current_user)
+
+
+@router.post("/audiences", response_model=MarketingAudienceRead)
+def create_audience(
+    payload: MarketingAudienceCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingAudienceRead:
+    return MarketingService(db).create_audience(current_user, payload)
 
 
 @router.get("/automations", response_model=list[MarketingDataStatus])
@@ -214,6 +255,30 @@ def create_project(
     db: Session = Depends(get_db),
 ) -> MarketingProjectRead:
     return MarketingService(db).create_project(current_user, payload)
+
+
+@router.get("/plans", response_model=list[MarketingProjectRead])
+def list_plans(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[MarketingProjectRead]:
+    return MarketingService(db).list_projects(current_user)
+
+
+@router.post("/plans", response_model=MarketingProjectRead)
+def create_plan(
+    payload: MarketingProjectCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingProjectRead:
+    return MarketingService(db).create_project(current_user, payload)
+
+
+@router.patch("/plans/{plan_id}", response_model=MarketingProjectRead)
+def update_plan(
+    plan_id: int,
+    payload: MarketingProjectUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingProjectRead:
+    return MarketingService(db).update_project(current_user, plan_id, payload)
 
 
 @router.get("/projects", response_model=list[MarketingProjectRead])

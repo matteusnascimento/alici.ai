@@ -121,6 +121,7 @@ export function normalizeRevenueSnapshot(raw: unknown): RevenueIntelligenceSnaps
     receita_por_canal: ensureArray(obj.receita_por_canal, 'receita_por_canal'),
     receita_por_agente: ensureArray(obj.receita_por_agente, 'receita_por_agente'),
     status_oportunidades: ensureArray(obj.status_oportunidades, 'status_oportunidades'),
+    mapa_origem_demanda: ensureArray(obj.mapa_origem_demanda, 'mapa_origem_demanda'),
   };
 }
 

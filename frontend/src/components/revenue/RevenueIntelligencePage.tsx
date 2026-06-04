@@ -2,7 +2,6 @@ import {
   ArrowUpRight,
   Bot,
   CalendarDays,
-  ChevronRight,
   CheckCircle2,
   CircleDollarSign,
   ClipboardList,
@@ -13,16 +12,15 @@ import {
   MapPin,
   MessageCircle,
   Percent,
-  Send,
-  Sparkles,
   Target,
   Users,
   WalletCards,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
+import { MiniAssistantCard } from '../assistant/MiniAssistantCard';
 import type {
   RevenueBreakdownItem,
   RevenueFunnelStep,
@@ -63,13 +61,6 @@ const revenueAreaAliases: Record<string, RevenueAreaKey> = {
   reports: 'forecast',
   insights: 'forecast',
 };
-
-const assistantPrompts = [
-  'Quantas reservas tivemos hoje?',
-  'Qual canal gera mais receita?',
-  'Qual campanha teve melhor ROI?',
-  'Crie um plano para aumentar as reservas.',
-];
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value);
@@ -368,7 +359,6 @@ export function RevenueIntelligencePage() {
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<(typeof periodOptions)[number]>(30);
   const [actionTab, setActionTab] = useState<'doing' | 'planned' | 'done'>('doing');
-  const [assistantQuestion, setAssistantQuestion] = useState('');
   const rawArea = searchParams.get('view') ?? 'business-pulse';
   const currentArea: RevenueAreaKey =
     revenueAreaAliases[rawArea] ?? (revenueAreas.some((area) => area.key === rawArea) ? rawArea as RevenueAreaKey : 'business-pulse');
@@ -413,6 +403,7 @@ export function RevenueIntelligencePage() {
   const summary = snapshot?.summary;
   const revenueByChannel = snapshot?.receita_por_canal ?? [];
   const revenueSeries = series?.points ?? [];
+  const originDemand = snapshot?.mapa_origem_demanda ?? [];
   const hasData = hasBusinessData(snapshot);
 
   const kpis = [
@@ -563,10 +554,10 @@ export function RevenueIntelligencePage() {
 
             <article className="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_70%_20%,rgba(34,211,238,0.12),transparent_32%),linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] p-6 shadow-[0_22px_65px_rgba(0,0,0,0.24)]">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-2xl text-white">Top cidades por receita</h2>
+                <h2 className="font-display text-2xl text-white">Mapa de Origem e Demanda</h2>
                 <IconFrame icon={MapPinned} tone="bg-cyan-400/12 text-cyan-200" size="sm" />
               </div>
-              <div className="mt-5 grid gap-5 md:grid-cols-[220px_1fr] md:items-center">
+              <div className="mt-5 grid gap-5 md:grid-cols-[220px_1fr] md:items-start">
                 <div className="relative h-48 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.9),rgba(8,47,73,0.25))]">
                   <div className="absolute left-8 top-8 h-20 w-28 rounded-[45%] border border-cyan-200/20 bg-cyan-300/10" />
                   <div className="absolute bottom-8 right-8 h-24 w-24 rounded-[45%] border border-violet-200/20 bg-violet-300/10" />
@@ -575,7 +566,30 @@ export function RevenueIntelligencePage() {
                     <MapPin strokeWidth={2.2} className="h-5 w-5 shrink-0" />
                   </span>
                 </div>
-                <EmptyState>Sem dados geograficos consolidados para exibir cidades.</EmptyState>
+                {originDemand.length === 0 ? (
+                  <EmptyState>Conecte Website, Chats e Campanhas para visualizar informações.</EmptyState>
+                ) : (
+                  <div className="space-y-3">
+                    {originDemand.slice(0, 6).map((item) => (
+                      <article key={`${item.cidade ?? 'sem-cidade'}-${item.estado ?? 'sem-estado'}-${item.canal}`} className="rounded-xl border border-white/10 bg-white/[0.035] p-3 text-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-white">{[item.cidade, item.estado, item.pais].filter(Boolean).join(' / ') || 'Origem não identificada'}</p>
+                            <p className="mt-1 text-xs text-slate-400">{item.canal}</p>
+                          </div>
+                          <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">{item.conversao.toFixed(1)}%</span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-300 md:grid-cols-6">
+                          <span>Visitantes: {formatNumber(item.visitantes)}</span>
+                          <span>Buscas: {formatNumber(item.buscas)}</span>
+                          <span>Cotações: {formatNumber(item.cotacoes)}</span>
+                          <span>Reservas: {formatNumber(item.reservas)}</span>
+                          <span className="md:col-span-2">Receita: {formatCurrency(item.receita)}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
             </article>
           </section>
@@ -616,52 +630,7 @@ export function RevenueIntelligencePage() {
         </main>
 
         <aside className="space-y-7">
-          <section className="rounded-[1.5rem] border border-violet-300/20 bg-[radial-gradient(circle_at_20%_0%,rgba(168,85,247,0.24),transparent_38%),linear-gradient(160deg,rgba(15,23,42,0.95),rgba(2,6,23,0.82))] p-6 shadow-[0_26px_78px_rgba(76,29,149,0.24)]">
-            <div className="flex items-center gap-3">
-              <IconFrame icon={Sparkles} tone="bg-violet-500/20 text-violet-100" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">IA Insights</p>
-                <h2 className="font-display text-2xl text-white">AXI Assistant</h2>
-              </div>
-            </div>
-            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-              <p className="font-semibold text-white">Ola, vamos analisar seu Revenue.</p>
-              <p className="mt-1 text-sm leading-5 text-slate-400">As sugestoes abrem o assistente usando os dados reais disponiveis da plataforma.</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {assistantPrompts.map((prompt) => (
-                  <Link
-                    key={prompt}
-                    to="/app/assistant"
-                    className="rounded-full border border-white/10 bg-slate-950/65 px-3 py-2 text-left text-xs font-medium text-slate-200 transition hover:border-violet-400/50 hover:text-white"
-                  >
-                    {prompt}
-                  </Link>
-                ))}
-              </div>
-              <div className="mt-5 flex gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2">
-                <input
-                  value={assistantQuestion}
-                  onChange={(event) => setAssistantQuestion(event.target.value)}
-                  placeholder="Pergunte sobre leads, ROI ou reservas..."
-                  className="min-w-0 flex-1 bg-transparent px-2 text-sm text-white outline-none placeholder:text-slate-500"
-                />
-                <Link
-                  to="/app/assistant"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white shadow-[0_12px_28px_rgba(124,58,237,0.35)] transition hover:bg-violet-500"
-                  aria-label="Enviar pergunta ao AXI Assistant"
-                >
-                  <Send size={17} className="h-[17px] w-[17px] shrink-0" />
-                </Link>
-              </div>
-            </div>
-            <Link
-              to="/app/assistant"
-              className="mt-5 flex items-center justify-between rounded-2xl border border-violet-300/35 bg-[linear-gradient(135deg,#7c3aed,#c026d3)] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_18px_42px_rgba(124,58,237,0.32)] transition hover:brightness-110"
-            >
-              Abrir AXI Assistant
-              <ChevronRight size={17} className="h-[17px] w-[17px] shrink-0" />
-            </Link>
-          </section>
+          <MiniAssistantCard context="revenue" />
 
           <section className="min-h-[390px] rounded-[1.5rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.94),rgba(2,6,23,0.78))] p-6 shadow-[0_24px_72px_rgba(0,0,0,0.28)]">
             <div className="mb-4 flex items-center justify-between">

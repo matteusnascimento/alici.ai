@@ -41,6 +41,33 @@ export interface MarketingDataStatus {
   message: string;
 }
 
+export interface MarketingAudience {
+  id: number;
+  name: string;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  ticket?: string | null;
+  source?: string | null;
+  reservations?: string | null;
+  behavior?: string | null;
+  created_at: string;
+}
+
+export type MarketingAudienceCreate = Omit<MarketingAudience, 'id' | 'created_at'>;
+
+export interface MarketingCalendarEvent {
+  id: number;
+  title: string;
+  date: string;
+  channel?: string | null;
+  status: string;
+  notes?: string | null;
+  created_at: string;
+}
+
+export type MarketingCalendarEventCreate = Omit<MarketingCalendarEvent, 'id' | 'created_at'>;
+
 export interface MarketingCampaignListItem {
   id: number;
   name: string;

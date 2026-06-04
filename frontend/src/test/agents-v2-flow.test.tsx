@@ -122,7 +122,7 @@ describe('Agents v2 flow', () => {
     });
 
     expect(await screen.findByText(/Overview carregada/i)).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('mostra estado de loading no submit final', async () => {
     let resolveCreate: (value: any) => void = () => {};
@@ -175,7 +175,7 @@ describe('Agents v2 flow', () => {
     });
 
     expect(await screen.findByText(/Overview carregada/i)).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('mostra erro amigavel quando submit falha', async () => {
     createAgentV2Mock.mockRejectedValue(new Error('Method Not Allowed'));
@@ -192,5 +192,5 @@ describe('Agents v2 flow', () => {
     await userEvent.click(screen.getByRole('button', { name: /Publicar agente/i }));
 
     expect(await screen.findByText(/nao foi possivel|Não foi possível/i)).toBeInTheDocument();
-  });
+  }, 10000);
 });

@@ -43,7 +43,7 @@ const links = [
   { to: '/app/account/overview', label: 'Perfil', subtitle: 'Suas informacoes pessoais', icon: User },
   { to: '/app/account/security', label: 'Seguranca', subtitle: 'Senha e autenticacao', icon: Shield },
   { to: '/app/account/personalization', label: 'Preferencias', subtitle: 'Idioma, tema e visual', icon: Palette },
-  { to: '/app/account/notifications', label: 'Notificacoes', subtitle: 'Alertas e comunicacoes', icon: Bell },
+  { to: '/app/account/notifications', label: 'Notificacoes', subtitle: 'Preferencias de alertas', icon: Bell },
   { to: '/app/account/archived-chats', label: 'Sessoes', subtitle: 'Dispositivos conectados', icon: Archive },
   { to: '/app/account/data-controls', label: 'Privacidade', subtitle: 'Dados e permissoes', icon: Database },
 ];

@@ -16,6 +16,7 @@ export interface ChatMessage {
 export interface ChatSendPayload {
   text: string;
   conversation_id?: number;
+  context?: string;
 }
 
 export interface ChatSendResponse {

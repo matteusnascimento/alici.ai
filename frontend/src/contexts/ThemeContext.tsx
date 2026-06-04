@@ -27,6 +27,16 @@ function getSystemPrefersDark() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
+function resolveThemeMode(themeMode: string) {
+  if (themeMode === 'system') {
+    return getSystemPrefersDark() ? 'dark' : 'light';
+  }
+  if (themeMode === 'light') {
+    return 'light';
+  }
+  return 'dark';
+}
+
 function applyDocumentTheme(prefs: Partial<AccountPreferences>) {
   if (typeof document === 'undefined') {
     return;
@@ -34,15 +44,11 @@ function applyDocumentTheme(prefs: Partial<AccountPreferences>) {
 
   const themeMode = prefs.theme_mode;
   if (themeMode) {
-    const resolvedTheme =
-      themeMode === 'system'
-        ? getSystemPrefersDark()
-          ? 'dark'
-          : 'light'
-        : themeMode;
+    const resolvedTheme = resolveThemeMode(themeMode);
 
     document.documentElement.setAttribute('data-theme-mode', themeMode);
     document.documentElement.setAttribute('data-theme', resolvedTheme);
+    document.documentElement.setAttribute('data-theme-variant', themeMode);
     document.documentElement.style.setProperty('--theme-mode', resolvedTheme);
     document.documentElement.style.colorScheme = resolvedTheme;
     document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
@@ -60,6 +66,18 @@ function applyDocumentTheme(prefs: Partial<AccountPreferences>) {
 
   if (prefs.language) {
     document.documentElement.lang = prefs.language;
+  }
+
+  if (typeof prefs.interface_animations === 'boolean') {
+    document.documentElement.setAttribute('data-animations', prefs.interface_animations ? 'on' : 'off');
+  }
+
+  if (typeof prefs.advanced_visual_effects === 'boolean') {
+    document.documentElement.setAttribute('data-visual-effects', prefs.advanced_visual_effects ? 'advanced' : 'standard');
+  }
+
+  if (typeof prefs.compact_menus === 'boolean') {
+    document.documentElement.setAttribute('data-menu-density', prefs.compact_menus ? 'compact' : 'comfortable');
   }
 }
 
@@ -82,6 +100,9 @@ function writeCachedPreferences(prefs: Partial<AccountPreferences>) {
     theme_mode: prefs.theme_mode,
     accent_color: prefs.accent_color,
     language: prefs.language,
+    interface_animations: prefs.interface_animations,
+    advanced_visual_effects: prefs.advanced_visual_effects,
+    compact_menus: prefs.compact_menus,
   };
 
   localStorage.setItem(PREFERENCES_CACHE_KEY, JSON.stringify(cachePayload));

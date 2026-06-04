@@ -1,14 +1,20 @@
-from datetime import UTC
+from datetime import UTC, date
 import json
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.marketing_project import MarketingProject
+from app.models.marketing_audience import MarketingAudience
+from app.models.marketing_calendar_event import MarketingCalendarEvent
 from app.models.user import User
 from app.schemas.marketing import (
     MarketingCampaignRequest,
     MarketingCampaignResponse,
+    MarketingAudienceCreate,
+    MarketingAudienceRead,
+    MarketingCalendarEventCreate,
+    MarketingCalendarEventRead,
     MarketingContentRequest,
     MarketingContentResponse,
     MarketingCopyResponse,
@@ -215,6 +221,93 @@ class MarketingService:
             )
             for item in projects
         ]
+
+    def list_audiences(self, user: User) -> list[MarketingAudienceRead]:
+        rows = (
+            self.db.query(MarketingAudience)
+            .filter(MarketingAudience.user_id == user.id)
+            .order_by(MarketingAudience.created_at.desc())
+            .all()
+        )
+        return [
+            MarketingAudienceRead(
+                id=item.id,
+                name=item.name,
+                city=item.city,
+                state=item.state,
+                country=item.country,
+                ticket=item.ticket,
+                source=item.source,
+                reservations=item.reservations,
+                behavior=item.behavior,
+                created_at=item.created_at.astimezone(UTC).isoformat() if item.created_at else "",
+            )
+            for item in rows
+        ]
+
+    def create_audience(self, user: User, payload: MarketingAudienceCreate) -> MarketingAudienceRead:
+        audience = MarketingAudience(user_id=user.id, **payload.model_dump())
+        self.db.add(audience)
+        self.db.commit()
+        self.db.refresh(audience)
+        return MarketingAudienceRead(
+            id=audience.id,
+            name=audience.name,
+            city=audience.city,
+            state=audience.state,
+            country=audience.country,
+            ticket=audience.ticket,
+            source=audience.source,
+            reservations=audience.reservations,
+            behavior=audience.behavior,
+            created_at=audience.created_at.astimezone(UTC).isoformat() if audience.created_at else "",
+        )
+
+    def list_calendar_events(self, user: User) -> list[MarketingCalendarEventRead]:
+        rows = (
+            self.db.query(MarketingCalendarEvent)
+            .filter(MarketingCalendarEvent.user_id == user.id)
+            .order_by(MarketingCalendarEvent.date.asc(), MarketingCalendarEvent.created_at.desc())
+            .all()
+        )
+        return [
+            MarketingCalendarEventRead(
+                id=item.id,
+                title=item.title,
+                date=item.date.isoformat(),
+                channel=item.channel,
+                status=item.status,
+                notes=item.notes,
+                created_at=item.created_at.astimezone(UTC).isoformat() if item.created_at else "",
+            )
+            for item in rows
+        ]
+
+    def create_calendar_event(self, user: User, payload: MarketingCalendarEventCreate) -> MarketingCalendarEventRead:
+        try:
+            event_date = date.fromisoformat(payload.date)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Data invalida. Use YYYY-MM-DD.") from exc
+        event = MarketingCalendarEvent(
+            user_id=user.id,
+            title=payload.title,
+            date=event_date,
+            channel=payload.channel,
+            status=payload.status,
+            notes=payload.notes,
+        )
+        self.db.add(event)
+        self.db.commit()
+        self.db.refresh(event)
+        return MarketingCalendarEventRead(
+            id=event.id,
+            title=event.title,
+            date=event.date.isoformat(),
+            channel=event.channel,
+            status=event.status,
+            notes=event.notes,
+            created_at=event.created_at.astimezone(UTC).isoformat() if event.created_at else "",
+        )
 
     def get_project(self, user: User, project_id: int) -> MarketingProjectRead:
         project = self.db.query(MarketingProject).filter(

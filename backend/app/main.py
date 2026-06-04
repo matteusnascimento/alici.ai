@@ -22,10 +22,12 @@ from app.api.routes import (
     integrations,
     marketing,
     media,
+    notifications,
     revenue,
     settings as settings_routes,
     studio,
     subscriptions,
+    tracker,
     usage,
     users,
     webhooks,
@@ -107,6 +109,7 @@ app.include_router(agents.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(marketing.router, prefix="/api")
 app.include_router(media.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
 app.include_router(revenue.router, prefix="/api")
 app.include_router(settings_routes.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
@@ -114,6 +117,7 @@ app.include_router(subscriptions.router, prefix="/api")
 app.include_router(usage.router, prefix="/api")
 app.include_router(integrations.router, prefix="/api")
 app.include_router(studio.router, prefix="/api")
+app.include_router(tracker.router, prefix="/api")
 app.include_router(webhooks.router, prefix="/api")
 app.include_router(health.router)
 

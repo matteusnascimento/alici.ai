@@ -3,6 +3,10 @@ import type {
   MarketingCampaignInput,
   MarketingCampaignList,
   MarketingCampaignResult,
+  MarketingAudience,
+  MarketingAudienceCreate,
+  MarketingCalendarEvent,
+  MarketingCalendarEventCreate,
   MarketingDataStatus,
   MarketingFunnel,
   MarketingKpi,
@@ -67,12 +71,48 @@ export function getMarketingFunnel(): Promise<MarketingFunnel> {
   return apiFetch<MarketingFunnel>('/marketing/funnel');
 }
 
-export function listMarketingResource(resource: 'action-plans' | 'calendar' | 'content' | 'audiences' | 'automations' | 'reports' | 'insights') {
+export function listMarketingResource(resource: 'action-plans' | 'content' | 'automations' | 'reports' | 'insights') {
   return apiFetch<MarketingDataStatus[]>(`/marketing/${resource}`);
+}
+
+export function listAudiences(): Promise<MarketingAudience[]> {
+  return apiFetch<MarketingAudience[]>('/marketing/audiences');
+}
+
+export function createAudience(data: MarketingAudienceCreate): Promise<MarketingAudience> {
+  return apiFetch<MarketingAudience>('/marketing/audiences', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function listCalendarEvents(): Promise<MarketingCalendarEvent[]> {
+  return apiFetch<MarketingCalendarEvent[]>('/marketing/calendar');
+}
+
+export function createCalendarEvent(data: MarketingCalendarEventCreate): Promise<MarketingCalendarEvent> {
+  return apiFetch<MarketingCalendarEvent>('/marketing/calendar/events', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export function createProject(data: MarketingProjectCreate): Promise<MarketingProject> {
   return apiFetch<MarketingProject>('/marketing/projects', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function createPlan(data: MarketingProjectCreate): Promise<MarketingProject> {
+  return apiFetch<MarketingProject>('/marketing/plans', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function createCampaign(data: MarketingProjectCreate): Promise<MarketingProject> {
+  return apiFetch<MarketingProject>('/marketing/campaigns', {
     method: 'POST',
     body: JSON.stringify(data),
   });

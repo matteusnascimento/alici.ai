@@ -33,6 +33,18 @@ def test_account_profile_and_preferences_flow(client, auth_headers):
         'theme_mode': 'light',
         'accent_color': '#0ea5e9',
         'haptic_feedback': True,
+        'interface_animations': True,
+        'advanced_visual_effects': True,
+        'compact_menus': False,
+        'contextual_tips': True,
+        'confirm_critical_actions': True,
+        'open_last_module': True,
+        'autosave_filters': True,
+        'keyboard_shortcuts': True,
+        'show_quick_metrics': True,
+        'assistant_mode': 'executivo',
+        'assistant_response_detail': 'detalhadas',
+        'assistant_tone': 'profissional',
         'background_conversation': True,
         'autocomplete': True,
         'trending': False,
@@ -42,6 +54,7 @@ def test_account_profile_and_preferences_flow(client, auth_headers):
     preferences_response = client.put('/api/account/preferences', headers=auth_headers, json=preferences_payload)
     assert preferences_response.status_code == 200
     assert preferences_response.json()['accent_color'] == '#0ea5e9'
+    assert preferences_response.json()['assistant_mode'] == 'executivo'
 
     notifications_payload = {
         'notifications_enabled': True,

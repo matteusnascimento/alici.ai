@@ -12,11 +12,14 @@ from app.models.agent_conversation import AgentConversation
 from app.models.agent_log import AgentLog
 from app.models.agent_message import AgentMessage
 from app.models.marketing_project import MarketingProject
+from app.models.reservation import Reservation
 from app.models.user import User
+from app.services.website_tracker_service import WebsiteTrackerService
 from app.schemas.revenue import (
     RevenueBreakdownItem,
     RevenueFunnelStep,
     RevenueIntelligenceSnapshot,
+    RevenueOriginDemandItem,
     RevenueOpportunityStatusItem,
     RevenueRemarketing,
     RevenueReservationItem,
@@ -133,12 +136,17 @@ class RevenueService:
         )
 
         reservations: list[RevenueReservationItem] = []
+        explicit_reservations = (
+            self.db.query(Reservation)
+            .filter(Reservation.created_at >= window_start)
+            .all()
+        )
         revenue_by_channel: dict[str, float] = defaultdict(float)
         revenue_by_agent: dict[str, float] = defaultdict(float)
         source_counter: dict[str, int] = defaultdict(int)
         opportunity_counts: dict[str, int] = defaultdict(int)
 
-        leads_received = len(conversations)
+        leads_received = len(conversations) + len(explicit_reservations)
         qualified_count = 0
         advanced_count = 0
         proposal_count = 0
@@ -148,6 +156,28 @@ class RevenueService:
         recovered_reservations = 0
         recovered_revenue = 0.0
         total_revenue = 0.0
+
+        for reservation in explicit_reservations:
+            is_closed_reservation = self._normalize_status(reservation.status) not in {"cancelled", "canceled", "cancelada"}
+            channel_label = reservation.channel or "Reserva direta"
+            source_label = reservation.source or channel_label
+            value = float(reservation.total_price or 0.0)
+            if is_closed_reservation:
+                closed_count += 1
+                total_revenue += value
+                revenue_by_channel[channel_label] += value
+                source_counter[source_label] += 1
+                reservations.append(
+                    RevenueReservationItem(
+                        reserva=reservation.reservation_id,
+                        cliente=reservation.guest_name,
+                        canal=channel_label,
+                        origem=source_label,
+                        valor=value,
+                        status="Fechada",
+                        agente_responsavel="Sistema",
+                    )
+                )
 
         for conversation in conversations:
             status = self._normalize_status(conversation.status)
@@ -205,8 +235,6 @@ class RevenueService:
 
             if is_closed:
                 closed_count += 1
-                if inferred_value <= 0:
-                    inferred_value = 497.0
                 total_revenue += inferred_value
 
                 channel_label = self._channel_label(conversation.channel_type)
@@ -321,6 +349,48 @@ class RevenueService:
             for label in status_labels
         ]
 
+        origin_demand = [
+            RevenueOriginDemandItem(
+                cidade=item.city,
+                estado=item.state,
+                pais=item.country,
+                canal=item.channel,
+                visitantes=item.visitantes,
+                buscas=item.buscas,
+                cotacoes=item.cotacoes,
+                reservas=item.reservas,
+                receita=item.receita,
+                conversao=item.conversao,
+            )
+            for item in WebsiteTrackerService(self.db).origin_demand()
+        ]
+        if not origin_demand:
+            reservation_buckets: dict[tuple[str, str, str, str], dict[str, float | int]] = defaultdict(lambda: {"reservas": 0, "receita": 0.0})
+            for reservation in explicit_reservations:
+                key = (
+                    reservation.city or "",
+                    reservation.state or "",
+                    reservation.country or "",
+                    reservation.channel or "Reserva direta",
+                )
+                reservation_buckets[key]["reservas"] = int(reservation_buckets[key]["reservas"]) + 1
+                reservation_buckets[key]["receita"] = float(reservation_buckets[key]["receita"]) + float(reservation.total_price or 0.0)
+            origin_demand = [
+                RevenueOriginDemandItem(
+                    cidade=city or None,
+                    estado=state or None,
+                    pais=country or None,
+                    canal=channel,
+                    visitantes=0,
+                    buscas=0,
+                    cotacoes=0,
+                    reservas=int(values["reservas"]),
+                    receita=round(float(values["receita"]), 2),
+                    conversao=0.0,
+                )
+                for (city, state, country, channel), values in sorted(reservation_buckets.items(), key=lambda item: float(item[1]["receita"]), reverse=True)
+            ]
+
         summary = RevenueSummary(
             receita_total=round(total_revenue, 2),
             reservas_fechadas=closed_count,
@@ -349,6 +419,7 @@ class RevenueService:
             receita_por_canal=receita_por_canal,
             receita_por_agente=receita_por_agente,
             status_oportunidades=status_oportunidades,
+            mapa_origem_demanda=origin_demand,
         )
 
     def get_revenue_series(self, user: User, days: int = 30, granularity: str = "daily") -> RevenueSeriesResponse:
@@ -362,19 +433,17 @@ class RevenueService:
             .filter(Agent.user_id == user.id, AgentConversation.created_at >= window_start)
             .all()
         )
+        explicit_reservations = (
+            self.db.query(Reservation)
+            .filter(Reservation.created_at >= window_start, Reservation.status != "cancelled")
+            .all()
+        )
 
         buckets: dict[str, dict[str, Any]] = {}
 
-        for conversation in conversations:
-            stage = self._normalize_stage(conversation.sales_stage)
-            if not self._is_closed(stage):
-                continue
-
-            value = float(conversation.reservation_value or 0.0)
+        def add_bucket(created_at: datetime, value: float) -> None:
             if value <= 0:
-                value = 497.0
-
-            created_at = conversation.created_at or datetime.now(UTC)
+                return
             if mode == "weekly":
                 start_date = (created_at - timedelta(days=created_at.weekday())).date()
                 end_date = start_date + timedelta(days=6)
@@ -400,6 +469,20 @@ class RevenueService:
 
             bucket["receita"] += value
             bucket["reservas_fechadas"] += 1
+
+        for reservation in explicit_reservations:
+            add_bucket(reservation.created_at or datetime.now(UTC), float(reservation.total_price or 0.0))
+
+        for conversation in conversations:
+            stage = self._normalize_stage(conversation.sales_stage)
+            if not self._is_closed(stage):
+                continue
+
+            value = float(conversation.reservation_value or 0.0)
+            if value <= 0:
+                continue
+
+            add_bucket(conversation.created_at or datetime.now(UTC), value)
 
         points = [
             RevenueSeriesPoint(

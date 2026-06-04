@@ -19,7 +19,20 @@ from app.models.integration_account import IntegrationAccount
 from app.models.user import User
 from app.services.agent_runtime_service import AgentRuntimeError, AgentRuntimeService
 
-ACTIVE_PROVIDERS = frozenset({"whatsapp", "instagram", "website_chat", "api", "email", "webhook"})
+ACTIVE_PROVIDERS = frozenset({
+    "whatsapp",
+    "instagram",
+    "website_chat",
+    "meta_ads",
+    "google_ads",
+    "google_analytics",
+    "omnibees",
+    "pms",
+    "stripe",
+    "api",
+    "email",
+    "webhook",
+})
 COMING_SOON_PROVIDERS = frozenset()
 SUPPORTED_PROVIDERS = ACTIVE_PROVIDERS | COMING_SOON_PROVIDERS
 
@@ -40,6 +53,42 @@ PROVIDER_CATALOG: dict[str, dict[str, str | bool]] = {
         "title": "Chat do site",
         "description": "Widget embutido para atender visitantes no seu site.",
         "helper": "Nao exige credenciais externas. Depois de vincular, instale o script do widget no site.",
+        "supports_activation": True,
+    },
+    "meta_ads": {
+        "title": "Meta Ads",
+        "description": "Investimento, campanhas e desempenho de anuncios Meta.",
+        "helper": "Conector cadastravel. Sincronizacao real depende de token Meta Ads e conta de anuncios.",
+        "supports_activation": True,
+    },
+    "google_ads": {
+        "title": "Google Ads",
+        "description": "Campanhas, custo, conversoes e ROAS do Google Ads.",
+        "helper": "Conector cadastravel. Sincronizacao real depende de OAuth Google Ads e customer id.",
+        "supports_activation": True,
+    },
+    "google_analytics": {
+        "title": "Google Analytics",
+        "description": "Origem de trafego, eventos e conversoes do site.",
+        "helper": "Conector cadastravel. Sincronizacao real depende de OAuth Google e propriedade GA4.",
+        "supports_activation": True,
+    },
+    "omnibees": {
+        "title": "OmniBees",
+        "description": "Reservas e disponibilidade para hotelaria.",
+        "helper": "Conector cadastravel. Captura real depende de endpoint e credenciais OmniBees.",
+        "supports_activation": True,
+    },
+    "pms": {
+        "title": "PMS / Sistema hoteleiro",
+        "description": "Reservas, hospedes e disponibilidade vindos do sistema hoteleiro.",
+        "helper": "Informe endpoint e credenciais de API do PMS. O AXI so salva depois de testar a conexao.",
+        "supports_activation": True,
+    },
+    "stripe": {
+        "title": "Stripe",
+        "description": "Billing, assinaturas e eventos financeiros da plataforma.",
+        "helper": "Billing Stripe existente permanece no modulo de cobranca; aqui fica apenas o status operacional.",
         "supports_activation": True,
     },
     "api": {
@@ -111,6 +160,14 @@ class ChannelIntegrationService:
             return bool(payload.get("access_token") and payload.get("external_account_id"))
         if provider == "instagram":
             return bool(payload.get("access_token") and payload.get("external_account_id"))
+        if provider == "meta_ads":
+            return bool(payload.get("access_token") and (payload.get("external_account_id") or config.get("ad_account_id")))
+        if provider in {"google_ads", "google_analytics"}:
+            return bool(payload.get("access_token") and (payload.get("external_account_id") or config.get("customer_id")))
+        if provider in {"omnibees", "pms"}:
+            return bool(config.get("endpoint") and (payload.get("access_token") or config.get("api_key")))
+        if provider == "stripe":
+            return bool(payload.get("access_token") or config.get("webhook_configured") or config.get("secret_key_configured"))
         if provider == "api":
             return bool(config.get("api_url"))
         if provider == "webhook":
@@ -133,7 +190,7 @@ class ChannelIntegrationService:
             return "error"
         if provider == "website_chat":
             return "connected"
-        if provider not in {"whatsapp", "instagram"}:
+        if provider not in {"whatsapp", "instagram", "meta_ads", "google_ads", "google_analytics"}:
             return "pending_setup" if self._has_required_config(provider, payload) else "auth_required"
         if not payload.get("access_token"):
             return "auth_required"
@@ -154,7 +211,7 @@ class ChannelIntegrationService:
             return "auth_required"
         if provider == "website_chat" and account.status == "connected":
             return "connected"
-        if provider not in {"whatsapp", "instagram"}:
+        if provider not in {"whatsapp", "instagram", "meta_ads", "google_ads", "google_analytics"}:
             return "pending_setup" if account.status == "pending_setup" else account.status
         if endpoint.webhook_status == "active" and account.status == "connected":
             return "connected"
@@ -170,6 +227,32 @@ class ChannelIntegrationService:
             "metadata": self._load_json(account.metadata_json),
             "created_at": account.created_at,
             "updated_at": account.updated_at,
+        }
+
+    def _provider_public_details(self, account_rows: list[IntegrationAccount]) -> dict[str, Any]:
+        selected = next((item for item in account_rows if item.status == "connected"), None)
+        selected = selected or (account_rows[0] if account_rows else None)
+        if not selected:
+            return {
+                "account_name": None,
+                "last_sync_at": None,
+                "last_error": None,
+                "data_received": None,
+                "scopes": [],
+            }
+
+        metadata = self._load_json(selected.metadata_json)
+        scopes = metadata.get("scopes") or metadata.get("granted_scopes") or []
+        if isinstance(scopes, str):
+            scopes = [item.strip() for item in scopes.split(",") if item.strip()]
+        if not isinstance(scopes, list):
+            scopes = []
+        return {
+            "account_name": selected.external_account_name,
+            "last_sync_at": metadata.get("last_sync_at"),
+            "last_error": metadata.get("last_error"),
+            "data_received": metadata.get("data_received"),
+            "scopes": [str(item) for item in scopes],
         }
 
     def _upsert_integration_account(self, user: User, provider: str, payload: dict[str, Any]) -> IntegrationAccount:
@@ -201,6 +284,16 @@ class ChannelIntegrationService:
         account.metadata_json = self._dump_json(payload.get("metadata") or {})
         account.status = self._derive_account_status(provider, payload)
         self.db.flush()
+        return account
+
+    def upsert_connected_account(self, user: User, provider: str, payload: dict[str, Any]) -> IntegrationAccount:
+        normalized = self._validate_provider(provider)
+        metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+        metadata["webhook_verified"] = True
+        payload["metadata"] = metadata
+        account = self._upsert_integration_account(user, normalized, payload)
+        self.db.commit()
+        self.db.refresh(account)
         return account
 
     def _upsert_channel_endpoint(self, account: IntegrationAccount, provider: str, payload: dict[str, Any]) -> ChannelEndpoint:
@@ -300,6 +393,11 @@ class ChannelIntegrationService:
                     "connected_accounts": status["connected_accounts"],
                     "active_bindings": status["active_bindings"],
                     "supports_activation": bool(catalog["supports_activation"]),
+                    "account_name": status["account_name"],
+                    "last_sync_at": status["last_sync_at"],
+                    "last_error": status["last_error"],
+                    "data_received": status["data_received"],
+                    "scopes": status["scopes"],
                 }
             )
         return rows
@@ -334,6 +432,11 @@ class ChannelIntegrationService:
                 "active_endpoints": 0,
                 "active_bindings": 0,
                 "helper_text": str(PROVIDER_CATALOG[normalized]["helper"]),
+                "account_name": None,
+                "last_sync_at": None,
+                "last_error": None,
+                "data_received": None,
+                "scopes": [],
             }
 
         accounts = self.db.query(IntegrationAccount).filter(
@@ -356,6 +459,7 @@ class ChannelIntegrationService:
         elif any(item.status == "auth_required" for item in account_rows):
             summary_status = "auth_required"
 
+        details = self._provider_public_details(account_rows)
         return {
             "provider": normalized,
             "status": summary_status,
@@ -363,6 +467,7 @@ class ChannelIntegrationService:
             "active_endpoints": len([item for item in endpoints if item.is_active]),
             "active_bindings": len([item for item in bindings if item.is_active]),
             "helper_text": str(PROVIDER_CATALOG[normalized]["helper"]),
+            **details,
         }
 
     def disconnect_provider(self, user: User, provider: str) -> dict[str, Any]:
@@ -387,6 +492,42 @@ class ChannelIntegrationService:
 
         self.db.commit()
         return self.get_provider_status(user, normalized)
+
+    def test_provider(self, user: User, provider: str) -> dict[str, Any]:
+        normalized = self._validate_provider(provider, allow_coming_soon=True)
+        status_summary = self.get_provider_status(user, normalized)
+        status_value = status_summary["status"]
+        if status_value == "connected":
+            message = "Integracao cadastrada e ativa no AXI. A disponibilidade externa depende do provider."
+        elif status_value == "pending_setup":
+            message = "Integracao cadastrada, mas ainda pendente de validacao externa ou webhook."
+        elif status_value == "auth_required":
+            message = "Credenciais ou permissao externa ausentes para testar esta integracao."
+        elif status_value == "disconnected":
+            message = "Nenhuma conta real conectada para este provider."
+        else:
+            message = status_summary["helper_text"]
+        return {
+            "provider": normalized,
+            "status": status_value,
+            "message": message,
+            "status_code": 200 if status_value == "connected" else 422,
+        }
+
+    def sync_provider(self, user: User, provider: str) -> dict[str, Any]:
+        normalized = self._validate_provider(provider, allow_coming_soon=True)
+        status_summary = self.get_provider_status(user, normalized)
+        if status_summary["status"] != "connected":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Sincronizacao indisponivel: conecte e valide o provider antes de sincronizar dados reais.",
+            )
+        return {
+            "provider": normalized,
+            "status": "pending_setup",
+            "message": "Provider conectado, mas rotina de sincronizacao externa ainda nao foi configurada para execucao automatica.",
+            "status_code": 202,
+        }
 
     def list_agent_channels(self, user: User, agent_id: int) -> list[AgentChannelBinding]:
         self._agent_or_404(user, agent_id)

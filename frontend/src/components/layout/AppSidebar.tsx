@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Bot, Building2, Home, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
+import { BadgeDollarSign, Bot, Building2, ChevronsLeft, ChevronsRight, Home, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -117,6 +117,7 @@ export function AppSidebar({
   }, []);
 
   const expanded = useMemo(() => (hoverCapable ? expandedDesktop : true), [expandedDesktop, hoverCapable]);
+  const CollapseIcon = expanded ? ChevronsLeft : ChevronsRight;
 
   useEffect(() => {
     onDesktopExpandedChange?.(expanded);
@@ -148,6 +149,21 @@ export function AppSidebar({
           {navigationItems.map((item) => (
             <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
+          <button
+            type="button"
+            onClick={() => setExpandedDesktop((current) => !current)}
+            className={[
+              'mt-auto flex items-center border border-transparent bg-white/[0.03] text-sm text-slate-300 transition hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
+              expanded ? 'h-12 justify-start gap-3 rounded-2xl px-3' : 'mx-auto h-12 w-12 justify-center rounded-2xl p-0',
+            ].join(' ')}
+            aria-label={expanded ? 'Recolher sidebar' : 'Expandir sidebar'}
+            title={!expanded ? 'Expandir sidebar' : undefined}
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-ink/70 text-cyan shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+              <CollapseIcon size={18} strokeWidth={2.2} className="h-[18px] w-[18px] shrink-0" />
+            </span>
+            {expanded ? <span className="min-w-0 truncate text-sm font-medium leading-5">Recolher menu</span> : null}
+          </button>
         </nav>
         <SidebarFooter expanded={expanded} />
       </aside>

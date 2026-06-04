@@ -28,6 +28,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+import { MiniAssistantCard } from '../../assistant/MiniAssistantCard';
 import { getStudioOverview } from '../../../services/studio.service';
 import { listStudioTemplateDefinitions } from '../../../services/studioTemplate.service';
 import type { StudioOverviewResponse, StudioRecentProjectItem } from '../../../types/studioV2';
@@ -379,7 +380,9 @@ export function StudioHomePage() {
         </div>
 
         <aside className="hidden min-h-0 overflow-y-auto border-l border-white/[0.08] bg-[#07101d]/95 p-4 xl:block">
-          <Panel className="p-4">
+          <MiniAssistantCard context="studio" />
+
+          <Panel className="mt-4 p-4">
             <SectionHeader title="Acoes rapidas" />
             <div className="space-y-2">
               {quickActions.map((item) => <QuickAction key={item.label} item={item} />)}

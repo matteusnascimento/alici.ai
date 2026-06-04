@@ -15,6 +15,13 @@ const suggestionCards = [
   { label: 'Gere um plano de acao para o proximo mes', icon: TrendingUp },
 ];
 
+const assistantModes = [
+  { title: 'Operacional', description: 'Atendimento, reservas, leads e pendencias.' },
+  { title: 'Analítico', description: 'Revenue, funil, canais e conversao.' },
+  { title: 'Executivo', description: 'Relatorios, riscos, prioridades e plano de acao.' },
+  { title: 'Criativo', description: 'Campanhas, conteudo e apoio ao Studio.' },
+];
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value);
 }
@@ -95,9 +102,18 @@ export function AxiAssistantPage() {
               <p className="text-2xl font-bold text-white">Ola, Mateus!</p>
               <h2 className="mt-2 font-display text-4xl text-violet-200">Como posso te ajudar hoje?</h2>
               <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
-                Consulte dados, gere analises, obtenha insights e receba recomendacoes para o crescimento do seu negocio.
+                Assistente Operacional, Analitico, Executivo e Criativo para trabalhar somente com dados reais da plataforma.
               </p>
             </div>
+          </section>
+
+          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {assistantModes.map((mode) => (
+              <article key={mode.title} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                <p className="font-semibold text-white">{mode.title}</p>
+                <p className="mt-2 text-sm leading-5 text-slate-400">{mode.description}</p>
+              </article>
+            ))}
           </section>
 
           <section>
@@ -123,7 +139,7 @@ export function AxiAssistantPage() {
               {loading ? <Loader2 className="mx-auto mt-20 animate-spin text-violet-300" /> : null}
               {!loading && messages.length === 0 ? (
                 <div className="grid min-h-72 place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
-                  Nenhuma consulta interna ainda. Pergunte sobre Revenue, Marketing, reservas ou operacao.
+                  Sem dados disponiveis. Conecte as integracoes para habilitar analises.
                 </div>
               ) : null}
               {messages.map((message) => (
@@ -205,7 +221,7 @@ export function AxiAssistantPage() {
               <span className="text-xs font-semibold text-violet-300">Ver todos</span>
             </div>
             {insightItems.length === 0 ? (
-              <p className="rounded-xl bg-white/[0.035] p-4 text-sm text-slate-400">Sem dados suficientes para gerar insights sem simular resultados.</p>
+              <p className="rounded-xl bg-white/[0.035] p-4 text-sm text-slate-400">Sem dados disponiveis. Conecte as integracoes para habilitar analises.</p>
             ) : (
               <div className="space-y-3">
                 {insightItems.map((item) => (

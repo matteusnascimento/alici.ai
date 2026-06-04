@@ -87,6 +87,35 @@ class MarketingDataStatus(BaseModel):
     message: str
 
 
+class MarketingAudienceCreate(BaseModel):
+    name: str
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
+    ticket: str | None = None
+    source: str | None = None
+    reservations: str | None = None
+    behavior: str | None = None
+
+
+class MarketingAudienceRead(MarketingAudienceCreate):
+    id: int
+    created_at: str
+
+
+class MarketingCalendarEventCreate(BaseModel):
+    title: str
+    date: str
+    channel: str | None = None
+    status: str = "scheduled"
+    notes: str | None = None
+
+
+class MarketingCalendarEventRead(MarketingCalendarEventCreate):
+    id: int
+    created_at: str
+
+
 class MarketingKpiRead(BaseModel):
     key: str
     label: str

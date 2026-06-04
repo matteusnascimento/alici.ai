@@ -103,8 +103,8 @@ export function NotificationSettingsForm({ value, onChange, onSave, saving }: No
       <div className="mb-5 flex items-center gap-3">
         {masterOff ? <BellOff size={20} className="text-slate-400" /> : <Bell size={20} className="text-cyan-300" />}
         <div>
-          <h2 className="font-display text-2xl text-white">Notificações</h2>
-          <p className="mt-0.5 text-sm text-slate-400">Escolha como e quando quer ser notificado.</p>
+          <h2 className="font-display text-2xl text-white">Preferencias de notificacoes</h2>
+          <p className="mt-0.5 text-sm text-slate-400">Controle canais e categorias de preferencia da sua conta.</p>
         </div>
       </div>
 

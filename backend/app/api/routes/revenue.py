@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -136,7 +136,35 @@ def get_top_cities(_: User = Depends(get_current_user)) -> dict[str, Any]:
     return {
         "items": [],
         "status": "insufficient_data",
-        "reason": "Reservas e leads ainda nao possuem geolocalizacao consolidada no backend/app.",
+        "reason": "Use /api/revenue/origin-demand para o novo Mapa de Origem e Demanda.",
+    }
+
+
+@router.get("/origin-demand", response_model=dict[str, Any])
+def get_origin_demand(
+    city: str | None = None,
+    state: str | None = None,
+    country: str | None = None,
+    channel: str | None = None,
+    days: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    snapshot = RevenueService(db).get_snapshot(current_user, days=days)
+    rows = snapshot.mapa_origem_demanda
+    if city:
+        rows = [item for item in rows if (item.cidade or "").lower() == city.lower()]
+    if state:
+        rows = [item for item in rows if (item.estado or "").lower() == state.lower()]
+    if country:
+        rows = [item for item in rows if (item.pais or "").lower() == country.lower()]
+    if channel:
+        rows = [item for item in rows if item.canal.lower() == channel.lower()]
+    return {
+        "status": "ok" if rows else "no_data",
+        "message": "" if rows else "Conecte Website, Chats e Campanhas para visualizar informações.",
+        "items": [item.model_dump() for item in rows],
+        "filters": {"city": city, "state": state, "country": country, "channel": channel, "days": days},
     }
 
 
@@ -437,4 +465,39 @@ def get_revenue_insights(current_user: User = Depends(get_current_user), db: Ses
 def get_revenue_reports(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict[str, Any]:
     snapshot = RevenueService(db).get_snapshot(current_user, days=30)
     series = RevenueService(db).get_revenue_series(current_user, days=30)
-    return {"snapshot": snapshot.model_dump(), "series": series.model_dump()}
+    return {
+        "operacional": {
+            "reservas": [item.model_dump() for item in snapshot.reservas],
+            "leads": snapshot.summary.leads_recebidos,
+            "conversoes": snapshot.summary.conversao_total,
+            "receita": snapshot.summary.receita_total,
+        },
+        "integracoes": {
+            "status": "use /api/integrations para status, falhas e sincronizacoes",
+        },
+        "ia": {
+            "status": "use /api/usage e logs de AIRequestLog para uso, custos e historico",
+        },
+        "snapshot": snapshot.model_dump(),
+        "series": series.model_dump(),
+    }
+
+
+@router.get("/reports/export")
+def export_revenue_reports(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Response:
+    snapshot = RevenueService(db).get_snapshot(current_user, days=30)
+    lines = ["categoria,item,valor"]
+    lines.append(f"operacional,receita,{snapshot.summary.receita_total}")
+    lines.append(f"operacional,reservas,{snapshot.summary.reservas_fechadas}")
+    lines.append(f"operacional,leads,{snapshot.summary.leads_recebidos}")
+    lines.append(f"operacional,conversao,{snapshot.summary.conversao_total}")
+    for item in snapshot.receita_por_canal:
+        lines.append(f"canais,{item.label},{item.valor}")
+    for item in snapshot.mapa_origem_demanda:
+        label = " / ".join(filter(None, [item.cidade, item.estado, item.pais, item.canal]))
+        lines.append(f"origem_demanda,{label},{item.receita}")
+    return Response(
+        content="\n".join(lines),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=axi-revenue-report.csv"},
+    )

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { getChatSummary } from '../../services/chats.service';
 import { getMarketingOverview } from '../../services/marketing.service';
 import { getRevenueIntelligence } from '../../services/revenue.service';
+import type { RevenueIntelligenceSnapshot } from '../../services/revenue.service';
 import { getStudioOverview } from '../../services/studio.service';
 
 type ModuleKey = 'revenue' | 'chats' | 'assistant' | 'marketing' | 'studio' | 'integrations';
@@ -107,6 +108,9 @@ function readRecord(value: unknown): Record<string, unknown> {
 
 export function HomePage() {
   const [moduleState, setModuleState] = useState<Record<ModuleKey, ModuleCardState>>(initialState);
+  const [revenueSnapshot, setRevenueSnapshot] = useState<RevenueIntelligenceSnapshot | null>(null);
+  const [chatTotal, setChatTotal] = useState(0);
+  const [campaignTotal, setCampaignTotal] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -125,6 +129,7 @@ export function HomePage() {
         const next = { ...current };
 
         if (revenue.status === 'fulfilled') {
+          setRevenueSnapshot(revenue.value);
           next.revenue = {
             status: 'online',
             quantity: `${revenue.value.summary.reservas_fechadas} reservas`,
@@ -137,6 +142,7 @@ export function HomePage() {
         if (chats.status === 'fulfilled') {
           const data = readRecord(chats.value);
           const total = Number(data.open_conversations ?? data.total_conversations ?? data.conversations ?? 0);
+          setChatTotal(total);
           next.chats = { status: 'online', quantity: `${total} conversas`, lastActivity: 'Resumo carregado do backend' };
         } else {
           next.chats = { status: 'unavailable', quantity: 'Erro ao carregar', lastActivity: 'Chats nao respondeu', error: errorMessage(chats.reason) };
@@ -145,6 +151,7 @@ export function HomePage() {
         if (marketing.status === 'fulfilled') {
           const data = readRecord(marketing.value);
           const total = Number(data.active_campaigns ?? data.campaigns_count ?? data.total_campaigns ?? 0);
+          setCampaignTotal(total);
           next.marketing = { status: 'online', quantity: `${total} campanhas`, lastActivity: 'Overview carregado do backend' };
         } else {
           next.marketing = { status: 'unavailable', quantity: 'Erro ao carregar', lastActivity: 'Marketing nao respondeu', error: errorMessage(marketing.reason) };
@@ -169,6 +176,16 @@ export function HomePage() {
   }, []);
 
   const operationalCount = useMemo(() => Object.values(moduleState).filter((item) => item.status === 'online').length, [moduleState]);
+  const operationalCards = [
+    ['Receita do periodo', new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(revenueSnapshot?.summary.receita_total ?? 0), 'Revenue'],
+    ['Reservas do periodo', String(revenueSnapshot?.summary.reservas_fechadas ?? 0), 'Revenue'],
+    ['Leads do periodo', String(revenueSnapshot?.summary.leads_recebidos ?? 0), 'Revenue'],
+    ['Mensagens pendentes', String(chatTotal), 'Chats'],
+    ['Campanhas ativas', String(campaignTotal), 'Marketing'],
+    ['Insights da IA', revenueSnapshot && (revenueSnapshot.receita_por_canal.length > 0 || revenueSnapshot.summary.conversao_total > 0) ? 'Disponivel' : 'Sem dados', 'AXI Assistant'],
+    ['Alertas importantes', Object.values(moduleState).some((item) => item.status === 'unavailable') ? 'Verificar' : 'Nenhum', 'Sistema'],
+    ['Plano de acao', revenueSnapshot && revenueSnapshot.summary.leads_recebidos > 0 ? 'Recomendado' : 'Sem dados', 'Revenue'],
+  ];
 
   return (
     <div className="space-y-6 text-white">
@@ -182,6 +199,16 @@ export function HomePage() {
           {operationalCount} de {modules.length - 2} modulos com dados carregados nesta sessao
         </div>
       </header>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {operationalCards.map(([label, value, source]) => (
+          <article key={label} className="rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.86),rgba(2,6,23,0.68))] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{source}</p>
+            <p className="mt-3 text-sm text-slate-300">{label}</p>
+            <p className="mt-2 font-display text-3xl text-white">{value}</p>
+          </article>
+        ))}
+      </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {modules.map((module) => {

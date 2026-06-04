@@ -16,6 +16,16 @@ vi.mock('../services/marketing.service', () => ({
   listProjects: () => listProjects(),
 }));
 
+vi.mock('../hooks/useChat', () => ({
+  useChat: () => ({
+    messages: [],
+    loading: false,
+    sending: false,
+    error: null,
+    sendMessage: vi.fn(),
+  }),
+}));
+
 import { MarketingProjectsPage } from '../components/marketing/MarketingProjectsPage';
 import { MarketingPlanningPage } from '../components/marketing/MarketingOperationsPages';
 
@@ -45,7 +55,7 @@ describe('Marketing operations', () => {
     expect(await screen.findByRole('heading', { name: 'Marketing' })).toBeInTheDocument();
     expect(screen.getAllByText('Plano de Acao').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Campanhas').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Insights IA').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('AXI Assistant').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Sem dados reais').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Campanha real').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Nenhum plano real nesta etapa/i).length).toBeGreaterThan(0);
