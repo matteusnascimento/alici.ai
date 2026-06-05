@@ -24,7 +24,15 @@ def _column_exists(table_name: str, column_name: str) -> bool:
     return column_name in {col["name"] for col in inspector.get_columns(table_name)}
 
 
+def _table_exists(table_name: str) -> bool:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    return table_name in inspector.get_table_names()
+
+
 def _add_column(table_name: str, column: sa.Column) -> None:
+    if not _table_exists(table_name):
+        return
     if _column_exists(table_name, column.name):
         return
     op.add_column(table_name, column)
