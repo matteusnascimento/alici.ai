@@ -74,7 +74,8 @@ def test_website_chat_widget_script_uses_tracker_endpoint(client, auth_headers):
     assert response.status_code == 200
     payload = response.json()
     assert payload["company_id"].startswith("axi-")
-    assert "/api/tracker/script.js" in payload["script"]
+    assert "axi-tracker.js" in payload["script"]
+    assert "/api/tracker/events" in payload["script"]
     assert 'data-axi-endpoint="' in payload["script"]
 
 

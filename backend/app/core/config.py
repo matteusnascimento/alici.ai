@@ -23,6 +23,8 @@ def _is_valid_database_url(value: str) -> bool:
 
 class Settings(BaseSettings):
     app_name: str = "AXI Platform"
+    env: str = ""
+    port: int = 8000
     app_env: str = "development"
     debug: bool = True
     public_backend_url: str = "http://127.0.0.1:8000"
@@ -70,10 +72,10 @@ class Settings(BaseSettings):
     openai_model_transcription: str = "gpt-4o-transcribe"
     openai_model_embeddings: str = "text-embedding-3-small"
     database_url_rotated: str = ""
-    cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
-    billing_admin_emails: list[str] = Field(default_factory=list)
-    admin_emails: list[str] = Field(default_factory=list)
-    owner_emails: list[str] = Field(default_factory=list)
+    cors_allowed_origins: str | list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+    billing_admin_emails: str | list[str] = Field(default_factory=list)
+    admin_emails: str | list[str] = Field(default_factory=list)
+    owner_emails: str | list[str] = Field(default_factory=list)
 
     # Stripe
     stripe_secret_key: str = ""
@@ -92,6 +94,7 @@ class Settings(BaseSettings):
     stripe_billing_portal_return_url: str = "http://127.0.0.1:5173/app/admin/billing"
 
     # Meta channels (WhatsApp/Instagram)
+    meta_app_id: str = ""
     meta_client_id: str = ""
     meta_client_secret: str = ""
     meta_redirect_uri: str = ""
@@ -114,7 +117,7 @@ class Settings(BaseSettings):
     # Website tracker / widget
     axi_tracker_public_url: str = "http://127.0.0.1:8000/api/tracker/script.js"
     axi_widget_public_url: str = "http://127.0.0.1:8000/static/axi-widget.js"
-    website_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"])
+    website_allowed_origins: str | list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"])
 
     # Hospitality providers
     omnibees_api_base_url: str = ""
@@ -138,9 +141,11 @@ class Settings(BaseSettings):
 
     # Storage / media
     r2_account_id: str = ""
+    r2_endpoint_url: str = ""
     r2_access_key_id: str = ""
     r2_secret_access_key: str = ""
     r2_bucket_name: str = ""
+    r2_bucket_uploads: str = ""
     r2_public_base_url: str = ""
 
     redis_url: str = ""
@@ -214,6 +219,10 @@ class Settings(BaseSettings):
     def __init__(self, **data):
         super().__init__(**data)
 
+        raw_env = (self.env or "").strip()
+        if raw_env and self.app_env == "development":
+            object.__setattr__(self, "app_env", raw_env)
+
         raw_database_url = (self.database_url or "").strip()
         if not _is_valid_database_url(raw_database_url):
             if self.app_env.lower() == "production":
@@ -271,7 +280,7 @@ class Settings(BaseSettings):
 
     @property
     def effective_meta_client_id(self) -> str:
-        return self.meta_client_id or self.meta_oauth_client_id
+        return self.meta_client_id or self.meta_app_id or self.meta_oauth_client_id
 
     @property
     def effective_meta_client_secret(self) -> str:
@@ -292,6 +301,20 @@ class Settings(BaseSettings):
     @property
     def effective_google_redirect_uri(self) -> str:
         return self.google_redirect_uri or self.google_oauth_redirect_uri
+
+    @property
+    def effective_r2_bucket_name(self) -> str:
+        return (self.r2_bucket_uploads or self.r2_bucket_name or "").strip()
+
+    @property
+    def effective_r2_endpoint_url(self) -> str:
+        endpoint_url = (self.r2_endpoint_url or "").strip()
+        if endpoint_url:
+            return endpoint_url
+        account_id = (self.r2_account_id or "").strip()
+        if account_id:
+            return f"https://{account_id}.r2.cloudflarestorage.com"
+        return ""
 
     @property
     def effective_openai_api_key(self) -> str:
@@ -365,10 +388,10 @@ class Settings(BaseSettings):
     def is_r2_configured(self) -> bool:
         return all(
             [
-                (self.r2_account_id or "").strip(),
+                (self.effective_r2_endpoint_url or "").strip(),
                 (self.r2_access_key_id or "").strip(),
                 (self.r2_secret_access_key or "").strip(),
-                (self.r2_bucket_name or "").strip(),
+                (self.effective_r2_bucket_name or "").strip(),
                 (self.r2_public_base_url or "").strip(),
             ]
         )
