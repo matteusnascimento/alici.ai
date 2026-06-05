@@ -1,5 +1,7 @@
 import {
+  Activity,
   AlertTriangle,
+  CheckCircle2,
   CreditCard,
   KeyRound,
   Loader2,
@@ -9,16 +11,37 @@ import {
   RotateCcw,
   ScrollText,
   ShieldCheck,
-  Trash2,
+  UserCheck,
   UserMinus,
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ApiError } from '../../services/api';
-import { getAdminOverview, type AdminMetric, type AdminOverview, type AdminUser } from '../../services/admin.service';
+import {
+  ADMIN_PERMISSION_MODULES,
+  createEmptyPermissions,
+  disableAdminUser,
+  enableAdminUser,
+  getAdminAudit,
+  getAdminOverview,
+  getAdminSecurity,
+  getAdminUserPermissions,
+  inviteAdminUser,
+  listAdminUsers,
+  resetAdminUserPassword,
+  saveAdminUserPermissions,
+  updateAdminUser,
+  type AdminAuditResponse,
+  type AdminMetric,
+  type AdminOverview,
+  type AdminPermissionLevel,
+  type AdminPermissionMap,
+  type AdminSecurityResponse,
+  type AdminUser,
+} from '../../services/admin.service';
 import { AdminBillingPage } from './AdminBillingPage';
 
 const adminPages = [
@@ -31,10 +54,14 @@ const adminPages = [
 ] as const;
 
 type AdminPageId = (typeof adminPages)[number]['id'];
-type PendingAction = 'invite' | 'edit' | 'disable' | 'reset' | 'delete' | 'permissions' | null;
+type PendingAction = 'edit' | null;
 
-const permissionModules = ['Revenue', 'Chats', 'AXI Assistant', 'Marketing', 'Studio', 'Integrations', 'Administracao'];
-const permissionActions = ['Visualizar', 'Criar', 'Editar', 'Excluir'];
+const permissionLevels: Array<{ value: AdminPermissionLevel; label: string }> = [
+  { value: 'none', label: 'Nenhum' },
+  { value: 'read', label: 'Leitura' },
+  { value: 'write', label: 'Escrita' },
+  { value: 'admin', label: 'Admin' },
+];
 
 function pageFromPath(pathname: string): AdminPageId {
   if (pathname.startsWith('/app/admin/users')) return 'users';
@@ -47,6 +74,23 @@ function pageFromPath(pathname: string): AdminPageId {
 
 function metricValue(items: AdminMetric[] | undefined, label: string) {
   return items?.find((item) => item.label === label)?.value ?? 0;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return 'Nao informado';
+  return new Date(value).toLocaleString('pt-BR');
+}
+
+function statusLabel(status: AdminUser['status']) {
+  if (status === 'inactive') return 'Inativo';
+  if (status === 'pending') return 'Pendente';
+  return 'Ativo';
+}
+
+function statusClass(status: AdminUser['status']) {
+  if (status === 'inactive') return 'bg-rose-500/15 text-rose-200';
+  if (status === 'pending') return 'bg-amber-500/15 text-amber-200';
+  return 'bg-emerald-500/15 text-emerald-300';
 }
 
 function EmptyState({ children }: { children: string }) {
@@ -74,7 +118,7 @@ function PageCard({ icon: Icon, title, value, detail, onClick }: { icon: LucideI
   );
 }
 
-function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function Section({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-950/58 p-5 shadow-[0_22px_70px_rgba(0,0,0,0.25)]">
       <div className="mb-5">
@@ -86,21 +130,181 @@ function Section({ title, description, children }: { title: string; description:
   );
 }
 
-function UserActions({ user, onAction }: { user: AdminUser; onAction: (action: PendingAction, user: AdminUser) => void }) {
+function Notice({ kind = 'info', children }: { kind?: 'info' | 'error' | 'success'; children: string }) {
+  const classes = {
+    info: 'border-cyan-400/25 bg-cyan-500/10 text-cyan-100',
+    error: 'border-rose-400/25 bg-rose-500/10 text-rose-100',
+    success: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-100',
+  }[kind];
+  return <p className={`rounded-xl border px-4 py-3 text-sm ${classes}`}>{children}</p>;
+}
+
+function InviteUserForm({
+  onCancel,
+  onCreated,
+}: {
+  onCancel: () => void;
+  onCreated: (response: { user: AdminUser; message: string; invite_token: string | null }) => void;
+}) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [phone, setPhone] = useState('');
+  const [permissions, setPermissions] = useState<AdminPermissionMap>(() => ({
+    ...createEmptyPermissions(),
+    revenue: 'read',
+    chats: 'read',
+    assistant: 'read',
+  }));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await inviteAdminUser({
+        name,
+        email,
+        job_title: jobTitle || undefined,
+        phone: phone || undefined,
+        permissions,
+      });
+      onCreated(response);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Falha ao criar convite.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <button type="button" onClick={() => onAction('edit', user)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-300 hover:text-white" aria-label="Editar usuario">
-        <Pencil size={15} />
-      </button>
-      <button type="button" onClick={() => onAction('disable', user)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-300 hover:text-white" aria-label="Desativar usuario">
-        <UserMinus size={15} />
-      </button>
-      <button type="button" onClick={() => onAction('reset', user)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-300 hover:text-white" aria-label="Redefinir senha">
-        <RotateCcw size={15} />
-      </button>
-      <button type="button" onClick={() => onAction('delete', user)} className="grid h-9 w-9 place-items-center rounded-lg border border-rose-400/20 text-rose-200 hover:bg-rose-500/10" aria-label="Excluir usuario">
-        <Trash2 size={15} />
-      </button>
+    <form onSubmit={submit} className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="text-sm text-slate-300">
+          Nome
+          <input required value={name} onChange={(event) => setName(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+        </label>
+        <label className="text-sm text-slate-300">
+          Email
+          <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+        </label>
+        <label className="text-sm text-slate-300">
+          Cargo
+          <input value={jobTitle} onChange={(event) => setJobTitle(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+        </label>
+        <label className="text-sm text-slate-300">
+          Telefone
+          <input value={phone} onChange={(event) => setPhone(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+        </label>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-white/10">
+        <table className="min-w-[720px] w-full text-sm">
+          <thead className="bg-white/[0.03] text-left text-slate-400">
+            <tr>
+              <th className="px-4 py-3">Modulo</th>
+              <th className="px-4 py-3">Nivel inicial</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ADMIN_PERMISSION_MODULES.map((module) => (
+              <tr key={module.key} className="border-t border-white/10">
+                <td className="px-4 py-3 font-semibold text-white">{module.label}</td>
+                <td className="px-4 py-3">
+                  <select
+                    value={permissions[module.key]}
+                    onChange={(event) => setPermissions((current) => ({ ...current, [module.key]: event.target.value as AdminPermissionLevel }))}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300"
+                  >
+                    {permissionLevels.map((level) => <option key={level.value} value={level.value}>{level.label}</option>)}
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {error ? <Notice kind="error">{error}</Notice> : null}
+      <div className="flex flex-wrap justify-end gap-3">
+        <button type="button" onClick={onCancel} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Cancelar</button>
+        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+          {saving ? <Loader2 className="animate-spin" size={16} /> : <MailPlus size={16} />}
+          Enviar convite
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function EditUserDialog({
+  user,
+  onCancel,
+  onSaved,
+}: {
+  user: AdminUser;
+  onCancel: () => void;
+  onSaved: (user: AdminUser) => void;
+}) {
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [jobTitle, setJobTitle] = useState(user.job_title ?? '');
+  const [phone, setPhone] = useState(user.phone ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateAdminUser(user.id, {
+        name,
+        email,
+        job_title: jobTitle,
+        phone,
+      });
+      onSaved(updated);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Falha ao atualizar usuario.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur">
+      <form onSubmit={submit} className="w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950 p-5 shadow-[0_30px_100px_rgba(0,0,0,0.55)]">
+        <h2 className="font-display text-2xl text-white">Editar usuario</h2>
+        <p className="mt-1 text-sm text-slate-400">Atualize dados administrativos do colaborador.</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <label className="text-sm text-slate-300">
+            Nome
+            <input required value={name} onChange={(event) => setName(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+          </label>
+          <label className="text-sm text-slate-300">
+            Email
+            <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+          </label>
+          <label className="text-sm text-slate-300">
+            Cargo
+            <input value={jobTitle} onChange={(event) => setJobTitle(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+          </label>
+          <label className="text-sm text-slate-300">
+            Telefone
+            <input value={phone} onChange={(event) => setPhone(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
+          </label>
+        </div>
+        {error ? <div className="mt-4"><Notice kind="error">{error}</Notice></div> : null}
+        <div className="mt-5 flex justify-end gap-3">
+          <button type="button" onClick={onCancel} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Cancelar</button>
+          <button type="submit" disabled={saving} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+            {saving ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -109,41 +313,111 @@ export function AdminPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [security, setSecurity] = useState<AdminSecurityResponse | null>(null);
+  const [audit, setAudit] = useState<AdminAuditResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [permissionDraft, setPermissionDraft] = useState<AdminPermissionMap>(() => createEmptyPermissions());
+  const [savingPermissions, setSavingPermissions] = useState(false);
   const activePage = pageFromPath(location.pathname);
+  const isInviteRoute = location.pathname === '/app/admin/users/new';
 
   useEffect(() => {
-    setLoading(true);
-    void getAdminOverview()
-      .then((data) => {
-        setOverview(data);
-        setError(null);
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Falha ao carregar Administracao.'))
-      .finally(() => setLoading(false));
+    void loadAdminData();
   }, []);
 
-  const users = overview?.usuarios ?? [];
+  useEffect(() => {
+    const user = selectedUser ?? users[0] ?? null;
+    if (!user) return;
+    setSelectedUser(user);
+    setPermissionDraft({ ...createEmptyPermissions(), ...user.permissions });
+    void getAdminUserPermissions(user.id)
+      .then((data) => setPermissionDraft({ ...createEmptyPermissions(), ...data.permissions }))
+      .catch(() => undefined);
+  }, [selectedUser?.id, users]);
+
+  async function loadAdminData() {
+    setLoading(true);
+    try {
+      const [overviewData, usersData, securityData, auditData] = await Promise.all([
+        getAdminOverview(),
+        listAdminUsers(),
+        getAdminSecurity(),
+        getAdminAudit(),
+      ]);
+      setOverview(overviewData);
+      setUsers(usersData);
+      setSecurity(securityData);
+      setAudit(auditData);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Falha ao carregar Administracao.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function replaceUser(updated: AdminUser) {
+    setUsers((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    setOverview((current) => current ? { ...current, usuarios: current.usuarios.map((item) => (item.id === updated.id ? updated : item)) } : current);
+    if (selectedUser?.id === updated.id) setSelectedUser(updated);
+  }
+
+  async function handleDisable(user: AdminUser) {
+    setMessage(null);
+    try {
+      const response = user.status === 'inactive' ? await enableAdminUser(user.id) : await disableAdminUser(user.id);
+      if (response.user) replaceUser(response.user);
+      setMessage(response.message);
+      void refreshSecurityAndAudit();
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : 'Acao nao concluida.');
+    }
+  }
+
+  async function handleReset(user: AdminUser) {
+    setMessage(null);
+    try {
+      const response = await resetAdminUserPassword(user.id);
+      setMessage(response.reset_token ? `${response.message} Token dev: ${response.reset_token}` : response.message);
+      void refreshSecurityAndAudit();
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : 'Redefinicao nao concluida.');
+    }
+  }
+
+  async function refreshSecurityAndAudit() {
+    const [securityData, auditData] = await Promise.all([getAdminSecurity(), getAdminAudit()]);
+    setSecurity(securityData);
+    setAudit(auditData);
+  }
+
+  async function savePermissions() {
+    if (!selectedUser) return;
+    setSavingPermissions(true);
+    setMessage(null);
+    try {
+      const response = await saveAdminUserPermissions(selectedUser.id, permissionDraft);
+      const updated = { ...selectedUser, permissions: response.permissions };
+      replaceUser(updated);
+      setMessage('Permissoes salvas corretamente.');
+      void refreshSecurityAndAudit();
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : 'Falha ao salvar permissoes.');
+    } finally {
+      setSavingPermissions(false);
+    }
+  }
+
   const billingEvents = metricValue(overview?.billing, 'Eventos Stripe');
-  const auditRecords = (overview?.auditoria ?? []).reduce((total, item) => total + item.value, 0);
-  const securityRecords = (overview?.seguranca ?? []).reduce((total, item) => total + item.value, 0);
+  const auditRecords = metricValue(overview?.auditoria, 'Eventos registrados');
+  const securityRecords = metricValue(overview?.seguranca, 'Sessoes ativas');
 
   const selectedPermissionUser = useMemo(() => selectedUser ?? users[0] ?? null, [selectedUser, users]);
-
-  function openAction(action: PendingAction, user: AdminUser | null = null) {
-    setPendingAction(action);
-    setSelectedUser(user);
-    setActionError(null);
-  }
-
-  function submitUnavailable(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setActionError('Endpoint administrativo ainda nao disponivel no backend/app. Nenhuma alteracao foi salva.');
-  }
 
   if (loading) {
     return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="animate-spin text-violet-300" size={28} /></div>;
@@ -157,7 +431,7 @@ export function AdminPage() {
     <div className="space-y-6 text-white">
       <header>
         <h1 className="font-display text-4xl">Administracao</h1>
-        <p className="mt-2 text-sm text-slate-400">Gerencie usuarios, permissoes, billing e auditoria.</p>
+        <p className="mt-2 text-sm text-slate-400">Gerencie usuarios, convites, permissoes, seguranca, auditoria e billing administrativo.</p>
       </header>
 
       <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] p-2">
@@ -181,67 +455,102 @@ export function AdminPage() {
         })}
       </nav>
 
+      {message ? <Notice kind={message.toLowerCase().includes('falha') || message.toLowerCase().includes('negado') ? 'error' : 'info'}>{message}</Notice> : null}
+
       {activePage === 'dashboard' ? (
         <>
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <PageCard icon={Users} title="Usuarios" value={users.length} detail="Usuarios reais retornados pelo backend" onClick={() => navigate('/app/admin/users')} />
-            <PageCard icon={KeyRound} title="Permissoes" value={overview?.permissoes.length ?? 0} detail="Papeis existentes no backend atual" onClick={() => navigate('/app/admin/permissions')} />
+            <PageCard icon={Users} title="Usuarios" value={users.length} detail="Usuarios reais da administracao" onClick={() => navigate('/app/admin/users')} />
+            <PageCard icon={KeyRound} title="Permissoes" value={overview?.permissoes.length ?? ADMIN_PERMISSION_MODULES.length} detail="Modulos com controle por nivel" onClick={() => navigate('/app/admin/permissions')} />
             <PageCard icon={CreditCard} title="Billing" value={billingEvents} detail="Eventos Stripe registrados" onClick={() => navigate('/app/admin/billing')} />
-            <PageCard icon={ScrollText} title="Auditoria" value={auditRecords} detail="Registros reais derivados" onClick={() => navigate('/app/admin/audit')} />
+            <PageCard icon={ScrollText} title="Auditoria" value={auditRecords} detail="Eventos administrativos persistidos" onClick={() => navigate('/app/admin/audit')} />
           </section>
-          <Section title="Operacao administrativa" description="Resumo single-company sem telas paralelas de empresas ou papeis.">
+          <Section title="Operacao administrativa" description="Acoes principais para operar uma pousada real com usuarios e permissoes.">
             <div className="grid gap-3 md:grid-cols-3">
-              <button type="button" onClick={() => navigate('/app/admin/users')} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/[0.07]">Gerenciar usuarios</button>
+              <button type="button" onClick={() => navigate('/app/admin/users/new')} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/[0.07]">Convidar usuario</button>
               <button type="button" onClick={() => navigate('/app/admin/permissions')} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/[0.07]">Definir permissoes</button>
-              <button type="button" onClick={() => navigate('/app/admin/billing')} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/[0.07]">Ver plano e cobranca</button>
+              <button type="button" onClick={() => navigate('/app/admin/security')} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/[0.07]">Revisar seguranca</button>
             </div>
           </Section>
         </>
       ) : null}
 
       {activePage === 'users' ? (
-        <Section title="Usuarios" description="Lista de usuarios da empresa atual. As acoes mutaveis exigem endpoint backend real.">
-          <div className="mb-4 flex justify-end">
-            <button type="button" onClick={() => openAction('invite')} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-500">
-              <MailPlus size={16} /> Novo usuario
-            </button>
-          </div>
-          <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="min-w-full text-sm">
-              <thead className="bg-white/[0.03] text-left text-slate-400">
-                <tr>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Cargo</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Ultimo acesso</th>
-                  <th className="px-4 py-3">Acoes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 ? (
-                  <tr><td className="px-4 py-6 text-slate-400" colSpan={6}>Sem usuarios reais para listar.</td></tr>
-                ) : users.map((user) => (
-                  <tr key={user.id} className="border-t border-white/10">
-                    <td className="px-4 py-4 font-semibold text-white">{user.name}</td>
-                    <td className="px-4 py-4 text-slate-300">{user.email}</td>
-                    <td className="px-4 py-4 capitalize text-slate-300">{user.role}</td>
-                    <td className="px-4 py-4"><span className="rounded-full bg-emerald-500/15 px-2 py-1 text-xs text-emerald-300">Ativo</span></td>
-                    <td className="px-4 py-4 text-slate-400">Nao informado pelo backend</td>
-                    <td className="px-4 py-4"><UserActions user={user} onAction={openAction} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Section
+          title={isInviteRoute ? 'Convidar usuario' : 'Usuarios'}
+          description={isInviteRoute ? 'Crie o colaborador e defina permissoes iniciais.' : 'Lista profissional de usuarios, status, ultimo acesso e acoes operacionais.'}
+        >
+          {isInviteRoute ? (
+            <InviteUserForm
+              onCancel={() => navigate('/app/admin/users')}
+              onCreated={(response) => {
+                setUsers((current) => [response.user, ...current]);
+                setMessage(response.invite_token ? `${response.message} Token dev: ${response.invite_token}` : response.message);
+                navigate('/app/admin/users');
+                void refreshSecurityAndAudit();
+              }}
+            />
+          ) : (
+            <>
+              <div className="mb-4 flex justify-end">
+                <button type="button" onClick={() => navigate('/app/admin/users/new')} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-500">
+                  <MailPlus size={16} /> Novo usuario
+                </button>
+              </div>
+              <div className="overflow-x-auto rounded-xl border border-white/10">
+                <table className="min-w-[920px] w-full text-sm">
+                  <thead className="bg-white/[0.03] text-left text-slate-400">
+                    <tr>
+                      <th className="px-4 py-3">Nome</th>
+                      <th className="px-4 py-3">Email</th>
+                      <th className="px-4 py-3">Cargo</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Ultimo acesso</th>
+                      <th className="px-4 py-3">Permissoes</th>
+                      <th className="px-4 py-3">Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.length === 0 ? (
+                      <tr><td className="px-4 py-6 text-slate-400" colSpan={7}>Nenhum usuário encontrado.</td></tr>
+                    ) : users.map((user) => (
+                      <tr key={user.id} className="border-t border-white/10">
+                        <td className="px-4 py-4 font-semibold text-white">{user.name}</td>
+                        <td className="px-4 py-4 text-slate-300">{user.email}</td>
+                        <td className="px-4 py-4 text-slate-300">{user.job_title || user.role}</td>
+                        <td className="px-4 py-4"><span className={`rounded-full px-2 py-1 text-xs ${statusClass(user.status)}`}>{statusLabel(user.status)}</span></td>
+                        <td className="px-4 py-4 text-slate-400">{formatDate(user.last_login_at)}</td>
+                        <td className="px-4 py-4 text-slate-300">
+                          {Object.values(user.permissions ?? {}).filter((level) => level !== 'none').length || 0} modulos
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <button type="button" onClick={() => { setSelectedUser(user); setPendingAction('edit'); }} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-300 hover:text-white" aria-label="Editar usuario">
+                              <Pencil size={15} />
+                            </button>
+                            <button type="button" onClick={() => void handleDisable(user)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-300 hover:text-white" aria-label={user.status === 'inactive' ? 'Reativar usuario' : 'Desativar usuario'}>
+                              {user.status === 'inactive' ? <UserCheck size={15} /> : <UserMinus size={15} />}
+                            </button>
+                            <button type="button" onClick={() => void handleReset(user)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-300 hover:text-white" aria-label="Redefinir senha">
+                              <RotateCcw size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </Section>
       ) : null}
 
       {activePage === 'permissions' ? (
-        <Section title="Permissoes" description="Matriz por usuario e modulo, preparada para persistencia real quando o endpoint estiver disponivel.">
+        <Section title="Permissoes" description="Controle por usuario e modulo: none, read, write ou admin.">
           <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
             <aside className="space-y-2">
-              {users.length === 0 ? <EmptyState>Sem usuarios reais.</EmptyState> : users.map((user) => (
+              {users.length === 0 ? <EmptyState>Nenhum usuário encontrado.</EmptyState> : users.map((user) => (
                 <button
                   key={user.id}
                   type="button"
@@ -256,111 +565,125 @@ export function AdminPage() {
                 </button>
               ))}
             </aside>
-            <div className="overflow-x-auto rounded-xl border border-white/10">
-              <table className="min-w-[760px] w-full text-sm">
-                <thead className="bg-white/[0.03] text-left text-slate-400">
-                  <tr>
-                    <th className="px-4 py-3">Modulo</th>
-                    {permissionActions.map((action) => <th key={action} className="px-4 py-3">{action}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {permissionModules.map((module) => (
-                    <tr key={module} className="border-t border-white/10">
-                      <td className="px-4 py-3 font-semibold text-white">{module}</td>
-                      {permissionActions.map((action) => (
-                        <td key={`${module}-${action}`} className="px-4 py-3">
-                          <input type="checkbox" defaultChecked={selectedPermissionUser?.role === 'owner' || action === 'Visualizar'} className="h-4 w-4 accent-violet-500" />
-                        </td>
+            <div>
+              {!selectedPermissionUser ? <EmptyState>Nenhum usuário encontrado.</EmptyState> : (
+                <div className="overflow-x-auto rounded-xl border border-white/10">
+                  <table className="min-w-[760px] w-full text-sm">
+                    <thead className="bg-white/[0.03] text-left text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3">Modulo</th>
+                        <th className="px-4 py-3">Nivel</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ADMIN_PERMISSION_MODULES.map((module) => (
+                        <tr key={module.key} className="border-t border-white/10">
+                          <td className="px-4 py-3 font-semibold text-white">{module.label}</td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={permissionDraft[module.key] ?? 'none'}
+                              onChange={(event) => setPermissionDraft((current) => ({ ...current, [module.key]: event.target.value as AdminPermissionLevel }))}
+                              className="w-full max-w-xs rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300"
+                            >
+                              {permissionLevels.map((level) => <option key={level.value} value={level.value}>{level.label}</option>)}
+                            </select>
+                          </td>
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="mt-5 flex justify-end">
+                <button type="button" onClick={() => void savePermissions()} disabled={!selectedPermissionUser || savingPermissions} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">
+                  {savingPermissions ? 'Salvando...' : 'Salvar permissoes'}
+                </button>
+              </div>
             </div>
           </div>
-          <form onSubmit={submitUnavailable} className="mt-5 flex flex-col items-start gap-3">
-            {actionError ? <p className="rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{actionError}</p> : null}
-            <button type="submit" className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500">Salvar permissoes</button>
-          </form>
         </Section>
       ) : null}
 
-      {activePage === 'billing' ? (
-        <AdminBillingPage />
-      ) : null}
+      {activePage === 'billing' ? <AdminBillingPage /> : null}
 
       {activePage === 'security' ? (
-        <Section title="Seguranca" description="Politicas, sessoes e alertas administrativos retornados pelo backend atual.">
-          <div className="grid gap-3 md:grid-cols-2">
-            {(overview?.seguranca ?? []).map((item) => (
-              <div key={item.label} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3">
-                <span className="text-slate-300">{item.label}</span>
-                <span className="font-semibold text-white">{item.value}</span>
+        <Section title="Seguranca" description="Logins, sessoes abertas e tokens revogados sem dados simulados.">
+          <div className="mb-4 grid gap-4 md:grid-cols-3">
+            <PageCard icon={Activity} title="Sessoes ativas" value={securityRecords} detail="Refresh tokens ativos" onClick={() => undefined} />
+            <PageCard icon={CheckCircle2} title="Ultimos logins" value={security?.last_logins.length ?? 0} detail="Usuarios com acesso recente" onClick={() => undefined} />
+            <PageCard icon={AlertTriangle} title="Tokens revogados" value={security?.revoked_tokens.length ?? 0} detail="Sessoes encerradas ou bloqueadas" onClick={() => undefined} />
+          </div>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {[
+              { title: 'Ultimos logins', items: security?.last_logins ?? [] },
+              { title: 'Dispositivos ativos', items: security?.active_sessions ?? [] },
+              { title: 'Sessoes abertas', items: security?.open_sessions ?? [] },
+              { title: 'Tokens revogados', items: security?.revoked_tokens ?? [] },
+              { title: 'Tentativas de login', items: security?.login_attempts ?? [] },
+            ].map((block) => (
+              <div key={block.title} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+                <h3 className="font-display text-xl text-white">{block.title}</h3>
+                {block.items.length === 0 ? <div className="mt-3"><EmptyState>Nenhum registro disponível.</EmptyState></div> : (
+                  <div className="mt-3 space-y-2">
+                    {block.items.map((item) => (
+                      <div key={`${block.title}-${item.id}`} className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-semibold text-white">{item.user_name || item.user_email || item.event_type}</p>
+                          <span className="rounded-full bg-white/[0.06] px-2 py-1 text-xs text-slate-300">{item.status}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">{formatDate(item.created_at)} {item.expires_at ? `-> expira ${formatDate(item.expires_at)}` : ''}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
-            {securityRecords === 0 ? <EmptyState>Sem registros reais de seguranca.</EmptyState> : null}
           </div>
         </Section>
       ) : null}
 
       {activePage === 'audit' ? (
-        <Section title="Auditoria" description="Eventos administrativos reais derivados do backend.">
-          {(overview?.auditoria ?? []).length === 0 ? <EmptyState>Sem registros reais de auditoria.</EmptyState> : (
-            <div className="space-y-3">
-              {overview!.auditoria.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3">
-                  <span className="text-slate-300">{item.label}</span>
-                  <span className="font-semibold text-white">{item.value} registros</span>
-                </div>
-              ))}
+        <Section title="Auditoria" description="Eventos administrativos persistidos no backend.">
+          {(audit?.events ?? []).length === 0 ? <EmptyState>Nenhum evento registrado.</EmptyState> : (
+            <div className="overflow-x-auto rounded-xl border border-white/10">
+              <table className="min-w-[860px] w-full text-sm">
+                <thead className="bg-white/[0.03] text-left text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3">Data</th>
+                    <th className="px-4 py-3">Usuario</th>
+                    <th className="px-4 py-3">Acao</th>
+                    <th className="px-4 py-3">Origem</th>
+                    <th className="px-4 py-3">Detalhes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {audit!.events.map((event) => (
+                    <tr key={event.id} className="border-t border-white/10">
+                      <td className="px-4 py-3 text-slate-400">{formatDate(event.data)}</td>
+                      <td className="px-4 py-3 text-white">{event.usuario || 'Sistema'}</td>
+                      <td className="px-4 py-3 font-semibold text-white">{event.acao}</td>
+                      <td className="px-4 py-3 text-slate-300">{event.origem}</td>
+                      <td className="px-4 py-3 text-slate-400">{event.detalhes ? JSON.stringify(event.detalhes) : 'Sem detalhes'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </Section>
       ) : null}
 
-      {pendingAction ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur">
-          <form onSubmit={submitUnavailable} className="w-full max-w-2xl rounded-3xl border border-white/10 bg-slate-950 p-5 shadow-[0_30px_100px_rgba(0,0,0,0.55)]">
-            <div className="flex items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-500/15 text-amber-200">
-                <AlertTriangle size={22} />
-              </span>
-              <div>
-                <h2 className="font-display text-2xl text-white">{pendingAction === 'invite' ? 'Novo usuario' : `Acao: ${pendingAction}`}</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  {selectedUser ? `Usuario selecionado: ${selectedUser.name}. ` : ''}
-                  O backend atual ainda nao expoe persistencia para esta acao administrativa.
-                </p>
-              </div>
-            </div>
-            {pendingAction === 'invite' ? (
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {['Nome', 'Email', 'Telefone', 'Cargo'].map((label) => (
-                  <label key={label} className="text-sm text-slate-300">
-                    {label}
-                    <input className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none focus:border-violet-300" />
-                  </label>
-                ))}
-                <div className="md:col-span-2">
-                  <p className="mb-2 text-sm text-slate-300">Permissoes iniciais</p>
-                  <div className="grid gap-2 md:grid-cols-3">
-                    {permissionModules.map((module) => (
-                      <label key={module} className="flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300">
-                        <input type="checkbox" className="accent-violet-500" /> {module}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-            {actionError ? <p className="mt-4 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{actionError}</p> : null}
-            <div className="mt-5 flex justify-end gap-3">
-              <button type="button" onClick={() => openAction(null)} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Cancelar</button>
-              <button type="submit" className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white">{pendingAction === 'invite' ? 'Enviar convite' : 'Confirmar acao'}</button>
-            </div>
-          </form>
-        </div>
+      {pendingAction === 'edit' && selectedUser ? (
+        <EditUserDialog
+          user={selectedUser}
+          onCancel={() => setPendingAction(null)}
+          onSaved={(updated) => {
+            replaceUser(updated);
+            setPendingAction(null);
+            setMessage('Usuario atualizado.');
+            void refreshSecurityAndAudit();
+          }}
+        />
       ) : null}
     </div>
   );

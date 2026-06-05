@@ -1,9 +1,5 @@
 import {
-  Bot,
-  CalendarDays,
   ChevronRight,
-  CircleDollarSign,
-  Clock,
   FileText,
   Image,
   Loader2,
@@ -18,15 +14,10 @@ import {
   Smile,
   Sparkles,
   Star,
-  Tag,
-  UserPlus,
-  Users,
-  Zap,
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { ApiError } from '../../services/api';
-import { MiniAssistantCard } from '../assistant/MiniAssistantCard';
 import {
   addConversationTag,
   createConversationTask,
@@ -61,7 +52,7 @@ const filters = [
 ] as const;
 
 const quickActions = [
-  { key: 'quote', label: 'Enviar cotacao' },
+  { key: 'quote', label: 'Criar cotacao' },
   { key: 'task', label: 'Criar tarefa' },
   { key: 'human', label: 'Transferir para Humano' },
   { key: 'ia', label: 'Ativar IA' },
@@ -71,8 +62,15 @@ const quickActions = [
 const channelClass: Record<string, string> = {
   whatsapp: 'bg-emerald-500 text-white',
   instagram: 'bg-pink-500 text-white',
-  messenger: 'bg-blue-500 text-white',
   website_chat: 'bg-violet-500 text-white',
+};
+
+const officialChannels = new Set(['whatsapp', 'instagram', 'website_chat']);
+
+const channelLabels: Record<string, string> = {
+  whatsapp: 'WhatsApp Business',
+  instagram: 'Instagram Business',
+  website_chat: 'Website Chat',
 };
 
 function timeLabel(value?: string | null) {
@@ -99,8 +97,28 @@ function ChannelIcon({ channel }: { channel: string }) {
 
 function EmptyCard({ children }: { children: string }) {
   return (
-    <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+    <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-6 text-center text-sm text-slate-500">
       {children}
+    </div>
+  );
+}
+
+function ConversationEmptyState() {
+  return (
+    <div className="grid min-h-full flex-1 place-items-center p-8">
+      <div className="max-w-md text-center">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-violet-100 text-violet-700">
+          <MessageCircle size={30} />
+        </span>
+        <h2 className="mt-5 font-display text-3xl text-slate-950">Nenhuma conversa selecionada</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          Conecte um canal para comecar a receber mensagens. O AXI centraliza WhatsApp Business, Instagram Business e Website Chat em um unico lugar.
+        </p>
+        <a href="/app/integrations" className="mt-5 inline-flex items-center justify-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-500/20">
+          Conectar Integracoes
+        </a>
+        <p className="mt-4 text-xs text-slate-400">ou selecione uma conversa existente na lista lateral.</p>
+      </div>
     </div>
   );
 }
@@ -134,6 +152,7 @@ export function ChatsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,11 +168,11 @@ export function ChatsPage() {
         ]);
         if (!cancelled) {
           setSummary(summaryData);
-          setChannels(channelData);
+          setChannels(channelData.filter((channel) => officialChannels.has(channel.key)));
           setTeam(teamData);
           setTags(tagData);
-          setConversations(conversationData);
-          setSelectedId(conversationData[0]?.id ?? null);
+          setConversations(conversationData.filter((conversation) => officialChannels.has(conversation.channel)));
+          setSelectedId(null);
           setError(null);
         }
       } catch (err) {
@@ -186,6 +205,7 @@ export function ChatsPage() {
           setMode(data.conversation.ai_mode);
           setSuggestions([]);
           setSendError(null);
+          setActionNotice(null);
         }
       } catch (err) {
         if (!cancelled) setSendError(err instanceof Error ? err.message : 'Falha ao abrir conversa');
@@ -215,6 +235,9 @@ export function ChatsPage() {
   };
   const currentConversation = detail?.conversation ?? conversations.find((item) => item.id === selectedId) ?? null;
   const totalSpent = reservations.reduce((sum, item) => sum + item.value, 0);
+  const renderedTags = detail?.tags?.length
+    ? detail.tags.map((tag) => ({ id: String(tag.id), label: tag.tag, color: tag.color ?? 'violet' }))
+    : tags;
 
   async function handleModeChange(nextMode: 'ia' | 'humano' | 'hibrido') {
     setMode(nextMode);
@@ -232,6 +255,7 @@ export function ChatsPage() {
     if (!currentConversation) return;
     try {
       setSendError(null);
+      setActionNotice(null);
       if (action === 'human') {
         const updated = await transferConversationToHuman(currentConversation.id);
         setMode(updated.ai_mode);
@@ -244,14 +268,20 @@ export function ChatsPage() {
         return;
       }
       if (action === 'quote') {
-        await sendConversationQuote(currentConversation.id);
+        const response = await sendConversationQuote(currentConversation.id);
+        setActionNotice(response.message);
+        setDetail(await getOmnichannelConversation(currentConversation.id));
         return;
       }
       if (action === 'task') {
         await createConversationTask(currentConversation.id);
+        setActionNotice('Tarefa criada para esta conversa.');
+        setDetail(await getOmnichannelConversation(currentConversation.id));
         return;
       }
       await addConversationTag(currentConversation.id, 'follow_up');
+      setActionNotice('Tag adicionada a conversa.');
+      setDetail(await getOmnichannelConversation(currentConversation.id));
     } catch (err) {
       setSendError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Acao indisponivel');
     }
@@ -305,28 +335,23 @@ export function ChatsPage() {
             <span>Buscar conversas...</span>
             <span className="ml-auto text-xs text-slate-400">⌘ K</span>
           </label>
-          <div className="inline-flex rounded-xl bg-slate-950 p-1 text-sm font-semibold text-white shadow-sm">
-            {(['ia', 'humano', 'hibrido'] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => void handleModeChange(item)}
-                className={`rounded-lg px-5 py-2 capitalize ${mode === item ? 'bg-violet-600' : 'text-slate-300'}`}
-              >
-                {item === 'ia' ? 'IA' : item}
-              </button>
-            ))}
-          </div>
         </div>
       </header>
 
-      <div className="grid gap-3 xl:grid-cols-[300px_minmax(460px,1fr)_360px]">
+      <div className="grid gap-3 xl:grid-cols-[22%_minmax(520px,1fr)_20%]">
         <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-xl">Canais</h2>
-            <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-violet-700">+</button>
+            <a href="/app/integrations" className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-violet-700">+</a>
           </div>
           <div className="space-y-2">
+            {channels.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <p className="font-semibold text-slate-700">Nenhum canal conectado</p>
+                <p className="mt-2 leading-5">Conecte WhatsApp Business, Instagram Business ou Website Chat.</p>
+                <a href="/app/integrations" className="mt-3 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white">Ir para Integracoes</a>
+              </div>
+            ) : null}
             {channels.map((channel) => (
               <button
                 key={channel.key}
@@ -357,7 +382,7 @@ export function ChatsPage() {
             </div>
             <div className="max-h-[calc(100vh-360px)] space-y-2 overflow-y-auto pr-1">
               {filteredConversations.length === 0 ? (
-                <EmptyCard>Nenhuma conversa real encontrada. Conecte WhatsApp, Instagram, Messenger ou Website Chat.</EmptyCard>
+                <EmptyCard>Nenhuma conversa real encontrada. Conecte WhatsApp Business, Instagram Business ou Website Chat.</EmptyCard>
               ) : filteredConversations.map((conversation) => (
                 <button
                   key={conversation.id}
@@ -372,6 +397,12 @@ export function ChatsPage() {
                       <span className="text-xs text-slate-500">{timeLabel(conversation.last_message_at)}</span>
                     </div>
                     <p className="mt-1 truncate text-xs text-slate-500">{conversation.last_message_preview || 'Sem mensagens ainda.'}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="truncate text-[11px] font-semibold text-slate-400">{channelLabels[conversation.channel] ?? conversation.channel}</span>
+                      {conversation.unread_count > 0 ? (
+                        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-violet-600 px-1.5 text-[11px] font-bold text-white">{conversation.unread_count}</span>
+                      ) : null}
+                    </div>
                   </div>
                 </button>
               ))}
@@ -382,19 +413,42 @@ export function ChatsPage() {
         <main className="flex min-h-[760px] flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
           {currentConversation ? (
             <>
-              <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex items-center gap-3">
                   <ChannelIcon channel={currentConversation.channel} />
                   <div>
                     <h2 className="font-display text-2xl">{currentConversation.customer_name}</h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1">{channelLabels[currentConversation.channel] ?? currentConversation.channel}</span>
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{currentConversation.sales_stage ?? 'Lead quente'}</span>
+                      <span>Ultima atividade {timeLabel(currentConversation.last_message_at)}</span>
+                      <span>Origem: {currentConversation.source ?? 'Nao informada'}</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {renderedTags.slice(0, 3).map((tag) => (
+                        <span key={tag.id} className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700">{tag.label}</span>
+                      ))}
+                    </div>
                     <p className="text-sm text-slate-500">{currentConversation.status} · {currentConversation.ai_mode}</p>
                   </div>
                 </div>
-                <div className="flex gap-2 text-slate-600">
-                  <span className="rounded-xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">{currentConversation.channel}</span>
-                  <Star size={20} />
-                  <Tag size={20} />
-                  <MoreHorizontal size={20} />
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <div className="inline-flex rounded-xl bg-slate-950 p-1 text-xs font-semibold text-white shadow-sm">
+                    {(['ia', 'humano', 'hibrido'] as const).map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => void handleModeChange(item)}
+                        className={`rounded-lg px-3 py-2 capitalize ${mode === item ? 'bg-violet-600' : 'text-slate-300'}`}
+                      >
+                        {item === 'ia' ? 'IA' : item}
+                      </button>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => void handleQuickAction('human')} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">Transferir</button>
+                  <button type="button" onClick={() => void handleQuickAction('task')} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">Criar tarefa</button>
+                  <button type="button" onClick={() => void handleQuickAction('quote')} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">Enviar cotacao</button>
+                  <button type="button" onClick={() => void handleQuickAction('tag')} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">Adicionar tag</button>
                 </div>
               </div>
 
@@ -436,6 +490,7 @@ export function ChatsPage() {
                   onChange={(event) => setDraft(event.target.value)}
                 />
                 {sendError ? <p className="mt-2 text-sm text-amber-600">{sendError}</p> : null}
+                {actionNotice ? <p className="mt-2 text-sm text-emerald-600">{actionNotice}</p> : null}
                 <div className="mt-3 flex items-center justify-between">
                   <div className="flex gap-3 text-slate-500">
                     <Paperclip size={18} /><Smile size={18} /><Image size={18} /><FileText size={18} /><Star size={18} />
@@ -452,11 +507,23 @@ export function ChatsPage() {
               </form>
             </>
           ) : (
-            <EmptyCard>Selecione uma conversa real ou conecte um canal para iniciar atendimento.</EmptyCard>
+            <ConversationEmptyState />
           )}
         </main>
 
         <aside className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          {!currentConversation ? (
+            <div className="grid min-h-[520px] place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-6 text-center">
+              <div>
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700">
+                  <ShieldCheck size={24} />
+                </span>
+                <h2 className="mt-4 font-display text-2xl">Nenhum cliente selecionado</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Os dados do contato aparecerao aqui quando uma conversa for aberta.</p>
+              </div>
+            </div>
+          ) : (
+            <>
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-xl">Detalhes do contato</h2>
@@ -501,31 +568,15 @@ export function ChatsPage() {
           </section>
 
           <section className="rounded-2xl border border-slate-100 p-4">
-            <h3 className="mb-3 font-bold">Acoes rapidas</h3>
-            {quickActions.map((action) => (
-              <button
-                key={action.key}
-                type="button"
-                disabled={!currentConversation}
-                onClick={() => void handleQuickAction(action.key)}
-                className="mb-2 flex w-full items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Zap size={15} className="text-violet-600" />
-                {action.label}
-              </button>
-            ))}
-          </section>
-
-          <MiniAssistantCard context="chats" />
-
-          <section className="rounded-2xl border border-slate-100 p-4">
             <h3 className="mb-3 font-bold">Tags</h3>
             <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
+              {renderedTags.map((tag) => (
                 <span key={tag.id} className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">{tag.label}</span>
               ))}
             </div>
           </section>
+            </>
+          )}
         </aside>
       </div>
     </div>

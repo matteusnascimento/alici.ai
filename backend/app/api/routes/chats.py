@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +13,9 @@ from app.models.agent import Agent
 from app.models.agent_channel import AgentChannel
 from app.models.agent_conversation import AgentConversation
 from app.models.agent_message import AgentMessage
+from app.models.chat_quote import ChatQuote
+from app.models.chat_tag import ChatTag
+from app.models.chat_task import ChatTask
 from app.models.reservation import Reservation
 from app.models.user import User
 from app.services.ai.manager import AIManager
@@ -19,9 +24,8 @@ from app.services.ai.providers.base import ProviderError
 router = APIRouter(prefix="/chats", tags=["chats"])
 
 SUPPORTED_CHANNELS = [
-    {"key": "whatsapp", "label": "WhatsApp"},
-    {"key": "instagram", "label": "Instagram"},
-    {"key": "messenger", "label": "Messenger"},
+    {"key": "whatsapp", "label": "WhatsApp Business"},
+    {"key": "instagram", "label": "Instagram Business"},
     {"key": "website_chat", "label": "Website Chat"},
 ]
 
@@ -57,14 +61,16 @@ def _channel_key(value: str | None) -> str:
         "website": "website_chat",
         "site": "website_chat",
         "web": "website_chat",
-        "facebook": "messenger",
-        "facebook_messenger": "messenger",
     }
     return aliases.get(raw, raw)
 
 
 def _conversation_name(conversation: AgentConversation) -> str:
     return conversation.external_user_id or f"Cliente #{conversation.id}"
+
+
+def _dump_json(value: dict[str, Any] | None) -> str:
+    return json.dumps(value or {}, ensure_ascii=True, default=str)
 
 
 def _connected_channel(db: Session, conversation: AgentConversation) -> AgentChannel | None:
@@ -126,6 +132,46 @@ def _conversation_query(db: Session, user: User):
     if not agent_ids:
         return None
     return db.query(AgentConversation).filter(AgentConversation.agent_id.in_(agent_ids))
+
+
+def _serialize_quote(item: ChatQuote) -> dict[str, Any]:
+    return {
+        "id": item.id,
+        "conversation_id": item.conversation_id,
+        "title": item.title,
+        "amount": item.amount,
+        "currency": item.currency,
+        "description": item.description,
+        "status": item.status,
+        "delivery_status": item.delivery_status,
+        "provider": item.provider,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+    }
+
+
+def _serialize_task(item: ChatTask) -> dict[str, Any]:
+    return {
+        "id": item.id,
+        "conversation_id": item.conversation_id,
+        "title": item.title,
+        "description": item.description,
+        "task_type": item.task_type,
+        "status": item.status,
+        "due_at": item.due_at,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+    }
+
+
+def _serialize_tag(item: ChatTag) -> dict[str, Any]:
+    return {
+        "id": item.id,
+        "conversation_id": item.conversation_id,
+        "tag": item.tag,
+        "color": item.color,
+        "created_at": item.created_at,
+    }
 
 
 @router.get("/summary", response_model=dict[str, Any])
@@ -201,6 +247,38 @@ def get_chat_conversation(
         .order_by(AgentMessage.created_at.asc())
         .all()
     )
+    quotes = (
+        db.query(ChatQuote)
+        .filter(ChatQuote.conversation_id == conversation.id, ChatQuote.user_id == current_user.id)
+        .order_by(ChatQuote.created_at.desc())
+        .all()
+    )
+    tasks = (
+        db.query(ChatTask)
+        .filter(ChatTask.conversation_id == conversation.id, ChatTask.user_id == current_user.id)
+        .order_by(ChatTask.created_at.desc())
+        .all()
+    )
+    tags = (
+        db.query(ChatTag)
+        .filter(ChatTag.conversation_id == conversation.id, ChatTag.user_id == current_user.id)
+        .order_by(ChatTag.created_at.desc())
+        .all()
+    )
+    timeline = [
+        {"type": "message", "id": item.id, "label": item.content[:140], "created_at": item.created_at}
+        for item in messages[-20:]
+    ] + [
+        {"type": "quote", "id": item.id, "label": item.title, "created_at": item.created_at}
+        for item in quotes[:10]
+    ] + [
+        {"type": "task", "id": item.id, "label": item.title, "created_at": item.created_at}
+        for item in tasks[:10]
+    ] + [
+        {"type": "tag", "id": item.id, "label": item.tag, "created_at": item.created_at}
+        for item in tags[:10]
+    ]
+    timeline = sorted(timeline, key=lambda item: str(item["created_at"] or ""), reverse=True)[:30]
     return {
         "conversation": _serialize_conversation(conversation, messages[-1] if messages else None),
         "messages": [
@@ -216,6 +294,16 @@ def get_chat_conversation(
             }
             for item in messages
         ],
+        "quotes": [_serialize_quote(item) for item in quotes],
+        "tasks": [_serialize_task(item) for item in tasks],
+        "tags": [_serialize_tag(item) for item in tags],
+        "timeline": timeline,
+        "customer": {
+            "name": _conversation_name(conversation),
+            "phone": conversation.external_user_id if _channel_key(conversation.channel_type) == "whatsapp" else None,
+            "last_interest": conversation.sales_stage,
+            "source": conversation.lead_source,
+        },
     }
 
 
@@ -261,32 +349,77 @@ def transfer_chat_to_human(
 @router.post("/conversations/{conversation_id}/quote", response_model=dict[str, Any])
 def send_chat_quote(
     conversation_id: int,
+    payload: dict[str, Any] | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     conversation = _conversation_or_404(db, current_user, conversation_id)
-    if _connected_channel(db, conversation) is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Envio de cotacao requer canal conectado. Nenhum provider foi acionado.",
-        )
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Envio externo de cotacao ainda nao implementado para este provider.",
+    body = payload or {}
+    connected = _connected_channel(db, conversation)
+    quote = ChatQuote(
+        conversation_id=conversation.id,
+        user_id=current_user.id,
+        title=str(body.get("title") or "Cotacao"),
+        amount=body.get("amount"),
+        currency=str(body.get("currency") or "BRL"),
+        description=body.get("description"),
+        status="draft",
+        delivery_status="not_sent" if connected is None else "pending_external_adapter",
+        provider=connected.provider_name if connected else None,
+        metadata_json=_dump_json({"source": "chats_quick_action", "requested_send": True}),
     )
+    db.add(quote)
+    db.commit()
+    db.refresh(quote)
+    message = (
+        "Cotacao persistida como rascunho. Envio externo bloqueado porque o canal nao esta conectado."
+        if connected is None
+        else "Cotacao persistida como rascunho. Envio externo ainda requer adapter do provider."
+    )
+    return {"status": "draft", "message": message, "quote": _serialize_quote(quote)}
 
 
 @router.post("/conversations/{conversation_id}/tasks", response_model=dict[str, Any])
 def create_chat_task(
     conversation_id: int,
+    payload: dict[str, Any] | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    _conversation_or_404(db, current_user, conversation_id)
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Criacao de tarefas de atendimento ainda nao possui modelo persistente no backend.",
+    conversation = _conversation_or_404(db, current_user, conversation_id)
+    body = payload or {}
+    due_at = None
+    if body.get("due_at"):
+        try:
+            due_at = datetime.fromisoformat(str(body["due_at"]).replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="due_at invalido") from exc
+    task = ChatTask(
+        conversation_id=conversation.id,
+        user_id=current_user.id,
+        title=str(body.get("title") or "Follow-up do atendimento"),
+        description=body.get("description"),
+        task_type=str(body.get("task_type") or "follow_up"),
+        status=str(body.get("status") or "open"),
+        due_at=due_at,
     )
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+    return {"status": "created", "task": _serialize_task(task)}
+
+
+@router.post("/conversations/{conversation_id}/follow-up", response_model=dict[str, Any])
+def create_chat_follow_up(
+    conversation_id: int,
+    payload: dict[str, Any] | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    body = dict(payload or {})
+    body.setdefault("title", "Follow-up")
+    body.setdefault("task_type", "follow_up")
+    return create_chat_task(conversation_id=conversation_id, payload=body, current_user=current_user, db=db)
 
 
 @router.post("/conversations/{conversation_id}/tags", response_model=dict[str, Any])
@@ -296,14 +429,27 @@ def add_chat_tag(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    _conversation_or_404(db, current_user, conversation_id)
+    conversation = _conversation_or_404(db, current_user, conversation_id)
     tag = str(payload.get("tag") or "").strip()
     if not tag:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Tag obrigatoria")
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Tags persistentes por conversa ainda nao foram implementadas no backend.",
+    existing = (
+        db.query(ChatTag)
+        .filter(ChatTag.conversation_id == conversation.id, ChatTag.user_id == current_user.id, ChatTag.tag == tag)
+        .first()
     )
+    if existing:
+        return {"status": "exists", "tag": _serialize_tag(existing)}
+    item = ChatTag(
+        conversation_id=conversation.id,
+        user_id=current_user.id,
+        tag=tag,
+        color=payload.get("color"),
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return {"status": "created", "tag": _serialize_tag(item)}
 
 
 @router.post("/conversations/{conversation_id}/messages", response_model=dict[str, Any])

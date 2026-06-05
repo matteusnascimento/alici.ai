@@ -12,7 +12,7 @@ class GeminiProvider(HTTPAIProvider):
     def __init__(self) -> None:
         super().__init__(timeout_seconds=settings.ai_provider_timeout_seconds)
         self.api_key = settings.gemini_api_key
-        self.default_model = settings.gemini_model
+        self.default_model = settings.effective_gemini_chat_model
 
     def is_configured(self) -> bool:
         return bool(self.api_key)

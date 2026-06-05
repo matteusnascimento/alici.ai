@@ -104,16 +104,28 @@ def test_omnichannel_quick_actions_do_not_fake_external_success(client, auth_hea
     assert transfer_response.json()['ai_mode'] == 'humano'
 
     quote_response = client.post(f'/api/chats/conversations/{conversation_id}/quote', headers=auth_headers)
-    assert quote_response.status_code == 503
-    assert 'canal conectado' in quote_response.json()['detail'].lower()
+    assert quote_response.status_code == 200
+    assert quote_response.json()['status'] == 'draft'
+    assert quote_response.json()['quote']['delivery_status'] == 'not_sent'
+    assert 'bloqueado' in quote_response.json()['message'].lower()
 
     task_response = client.post(f'/api/chats/conversations/{conversation_id}/tasks', headers=auth_headers)
-    assert task_response.status_code == 501
-    assert 'tarefas' in task_response.json()['detail'].lower()
+    assert task_response.status_code == 200
+    assert task_response.json()['status'] == 'created'
+    assert task_response.json()['task']['task_type'] == 'follow_up'
 
     empty_tag_response = client.post(f'/api/chats/conversations/{conversation_id}/tags', headers=auth_headers, json={'tag': ''})
     assert empty_tag_response.status_code == 422
 
     tag_response = client.post(f'/api/chats/conversations/{conversation_id}/tags', headers=auth_headers, json={'tag': 'follow_up'})
-    assert tag_response.status_code == 501
-    assert 'tags persistentes' in tag_response.json()['detail'].lower()
+    assert tag_response.status_code == 200
+    assert tag_response.json()['status'] == 'created'
+    assert tag_response.json()['tag']['tag'] == 'follow_up'
+
+    detail_response = client.get(f'/api/chats/conversations/{conversation_id}', headers=auth_headers)
+    assert detail_response.status_code == 200
+    detail = detail_response.json()
+    assert len(detail['quotes']) == 1
+    assert len(detail['tasks']) == 1
+    assert len(detail['tags']) == 1
+    assert any(item['type'] == 'quote' for item in detail['timeline'])

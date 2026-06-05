@@ -118,12 +118,10 @@ async def billing_webhook(request: Request, db: Session = Depends(get_db)) -> di
 def billing_health() -> dict:
     """Verifica o estado da integração Stripe (para monitoramento em produção)."""
     stripe_key = settings.stripe_secret_key
-    prices_configured = all([
-        settings.stripe_price_pro_monthly,
-        settings.stripe_price_pro_yearly,
-        settings.stripe_price_business_monthly,
-        settings.stripe_price_business_yearly,
-    ])
+    prices_configured = bool(
+        (settings.stripe_price_pro or settings.stripe_price_pro_monthly)
+        and (settings.stripe_price_business or settings.stripe_price_business_monthly)
+    )
     return {
         "stripe_configured": bool(stripe_key),
         "prices_loaded": prices_configured,

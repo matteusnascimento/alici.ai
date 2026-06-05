@@ -40,7 +40,7 @@ class AIConfigurationError(AIServiceError):
     def __init__(self, message: str) -> None:
         super().__init__(
             message,
-            user_message="A integracao de IA nao esta configurada.",
+            user_message="Provider de IA não configurado.",
             status_code=503,
             code="ai_not_configured",
         )
@@ -63,7 +63,7 @@ class AIService:
     def _model_for(self, task_name: str, model: str | None = None) -> str:
         if model:
             return model
-        return settings.openai_model if task_name == "chat" else self.default_model
+        return settings.effective_openai_chat_model if task_name == "chat" and self.provider == "openai" else self.default_model
 
     @staticmethod
     def _task_from_function_name(function_name: Any | None) -> str:

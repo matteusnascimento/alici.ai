@@ -61,14 +61,14 @@ def test_integrations_endpoints(client, auth_headers):
 
     meta_connect = client.get('/api/integrations/meta/connect?provider=whatsapp', headers=auth_headers)
     assert meta_connect.status_code == 503
-    assert 'OAuth Meta' in meta_connect.json()['detail']
+    assert 'Integração Meta não configurada' in meta_connect.json()['detail']
 
     google_connect = client.get('/api/integrations/google/connect?provider=google_ads', headers=auth_headers)
     assert google_connect.status_code == 503
-    assert 'OAuth Google' in google_connect.json()['detail']
+    assert 'Integração Google não configurada' in google_connect.json()['detail']
 
     omnibees_missing = client.post('/api/integrations/omnibees/test', headers=auth_headers, json={})
-    assert omnibees_missing.status_code == 422
+    assert omnibees_missing.status_code == 503
 
     widget_script = client.get('/api/integrations/website-chat/widget-script', headers=auth_headers)
     assert widget_script.status_code == 200

@@ -118,6 +118,13 @@ export function createCampaign(data: MarketingProjectCreate): Promise<MarketingP
   });
 }
 
+export function publishCampaign(id: number, channels: string[]) {
+  return apiFetch<{ id: number; status: string; message: string; missing_providers?: string[] }>(`/marketing/campaigns/${id}/publish`, {
+    method: 'POST',
+    body: JSON.stringify({ channels }),
+  });
+}
+
 export function getProject(id: number): Promise<MarketingProject> {
   return apiFetch<MarketingProject>(`/marketing/projects/${id}`);
 }

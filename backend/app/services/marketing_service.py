@@ -4,6 +4,7 @@ import json
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.models.integration_account import IntegrationAccount
 from app.models.marketing_project import MarketingProject
 from app.models.marketing_audience import MarketingAudience
 from app.models.marketing_calendar_event import MarketingCalendarEvent
@@ -19,6 +20,7 @@ from app.schemas.marketing import (
     MarketingContentResponse,
     MarketingCopyResponse,
     MarketingImagePromptResponse,
+    MarketingPublishResponse,
     MarketingProjectCreate,
     MarketingProjectRead,
     MarketingProjectUpdate,
@@ -38,6 +40,36 @@ class MarketingService:
             MarketingTool(id="image_prompt", name="Image Prompt", description="Cria prompt para geracao de imagem."),
             MarketingTool(id="campaign", name="Campaign Planner", description="Estrutura campanha completa em texto."),
         ]
+
+    @staticmethod
+    def _iso(value) -> str | None:
+        return value.astimezone(UTC).isoformat() if value else None
+
+    def _project_or_404(self, user: User, project_id: int) -> MarketingProject:
+        project = self.db.query(MarketingProject).filter(
+            MarketingProject.id == project_id, MarketingProject.user_id == user.id
+        ).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        return project
+
+    def _serialize_project(self, project: MarketingProject) -> MarketingProjectRead:
+        return MarketingProjectRead(
+            id=project.id,
+            name=project.name,
+            audience=project.audience,
+            objective=project.objective,
+            offer=project.offer,
+            tone=project.tone,
+            channels=project.channels,
+            budget=project.budget,
+            creative_project_id=project.creative_project_id,
+            status=project.status,
+            published_at=self._iso(project.published_at),
+            last_publish_error=project.last_publish_error,
+            notes=project.notes,
+            created_at=self._iso(project.created_at) or "",
+        )
 
     @staticmethod
     def _normalize_content_response(result: dict) -> MarketingContentResponse:
@@ -190,16 +222,7 @@ class MarketingService:
         self.db.add(project)
         self.db.commit()
         self.db.refresh(project)
-        return MarketingProjectRead(
-            id=project.id,
-            name=project.name,
-            audience=project.audience,
-            objective=project.objective,
-            offer=project.offer,
-            tone=project.tone,
-            notes=project.notes,
-            created_at=project.created_at.astimezone(UTC).isoformat() if project.created_at else "",
-        )
+        return self._serialize_project(project)
 
     def list_projects(self, user: User) -> list[MarketingProjectRead]:
         projects = (
@@ -208,19 +231,7 @@ class MarketingService:
             .order_by(MarketingProject.created_at.desc())
             .all()
         )
-        return [
-            MarketingProjectRead(
-                id=item.id,
-                name=item.name,
-                audience=item.audience,
-                objective=item.objective,
-                offer=item.offer,
-                tone=item.tone,
-                notes=item.notes,
-                created_at=item.created_at.astimezone(UTC).isoformat() if item.created_at else "",
-            )
-            for item in projects
-        ]
+        return [self._serialize_project(item) for item in projects]
 
     def list_audiences(self, user: User) -> list[MarketingAudienceRead]:
         rows = (
@@ -310,58 +321,23 @@ class MarketingService:
         )
 
     def get_project(self, user: User, project_id: int) -> MarketingProjectRead:
-        project = self.db.query(MarketingProject).filter(
-            MarketingProject.id == project_id, MarketingProject.user_id == user.id
-        ).first()
-        if not project:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
-        return MarketingProjectRead(
-            id=project.id,
-            name=project.name,
-            audience=project.audience,
-            objective=project.objective,
-            offer=project.offer,
-            tone=project.tone,
-            notes=project.notes,
-            created_at=project.created_at.astimezone(UTC).isoformat() if project.created_at else "",
-        )
+        return self._serialize_project(self._project_or_404(user, project_id))
 
     def update_project(self, user: User, project_id: int, payload: MarketingProjectUpdate) -> MarketingProjectRead:
-        project = self.db.query(MarketingProject).filter(
-            MarketingProject.id == project_id, MarketingProject.user_id == user.id
-        ).first()
-        if not project:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        project = self._project_or_404(user, project_id)
         for field, value in payload.model_dump(exclude_none=True).items():
             setattr(project, field, value)
         self.db.commit()
         self.db.refresh(project)
-        return MarketingProjectRead(
-            id=project.id,
-            name=project.name,
-            audience=project.audience,
-            objective=project.objective,
-            offer=project.offer,
-            tone=project.tone,
-            notes=project.notes,
-            created_at=project.created_at.astimezone(UTC).isoformat() if project.created_at else "",
-        )
+        return self._serialize_project(project)
 
     def delete_project(self, user: User, project_id: int) -> None:
-        project = self.db.query(MarketingProject).filter(
-            MarketingProject.id == project_id, MarketingProject.user_id == user.id
-        ).first()
-        if not project:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        project = self._project_or_404(user, project_id)
         self.db.delete(project)
         self.db.commit()
 
     def generate_for_project(self, user: User, project_id: int) -> MarketingCampaignResponse:
-        project = self.db.query(MarketingProject).filter(
-            MarketingProject.id == project_id, MarketingProject.user_id == user.id
-        ).first()
-        if not project:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto nao encontrado")
+        project = self._project_or_404(user, project_id)
         req = MarketingCampaignRequest(
             company_name=project.name,
             audience=project.audience,
@@ -370,3 +346,54 @@ class MarketingService:
             tone=project.tone,
         )
         return self.generate(req)
+
+    @staticmethod
+    def _provider_requirements(channels: list[str]) -> list[str]:
+        requirements: set[str] = set()
+        for channel in channels:
+            normalized = channel.strip().lower()
+            if any(term in normalized for term in ("meta", "facebook", "instagram")):
+                requirements.add("meta_ads")
+            if "google" in normalized:
+                requirements.add("google_ads")
+        return sorted(requirements)
+
+    def _connected_provider_keys(self, user: User, providers: list[str]) -> set[str]:
+        if not providers:
+            return set()
+        rows = self.db.query(IntegrationAccount.provider).filter(
+            IntegrationAccount.user_id == user.id,
+            IntegrationAccount.provider.in_(providers),
+            IntegrationAccount.status == "connected",
+        ).all()
+        return {str(row[0]) for row in rows}
+
+    def publish_campaign(self, user: User, project_id: int, channels: list[str]) -> MarketingPublishResponse:
+        project = self._project_or_404(user, project_id)
+        selected_channels = [item.strip() for item in channels if item.strip()]
+        if not selected_channels and project.channels:
+            selected_channels = [item.strip() for item in project.channels.split(",") if item.strip()]
+        if not selected_channels:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Informe pelo menos um canal para publicar.")
+
+        required = self._provider_requirements(selected_channels)
+        missing = sorted(set(required) - self._connected_provider_keys(user, required))
+        if missing:
+            project.status = "error"
+            project.last_publish_error = "Integracao obrigatoria ausente: " + ", ".join(missing)
+            self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_424_FAILED_DEPENDENCY,
+                detail={
+                    "message": "Publicacao bloqueada: conecte e valide as integracoes obrigatorias antes de publicar.",
+                    "missing_providers": missing,
+                },
+            )
+
+        project.status = "error"
+        project.last_publish_error = "Publicacao externa real ainda nao possui adapter ativo para estes canais."
+        self.db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Publicacao externa real ainda nao possui adapter ativo. Nenhuma campanha foi publicada.",
+        )

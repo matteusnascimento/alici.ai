@@ -268,7 +268,7 @@ class BillingService:
                 detail="Nenhuma assinatura Stripe ativa encontrada",
             )
 
-        return_url = f"{self._settings.app_base_url}/app/account/overview"
+        return_url = self._settings.stripe_billing_portal_return_url or f"{self._settings.frontend_base_url}/app/account/overview"
         try:
             session = stripe.billing_portal.Session.create(
                 customer=subscription.stripe_customer_id,
@@ -460,6 +460,11 @@ class BillingService:
         return int(query.scalar() or 0)
 
     def _resolve_price_id(self, plan_id: str, billing_cycle: str) -> str:
+        if billing_cycle == "monthly":
+            if plan_id == "pro" and self._settings.stripe_price_pro:
+                return self._settings.stripe_price_pro
+            if plan_id == "business" and self._settings.stripe_price_business:
+                return self._settings.stripe_price_business
         plan = self.PLAN_CATALOG.get(plan_id, {})
         env_key = plan.get("stripe_price_monthly_env") if billing_cycle == "monthly" else plan.get("stripe_price_yearly_env")
         if not env_key:

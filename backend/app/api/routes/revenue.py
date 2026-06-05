@@ -308,6 +308,21 @@ def get_origin_demand(
     }
 
 
+@router.get("/customer-360", response_model=dict[str, Any])
+def get_customer_360(
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    items = RevenueService(db).get_customer_360(current_user, limit=limit)
+    return {
+        "status": "ok" if items else "no_data",
+        "message": "" if items else NO_REAL_DATA_MESSAGE,
+        "items": [item.model_dump() for item in items],
+        "source": "leads_reservations_conversations",
+    }
+
+
 @router.get("/control-room", response_model=dict[str, Any])
 def get_control_room(
     current_user: User = Depends(get_current_user),

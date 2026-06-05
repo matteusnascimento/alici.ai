@@ -62,10 +62,6 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     throw new ApiError('Acesso negado. Você não tem permissão para esta ação.', 403);
   }
 
-  if (response.status >= 500) {
-    throw new ApiError('Erro interno do servidor. Tente novamente mais tarde.', response.status);
-  }
-
   const text = await response.text();
   let data: unknown = null;
   if (text) {
@@ -81,7 +77,11 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
         ? (data as { detail: unknown }).detail
         : 'Erro de rede';
 
-    const detailMessage = typeof detailValue === 'string' ? detailValue : 'Operacao nao concluida.';
+    const detailMessage = typeof detailValue === 'string'
+      ? detailValue
+      : response.status >= 500
+        ? 'Erro interno do servidor. Tente novamente mais tarde.'
+        : 'Operacao nao concluida.';
     throw new ApiError(detailMessage, response.status, detailValue);
   }
   return data as T;

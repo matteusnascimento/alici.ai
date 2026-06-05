@@ -7,7 +7,7 @@ export interface ChatSummary {
 }
 
 export interface ChatChannel {
-  key: 'whatsapp' | 'instagram' | 'messenger' | 'website_chat';
+  key: 'whatsapp' | 'instagram' | 'website_chat';
   label: string;
   open_count: number;
   status: 'connected' | 'not_configured' | string;
@@ -49,9 +49,60 @@ export interface OmnichannelMessage {
   created_at: string;
 }
 
+export interface ChatQuote {
+  id: number;
+  conversation_id: number;
+  title: string;
+  amount?: number | null;
+  currency: string;
+  description?: string | null;
+  status: string;
+  delivery_status: string;
+  provider?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatTask {
+  id: number;
+  conversation_id: number;
+  title: string;
+  description?: string | null;
+  task_type: string;
+  status: string;
+  due_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatConversationTag {
+  id: number;
+  conversation_id: number;
+  tag: string;
+  color?: string | null;
+  created_at: string;
+}
+
+export interface ChatTimelineItem {
+  type: 'message' | 'quote' | 'task' | 'tag' | string;
+  id: number;
+  label: string;
+  created_at: string;
+}
+
 export interface ConversationDetail {
   conversation: OmnichannelConversation;
   messages: OmnichannelMessage[];
+  quotes?: ChatQuote[];
+  tasks?: ChatTask[];
+  tags?: ChatConversationTag[];
+  timeline?: ChatTimelineItem[];
+  customer?: {
+    name?: string | null;
+    phone?: string | null;
+    last_interest?: string | null;
+    source?: string | null;
+  };
 }
 
 export interface ChatTeamMember {

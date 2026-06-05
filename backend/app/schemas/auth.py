@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class RegisterRequest(BaseModel):
@@ -48,6 +48,7 @@ class UserRead(BaseModel):
     phone: str | None
     plan: str
     role: str = "member"
+    permissions: dict[str, str] = Field(default_factory=dict)
     created_at: datetime
 
 

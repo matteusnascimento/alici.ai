@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
+from app.models.admin_audit_event import AdminAuditEvent
 from app.models.auth_token import AuthToken
 from app.models.subscription import Subscription
 from app.models.setting import UserSettings
@@ -140,9 +141,20 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email ou senha invalidos. Confira os dados e tente novamente.",
             )
+        if user.disabled_at is not None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario desativado.")
         user.last_login_at = datetime.now(timezone.utc)
         token = create_access_token(str(user.id))
         refresh_token = self._issue_token(user, "refresh", timedelta(minutes=settings.refresh_token_expire_minutes))
+        self.db.add(
+            AdminAuditEvent(
+                actor_user_id=user.id,
+                target_user_id=user.id,
+                action="login",
+                origin="auth",
+                details_json=None,
+            )
+        )
         self.db.commit()
         self.db.refresh(user)
         return token, refresh_token, user
@@ -152,6 +164,8 @@ class AuthService:
         user = self.db.query(User).filter(User.id == row.user_id).first()
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario nao encontrado")
+        if user.disabled_at is not None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario desativado.")
         access_token = create_access_token(str(user.id))
         new_refresh = self._issue_token(user, "refresh", timedelta(minutes=settings.refresh_token_expire_minutes))
         self.db.commit()

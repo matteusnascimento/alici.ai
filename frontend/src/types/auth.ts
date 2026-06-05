@@ -5,7 +5,8 @@ export interface User {
   email: string;
   phone: string | null;
   plan: string;
-  role?: 'owner' | 'member' | string;
+  role?: 'owner' | 'admin' | 'member' | string;
+  permissions?: Record<string, 'none' | 'read' | 'write' | 'admin' | string>;
   created_at?: string;
 }
 

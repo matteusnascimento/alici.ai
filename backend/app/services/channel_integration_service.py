@@ -17,6 +17,7 @@ from app.models.channel_endpoint import ChannelEndpoint
 from app.models.channel_webhook_event import ChannelWebhookEvent
 from app.models.integration_account import IntegrationAccount
 from app.models.user import User
+from app.models.website_event import WebsiteEvent
 from app.services.agent_runtime_service import AgentRuntimeError, AgentRuntimeService
 
 ACTIVE_PROVIDERS = frozenset({
@@ -522,12 +523,36 @@ class ChannelIntegrationService:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Sincronizacao indisponivel: conecte e valide o provider antes de sincronizar dados reais.",
             )
-        return {
-            "provider": normalized,
-            "status": "pending_setup",
-            "message": "Provider conectado, mas rotina de sincronizacao externa ainda nao foi configurada para execucao automatica.",
-            "status_code": 202,
-        }
+        account_rows = self.db.query(IntegrationAccount).filter(
+            IntegrationAccount.user_id == user.id,
+            IntegrationAccount.provider == normalized,
+        ).all()
+        if normalized == "website_chat":
+            site_id = f"axi-{user.id}"
+            events_count = self.db.query(WebsiteEvent).filter(WebsiteEvent.site_id == site_id).count()
+            now = datetime.now(tz=timezone.utc).isoformat()
+            for account in account_rows:
+                metadata = self._load_json(account.metadata_json)
+                metadata["last_sync_at"] = now
+                metadata["data_received"] = events_count
+                metadata["last_error"] = None
+                account.metadata_json = self._dump_json(metadata)
+            self.db.commit()
+            return {
+                "provider": normalized,
+                "status": "ok",
+                "message": "Sincronizacao concluida com eventos reais recebidos pelo AXI Tracker.",
+                "status_code": 200,
+            }
+        for account in account_rows:
+            metadata = self._load_json(account.metadata_json)
+            metadata["last_error"] = "Rotina de sincronizacao externa nao configurada para este provider."
+            account.metadata_json = self._dump_json(metadata)
+        self.db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Provider conectado, mas rotina de sincronizacao externa ainda nao foi configurada. Nenhum dado foi importado.",
+        )
 
     def list_agent_channels(self, user: User, agent_id: int) -> list[AgentChannelBinding]:
         self._agent_or_404(user, agent_id)

@@ -1,17 +1,9 @@
-import {
-  CreditCard,
-  Gauge,
-  Landmark,
-  Loader2,
-  ReceiptText,
-  ShieldCheck,
-  WalletCards,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { CreditCard, Gauge, Loader2, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { useBilling } from '../../hooks/useBilling';
+import { ApiError } from '../../services/api';
+import { getAdminBilling, type AdminBillingResponse } from '../../services/admin.service';
 import type { BillingHistoryItem } from '../../types/billing';
-import { PlanCard } from '../account/PlanCard';
 
 function formatCurrency(value: number, currency = 'BRL') {
   return new Intl.NumberFormat('pt-BR', {
@@ -102,30 +94,27 @@ function EventList({ events }: { events: BillingHistoryItem[] }) {
 }
 
 export function AdminBillingPage() {
-  const {
-    plans,
-    current,
-    usage,
-    history,
-    loading,
-    upgrading,
-    error,
-    startCheckout,
-    openPortal,
-    cancel,
-    resume,
-  } = useBilling();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [billing, setBilling] = useState<AdminBillingResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentPlan = useMemo(() => plans.find((plan) => plan.id === current?.plan_id) ?? null, [current?.plan_id, plans]);
+  useEffect(() => {
+    setLoading(true);
+    void getAdminBilling()
+      .then((data) => {
+        setBilling(data);
+        setError(null);
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : 'Falha ao carregar billing administrativo.'))
+      .finally(() => setLoading(false));
+  }, []);
+
   const invoiceEvents = useMemo(
-    () => (history?.events ?? []).filter((event) => event.event_type.toLowerCase().includes('invoice')),
-    [history?.events],
+    () => (billing?.events ?? []).filter((event) => event.event_type.toLowerCase().includes('invoice')),
+    [billing?.events],
   );
-  const historyEvents = history?.events ?? [];
-  const hasPaymentMethod = Boolean(current?.stripe_customer_id && current.plan_id !== 'free');
 
-  if (loading && !current && plans.length === 0) {
+  if (loading) {
     return (
       <div className="grid min-h-[360px] place-items-center rounded-2xl border border-white/10 bg-slate-950/58">
         <Loader2 className="animate-spin text-violet-300" size={28} />
@@ -133,11 +122,19 @@ export function AdminBillingPage() {
     );
   }
 
+  if (error) {
+    return <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-5 text-rose-100">{error}</div>;
+  }
+
+  if (!billing) {
+    return <EmptyState>Nenhum dado de billing disponivel.</EmptyState>;
+  }
+
   return (
     <div className="space-y-6">
-      {error ? (
+      {billing.message ? (
         <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-          {error}
+          {billing.message}
         </div>
       ) : null}
 
@@ -151,11 +148,11 @@ export function AdminBillingPage() {
                 </span>
                 <div>
                   <p className="text-sm text-slate-400">Plano</p>
-                  <p className="font-display text-2xl text-white">{current?.plan_name ?? 'Free'}</p>
+                  <p className="font-display text-2xl text-white">{billing.current.plan_name}</p>
                 </div>
               </div>
-              <p className="text-sm text-slate-400">Status: <span className="font-semibold text-white">{current?.status ?? 'indisponivel'}</span></p>
-              <p className="mt-1 text-sm text-slate-400">Ciclo: <span className="font-semibold text-white">{current?.billing_cycle ?? 'monthly'}</span></p>
+              <p className="text-sm text-slate-400">Status: <span className="font-semibold text-white">{billing.current.status}</span></p>
+              <p className="mt-1 text-sm text-slate-400">Ciclo: <span className="font-semibold text-white">{billing.current.billing_cycle}</span></p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
               <div className="mb-3 flex items-center gap-3">
@@ -163,62 +160,20 @@ export function AdminBillingPage() {
                   <WalletCards size={20} />
                 </span>
                 <div>
-                  <p className="text-sm text-slate-400">Renovacao</p>
-                  <p className="font-display text-2xl text-white">{formatDate(current?.next_renewal_at)}</p>
+                  <p className="text-sm text-slate-400">Proxima cobranca</p>
+                  <p className="font-display text-2xl text-white">{formatDate(billing.current.next_renewal_at)}</p>
                 </div>
               </div>
-              <p className="text-sm text-slate-400">Provider: <span className="font-semibold text-white">{current?.provider ?? 'Nao informado'}</span></p>
-              <p className="mt-1 text-sm text-slate-400">Auto renovacao: <span className="font-semibold text-white">{current?.auto_renew ? 'Ativa' : 'Inativa'}</span></p>
+              <p className="text-sm text-slate-400">Provider: <span className="font-semibold text-white">{billing.current.provider ?? 'Nao informado'}</span></p>
+              <p className="mt-1 text-sm text-slate-400">Stripe: <span className="font-semibold text-white">{billing.stripe_configured ? 'Configurado' : 'Pendente'}</span></p>
             </div>
-          </div>
-          {current?.cancel_at_period_end ? (
-            <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-              Cancelamento agendado para o fim do periodo. Reative se quiser manter o plano.
-            </div>
-          ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {current?.cancel_at_period_end ? (
-              <button type="button" onClick={() => void resume()} disabled={upgrading} className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60">
-                Reativar plano
-              </button>
-            ) : hasPaymentMethod ? (
-              <button type="button" onClick={() => void cancel()} disabled={upgrading} className="rounded-xl border border-rose-400/35 px-4 py-2 text-sm font-semibold text-rose-100 disabled:opacity-60">
-                Cancelar no fim do periodo
-              </button>
-            ) : null}
           </div>
         </BillingCard>
 
-        <BillingCard title="Metodo de Pagamento" description="Cartao e dados fiscais ficam no portal seguro do Stripe.">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-            <div className="mb-4 flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-emerald-400/12 text-emerald-200">
-                <Landmark size={20} />
-              </span>
-              <div>
-                <p className="font-semibold text-white">{hasPaymentMethod ? 'Stripe conectado' : 'Aguardando checkout'}</p>
-                <p className="text-sm text-slate-400">
-                  {hasPaymentMethod ? `Cliente ${current?.stripe_customer_id}` : 'O metodo sera criado quando um upgrade for iniciado.'}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => void openPortal()}
-              disabled={!hasPaymentMethod}
-              className="w-full rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              Abrir portal de pagamento
-            </button>
-          </div>
-        </BillingCard>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-2">
         <BillingCard title="Consumo" description="Uso real retornado pelo backend de billing.">
-          {(usage?.items ?? []).length === 0 ? <EmptyState>Sem consumo real retornado.</EmptyState> : (
+          {billing.usage.length === 0 ? <EmptyState>Sem consumo real retornado.</EmptyState> : (
             <div className="space-y-3">
-              {usage!.items.map((item) => {
+              {billing.usage.map((item) => {
                 const pct = usagePercent(item.used, item.limit);
                 return (
                   <div key={item.metric} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
@@ -235,11 +190,13 @@ export function AdminBillingPage() {
             </div>
           )}
         </BillingCard>
+      </section>
 
+      <section className="grid gap-4 xl:grid-cols-2">
         <BillingCard title="Limites" description="Limites contratados pelo plano atual.">
-          {!currentPlan || currentPlan.limits.length === 0 ? <EmptyState>Sem limites reais configurados para o plano atual.</EmptyState> : (
+          {billing.limits.length === 0 ? <EmptyState>Sem limites reais configurados para o plano atual.</EmptyState> : (
             <div className="grid gap-3 md:grid-cols-2">
-              {currentPlan.limits.map((limit) => (
+              {billing.limits.map((limit) => (
                 <div key={limit.key} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                   <div className="mb-3 flex items-center gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-full bg-violet-500/15 text-violet-200">
@@ -253,50 +210,35 @@ export function AdminBillingPage() {
             </div>
           )}
         </BillingCard>
+
+        <BillingCard title="Resumo Stripe" description="Somente leitura. Alteracoes continuam no fluxo Stripe existente.">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <ReceiptText className="mb-3 text-violet-200" size={22} />
+              <p className="text-sm text-slate-400">Eventos</p>
+              <p className="font-display text-3xl text-white">{billing.events.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <CreditCard className="mb-3 text-cyan-200" size={22} />
+              <p className="text-sm text-slate-400">Faturas</p>
+              <p className="font-display text-3xl text-white">{invoiceEvents.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <WalletCards className="mb-3 text-emerald-200" size={22} />
+              <p className="text-sm text-slate-400">Cliente Stripe</p>
+              <p className="break-all text-sm font-semibold text-white">{billing.current.stripe_customer_id ?? 'Nao informado'}</p>
+            </div>
+          </div>
+        </BillingCard>
       </section>
 
       <BillingCard title="Faturas" description="Eventos de invoice pagos ou recusados pelo Stripe.">
         <EventList events={invoiceEvents} />
       </BillingCard>
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="font-display text-2xl text-white">Upgrade</h2>
-          <p className="mt-1 text-sm text-slate-400">Mudanca de plano acontece somente por checkout real ou portal Stripe.</p>
-        </div>
-        <PlanCard
-          current={current}
-          plans={plans}
-          billingCycle={billingCycle}
-          loading={loading}
-          error={error}
-          onBillingCycleChange={setBillingCycle}
-          onUpgrade={(planId, cycle) => void startCheckout(planId, cycle)}
-          onOpenPortal={() => void openPortal()}
-        />
-      </section>
-
       <BillingCard title="Historico" description="Registro administrativo de eventos de assinatura e cobranca.">
-        <EventList events={historyEvents} />
+        <EventList events={billing.events} />
       </BillingCard>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-          <ReceiptText className="mb-3 text-violet-200" size={22} />
-          <p className="text-sm text-slate-400">Eventos no historico</p>
-          <p className="font-display text-3xl text-white">{historyEvents.length}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-          <CreditCard className="mb-3 text-cyan-200" size={22} />
-          <p className="text-sm text-slate-400">Planos disponiveis</p>
-          <p className="font-display text-3xl text-white">{plans.length}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-          <WalletCards className="mb-3 text-emerald-200" size={22} />
-          <p className="text-sm text-slate-400">Faturas registradas</p>
-          <p className="font-display text-3xl text-white">{invoiceEvents.length}</p>
-        </div>
-      </div>
     </div>
   );
 }

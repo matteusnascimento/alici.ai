@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 
 from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,6 +29,7 @@ class User(Base):
     phone_verification_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     plan: Mapped[str] = mapped_column(String(50), default="free")
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -53,6 +55,13 @@ class User(Base):
     agent_knowledge_items = relationship("AgentKnowledge", back_populates="user", cascade="all, delete-orphan")
     agent_actions = relationship("AgentAction", back_populates="user", cascade="all, delete-orphan")
     auth_tokens = relationship("AuthToken", back_populates="user", cascade="all, delete-orphan")
+    admin_permissions = relationship(
+        "AdminPermission",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        foreign_keys="AdminPermission.user_id",
+    )
 
     @property
     def role(self) -> str:
@@ -69,3 +78,32 @@ class User(Base):
         if email in admin_emails or email in billing_admin_emails:
             return "admin"
         return "member"
+
+    @property
+    def permissions(self) -> dict[str, str]:
+        modules = {
+            "revenue",
+            "chats",
+            "assistant",
+            "marketing",
+            "studio",
+            "integrations",
+            "admin",
+        }
+        if self.role in {"owner", "admin"}:
+            return {module: "admin" for module in modules}
+
+        row = self.admin_permissions
+        if not row or not row.permissions_json:
+            return {}
+        try:
+            payload = json.loads(row.permissions_json)
+        except (TypeError, ValueError):
+            return {}
+        if not isinstance(payload, dict):
+            return {}
+        return {
+            str(module): str(level)
+            for module, level in payload.items()
+            if module in modules and level in {"none", "read", "write", "admin"}
+        }

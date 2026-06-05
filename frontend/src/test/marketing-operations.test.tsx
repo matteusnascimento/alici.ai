@@ -1,12 +1,14 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
-const { createProject, listCampaigns, listMarketingResource, listProjects } = vi.hoisted(() => ({
+const { createProject, listCampaigns, listMarketingResource, listProjects, publishCampaign } = vi.hoisted(() => ({
   createProject: vi.fn(),
   listCampaigns: vi.fn(),
   listMarketingResource: vi.fn(),
   listProjects: vi.fn(),
+  publishCampaign: vi.fn(),
 }));
 
 vi.mock('../services/marketing.service', () => ({
@@ -14,6 +16,7 @@ vi.mock('../services/marketing.service', () => ({
   listCampaigns: () => listCampaigns(),
   listMarketingResource: (resource: string) => listMarketingResource(resource),
   listProjects: () => listProjects(),
+  publishCampaign: (id: number, channels: string[]) => publishCampaign(id, channels),
 }));
 
 vi.mock('../hooks/useChat', () => ({
@@ -64,6 +67,8 @@ describe('Marketing operations', () => {
   });
 
   it('renderiza criacao secundaria com publico, canais, objetivos e AXI Assistant', async () => {
+    const user = userEvent.setup();
+
     render(
       <MemoryRouter initialEntries={['/app/marketing/plans/new']}>
         <MarketingPlanningPage />
@@ -71,11 +76,21 @@ describe('Marketing operations', () => {
     );
 
     expect(await screen.findByRole('heading', { name: /Criar Plano de Marketing/i })).toBeInTheDocument();
-    expect(screen.getByText('Origem do publico')).toBeInTheDocument();
-    expect(screen.getByText('Sao Paulo')).toBeInTheDocument();
-    expect(screen.getByText('26-35')).toBeInTheDocument();
+    expect(screen.getByText('Marketing Planner')).toBeInTheDocument();
+    expect(screen.getByText('Mercado de Origem')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Pesquisar cidade, estado, pais ou regiao/i)).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText(/Pesquisar cidade, estado, pais ou regiao/i), 'Bah');
+    expect(screen.getByText('Bahia')).toBeInTheDocument();
+    await user.clear(screen.getByPlaceholderText(/Pesquisar cidade, estado, pais ou regiao/i));
+    await user.type(screen.getByPlaceholderText(/Pesquisar cidade, estado, pais ou regiao/i), 'Por');
+    expect(screen.getByText('Portugal')).toBeInTheDocument();
+    expect(screen.getByText('Periodo rapido')).toBeInTheDocument();
+    expect(screen.getAllByText('Objetivo principal').length).toBeGreaterThan(0);
+    expect(screen.getByText('Objetivos complementares')).toBeInTheDocument();
+    expect(screen.getByText('Perfil do cliente')).toBeInTheDocument();
+    expect(screen.getByText('25-34')).toBeInTheDocument();
     expect(screen.getByText('Instagram')).toBeInTheDocument();
-    expect(screen.getByText('Gerar Reservas')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Reservas' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /AXI Assistant/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Abrir AXI Assistant/i })).toHaveAttribute('href', '/app/assistant');
   });

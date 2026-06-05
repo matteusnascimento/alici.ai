@@ -11,12 +11,14 @@ from app.models.agent import Agent
 from app.models.agent_conversation import AgentConversation
 from app.models.agent_log import AgentLog
 from app.models.agent_message import AgentMessage
+from app.models.lead import Lead
 from app.models.marketing_project import MarketingProject
 from app.models.reservation import Reservation
 from app.models.user import User
 from app.services.website_tracker_service import WebsiteTrackerService
 from app.schemas.revenue import (
     RevenueBreakdownItem,
+    RevenueCustomer360Item,
     RevenueFunnelStep,
     RevenueIntelligenceSnapshot,
     RevenueOriginDemandItem,
@@ -496,3 +498,108 @@ class RevenueService:
         ]
 
         return RevenueSeriesResponse(days=safe_days, granularity=mode, points=points)
+
+    @staticmethod
+    def _identity_key(*values: str | None) -> str | None:
+        for value in values:
+            normalized = (value or "").strip().lower()
+            if normalized:
+                return normalized
+        return None
+
+    def get_customer_360(self, user: User, limit: int = 100) -> list[RevenueCustomer360Item]:
+        safe_limit = max(1, min(limit, 500))
+        buckets: dict[str, dict[str, Any]] = defaultdict(
+            lambda: {
+                "nome": None,
+                "telefone": None,
+                "email": None,
+                "cidade": None,
+                "origem": None,
+                "reservas": 0,
+                "receita": 0.0,
+                "canais": set(),
+                "fontes": set(),
+            }
+        )
+
+        def bucket_for(key: str) -> dict[str, Any]:
+            return buckets[key]
+
+        for lead in self.db.query(Lead).order_by(Lead.updated_at.desc()).limit(safe_limit).all():
+            key = self._identity_key(lead.email, lead.phone, lead.name)
+            if not key:
+                continue
+            bucket = bucket_for(key)
+            bucket["nome"] = bucket["nome"] or lead.name
+            bucket["telefone"] = bucket["telefone"] or lead.phone
+            bucket["email"] = bucket["email"] or lead.email
+            bucket["origem"] = bucket["origem"] or lead.lead_source
+            bucket["receita"] = float(bucket["receita"]) + float(lead.value or 0.0)
+            bucket["fontes"].add("leads")
+            if lead.lead_source:
+                bucket["canais"].add(lead.lead_source)
+
+        reservations = (
+            self.db.query(Reservation)
+            .filter((Reservation.user_id == user.id) | (Reservation.user_id.is_(None)))
+            .order_by(Reservation.created_at.desc())
+            .limit(safe_limit)
+            .all()
+        )
+        for reservation in reservations:
+            key = self._identity_key(reservation.guest_email, reservation.guest_document, reservation.guest_name)
+            if not key:
+                continue
+            bucket = bucket_for(key)
+            bucket["nome"] = bucket["nome"] or reservation.guest_name
+            bucket["email"] = bucket["email"] or reservation.guest_email
+            bucket["cidade"] = bucket["cidade"] or reservation.city
+            bucket["origem"] = bucket["origem"] or reservation.source or reservation.channel
+            bucket["reservas"] = int(bucket["reservas"]) + 1
+            bucket["receita"] = float(bucket["receita"]) + float(reservation.total_price or 0.0)
+            bucket["fontes"].add("reservations")
+            if reservation.channel:
+                bucket["canais"].add(reservation.channel)
+
+        agent_ids = [item.id for item in self.db.query(Agent).filter(Agent.user_id == user.id).all()]
+        if agent_ids:
+            conversations = (
+                self.db.query(AgentConversation)
+                .filter(AgentConversation.agent_id.in_(agent_ids))
+                .order_by(AgentConversation.updated_at.desc())
+                .limit(safe_limit)
+                .all()
+            )
+            for conversation in conversations:
+                key = self._identity_key(conversation.external_user_id, str(conversation.id))
+                if not key:
+                    continue
+                bucket = bucket_for(key)
+                bucket["nome"] = bucket["nome"] or conversation.external_user_id
+                if conversation.channel_type == "whatsapp":
+                    bucket["telefone"] = bucket["telefone"] or conversation.external_user_id
+                bucket["origem"] = bucket["origem"] or conversation.lead_source
+                bucket["receita"] = float(bucket["receita"]) + float(conversation.reservation_value or 0.0)
+                if self._is_closed(self._normalize_stage(conversation.sales_stage)):
+                    bucket["reservas"] = int(bucket["reservas"]) + 1
+                bucket["fontes"].add("agent_conversations")
+                if conversation.channel_type:
+                    bucket["canais"].add(conversation.channel_type)
+
+        result = [
+            RevenueCustomer360Item(
+                identity_key=key,
+                nome=data["nome"],
+                telefone=data["telefone"],
+                email=data["email"],
+                cidade=data["cidade"],
+                origem=data["origem"],
+                reservas=int(data["reservas"]),
+                receita=round(float(data["receita"]), 2),
+                canais=sorted(str(item) for item in data["canais"]),
+                fontes=sorted(str(item) for item in data["fontes"]),
+            )
+            for key, data in buckets.items()
+        ]
+        return sorted(result, key=lambda item: (item.receita, item.reservas), reverse=True)[:safe_limit]

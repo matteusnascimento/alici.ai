@@ -5,7 +5,7 @@ import logging
 import secrets
 import time
 from datetime import UTC, datetime, timedelta
-from urllib.parse import quote_plus, urlencode
+from urllib.parse import parse_qsl, quote_plus, urlencode, urlsplit, urlunsplit
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -37,13 +37,13 @@ router = APIRouter(prefix="/integrations", tags=["integrations"])
 logger = logging.getLogger(__name__)
 
 META_OAUTH_PROVIDERS = {"whatsapp", "instagram", "meta_ads"}
-META_OAUTH_SCOPES = {
+DEFAULT_META_OAUTH_SCOPES = {
     "whatsapp": "business_management,whatsapp_business_management,whatsapp_business_messaging",
     "instagram": "instagram_basic,instagram_manage_messages,pages_show_list,pages_messaging,business_management",
     "meta_ads": "ads_read,ads_management,business_management",
 }
 GOOGLE_OAUTH_PROVIDERS = {"google_ads", "google_analytics"}
-GOOGLE_OAUTH_SCOPES = {
+DEFAULT_GOOGLE_OAUTH_SCOPES = {
     "google_ads": "https://www.googleapis.com/auth/adwords",
     "google_analytics": "https://www.googleapis.com/auth/analytics.readonly",
 }
@@ -51,12 +51,41 @@ OAUTH_STATE_MAX_AGE_SECONDS = 15 * 60
 
 
 def _frontend_url(path: str) -> str:
-    return f"{(settings.app_base_url or 'http://localhost:5173').rstrip('/')}{path}"
+    return f"{settings.frontend_base_url}{path}"
 
 
 def _sign_state(payload: str) -> str:
-    secret = settings.secret_key.encode("utf-8")
+    secret = settings.effective_app_secret_key.encode("utf-8")
     return hmac.new(secret, payload.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def _meta_scopes(provider: str) -> str:
+    return (settings.meta_oauth_scopes or DEFAULT_META_OAUTH_SCOPES[provider]).strip()
+
+
+def _google_scopes(provider: str) -> str:
+    return (settings.google_oauth_scopes or DEFAULT_GOOGLE_OAUTH_SCOPES[provider]).strip()
+
+
+def _append_query(url: str, params: dict[str, str]) -> str:
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query.update({key: value for key, value in params.items() if value})
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
+def _raise_meta_not_configured() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Integração Meta não configurada. Configure META_CLIENT_ID, META_CLIENT_SECRET e META_REDIRECT_URI.",
+    )
+
+
+def _raise_google_not_configured() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Integração Google não configurada. Configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI.",
+    )
 
 
 def _build_state(user_id: int, provider: str, family: str) -> str:
@@ -142,13 +171,10 @@ def start_provider_oauth(
             detail="Este canal ainda nao possui login oficial automatico.",
         )
 
-    client_id = (settings.meta_oauth_client_id or "").strip()
-    redirect_uri = (settings.meta_oauth_redirect_uri or "").strip()
-    if not client_id or not redirect_uri:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Login oficial ainda nao configurado pela equipe tecnica.",
-        )
+    if not settings.is_meta_configured():
+        _raise_meta_not_configured()
+    client_id = settings.effective_meta_client_id.strip()
+    redirect_uri = settings.effective_meta_redirect_uri.strip()
 
     state_parts = [f"user:{current_user.id}", f"provider:{normalized}"]
     if payload.redirect_path:
@@ -159,13 +185,13 @@ def start_provider_oauth(
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": META_OAUTH_SCOPES[normalized],
+            "scope": _meta_scopes(normalized),
             "state": "|".join(state_parts),
         }
     )
     return IntegrationOAuthStartResponse(
         provider=normalized,
-        authorization_url=f"https://www.facebook.com/v20.0/dialog/oauth?{query}",
+        authorization_url=f"https://www.facebook.com/{settings.meta_graph_api_version}/dialog/oauth?{query}",
     )
 
 
@@ -176,28 +202,25 @@ def connect_meta_oauth(
 ) -> IntegrationOAuthStartResponse:
     normalized = provider.strip().lower()
     if normalized not in META_OAUTH_PROVIDERS:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provider Meta invalido.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider Meta invalido.")
 
-    client_id = (settings.meta_oauth_client_id or "").strip()
-    redirect_uri = (settings.meta_oauth_redirect_uri or "").strip()
-    if not client_id or not redirect_uri:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="OAuth Meta nao configurado no ambiente.",
-        )
+    if not settings.is_meta_configured():
+        _raise_meta_not_configured()
+    client_id = settings.effective_meta_client_id.strip()
+    redirect_uri = settings.effective_meta_redirect_uri.strip()
 
     query = urlencode(
         {
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": META_OAUTH_SCOPES[normalized],
+            "scope": _meta_scopes(normalized),
             "state": _build_state(current_user.id, normalized, "meta"),
         }
     )
     return IntegrationOAuthStartResponse(
         provider=normalized,
-        authorization_url=f"https://www.facebook.com/v20.0/dialog/oauth?{query}",
+        authorization_url=f"https://www.facebook.com/{settings.meta_graph_api_version}/dialog/oauth?{query}",
     )
 
 
@@ -212,13 +235,13 @@ def meta_oauth_callback(
     state_parts = _parse_state(state, "meta")
     provider = (state_parts.get("provider") or "").strip().lower()
     if provider not in META_OAUTH_PROVIDERS:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provider Meta invalido.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider Meta invalido.")
 
-    client_id = (settings.meta_oauth_client_id or "").strip()
-    client_secret = (settings.meta_app_secret or "").strip()
-    redirect_uri = (settings.meta_oauth_redirect_uri or "").strip()
-    if not client_id or not client_secret or not redirect_uri:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="OAuth Meta nao configurado no ambiente.")
+    if not settings.is_meta_configured():
+        _raise_meta_not_configured()
+    client_id = settings.effective_meta_client_id.strip()
+    client_secret = settings.effective_meta_client_secret.strip()
+    redirect_uri = settings.effective_meta_redirect_uri.strip()
 
     user = _oauth_user(db, state_parts)
     try:
@@ -255,7 +278,7 @@ def meta_oauth_callback(
     expires_at = datetime.now(tz=UTC) + timedelta(seconds=expires_in) if expires_in else None
     metadata = {
         "oauth_family": "meta",
-        "scopes": META_OAUTH_SCOPES[provider].split(","),
+        "scopes": [item.strip() for item in _meta_scopes(provider).split(",") if item.strip()],
         "expires_at": expires_at.isoformat() if expires_at else None,
         "connected_at": datetime.now(tz=UTC).isoformat(),
         "account_payload_received": bool(account_payload),
@@ -281,19 +304,19 @@ def connect_google_oauth(
 ) -> IntegrationOAuthStartResponse:
     normalized = provider.strip().lower()
     if normalized not in GOOGLE_OAUTH_PROVIDERS:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provider Google invalido.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider Google invalido.")
 
-    client_id = (settings.google_oauth_client_id or "").strip()
-    redirect_uri = (settings.google_oauth_redirect_uri or "").strip()
-    if not client_id or not redirect_uri:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="OAuth Google nao configurado no ambiente.")
+    if not settings.is_google_configured():
+        _raise_google_not_configured()
+    client_id = settings.effective_google_client_id.strip()
+    redirect_uri = settings.effective_google_redirect_uri.strip()
 
     query = urlencode(
         {
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": GOOGLE_OAUTH_SCOPES[normalized],
+            "scope": _google_scopes(normalized),
             "state": _build_state(current_user.id, normalized, "google"),
             "access_type": "offline",
             "prompt": "consent",
@@ -317,13 +340,13 @@ def google_oauth_callback(
     state_parts = _parse_state(state, "google")
     provider = (state_parts.get("provider") or "").strip().lower()
     if provider not in GOOGLE_OAUTH_PROVIDERS:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provider Google invalido.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider Google invalido.")
 
-    client_id = (settings.google_oauth_client_id or "").strip()
-    client_secret = (settings.google_oauth_client_secret or "").strip()
-    redirect_uri = (settings.google_oauth_redirect_uri or "").strip()
-    if not client_id or not client_secret or not redirect_uri:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="OAuth Google nao configurado no ambiente.")
+    if not settings.is_google_configured():
+        _raise_google_not_configured()
+    client_id = settings.effective_google_client_id.strip()
+    client_secret = settings.effective_google_client_secret.strip()
+    redirect_uri = settings.effective_google_redirect_uri.strip()
 
     user = _oauth_user(db, state_parts)
     try:
@@ -362,7 +385,7 @@ def google_oauth_callback(
     expires_at = datetime.now(tz=UTC) + timedelta(seconds=expires_in) if expires_in else None
     metadata = {
         "oauth_family": "google",
-        "scopes": GOOGLE_OAUTH_SCOPES[provider].split(" "),
+        "scopes": [item.strip() for item in _google_scopes(provider).split(" ") if item.strip()],
         "expires_at": expires_at.isoformat() if expires_at else None,
         "connected_at": datetime.now(tz=UTC).isoformat(),
         "token_type": token_payload.get("token_type"),
@@ -393,7 +416,7 @@ def start_whatsapp_qr(
     if payload.redirect_path:
         state_parts.append(f"return:{payload.redirect_path}")
 
-    base_url = (settings.app_base_url or "http://localhost:5173").rstrip("/")
+    base_url = settings.backend_base_url
     pairing_url = f"{base_url}/api/integrations/whatsapp/qr/pair?state={quote_plus('|'.join(state_parts))}"
     qr_code_url = (
         "https://api.qrserver.com/v1/create-qr-code/"
@@ -523,9 +546,20 @@ def _test_hospitality_credentials(provider: str, payload: IntegrationTestRequest
     if provider not in {"omnibees", "pms"}:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provider hoteleiro invalido.")
     if not endpoint or not token:
+        if provider == "omnibees" and settings.is_omnibees_configured():
+            endpoint = settings.omnibees_api_base_url.strip()
+            token = settings.omnibees_client_secret.strip()
+        elif provider == "pms" and settings.is_pms_configured():
+            endpoint = settings.pms_api_base_url.strip()
+            token = settings.pms_client_secret.strip()
+    if not endpoint or not token:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Informe URL da API e token/API key para testar a conexao.",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Integração OmniBees não configurada. Configure OMNIBEES_API_BASE_URL, OMNIBEES_CLIENT_ID e OMNIBEES_CLIENT_SECRET."
+                if provider == "omnibees"
+                else "Integração PMS não configurada. Configure PMS_API_BASE_URL, PMS_CLIENT_ID e PMS_CLIENT_SECRET."
+            ),
         )
     try:
         with httpx.Client(timeout=12.0) as client:
@@ -576,11 +610,11 @@ def connect_omnibees(
         current_user,
         "omnibees",
         {
-            "external_account_id": payload.endpoint,
+            "external_account_id": (payload.endpoint or settings.omnibees_api_base_url).strip(),
             "external_account_name": "OmniBees",
-            "access_token": payload.token or payload.api_key,
+            "access_token": payload.token or payload.api_key or settings.omnibees_client_secret,
             "metadata": {
-                "config": {"endpoint": payload.endpoint},
+                "config": {"endpoint": (payload.endpoint or settings.omnibees_api_base_url).strip(), "environment": settings.omnibees_environment},
                 "connected_at": datetime.now(tz=UTC).isoformat(),
                 "scopes": ["reservations", "availability"],
             },
@@ -609,11 +643,11 @@ def connect_pms(
         current_user,
         "pms",
         {
-            "external_account_id": payload.endpoint,
+            "external_account_id": (payload.endpoint or settings.pms_api_base_url).strip(),
             "external_account_name": "PMS",
-            "access_token": payload.token or payload.api_key,
+            "access_token": payload.token or payload.api_key or settings.pms_client_secret,
             "metadata": {
-                "config": {"endpoint": payload.endpoint},
+                "config": {"endpoint": (payload.endpoint or settings.pms_api_base_url).strip(), "environment": settings.pms_environment},
                 "connected_at": datetime.now(tz=UTC).isoformat(),
                 "scopes": ["reservations", "guests", "availability"],
             },
@@ -625,9 +659,21 @@ def connect_pms(
 
 @router.get("/website-chat/widget-script", response_model=WebsiteChatScriptResponse)
 def get_website_chat_widget_script(current_user: User = Depends(get_current_user)) -> WebsiteChatScriptResponse:
-    base_url = (settings.app_base_url or "http://localhost:5173").rstrip("/")
+    if not (settings.public_backend_url and settings.axi_tracker_public_url and settings.axi_widget_public_url):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Website Tracker não configurado. Configure PUBLIC_BACKEND_URL, AXI_TRACKER_PUBLIC_URL e AXI_WIDGET_PUBLIC_URL.",
+        )
+    base_url = settings.backend_base_url
     company_id = f"axi-{current_user.id}"
-    script = f'<script src="{base_url}/widget.js" data-axi-company-id="{company_id}" async></script>'
+    tracker_src = _append_query(settings.axi_tracker_public_url.strip(), {"site_id": company_id})
+    widget_src = settings.axi_widget_public_url.strip()
+    tracker_endpoint = f"{base_url}/api/tracker/events"
+    script = (
+        f'<script src="{tracker_src}" data-axi-company-id="{company_id}" '
+        f'data-axi-endpoint="{tracker_endpoint}" async></script>\n'
+        f'<script src="{widget_src}" data-axi-company-id="{company_id}" async></script>'
+    )
     return WebsiteChatScriptResponse(company_id=company_id, script=script)
 
 

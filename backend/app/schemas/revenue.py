@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RevenueSummary(BaseModel):
@@ -57,6 +57,19 @@ class RevenueOriginDemandItem(BaseModel):
     reservas: int
     receita: float
     conversao: float
+
+
+class RevenueCustomer360Item(BaseModel):
+    identity_key: str
+    nome: str | None = None
+    telefone: str | None = None
+    email: str | None = None
+    cidade: str | None = None
+    origem: str | None = None
+    reservas: int
+    receita: float
+    canais: list[str] = Field(default_factory=list)
+    fontes: list[str] = Field(default_factory=list)
 
 
 class RevenueIntelligenceSnapshot(BaseModel):

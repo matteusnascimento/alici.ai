@@ -14,7 +14,14 @@ def get_default_ai_provider() -> str:
 
 
 def get_default_chat_model() -> str:
-    return settings.openai_model or "gpt-4o-mini"
+    provider = get_default_ai_provider()
+    if provider == "groq":
+        return settings.effective_groq_chat_model
+    if provider == "gemini":
+        return settings.effective_gemini_chat_model
+    if provider == "ollama":
+        return settings.ollama_model
+    return settings.effective_openai_chat_model
 
 
 def get_model_for_task_name(task_name: str | None) -> str:

@@ -4,6 +4,24 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 vi.mock('../services/admin.service', () => ({
+  ADMIN_PERMISSION_MODULES: [
+    { key: 'revenue', label: 'Revenue' },
+    { key: 'chats', label: 'Chats' },
+    { key: 'assistant', label: 'AXI Assistant' },
+    { key: 'marketing', label: 'Marketing' },
+    { key: 'studio', label: 'Studio' },
+    { key: 'integrations', label: 'Integrations' },
+    { key: 'admin', label: 'Administracao' },
+  ],
+  createEmptyPermissions: () => ({
+    revenue: 'none',
+    chats: 'none',
+    assistant: 'none',
+    marketing: 'none',
+    studio: 'none',
+    integrations: 'none',
+    admin: 'none',
+  }),
   getAdminOverview: () =>
     Promise.resolve({
       empresas: [
@@ -16,42 +34,60 @@ vi.mock('../services/admin.service', () => ({
           created_at: '2026-05-01',
         },
       ],
-      usuarios: [
-        { id: 1, name: 'Geovana Moreira', email: 'geovana@pousadamaresol.com.br', role: 'owner', plan: 'enterprise' },
-      ],
+      usuarios: [],
       permissoes: ['owner'],
       billing: [{ label: 'Eventos Stripe', value: 2 }],
-      seguranca: [{ label: 'Rate limit', value: 1 }],
-      auditoria: [{ label: 'Usuarios cadastrados', value: 1 }],
+      seguranca: [{ label: 'Sessoes ativas', value: 1 }],
+      auditoria: [{ label: 'Eventos registrados', value: 1 }],
     }),
-}));
-
-vi.mock('../hooks/useBilling', () => ({
-  useBilling: () => ({
-    plans: [
+  listAdminUsers: () =>
+    Promise.resolve([
       {
-        id: 'free',
-        name: 'Free',
-        monthly_price: 0,
-        yearly_price: 0,
-        features: ['Mensagens basicas'],
-        limits: [{ key: 'messages', value: 500 }],
-        active: true,
-        checkout_available: false,
-        stripe_prices: { monthly: false, yearly: false },
+        id: 1,
+        name: 'Geovana Moreira',
+        email: 'geovana@pousadamaresol.com.br',
+        role: 'owner',
+        plan: 'enterprise',
+        job_title: 'Gerente',
+        phone: null,
+        company: 'Pousada Mar e Sol',
+        status: 'active',
+        last_login_at: '2026-05-01T00:00:00Z',
+        created_at: '2026-05-01T00:00:00Z',
+        disabled_at: null,
+        email_verified: true,
+        permissions: { revenue: 'admin', chats: 'write', assistant: 'read' },
       },
-      {
-        id: 'pro',
-        name: 'Pro',
-        monthly_price: 197,
-        yearly_price: 1970,
-        features: ['Mais mensagens'],
-        limits: [{ key: 'messages', value: 5000 }],
-        active: true,
-        checkout_available: true,
-        stripe_prices: { monthly: true, yearly: true },
-      },
-    ],
+    ]),
+  getAdminSecurity: () =>
+    Promise.resolve({
+      last_logins: [],
+      active_sessions: [],
+      open_sessions: [],
+      login_attempts: [],
+      revoked_tokens: [],
+    }),
+  getAdminAudit: () =>
+    Promise.resolve({
+      events: [{ id: 1, data: '2026-05-01T00:00:00Z', usuario: 'Geovana Moreira', acao: 'usuario_convidado', origem: 'admin', detalhes: null }],
+    }),
+  getAdminUserPermissions: () =>
+    Promise.resolve({
+      user_id: 1,
+      permissions: { revenue: 'admin', chats: 'write', assistant: 'read', marketing: 'none', studio: 'none', integrations: 'none', admin: 'none' },
+    }),
+  saveAdminUserPermissions: () =>
+    Promise.resolve({
+      user_id: 1,
+      permissions: { revenue: 'admin', chats: 'write', assistant: 'read', marketing: 'read', studio: 'none', integrations: 'none', admin: 'none' },
+    }),
+  disableAdminUser: vi.fn(),
+  enableAdminUser: vi.fn(),
+  resetAdminUserPassword: vi.fn(),
+  updateAdminUser: vi.fn(),
+  inviteAdminUser: vi.fn(),
+  getAdminBilling: () =>
+    Promise.resolve({
     current: {
       plan_id: 'free',
       plan_name: 'Free',
@@ -66,8 +102,8 @@ vi.mock('../hooks/useBilling', () => ({
       provider: 'stripe',
       stripe_customer_id: null,
     },
-    usage: { items: [{ metric: 'messages', used: 12, limit: 500 }] },
-    history: {
+      usage: [{ metric: 'messages', used: 12, limit: 500 }],
+      limits: [{ key: 'messages', value: 500 }],
       events: [
         {
           id: 1,
@@ -80,17 +116,9 @@ vi.mock('../hooks/useBilling', () => ({
           created_at: '2026-05-01T00:00:00Z',
         },
       ],
-    },
-    loading: false,
-    upgrading: false,
-    error: null,
-    upgrade: vi.fn(),
-    startCheckout: vi.fn(),
-    openPortal: vi.fn(),
-    cancel: vi.fn(),
-    resume: vi.fn(),
-    reload: vi.fn(),
-  }),
+      stripe_configured: true,
+      message: null,
+    }),
 }));
 
 import { AdminPage } from '../components/admin/AdminPage';
@@ -117,17 +145,17 @@ describe('AdminPage', () => {
 
     await user.click(screen.getAllByRole('button', { name: /Billing/i })[0]);
     expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/billing');
-    expect(screen.getByText('Plano Atual')).toBeInTheDocument();
-    expect(screen.getByText('Metodo de Pagamento')).toBeInTheDocument();
-    expect(screen.getByText('Upgrade')).toBeInTheDocument();
+    expect(await screen.findByText('Plano Atual')).toBeInTheDocument();
+    expect(screen.getByText('Resumo Stripe')).toBeInTheDocument();
+    expect(screen.queryByText('Upgrade')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Usuarios/i }));
     expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/users');
     expect(screen.getByText('Geovana Moreira')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Novo usuario/i }));
-    expect(screen.getByRole('heading', { name: /Novo usuario/i })).toBeInTheDocument();
-    expect(screen.getByText(/backend atual ainda nao expoe/i)).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/admin/users/new');
+    expect(screen.getByRole('heading', { name: /Convidar usuario/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Cancelar/i }));
     await user.click(screen.getByRole('button', { name: /Permissoes/i }));

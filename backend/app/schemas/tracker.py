@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 class WebsiteEventCreate(BaseModel):
     site_id: str | None = None
+    visitor_id: str | None = None
     session_id: str
     event_type: str = Field(default="page_view")
     city: str | None = None
@@ -13,10 +14,13 @@ class WebsiteEventCreate(BaseModel):
     utm_source: str | None = None
     utm_medium: str | None = None
     utm_campaign: str | None = None
+    utm_term: str | None = None
+    utm_content: str | None = None
     page_url: str | None = None
     referrer: str | None = None
     duration_seconds: int | None = None
     pages_visited: int | None = None
+    search_query: str | None = None
     click_target: str | None = None
     quote_value: float | None = None
     reservation_value: float | None = None

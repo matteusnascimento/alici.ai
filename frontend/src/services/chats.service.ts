@@ -39,19 +39,21 @@ export function transferConversationToHuman(id: number) {
 }
 
 export function sendConversationQuote(id: number) {
-  return apiFetch<{ status: string }>(`/chats/conversations/${id}/quote`, {
+  return apiFetch<{ status: string; message: string }>(`/chats/conversations/${id}/quote`, {
     method: 'POST',
+    body: JSON.stringify({ title: 'Cotacao solicitada pelo atendimento' }),
   });
 }
 
 export function createConversationTask(id: number) {
-  return apiFetch<{ status: string }>(`/chats/conversations/${id}/tasks`, {
+  return apiFetch<{ status: string; task: unknown }>(`/chats/conversations/${id}/tasks`, {
     method: 'POST',
+    body: JSON.stringify({ title: 'Follow-up do atendimento', task_type: 'follow_up' }),
   });
 }
 
 export function addConversationTag(id: number, tag: string) {
-  return apiFetch<{ status: string }>(`/chats/conversations/${id}/tags`, {
+  return apiFetch<{ status: string; tag: unknown }>(`/chats/conversations/${id}/tags`, {
     method: 'POST',
     body: JSON.stringify({ tag }),
   });

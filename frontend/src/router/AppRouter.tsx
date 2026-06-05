@@ -75,7 +75,11 @@ import { ProtectedRoute } from './ProtectedRoute';
 function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (user?.role !== 'owner' && user?.role !== 'admin') {
-    return <Navigate replace to="/app" />;
+    return (
+      <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 p-6 text-rose-100">
+        Você não possui permissão para acessar esta área.
+      </div>
+    );
   }
   return children;
 }
@@ -136,6 +140,7 @@ export function AppRouter() {
             <Route element={<Navigate replace to="/app/admin" />} path="admin/companies" />
             <Route element={<Navigate replace to="/app/admin" />} path="admin/companies/:companyId" />
             <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users/new" />
             <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users/:userId" />
             <Route element={<Navigate replace to="/app/admin/permissions" />} path="admin/roles" />
             <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/permissions" />

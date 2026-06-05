@@ -111,6 +111,7 @@ export function HomePage() {
   const [revenueSnapshot, setRevenueSnapshot] = useState<RevenueIntelligenceSnapshot | null>(null);
   const [chatTotal, setChatTotal] = useState(0);
   const [campaignTotal, setCampaignTotal] = useState(0);
+  const [studioTotal, setStudioTotal] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -160,6 +161,7 @@ export function HomePage() {
         if (studio.status === 'fulfilled') {
           const data = readRecord(studio.value);
           const total = Number(data.projects_count ?? data.total_projects ?? data.recent_projects_count ?? 0);
+          setStudioTotal(total);
           next.studio = { status: 'online', quantity: `${total} projetos`, lastActivity: 'Overview carregado do backend' };
         } else {
           next.studio = { status: 'unavailable', quantity: 'Erro ao carregar', lastActivity: 'Studio nao respondeu', error: errorMessage(studio.reason) };
@@ -175,7 +177,16 @@ export function HomePage() {
     };
   }, []);
 
-  const operationalCount = useMemo(() => Object.values(moduleState).filter((item) => item.status === 'online').length, [moduleState]);
+  const connectedServiceCount = useMemo(() => Object.values(moduleState).filter((item) => item.status === 'online').length, [moduleState]);
+  const realDataCount = useMemo(() => {
+    const revenueHasData = revenueSnapshot
+      ? revenueSnapshot.summary.receita_total > 0 || revenueSnapshot.summary.reservas_fechadas > 0 || revenueSnapshot.summary.leads_recebidos > 0
+      : false;
+    return [revenueHasData, chatTotal > 0, campaignTotal > 0, studioTotal > 0].filter(Boolean).length;
+  }, [campaignTotal, chatTotal, revenueSnapshot, studioTotal]);
+  const homeStatusText = realDataCount > 0
+    ? `${realDataCount} area${realDataCount > 1 ? 's' : ''} com dados reais nesta sessao`
+    : `${connectedServiceCount} servico${connectedServiceCount === 1 ? '' : 's'} respondendo, sem dados reais ainda`;
   const operationalCards = [
     ['Receita do periodo', new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(revenueSnapshot?.summary.receita_total ?? 0), 'Revenue'],
     ['Reservas do periodo', String(revenueSnapshot?.summary.reservas_fechadas ?? 0), 'Revenue'],
@@ -196,7 +207,7 @@ export function HomePage() {
           Entrada oficial da plataforma. Abra cada modulo a partir daqui sem duplicar dashboards ou criar rotas paralelas.
         </p>
         <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300">
-          {operationalCount} de {modules.length - 2} modulos com dados carregados nesta sessao
+          {homeStatusText}
         </div>
       </header>
 

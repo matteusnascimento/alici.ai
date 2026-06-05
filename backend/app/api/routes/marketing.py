@@ -26,6 +26,8 @@ from app.schemas.marketing import (
     MarketingProjectCreate,
     MarketingProjectRead,
     MarketingProjectUpdate,
+    MarketingPublishRequest,
+    MarketingPublishResponse,
     MarketingRevenueInvestmentResponse,
     MarketingTool,
 )
@@ -97,8 +99,11 @@ def marketing_campaigns(current_user: User = Depends(get_current_user), db: Sess
                 name=project.name,
                 objective=project.objective,
                 audience=project.audience,
-                status="project",
+                status=project.status,
                 source="marketing_projects",
+                channels=project.channels,
+                budget=project.budget,
+                last_publish_error=project.last_publish_error,
             )
             for project in projects
         ],
@@ -123,6 +128,16 @@ def update_campaign(
     db: Session = Depends(get_db),
 ) -> MarketingProjectRead:
     return MarketingService(db).update_project(current_user, campaign_id, payload)
+
+
+@router.post("/campaigns/{campaign_id}/publish", response_model=MarketingPublishResponse)
+def publish_campaign(
+    campaign_id: int,
+    payload: MarketingPublishRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingPublishResponse:
+    return MarketingService(db).publish_campaign(current_user, campaign_id, payload.channels)
 
 
 @router.get("/calendar", response_model=list[MarketingCalendarEventRead])
@@ -303,6 +318,16 @@ def update_project(
     db: Session = Depends(get_db),
 ) -> MarketingProjectRead:
     return MarketingService(db).update_project(current_user, project_id, payload)
+
+
+@router.post("/projects/{project_id}/publish", response_model=MarketingPublishResponse)
+def publish_project(
+    project_id: int,
+    payload: MarketingPublishRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MarketingPublishResponse:
+    return MarketingService(db).publish_campaign(current_user, project_id, payload.channels)
 
 
 @router.delete("/projects/{project_id}", status_code=204)

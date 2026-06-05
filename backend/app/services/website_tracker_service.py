@@ -20,6 +20,7 @@ class WebsiteTrackerService:
     def record_event(self, payload: WebsiteEventCreate) -> WebsiteEventRead:
         event = WebsiteEvent(
             site_id=payload.site_id,
+            visitor_id=payload.visitor_id,
             session_id=payload.session_id,
             event_type=payload.event_type,
             city=payload.city,
@@ -30,10 +31,13 @@ class WebsiteTrackerService:
             utm_source=payload.utm_source,
             utm_medium=payload.utm_medium,
             utm_campaign=payload.utm_campaign,
+            utm_term=payload.utm_term,
+            utm_content=payload.utm_content,
             page_url=payload.page_url,
             referrer=payload.referrer,
             duration_seconds=payload.duration_seconds,
             pages_visited=payload.pages_visited,
+            search_query=payload.search_query,
             click_target=payload.click_target,
             quote_value=payload.quote_value,
             reservation_value=payload.reservation_value,
@@ -59,7 +63,7 @@ class WebsiteTrackerService:
             channel = event.traffic_source or event.utm_source or "Website"
             key = (event.city or "", event.state or "", event.country or "", channel)
             bucket = buckets[key]
-            bucket["sessions"].add(event.session_id)  # type: ignore[union-attr]
+            bucket["sessions"].add(event.visitor_id or event.session_id)  # type: ignore[union-attr]
             if event.event_type in {"search", "busca"}:
                 bucket["buscas"] = int(bucket["buscas"]) + 1
             if event.event_type in {"quote", "cotacao", "quotation"}:

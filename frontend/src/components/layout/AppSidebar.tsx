@@ -15,12 +15,12 @@ interface AppSidebarProps {
 
 const items = [
   { label: 'Home', to: '/app', icon: Home, roles: ['owner', 'admin', 'gerente', 'marketing', 'atendimento', 'member'] },
-  { label: 'Revenue', to: '/app/revenue?view=business-pulse', icon: BadgeDollarSign },
-  { label: 'Chats', to: '/app/chats', icon: MessageSquare, roles: ['owner', 'admin', 'gerente', 'atendimento', 'member'] },
-  { label: 'AXI Assistant', to: '/app/assistant', icon: Bot, roles: ['owner', 'admin', 'gerente', 'marketing', 'atendimento', 'member'] },
-  { label: 'Marketing', to: '/app/marketing', icon: Megaphone, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'] },
-  { label: 'Studio', to: '/app/studio', icon: Sparkles, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'] },
-  { label: 'Integrations', to: '/app/integrations', icon: Link2, roles: ['owner', 'admin', 'member'] },
+  { label: 'Revenue', to: '/app/revenue?view=business-pulse', icon: BadgeDollarSign, permission: 'revenue' },
+  { label: 'Chats', to: '/app/chats', icon: MessageSquare, roles: ['owner', 'admin', 'gerente', 'atendimento', 'member'], permission: 'chats' },
+  { label: 'AXI Assistant', to: '/app/assistant', icon: Bot, roles: ['owner', 'admin', 'gerente', 'marketing', 'atendimento', 'member'], permission: 'assistant' },
+  { label: 'Marketing', to: '/app/marketing', icon: Megaphone, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'], permission: 'marketing' },
+  { label: 'Studio', to: '/app/studio', icon: Sparkles, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'], permission: 'studio' },
+  { label: 'Integrations', to: '/app/integrations', icon: Link2, roles: ['owner', 'admin', 'member'], permission: 'integrations' },
 ];
 
 function SidebarFooter({ expanded }: { expanded: boolean }) {
@@ -99,9 +99,16 @@ export function AppSidebar({
   const [expandedDesktop, setExpandedDesktop] = useState(true);
   const { user } = useAuth();
   const roleKey = user?.role ?? 'member';
+  const explicitPermissions = user?.permissions && Object.keys(user.permissions).length > 0 ? user.permissions : null;
   const navigationItems = useMemo(
-    () => items.filter((item) => !item.roles || item.roles.includes(roleKey) || roleKey === 'owner' || roleKey === 'admin'),
-    [roleKey],
+    () => items.filter((item) => {
+      if (roleKey === 'owner' || roleKey === 'admin') return true;
+      if (explicitPermissions && item.permission) {
+        return explicitPermissions[item.permission] && explicitPermissions[item.permission] !== 'none';
+      }
+      return !item.roles || item.roles.includes(roleKey);
+    }),
+    [explicitPermissions, roleKey],
   );
 
   useEffect(() => {

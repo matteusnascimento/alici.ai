@@ -32,6 +32,10 @@ class MarketingProjectCreate(BaseModel):
     objective: str
     offer: str
     tone: str = "premium"
+    channels: str | None = None
+    budget: float | None = None
+    creative_project_id: str | None = None
+    status: str = "draft"
     notes: str | None = None
 
 
@@ -42,6 +46,12 @@ class MarketingProjectRead(BaseModel):
     objective: str
     offer: str
     tone: str
+    channels: str | None = None
+    budget: float | None = None
+    creative_project_id: str | None = None
+    status: str = "draft"
+    published_at: str | None = None
+    last_publish_error: str | None = None
     notes: str | None = None
     created_at: str
 
@@ -52,7 +62,23 @@ class MarketingProjectUpdate(BaseModel):
     objective: str | None = None
     offer: str | None = None
     tone: str | None = None
+    channels: str | None = None
+    budget: float | None = None
+    creative_project_id: str | None = None
+    status: str | None = None
     notes: str | None = None
+
+
+class MarketingPublishRequest(BaseModel):
+    channels: list[str] = Field(default_factory=list)
+
+
+class MarketingPublishResponse(BaseModel):
+    id: int
+    status: str
+    message: str
+    required_providers: list[str] = Field(default_factory=list)
+    missing_providers: list[str] = Field(default_factory=list)
 
 
 class MarketingCopyRequest(BaseModel):
@@ -179,6 +205,9 @@ class MarketingCampaignListItem(BaseModel):
     audience: str
     status: str
     source: str
+    channels: str | None = None
+    budget: float | None = None
+    last_publish_error: str | None = None
 
 
 class MarketingCampaignListResponse(BaseModel):

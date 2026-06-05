@@ -23,6 +23,8 @@ def test_marketing_campaigns_reuses_real_projects(client, auth_headers):
             "objective": "Aumentar reservas",
             "offer": "Pacote direto",
             "tone": "premium",
+            "channels": "Meta Ads, Google Ads",
+            "budget": 1500,
         },
     )
     assert project.status_code == 200
@@ -33,3 +35,12 @@ def test_marketing_campaigns_reuses_real_projects(client, auth_headers):
     assert payload["status"] == "partial"
     assert payload["campaigns"][0]["name"] == "Campanha real"
     assert payload["campaigns"][0]["source"] == "marketing_projects"
+    assert payload["campaigns"][0]["channels"] == "Meta Ads, Google Ads"
+
+    publish = client.post(
+        f"/api/marketing/campaigns/{project.json()['id']}/publish",
+        headers=auth_headers,
+        json={"channels": ["Meta Ads"]},
+    )
+    assert publish.status_code == 424
+    assert "missing_providers" in publish.json()["detail"]

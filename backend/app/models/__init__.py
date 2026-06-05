@@ -1,5 +1,7 @@
 from app.models.agent import Agent
 from app.models.ai_request_log import AIRequestLog
+from app.models.admin_audit_event import AdminAuditEvent
+from app.models.admin_permission import AdminPermission
 from app.models.agent_channel_binding import AgentChannelBinding
 from app.models.agent_action import AgentAction
 from app.models.agent_channel import AgentChannel
@@ -17,6 +19,9 @@ from app.models.brand_asset import BrandAsset
 from app.models.channel_endpoint import ChannelEndpoint
 from app.models.channel_message import ChannelMessage
 from app.models.channel_webhook_event import ChannelWebhookEvent
+from app.models.chat_quote import ChatQuote
+from app.models.chat_tag import ChatTag
+from app.models.chat_task import ChatTask
 from app.models.conversation import Conversation, Message
 from app.models.creative_generation import CreativeGeneration
 from app.models.integration import Integration
@@ -47,6 +52,8 @@ from app.models.website_event import WebsiteEvent
 __all__ = [
 	"Agent",
 	"AIRequestLog",
+	"AdminAuditEvent",
+	"AdminPermission",
 	"AgentChannelBinding",
 	"AgentAction",
 	"AgentChannel",
@@ -64,6 +71,9 @@ __all__ = [
 	"ChannelEndpoint",
 	"ChannelMessage",
 	"ChannelWebhookEvent",
+	"ChatQuote",
+	"ChatTag",
+	"ChatTask",
 	"Conversation",
 	"CreativeGeneration",
 	"Integration",

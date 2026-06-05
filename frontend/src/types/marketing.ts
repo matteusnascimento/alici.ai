@@ -16,6 +16,12 @@ export interface MarketingProject {
   objective: string;
   offer: string;
   tone: string;
+  channels?: string | null;
+  budget?: number | null;
+  creative_project_id?: string | null;
+  status?: string;
+  published_at?: string | null;
+  last_publish_error?: string | null;
   notes?: string | null;
   created_at: string;
 }
@@ -75,6 +81,9 @@ export interface MarketingCampaignListItem {
   audience: string;
   status: string;
   source: string;
+  channels?: string | null;
+  budget?: number | null;
+  last_publish_error?: string | null;
 }
 
 export interface MarketingCampaignList {
@@ -100,6 +109,10 @@ export interface MarketingProjectCreate {
   objective: string;
   offer: string;
   tone?: string;
+  channels?: string | null;
+  budget?: number | null;
+  creative_project_id?: string | null;
+  status?: string;
   notes?: string;
 }
 
@@ -109,6 +122,10 @@ export interface MarketingProjectUpdate {
   objective?: string;
   offer?: string;
   tone?: string;
+  channels?: string | null;
+  budget?: number | null;
+  creative_project_id?: string | null;
+  status?: string;
   notes?: string;
 }
 

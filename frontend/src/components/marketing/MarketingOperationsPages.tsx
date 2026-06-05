@@ -30,6 +30,7 @@ import {
   listCalendarEvents,
   listProjects,
   listMarketingResource,
+  publishCampaign,
 } from '../../services/marketing.service';
 import type { MarketingAudience, MarketingCalendarEvent, MarketingCampaignListItem, MarketingDataStatus, MarketingProject, MarketingProjectCreate } from '../../types/marketing';
 
@@ -45,11 +46,61 @@ const marketingNav = [
   { label: 'AXI Assistant', to: '/app/assistant', icon: Bot },
 ];
 
-const campaignStatuses = ['Rascunho', 'Agendada', 'Ativa', 'Pausada', 'Finalizada'];
-const originOptions = ['Salvador', 'Feira', 'Sao Paulo', 'Brasilia', 'Belo Horizonte'];
-const ageOptions = ['18-25', '26-35', '36-45', '46+'];
+const campaignStatuses = ['Rascunho', 'Pronta', 'Publicada', 'Ativa', 'Pausada', 'Finalizada', 'Erro'];
 const channelOptions = ['Instagram', 'Meta Ads', 'Google Ads', 'WhatsApp', 'Email', 'Website'];
-const objectiveOptions = ['Gerar Leads', 'Gerar Reservas', 'Aumentar Ocupacao', 'Baixa Temporada', 'Remarketing', 'Clientes antigos'];
+const objectiveOptions = ['Reservas', 'Leads', 'Mensagens WhatsApp', 'Trafego', 'Conversoes', 'Receita', 'Remarketing', 'Reconhecimento', 'Fidelizacao', 'Baixa temporada', 'Alta temporada'];
+const ageRangeOptions = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+const clientProfileOptions = ['Casais', 'Familias', 'Executivos', 'Mochileiros', 'Lua de mel', 'Grupos', 'Eventos', 'Turismo internacional', 'Turismo nacional'];
+const dataSourceLabels = ['Google Ads', 'Google Analytics', 'Meta Ads', 'Revenue', 'Reservas', 'Website Tracker'];
+type LocationKind = 'Cidade' | 'Estado' | 'Pais' | 'Regiao' | 'Continente';
+type OriginSegment = { name: string; kind: LocationKind; parent?: string };
+const originOptions: OriginSegment[] = [
+  { name: 'Salvador', kind: 'Cidade', parent: 'Bahia, Brasil' },
+  { name: 'Sao Paulo', kind: 'Cidade', parent: 'Sao Paulo, Brasil' },
+  { name: 'Belo Horizonte', kind: 'Cidade', parent: 'Minas Gerais, Brasil' },
+  { name: 'Brasilia', kind: 'Cidade', parent: 'Distrito Federal, Brasil' },
+  { name: 'Curitiba', kind: 'Cidade', parent: 'Parana, Brasil' },
+  { name: 'Rio de Janeiro', kind: 'Cidade', parent: 'Rio de Janeiro, Brasil' },
+  { name: 'Recife', kind: 'Cidade', parent: 'Pernambuco, Brasil' },
+  { name: 'Fortaleza', kind: 'Cidade', parent: 'Ceara, Brasil' },
+  { name: 'Bahia', kind: 'Estado', parent: 'Brasil' },
+  { name: 'Sao Paulo', kind: 'Estado', parent: 'Brasil' },
+  { name: 'Minas Gerais', kind: 'Estado', parent: 'Brasil' },
+  { name: 'Rio de Janeiro', kind: 'Estado', parent: 'Brasil' },
+  { name: 'Pernambuco', kind: 'Estado', parent: 'Brasil' },
+  { name: 'Parana', kind: 'Estado', parent: 'Brasil' },
+  { name: 'Brasil', kind: 'Pais' },
+  { name: 'Argentina', kind: 'Pais' },
+  { name: 'Chile', kind: 'Pais' },
+  { name: 'Uruguai', kind: 'Pais' },
+  { name: 'Portugal', kind: 'Pais' },
+  { name: 'Estados Unidos', kind: 'Pais' },
+  { name: 'Canada', kind: 'Pais' },
+  { name: 'Nordeste', kind: 'Regiao', parent: 'Brasil' },
+  { name: 'Sudeste', kind: 'Regiao', parent: 'Brasil' },
+  { name: 'Sul', kind: 'Regiao', parent: 'Brasil' },
+  { name: 'Centro-Oeste', kind: 'Regiao', parent: 'Brasil' },
+  { name: 'Norte', kind: 'Regiao', parent: 'Brasil' },
+  { name: 'Europa', kind: 'Continente' },
+  { name: 'America Latina', kind: 'Regiao' },
+  { name: 'America do Norte', kind: 'Continente' },
+];
+const suggestedCampaigns = [
+  { name: 'Ferias de Julho', objective: 'Reservas', offer: 'Pacote de inverno com cafe da manha e late checkout', channels: ['Instagram', 'Google Ads'], budget: 'R$ 3.000' },
+  { name: 'Lua de Mel', objective: 'Receita', offer: 'Experiencia romantica com decoracao e jantar', channels: ['Instagram', 'WhatsApp'], budget: 'R$ 1.800' },
+  { name: 'Baixa Temporada', objective: 'Baixa temporada', offer: 'Diarias flexiveis para meio de semana', channels: ['Google Ads', 'Website'], budget: 'R$ 1.500' },
+  { name: 'Final de Semana', objective: 'Mensagens WhatsApp', offer: 'Escapada curta com reserva direta', channels: ['Instagram', 'WhatsApp'], budget: 'R$ 1.200' },
+  { name: 'Reveillon', objective: 'Leads', offer: 'Lista de espera para pacote de fim de ano', channels: ['Meta Ads', 'Email'], budget: 'R$ 2.500' },
+];
+const monthOptions = ['Julho', 'Agosto', 'Setembro'];
+
+function normalizeSearch(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function sameOriginSegment(a: OriginSegment, b: OriginSegment) {
+  return normalizeSearch(a.name) === normalizeSearch(b.name) && a.kind === b.kind;
+}
 
 function Shell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
@@ -109,23 +160,6 @@ function DataCard({ title, icon: Icon, children }: { title: string; icon: Lucide
         <h2 className="font-display text-xl">{title}</h2>
       </div>
       {children}
-    </section>
-  );
-}
-
-function StatTile({ label, value, description, icon: Icon }: { label: string; value: string; description: string; icon: LucideIcon }) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
-      <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500/15 text-violet-200">
-          <Icon size={18} />
-        </span>
-        <div>
-          <p className="text-xs text-slate-400">{label}</p>
-          <p className="text-xl font-semibold text-white">{value}</p>
-        </div>
-      </div>
-      <p className="mt-3 text-xs leading-5 text-slate-500">{description}</p>
     </section>
   );
 }
@@ -199,6 +233,10 @@ function PlanningSummary({
   form,
   period,
   budget,
+  origins,
+  secondaryObjectives,
+  clientProfiles,
+  ageRanges,
   complete,
   saving,
   submitLabel,
@@ -206,21 +244,49 @@ function PlanningSummary({
   form: MarketingProjectCreate;
   period: string;
   budget: string;
+  origins: OriginSegment[];
+  secondaryObjectives: string[];
+  clientProfiles: string[];
+  ageRanges: string[];
   complete: boolean;
   saving: boolean;
   submitLabel: string;
 }) {
+  const compact = (items: string[]) => {
+    if (!items.length) return '-';
+    const visible = items.slice(0, 3).join(', ');
+    return items.length > 3 ? `${visible} +${items.length - 3}` : visible;
+  };
+
   const rows = [
-    ['Objetivo', form.objective || '-'],
+    ['Objetivo principal', form.objective || '-'],
+    ['Complementares', compact(secondaryObjectives)],
     ['Periodo', period || '-'],
     ['Orcamento', budget || '-'],
-    ['Publico', form.audience || '-'],
+    ['Mercado', compact(origins.map((item) => item.name))],
+    ['Perfil', compact(clientProfiles)],
+    ['Faixa etaria', compact(ageRanges)],
     ['Oferta', form.offer || '-'],
   ];
 
   return (
     <DataCard title="Resumo" icon={CheckCircle2}>
       <div className="space-y-3 text-sm text-slate-300">
+        <div className="rounded-2xl border border-violet-300/20 bg-violet-500/10 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-200">Mercado de origem</p>
+          {origins.length ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {origins.slice(0, 6).map((item) => (
+                <span key={`${item.kind}-${item.name}`} className="rounded-full bg-slate-950/70 px-3 py-1 text-xs font-semibold text-white">
+                  {item.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-400">Nenhum segmento selecionado.</p>
+          )}
+          <p className="mt-3 text-xs text-violet-100">{origins.length} segmentos selecionados</p>
+        </div>
         {rows.map(([label, value]) => (
           <p key={label} className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2">
             <span className="text-slate-500">{label}</span>
@@ -329,8 +395,11 @@ export function MarketingPlanningPage() {
   });
   const [budget, setBudget] = useState('');
   const [period, setPeriod] = useState('');
-  const [origins, setOrigins] = useState<string[]>([]);
-  const [ages, setAges] = useState<string[]>([]);
+  const [originSegments, setOriginSegments] = useState<OriginSegment[]>([]);
+  const [originInput, setOriginInput] = useState('');
+  const [ageRanges, setAgeRanges] = useState<string[]>([]);
+  const [clientProfiles, setClientProfiles] = useState<string[]>([]);
+  const [secondaryObjectives, setSecondaryObjectives] = useState<string[]>([]);
   const [channels, setChannels] = useState<string[]>([]);
   const [projects, setProjects] = useState<MarketingProject[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -345,7 +414,30 @@ export function MarketingPlanningPage() {
       .finally(() => setProjectsLoading(false));
   }, []);
 
-  const complete = Boolean(form.name.trim() && form.objective.trim() && form.audience.trim() && form.offer.trim());
+  const selectedOriginNames = useMemo(() => originSegments.map((item) => item.name), [originSegments]);
+  const audienceSummary = useMemo(() => {
+    const parts = [
+      selectedOriginNames.length ? `Mercado: ${selectedOriginNames.join(', ')}` : '',
+      clientProfiles.length ? `Perfil: ${clientProfiles.join(', ')}` : '',
+      ageRanges.length ? `Faixa etaria: ${ageRanges.join(', ')}` : '',
+    ].filter(Boolean);
+    return parts.join(' | ');
+  }, [ageRanges, clientProfiles, selectedOriginNames]);
+
+  useEffect(() => {
+    setForm((current) => (current.audience === audienceSummary ? current : { ...current, audience: audienceSummary }));
+  }, [audienceSummary]);
+
+  const filteredOriginOptions = useMemo(() => {
+    const query = normalizeSearch(originInput);
+    const available = originOptions.filter((option) => !originSegments.some((item) => sameOriginSegment(item, option)));
+    if (!query) return available.slice(0, 8);
+    return available
+      .filter((option) => normalizeSearch(`${option.name} ${option.kind} ${option.parent ?? ''}`).includes(query))
+      .slice(0, 8);
+  }, [originInput, originSegments]);
+
+  const complete = Boolean(form.name.trim() && form.objective.trim() && originSegments.length && form.offer.trim());
 
   const isCampaignForm = location.pathname.includes('/campaigns/new');
   const entityLabel = isCampaignForm ? 'campanha' : 'plano';
@@ -356,14 +448,38 @@ export function MarketingPlanningPage() {
 
   function applyObjective(value: string) {
     setForm((current) => ({ ...current, objective: value }));
+    setSecondaryObjectives((current) => current.filter((item) => item !== value));
   }
 
-  function syncAudience(nextOrigins = origins, nextAges = ages) {
-    const parts = [
-      nextOrigins.length ? `Origem: ${nextOrigins.join(' + ')}` : '',
-      nextAges.length ? `Idade: ${nextAges.join(' / ')}` : '',
-    ].filter(Boolean);
-    setForm((current) => ({ ...current, audience: parts.join(' | ') }));
+  function addOriginSegment(value: string | OriginSegment) {
+    const segment = typeof value === 'string'
+      ? { name: value.trim(), kind: 'Regiao' as LocationKind }
+      : value;
+    if (!segment.name) return;
+    setOriginSegments((current) => (current.some((item) => sameOriginSegment(item, segment)) ? current : [...current, segment]));
+    setOriginInput('');
+  }
+
+  function removeOriginSegment(value: OriginSegment) {
+    setOriginSegments((current) => current.filter((item) => !sameOriginSegment(item, value)));
+  }
+
+  function applySuggestedCampaign(item: (typeof suggestedCampaigns)[number]) {
+    setForm((current) => ({
+      ...current,
+      name: current.name || item.name,
+      objective: item.objective,
+      offer: current.offer || item.offer,
+    }));
+    setChannels(item.channels);
+    setBudget(item.budget);
+    setSecondaryObjectives((current) => current.filter((objective) => objective !== item.objective));
+  }
+
+  function parseBudget(value: string) {
+    const normalized = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -373,10 +489,16 @@ export function MarketingPlanningPage() {
     try {
       const payload = {
         ...form,
+        channels: channels.join(', '),
+        budget: parseBudget(budget),
         notes: [
           form.notes,
           budget ? `Orcamento: ${budget}` : '',
           period ? `Periodo: ${period}` : '',
+          originSegments.length ? `Mercado de origem: ${originSegments.map((item) => `${item.name} (${item.kind})`).join(', ')}` : '',
+          secondaryObjectives.length ? `Objetivos complementares: ${secondaryObjectives.join(', ')}` : '',
+          clientProfiles.length ? `Perfil do cliente: ${clientProfiles.join(', ')}` : '',
+          ageRanges.length ? `Faixa etaria: ${ageRanges.join(', ')}` : '',
           channels.length ? `Canais: ${channels.join(', ')}` : '',
         ].filter(Boolean).join('\n'),
       };
@@ -397,54 +519,174 @@ export function MarketingPlanningPage() {
       title={isCampaignForm ? 'Nova Campanha' : 'Criar Plano de Marketing'}
       subtitle="Crie planos reais em uma tela secundaria, mantendo o dashboard principal como HUB de Marketing."
     >
-      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Planos criados" value={projectsLoading ? '...' : String(projects.length)} description="Projetos reais salvos no backend de Marketing." icon={Target} />
-        <StatTile label="Campanhas" value="Real" description="A aba Campanhas lista somente projetos persistidos." icon={Megaphone} />
-        <StatTile label="Criativos" value="Studio" description="Criacao visual abre o editor correto no AXI Studio." icon={Image} />
-        <StatTile label="Analise" value="Revenue" description="ROI, funil e performance ficam centralizados em Revenue." icon={BarChart3} />
-      </div>
+      <section className="mb-5 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="rounded-3xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.92),rgba(30,27,75,0.45))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-300">Marketing Planner</p>
+              <h2 className="mt-1 font-display text-3xl text-white">Segmentacao profissional para campanhas</h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-400">Defina mercado de origem, objetivo, perfil e faixa etaria como em plataformas modernas de midia paga.</p>
+            </div>
+            <Link to="/app/studio" className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-300/25 bg-violet-500/10 px-4 py-3 text-sm font-semibold text-violet-100">
+              <Image size={16} /> Criar criativo
+            </Link>
+          </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.7fr)]">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-sm font-semibold text-white">Mercados recomendados</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Sem dados reais suficientes para recomendacao automatica. Quando Google Ads, Analytics, Meta Ads, Revenue, Reservas ou Website Tracker enviarem dados, o AXI sugerira origens com maior potencial.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">Origem dos dados</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {dataSourceLabels.map((source) => (
+                  <span key={source} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-300">
+                    {source}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside className="rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+          <p className="flex items-center gap-2 text-sm font-semibold text-violet-100"><Bot size={17} /> AXI Marketing Assistant</p>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            Sem dados suficientes do Revenue para uma recomendacao automatica. Use um playbook abaixo ou conecte campanhas e reservas para recomendacoes reais.
+          </p>
+          <div className="mt-4 space-y-2">
+            {suggestedCampaigns.slice(0, 5).map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => applySuggestedCampaign(item)}
+                className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.035] px-3 py-3 text-left text-sm text-slate-200 transition hover:border-violet-300/35"
+              >
+                <span>{item.name}</span>
+                <Send size={14} className="text-violet-300" />
+              </button>
+            ))}
+          </div>
+        </aside>
+      </section>
 
       <form onSubmit={submit} className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <main className="space-y-5">
-          <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 md:grid-cols-4">
-            {['Briefing', 'Publico', 'Canais', 'Revisao'].map((step, index) => (
+          <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 md:grid-cols-5">
+            {['Mercado', 'Objetivo', 'Publico', 'Canais', 'Resumo'].map((step, index) => (
               <div key={step} className="flex items-center gap-3 rounded-xl bg-slate-950/60 px-3 py-2 text-sm text-slate-300">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-violet-500/20 text-xs font-semibold text-violet-100">{index + 1}</span>
                 {step}
               </div>
             ))}
           </div>
-          <DataCard title={isCampaignForm ? 'Criar campanha' : 'Criar plano'} icon={Target}>
+          <DataCard title={isCampaignForm ? 'Wizard da campanha' : 'Wizard do plano'} icon={Target}>
             <div className="grid gap-4 md:grid-cols-2">
               <FormInput required label={`Nome da ${entityLabel}`} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="Ferias Julho - Pousada Mar & Sol" />
               <FormInput label="Datas" value={period} onChange={setPeriod} placeholder="01/07/2026 a 31/07/2026" />
               <FormInput label="Orcamento" value={budget} onChange={setBudget} placeholder="R$ 3.000" />
-              <div className="md:col-span-2">
-                <OptionGroup title="Objetivo" options={objectiveOptions} selected={form.objective ? [form.objective] : []} onToggle={applyObjective} />
-                <FormInput required className="mt-3 block" label="Objetivo detalhado" value={form.objective} onChange={(value) => setForm((current) => ({ ...current, objective: value }))} placeholder="Aumentar reservas diretas em julho" />
+              <div className="grid gap-2 rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+                <p className="text-sm font-semibold text-slate-300">Periodo rapido</p>
+                <div className="flex flex-wrap gap-2">
+                  {monthOptions.map((month) => (
+                    <button
+                      key={month}
+                      type="button"
+                      onClick={() => setPeriod(month)}
+                      className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${period === month ? 'border-violet-300 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-violet-300/35'}`}
+                    >
+                      {month}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 md:col-span-2">
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-slate-300">Mercado de Origem</p>
+                  <div className="relative">
+                    <div className="flex flex-col gap-2 md:flex-row">
+                      <input
+                        value={originInput}
+                        onChange={(event) => setOriginInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            addOriginSegment(originInput.trim() ? filteredOriginOptions[0] ?? originInput : originInput);
+                          }
+                        }}
+                        placeholder="Pesquisar cidade, estado, pais ou regiao..."
+                        className="h-12 flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-300"
+                      />
+                      <button type="button" onClick={() => addOriginSegment(originInput.trim() ? filteredOriginOptions[0] ?? originInput : originInput)} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white">
+                        Adicionar
+                      </button>
+                    </div>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {filteredOriginOptions.map((option) => (
+                        <button
+                          key={`${option.kind}-${option.name}-${option.parent ?? ''}`}
+                          type="button"
+                          onClick={() => addOriginSegment(option)}
+                          className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 px-3 py-3 text-left transition hover:border-violet-300/35"
+                        >
+                          <span>
+                            <span className="block text-sm font-semibold text-white">{option.name}</span>
+                            <span className="text-xs text-slate-500">{option.parent ?? option.kind}</span>
+                          </span>
+                          <span className="rounded-full bg-violet-500/15 px-2 py-1 text-[11px] font-semibold text-violet-100">{option.kind}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {originSegments.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {originSegments.map((segment) => (
+                        <button key={`${segment.kind}-${segment.name}`} type="button" onClick={() => removeOriginSegment(segment)} className="rounded-full bg-violet-500/20 px-3 py-2 text-xs font-semibold text-violet-100">
+                          {segment.name} <span className="text-violet-200/70">({segment.kind})</span> x
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  <p className="mt-3 text-xs text-slate-500">{originSegments.length} segmentos selecionados</p>
+                </div>
+              </div>
+              <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-300">
+                  Objetivo principal
+                  <select
+                    required
+                    value={form.objective}
+                    onChange={(event) => applyObjective(event.target.value)}
+                    className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-white outline-none transition focus:border-violet-300"
+                  >
+                    <option value="">Selecione um objetivo</option>
+                    {objectiveOptions.map((objective) => (
+                      <option key={objective} value={objective}>{objective}</option>
+                    ))}
+                  </select>
+                </label>
+                <OptionGroup
+                  title="Objetivos complementares"
+                  options={objectiveOptions.filter((objective) => objective !== form.objective)}
+                  selected={secondaryObjectives}
+                  onToggle={(value) => toggleList(setSecondaryObjectives, value)}
+                />
               </div>
               <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 md:col-span-2">
                 <OptionGroup
-                  title="Origem do publico"
-                  options={originOptions}
-                  selected={origins}
-                  onToggle={(value) => {
-                    const next = origins.includes(value) ? origins.filter((item) => item !== value) : [...origins, value];
-                    setOrigins(next);
-                    syncAudience(next, ages);
-                  }}
+                  title="Perfil do cliente"
+                  options={clientProfileOptions}
+                  selected={clientProfiles}
+                  onToggle={(value) => toggleList(setClientProfiles, value)}
                 />
                 <OptionGroup
-                  title="Idade"
-                  options={ageOptions}
-                  selected={ages}
-                  onToggle={(value) => {
-                    const next = ages.includes(value) ? ages.filter((item) => item !== value) : [...ages, value];
-                    setAges(next);
-                    syncAudience(origins, next);
-                  }}
+                  title="Faixa etaria"
+                  options={ageRangeOptions}
+                  selected={ageRanges}
+                  onToggle={(value) => toggleList(setAgeRanges, value)}
                 />
-                <FormInput required label="Publico alvo" value={form.audience} onChange={(value) => setForm((current) => ({ ...current, audience: value }))} placeholder="Casais 25-45 de Salvador e Feira" />
               </div>
               <div className="md:col-span-2">
                 <OptionGroup title="Canais" options={channelOptions} selected={channels} onToggle={(value) => toggleList(setChannels, value)} />
@@ -480,7 +722,18 @@ export function MarketingPlanningPage() {
         </main>
 
         <aside className="space-y-5">
-          <PlanningSummary form={form} period={period} budget={budget} complete={complete} saving={saving} submitLabel={isCampaignForm ? 'Criar campanha' : 'Criar plano'} />
+          <PlanningSummary
+            form={form}
+            period={period}
+            budget={budget}
+            origins={originSegments}
+            secondaryObjectives={secondaryObjectives}
+            clientProfiles={clientProfiles}
+            ageRanges={ageRanges}
+            complete={complete}
+            saving={saving}
+            submitLabel={isCampaignForm ? 'Criar campanha' : 'Criar plano'}
+          />
           <MiniAssistantCard context="marketing" />
           <DataCard title="Contrato de dados" icon={CheckCircle2}>
             <div className="space-y-2 text-sm text-slate-300">
@@ -500,6 +753,8 @@ export function MarketingCampaignsPage() {
   const [campaigns, setCampaigns] = useState<MarketingCampaignListItem[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [publishingId, setPublishingId] = useState<number | null>(null);
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
 
   useEffect(() => {
     listCampaigns()
@@ -510,23 +765,110 @@ export function MarketingCampaignsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function handlePublish(campaign: MarketingCampaignListItem) {
+    const channels = (campaign.channels || '').split(',').map((item) => item.trim()).filter(Boolean);
+    setPublishingId(campaign.id);
+    setPublishMessage(null);
+    try {
+      await publishCampaign(campaign.id, channels);
+      setPublishMessage('Campanha publicada.');
+    } catch (err) {
+      setPublishMessage(err instanceof ApiError ? err.message : 'Publicacao bloqueada.');
+      void listCampaigns().then((data) => {
+        setCampaigns(data.campaigns);
+        setMessage(data.message);
+      });
+    } finally {
+      setPublishingId(null);
+    }
+  }
+
+  const statusSummary = [
+    { label: 'Campanhas Ativas', value: campaigns.filter((item) => item.status === 'active').length },
+    { label: 'Em Revisao', value: campaigns.filter((item) => item.status === 'ready' || item.status === 'published').length },
+    { label: 'Rascunhos', value: campaigns.filter((item) => item.status === 'draft' || item.status === 'project').length },
+    { label: 'Finalizadas', value: campaigns.filter((item) => item.status === 'finished').length },
+  ];
+
+  function formatBudget(value?: number | null) {
+    return value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : 'Orcamento pendente';
+  }
+
+  function campaignChannels(campaign: MarketingCampaignListItem) {
+    return (campaign.channels || '').split(',').map((item) => item.trim()).filter(Boolean);
+  }
+
   return (
-    <Shell title="Campanhas" subtitle="CRUD de campanhas baseado em projetos reais de Marketing.">
+    <Shell title="Campanhas" subtitle="Organize execucao, criativos, canais e publicacao sem transformar Marketing em cadastro.">
       <DataCard title="Campanhas" icon={Megaphone}>
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-slate-400"><Search size={16} /> Buscar campanha</label>
           <Link to="/app/marketing/campaigns/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white"><Plus size={16} /> Nova campanha</Link>
         </div>
+        <div className="mb-5 grid gap-3 md:grid-cols-4">
+          {statusSummary.map((item) => (
+            <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <p className="text-xs text-slate-500">{item.label}</p>
+              <p className="mt-1 font-display text-3xl text-white">{item.value}</p>
+            </div>
+          ))}
+        </div>
         {loading ? <Loader2 className="animate-spin text-violet-300" /> : campaigns.length === 0 ? (
           <EmptyState message={message || 'Nenhuma campanha real cadastrada.'} actionTo="/app/marketing/campaigns/new" actionLabel="Criar campanha" />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="min-w-full text-sm">
-              <thead className="bg-white/[0.03] text-left text-slate-400"><tr><th className="px-4 py-3">Campanha</th><th className="px-4 py-3">Objetivo</th><th className="px-4 py-3">Publico</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Acoes</th></tr></thead>
-              <tbody>{campaigns.map((campaign) => <tr key={campaign.id} className="border-t border-white/10"><td className="px-4 py-3 text-white">{campaign.name}</td><td className="px-4 py-3 text-slate-300">{campaign.objective}</td><td className="px-4 py-3 text-slate-300">{campaign.audience}</td><td className="px-4 py-3"><span className="rounded-full bg-violet-500/15 px-2 py-1 text-xs text-violet-200">{campaign.status}</span></td><td className="px-4 py-3"><Link className="text-violet-300" to={`/app/marketing/projects/${campaign.id}`}>Editar</Link></td></tr>)}</tbody>
-            </table>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {campaigns.map((campaign) => {
+              const channels = campaignChannels(campaign);
+              return (
+                <article key={campaign.id} className="rounded-3xl border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)]">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <h3 className="font-display text-2xl text-white">{campaign.name}</h3>
+                      <p className="mt-1 text-sm text-slate-400">{campaign.objective}</p>
+                    </div>
+                    <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${campaign.status === 'error' ? 'bg-rose-500/15 text-rose-200' : 'bg-violet-500/15 text-violet-100'}`}>
+                      {campaign.status}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {channels.length ? channels.map((channel) => (
+                      <span key={channel} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">{channel}</span>
+                    )) : <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs text-amber-100">Sem canal definido</span>}
+                  </div>
+                  <div className="mt-5 grid gap-3 md:grid-cols-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-xs text-slate-500">Orcamento</p>
+                      <p className="mt-1 font-semibold text-white">{formatBudget(campaign.budget)}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-xs text-slate-500">Reservas</p>
+                      <p className="mt-1 font-semibold text-slate-300">Sem dados reais</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-xs text-slate-500">Receita</p>
+                      <p className="mt-1 font-semibold text-slate-300">Sem dados reais</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Criativo</p>
+                    <Link to={`/app/studio/editor/new?source=marketing&campaign=${campaign.id}`} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500/10 px-4 py-3 text-sm font-semibold text-violet-100">
+                      <Image size={16} /> Criar criativo no Studio
+                    </Link>
+                  </div>
+                  {campaign.last_publish_error ? <p className="mt-4 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{campaign.last_publish_error}</p> : null}
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200" to={`/app/marketing/projects/${campaign.id}`}>Ver</Link>
+                    <Link className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200" to={`/app/marketing/projects/${campaign.id}`}>Editar</Link>
+                    <button type="button" disabled={publishingId === campaign.id} onClick={() => void handlePublish(campaign)} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                      {publishingId === campaign.id ? 'Publicando...' : 'Publicar'}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
+        {publishMessage ? <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">{publishMessage}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">{campaignStatuses.map((status) => <span key={status} className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{status}</span>)}</div>
       </DataCard>
     </Shell>

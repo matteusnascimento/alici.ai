@@ -64,6 +64,8 @@ class SchemaSyncService:
             conn.execute(text("ALTER TABLE users ADD COLUMN phone_verification_expires_at DATETIME"))
         if "updated_at" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN updated_at DATETIME"))
+        if "disabled_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN disabled_at DATETIME"))
 
     def _sync_user_settings_table_sqlite(self, conn) -> None:
         columns = self._get_table_columns_sqlite(conn, "user_settings")
@@ -181,6 +183,7 @@ class SchemaSyncService:
                     CREATE TABLE IF NOT EXISTS website_events (
                         id INTEGER NOT NULL PRIMARY KEY,
                         site_id VARCHAR(120),
+                        visitor_id VARCHAR(120),
                         session_id VARCHAR(120) NOT NULL,
                         event_type VARCHAR(60) NOT NULL,
                         city VARCHAR(120),
@@ -191,10 +194,13 @@ class SchemaSyncService:
                         utm_source VARCHAR(120),
                         utm_medium VARCHAR(120),
                         utm_campaign VARCHAR(160),
+                        utm_term VARCHAR(160),
+                        utm_content VARCHAR(160),
                         page_url VARCHAR(1024),
                         referrer VARCHAR(1024),
                         duration_seconds INTEGER,
                         pages_visited INTEGER,
+                        search_query VARCHAR(255),
                         click_target VARCHAR(255),
                         quote_value FLOAT,
                         reservation_value FLOAT,
@@ -209,6 +215,7 @@ class SchemaSyncService:
         if website_event_columns:
             missing_event_columns = {
                 "site_id": "VARCHAR(120)",
+                "visitor_id": "VARCHAR(120)",
                 "city": "VARCHAR(120)",
                 "state": "VARCHAR(80)",
                 "country": "VARCHAR(80)",
@@ -217,10 +224,13 @@ class SchemaSyncService:
                 "utm_source": "VARCHAR(120)",
                 "utm_medium": "VARCHAR(120)",
                 "utm_campaign": "VARCHAR(160)",
+                "utm_term": "VARCHAR(160)",
+                "utm_content": "VARCHAR(160)",
                 "page_url": "VARCHAR(1024)",
                 "referrer": "VARCHAR(1024)",
                 "duration_seconds": "INTEGER",
                 "pages_visited": "INTEGER",
+                "search_query": "VARCHAR(255)",
                 "click_target": "VARCHAR(255)",
                 "quote_value": "FLOAT",
                 "reservation_value": "FLOAT",
@@ -233,6 +243,7 @@ class SchemaSyncService:
 
             for index_name, column_name in {
                 "ix_website_events_site_id": "site_id",
+                "ix_website_events_visitor_id": "visitor_id",
                 "ix_website_events_session_id": "session_id",
                 "ix_website_events_event_type": "event_type",
                 "ix_website_events_city": "city",
@@ -245,6 +256,27 @@ class SchemaSyncService:
             }.items():
                 if column_name in self._get_table_columns_sqlite(conn, "website_events"):
                     self._create_index_sqlite(conn, "website_events", index_name, column_name)
+
+        lead_columns = self._get_table_columns_sqlite(conn, "leads")
+        if lead_columns and "lead_identity_hash" not in lead_columns:
+            conn.execute(text("ALTER TABLE leads ADD COLUMN lead_identity_hash VARCHAR(64)"))
+            self._create_index_sqlite(conn, "leads", "ix_leads_lead_identity_hash", "lead_identity_hash")
+
+        marketing_columns = self._get_table_columns_sqlite(conn, "marketing_projects")
+        if marketing_columns:
+            missing_marketing_columns = {
+                "channels": "VARCHAR(240)",
+                "budget": "FLOAT",
+                "creative_project_id": "VARCHAR(80)",
+                "status": "VARCHAR(40) DEFAULT 'draft'",
+                "published_at": "DATETIME",
+                "last_publish_error": "TEXT",
+                "metrics_json": "TEXT",
+            }
+            for col, definition in missing_marketing_columns.items():
+                if col not in marketing_columns:
+                    conn.execute(text(f"ALTER TABLE marketing_projects ADD COLUMN {col} {definition}"))
+            self._create_index_sqlite(conn, "marketing_projects", "ix_marketing_projects_status", "status")
 
     def _get_table_columns_sqlite(self, conn, table_name: str) -> set[str]:
         try:
@@ -319,6 +351,8 @@ class SchemaSyncService:
 
         if "updated_at" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN updated_at TIMESTAMPTZ DEFAULT now()"))
+        if "disabled_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN disabled_at TIMESTAMPTZ"))
 
         if "plan" in self._get_users_columns(conn):
             conn.execute(text("UPDATE users SET plan = 'free' WHERE plan IS NULL OR btrim(plan) = ''"))

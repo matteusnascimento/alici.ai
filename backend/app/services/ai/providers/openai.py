@@ -12,7 +12,7 @@ class OpenAIProvider(HTTPAIProvider):
 
     def __init__(self) -> None:
         super().__init__(timeout_seconds=settings.openai_timeout_seconds)
-        self.default_model = settings.openai_model
+        self.default_model = settings.effective_openai_chat_model
         self.service = OpenAIService()
 
     def is_configured(self) -> bool:
