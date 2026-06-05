@@ -1,4 +1,19 @@
-def test_integrations_endpoints(client, auth_headers):
+def test_integrations_endpoints(client, auth_headers, monkeypatch):
+    from app.core.config import settings
+
+    for attr in (
+        "meta_app_id",
+        "meta_client_id",
+        "meta_oauth_client_id",
+        "meta_app_secret",
+        "meta_client_secret",
+        "google_client_id",
+        "google_oauth_client_id",
+        "google_client_secret",
+        "google_oauth_client_secret",
+    ):
+        monkeypatch.setattr(settings, attr, "")
+
     list_response = client.get('/api/integrations', headers=auth_headers)
     assert list_response.status_code == 200
     providers = {item['provider'] for item in list_response.json()}

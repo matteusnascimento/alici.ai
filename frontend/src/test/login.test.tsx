@@ -12,6 +12,7 @@ vi.mock('../services/auth.service', () => ({
   getMe: vi.fn(async () => {
     throw new Error('no session');
   }),
+  startGoogleLogin: vi.fn(),
   logout: vi.fn(),
 }));
 

@@ -63,7 +63,7 @@ describe('MarketingPanel', () => {
     });
   });
 
-  it('renderiza a home do Studio com busca, categorias e recentes', async () => {
+  it('renderiza a home atual do AXI Studio com atalhos de criacao e ferramentas', async () => {
     render(
       <MemoryRouter>
         <StudioHomePage />
@@ -71,13 +71,11 @@ describe('MarketingPanel', () => {
     );
 
     expect(await screen.findByRole('heading', { name: /O que vamos criar hoje/i })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /Buscar no Studio/i })).toBeInTheDocument();
+    expect(screen.getByText(/Inspire-se, escolha um template/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Templates$/i })).toHaveAttribute('href', '/app/studio/templates');
-    expect(screen.getByRole('link', { name: /Video/i })).toHaveAttribute('href', '/app/studio/editor/video?mode=new');
-    expect(screen.getByRole('link', { name: /Story/i })).toHaveAttribute('href', '/app/studio/templates?category=Stories');
     expect(screen.getByRole('link', { name: /^Uploads$/i })).toHaveAttribute('href', '/app/studio/assets');
-    expect(screen.getByRole('link', { name: /Landing Page/i })).toHaveAttribute('href', '/app/studio/templates?category=Landing%20Pages');
-    expect(screen.getAllByRole('link', { name: /Magic Studio/i })[0]).toHaveAttribute('href', '/app/studio/ai-creative');
+    expect(screen.getAllByRole('link', { name: /Criar do zero/i })[0]).toHaveAttribute('href', '/app/studio/editor/video?mode=new');
+    expect(screen.getByRole('link', { name: /Magic Studio/i })).toHaveAttribute('href', '/app/studio/ai-creative');
     expect(screen.getByRole('link', { name: /Poster de lancamento/i })).toHaveAttribute('href', '/app/studio/tools/ad');
   });
 });
