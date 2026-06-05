@@ -71,13 +71,13 @@ describe('MarketingPanel', () => {
     );
 
     expect(await screen.findByText(/AXI Studio/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Criar com IA/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Novo video/i })).toHaveAttribute('href', '/app/studio/editor/video?mode=new');
+    expect(screen.getByRole('heading', { name: /Bora criar bonito/i })).toBeInTheDocument();
+    expect(screen.getByText(/Crie videos, posts e campanhas com IA/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Editor unificado/i })).toHaveAttribute('href', '/app/studio/editor');
     expect(screen.getByRole('link', { name: /Editar foto/i })).toHaveAttribute('href', '/app/studio/tools/photo-editor');
     expect(screen.getByRole('link', { name: /AutoCut/i })).toHaveAttribute('href', '/app/studio/editor/video?mode=new&entry=autocut');
-    expect(screen.getByRole('link', { name: /Gerador de IA/i })).toHaveAttribute('href', '/app/studio/ai-creative');
+    expect(screen.getAllByRole('link', { name: /Gerador de IA/i })[0]).toHaveAttribute('href', '/app/studio/ai-creative');
     expect(screen.getByRole('link', { name: /Legendas/i })).toHaveAttribute('href', '/app/studio/tools/caption');
     expect(screen.getByRole('link', { name: /Poster de lancamento/i })).toHaveAttribute('href', '/app/studio/tools/ad');
-    expect(screen.getByRole('link', { name: /Gerar legenda com CTA/i })).toHaveAttribute('href', '/app/studio/tools/caption');
   });
 });

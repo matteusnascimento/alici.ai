@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -16,6 +18,29 @@ from app.services.ai_service import AIConfigurationError, AIService, AIServiceEr
 from app.services.channel_integration_service import ChannelIntegrationService
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
+
+
+@router.get("/meta/webhook")
+async def verify_meta_webhook(
+    hub_mode: str | None = Query(default=None, alias="hub.mode"),
+    hub_verify_token: str | None = Query(default=None, alias="hub.verify_token"),
+    hub_challenge: str | None = Query(default=None, alias="hub.challenge"),
+) -> PlainTextResponse:
+    expected_token = settings.meta_webhook_verify_token
+    if not expected_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="META_WEBHOOK_VERIFY_TOKEN nao configurado no servidor.",
+        )
+    if hub_mode == "subscribe" and hub_verify_token == expected_token:
+        return PlainTextResponse(content=str(hub_challenge or ""))
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Token de webhook invalido.")
+
+
+@router.post("/meta/webhook")
+async def receive_meta_webhook(request: Request) -> dict[str, str]:
+    await request.json()
+    return {"status": "received"}
 
 
 @router.get("", response_model=list[IntegrationProviderRead])

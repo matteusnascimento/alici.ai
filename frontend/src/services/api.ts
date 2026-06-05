@@ -1,5 +1,14 @@
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '');
+function normalizeApiBaseUrl(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return '/api';
+  }
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''),
+);
 const TOKEN_KEY = 'axi_token';
 
 let unauthorizedHandler: (() => void) | null = null;

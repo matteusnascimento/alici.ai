@@ -32,6 +32,10 @@ function normalizeUser(user: ApiAuthUser): User {
   };
 }
 
+function normalizeUsername(payload: RegisterInput) {
+  return (payload.username || payload.email.split('@')[0]).trim().replace(/\s+/g, '').toLowerCase();
+}
+
 function normalizeAuthResponse(response: ApiAuthResponse): AuthResponse {
   const apiUser = response.user || response.usuario;
   if (!apiUser) {
@@ -49,9 +53,11 @@ export async function register(payload: RegisterInput) {
   await apiFetch('/auth/register', {
     method: 'POST',
     body: JSON.stringify({
-      nome: payload.name || payload.username || payload.email,
+      name: payload.name || payload.username || payload.email,
+      username: normalizeUsername(payload),
       email: payload.email,
-      senha: payload.password,
+      phone: payload.phone || null,
+      password: payload.password,
     }),
   });
   return login({ email: payload.email, password: payload.password });
@@ -63,7 +69,7 @@ export async function login(payload: LoginInput) {
     method: 'POST',
     body: JSON.stringify({
       email: payload.email,
-      senha: payload.password,
+      password: payload.password,
     }),
   });
   const normalized = normalizeAuthResponse(response);
