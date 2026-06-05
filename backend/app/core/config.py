@@ -23,6 +23,8 @@ def _is_valid_database_url(value: str) -> bool:
 
 class Settings(BaseSettings):
     app_name: str = "AXI Platform"
+    env: str = "development"
+    port: int = 8000
     app_env: str = "development"
     debug: bool = True
     database_url: str = _LOCAL_SQLITE_FALLBACK
@@ -36,6 +38,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
     default_ai_provider: str = "openai"
+    redis_url: str | None = None
+    groq_api_key: str | None = None
     openai_api_key: str = ""
     openai_api_key_rotated: str = ""
     openai_model: str = "gpt-4o-mini"
@@ -52,8 +56,8 @@ class Settings(BaseSettings):
     openai_model_transcription: str = "gpt-4o-transcribe"
     openai_model_embeddings: str = "text-embedding-3-small"
     database_url_rotated: str = ""
-    cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
-    billing_admin_emails: list[str] = Field(default_factory=list)
+    cors_allowed_origins: str | list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+    billing_admin_emails: str | list[str] = Field(default_factory=list)
 
     # Stripe
     stripe_secret_key: str = ""
@@ -69,10 +73,27 @@ class Settings(BaseSettings):
     stripe_cancel_url: str = ""
 
     # Meta channels (WhatsApp/Instagram)
-    meta_app_secret: str = ""
-    meta_webhook_verify_token: str = ""
+    meta_app_id: str | None = None
+    meta_client_id: str | None = None
+    meta_app_secret: str | None = None
+    meta_client_secret: str | None = None
+    meta_redirect_uri: str | None = None
+    meta_graph_api_version: str = "v20.0"
+    meta_webhook_verify_token: str | None = None
+    meta_oauth_scopes: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
+    # Google integrations
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+
+    # Storage
+    r2_endpoint_url: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
+    r2_bucket_uploads: str | None = None
+    r2_public_base_url: str | None = None
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod
@@ -111,6 +132,10 @@ class Settings(BaseSettings):
 
     def __init__(self, **data):
         super().__init__(**data)
+
+        raw_env = (self.env or "").strip()
+        if raw_env and self.app_env == "development":
+            object.__setattr__(self, "app_env", raw_env)
 
         raw_database_url = (self.database_url or "").strip()
         if not _is_valid_database_url(raw_database_url):
@@ -159,6 +184,14 @@ class Settings(BaseSettings):
     def effective_openai_api_key(self) -> str:
         # During key rotation, OPENAI_API_KEY_ROTATED takes precedence.
         return self.openai_api_key_rotated or self.openai_api_key
+
+    @property
+    def effective_r2_endpoint_url(self) -> str:
+        return (self.r2_endpoint_url or "").strip()
+
+    @property
+    def effective_r2_bucket_name(self) -> str:
+        return (self.r2_bucket_uploads or "").strip()
 
     @property
     def should_seed_dev_user(self) -> bool:
