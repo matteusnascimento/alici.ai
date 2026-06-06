@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -18,36 +19,72 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(table_name: str) -> bool:
+    """Check if a table exists in the current database."""
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    return table_name in inspector.get_table_names()
+
+
+def _index_exists(table_name: str, index_name: str) -> bool:
+    """Check if an index exists in the current database."""
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    
+    if table_name not in inspector.get_table_names():
+        return False
+    
+    return index_name in {idx["name"] for idx in inspector.get_indexes(table_name)}
+
+
 def upgrade() -> None:
-    op.create_table(
-        "ai_request_logs",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=True),
-        sa.Column("agent_id", sa.Integer(), nullable=True),
-        sa.Column("endpoint", sa.String(length=120), nullable=True),
-        sa.Column("task_name", sa.String(length=60), nullable=False),
-        sa.Column("provider", sa.String(length=30), nullable=False),
-        sa.Column("model", sa.String(length=80), nullable=False),
-        sa.Column("status", sa.String(length=30), nullable=False),
-        sa.Column("status_code", sa.Integer(), nullable=True),
-        sa.Column("input_tokens", sa.Integer(), nullable=False),
-        sa.Column("output_tokens", sa.Integer(), nullable=False),
-        sa.Column("total_tokens", sa.Integer(), nullable=False),
-        sa.Column("latency_ms", sa.Integer(), nullable=False),
-        sa.Column("error_summary", sa.String(length=255), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="SET NULL"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index("ix_ai_request_logs_id", "ai_request_logs", ["id"], unique=False)
-    op.create_index("ix_ai_request_logs_user_id", "ai_request_logs", ["user_id"], unique=False)
-    op.create_index("ix_ai_request_logs_agent_id", "ai_request_logs", ["agent_id"], unique=False)
-    op.create_index("ix_ai_request_logs_task_name", "ai_request_logs", ["task_name"], unique=False)
+    if not _table_exists("ai_request_logs"):
+        op.create_table(
+            "ai_request_logs",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("user_id", sa.Integer(), nullable=True),
+            sa.Column("agent_id", sa.Integer(), nullable=True),
+            sa.Column("endpoint", sa.String(length=120), nullable=True),
+            sa.Column("task_name", sa.String(length=60), nullable=False),
+            sa.Column("provider", sa.String(length=30), nullable=False),
+            sa.Column("model", sa.String(length=80), nullable=False),
+            sa.Column("status", sa.String(length=30), nullable=False),
+            sa.Column("status_code", sa.Integer(), nullable=True),
+            sa.Column("input_tokens", sa.Integer(), nullable=False),
+            sa.Column("output_tokens", sa.Integer(), nullable=False),
+            sa.Column("total_tokens", sa.Integer(), nullable=False),
+            sa.Column("latency_ms", sa.Integer(), nullable=False),
+            sa.Column("error_summary", sa.String(length=255), nullable=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="SET NULL"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+    
+    if not _index_exists("ai_request_logs", "ix_ai_request_logs_id"):
+        op.create_index("ix_ai_request_logs_id", "ai_request_logs", ["id"], unique=False)
+    
+    if not _index_exists("ai_request_logs", "ix_ai_request_logs_user_id"):
+        op.create_index("ix_ai_request_logs_user_id", "ai_request_logs", ["user_id"], unique=False)
+    
+    if not _index_exists("ai_request_logs", "ix_ai_request_logs_agent_id"):
+        op.create_index("ix_ai_request_logs_agent_id", "ai_request_logs", ["agent_id"], unique=False)
+    
+    if not _index_exists("ai_request_logs", "ix_ai_request_logs_task_name"):
+        op.create_index("ix_ai_request_logs_task_name", "ai_request_logs", ["task_name"], unique=False)
 
 
 def downgrade() -> None:
-    op.drop_index("ix_ai_request_logs_task_name", table_name="ai_request_logs")
-    op.drop_index("ix_ai_request_logs_agent_id", table_name="ai_request_logs")
-    op.drop_index("ix_ai_request_logs_user_id", table_name="ai_request_logs")
-    op.drop_index("ix_ai_request_logs_id", table_name="ai_request_logs")
-    op.drop_table("ai_request_logs")
+    if _index_exists("ai_request_logs", "ix_ai_request_logs_task_name"):
+        op.drop_index("ix_ai_request_logs_task_name", table_name="ai_request_logs")
+    
+    if _index_exists("ai_request_logs", "ix_ai_request_logs_agent_id"):
+        op.drop_index("ix_ai_request_logs_agent_id", table_name="ai_request_logs")
+    
+    if _index_exists("ai_request_logs", "ix_ai_request_logs_user_id"):
+        op.drop_index("ix_ai_request_logs_user_id", table_name="ai_request_logs")
+    
+    if _index_exists("ai_request_logs", "ix_ai_request_logs_id"):
+        op.drop_index("ix_ai_request_logs_id", table_name="ai_request_logs")
+    
+    if _table_exists("ai_request_logs"):
+        op.drop_table("ai_request_logs")

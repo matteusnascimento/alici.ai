@@ -3,8 +3,8 @@
 Revision ID: a9b8c7d6e5f4
 Revises: f3a4b5c6d7e8
 Create Date: 2026-05-30 08:30:00.000000
-
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -42,6 +42,7 @@ def upgrade() -> None:
             sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
             sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         )
+
     if not _index_exists("auth_tokens", "ix_auth_tokens_user_id"):
         op.create_index("ix_auth_tokens_user_id", "auth_tokens", ["user_id"])
     if not _index_exists("auth_tokens", "ix_auth_tokens_token_hash"):
