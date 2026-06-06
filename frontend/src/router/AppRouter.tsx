@@ -66,7 +66,6 @@ import {
 } from '../components/marketing/MarketingOperationsPages';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
 import { ChatsPage } from '../components/chats/ChatsPage';
-import { ChatPanel } from '../components/platform/ChatPanel';
 import { AxiAssistantPage } from '../components/platform/AxiAssistantPage';
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
 

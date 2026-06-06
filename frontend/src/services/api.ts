@@ -1,4 +1,14 @@
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+function normalizeApiBaseUrl(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return '/api';
+  }
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
+const API_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''),
+);
 const TOKEN_KEY = 'axi_token';
 
 let unauthorizedHandler: (() => void) | null = null;
@@ -35,7 +45,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   const headers = new Headers(init.headers || {});
   const isFormDataBody = typeof FormData !== 'undefined' && init.body instanceof FormData;
 
-  // Set Content-Type only for requests that carry a body (avoid breaking multipart uploads)
+  // Set Content-Type only for requests that carry a body (avoid breaking multipart uploads).
   if (init.body !== undefined && !isFormDataBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
@@ -48,18 +58,18 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   try {
     response = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
-    throw new ApiError('Servidor indisponível. Verifique sua conexão.', 0);
+    throw new ApiError('Servidor indisponivel. Verifique sua conexao.', 0);
   }
 
   if (response.status === 401) {
     if (unauthorizedHandler) {
       unauthorizedHandler();
     }
-    throw new ApiError('Sessão expirada. Faça login novamente.', 401);
+    throw new ApiError('Sessao expirada. Faca login novamente.', 401);
   }
 
   if (response.status === 403) {
-    throw new ApiError('Acesso negado. Você não tem permissão para esta ação.', 403);
+    throw new ApiError('Acesso negado. Voce nao tem permissao para esta acao.', 403);
   }
 
   const text = await response.text();

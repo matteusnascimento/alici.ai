@@ -19,41 +19,37 @@ vi.mock('../hooks/useChat', () => ({
   }),
 }));
 
+vi.mock('../services/chats.service', () => ({
+  getChatChannels: () => Promise.resolve([]),
+}));
+
+vi.mock('../services/revenue.service', () => ({
+  getRevenueIntelligence: () => Promise.resolve(null),
+}));
+
 import { AxiAssistantPage } from '../components/platform/AxiAssistantPage';
-import { ChatPanel } from '../components/platform/ChatPanel';
 
 describe('AxiAssistantPage', () => {
-  it('mostra erro amigavel de IA quando backend falha', () => {
+  beforeEach(() => {
+    chatHookState.error = null;
+    chatHookState.sendMessage.mockClear();
+  });
+
+  it('mostra erro amigavel de IA quando backend falha', async () => {
     chatHookState.error = 'A integracao de IA nao esta configurada.';
     render(<AxiAssistantPage />);
 
-    expect(screen.getByText(/A integracao de IA nao esta configurada/i)).toBeInTheDocument();
-    chatHookState.error = null;
+    expect(await screen.findByText(/A integracao de IA nao esta configurada/i)).toBeInTheDocument();
   });
 
   it('envia mensagem usando o hook', async () => {
-    chatHookState.error = null;
     render(<AxiAssistantPage />);
 
     await userEvent.type(screen.getByPlaceholderText(/Pergunte sobre dados/i), 'Quero uma campanha');
     await userEvent.click(screen.getByRole('button', { name: /Enviar/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Enviar/i })).toBeInTheDocument();
+      expect(chatHookState.sendMessage).toHaveBeenCalledWith('Quero uma campanha');
     });
-  });
-});
-
-describe('ChatPanel', () => {
-  it('renderiza central omnichannel separada do AXI Assistant', () => {
-    chatHookState.error = null;
-    render(<ChatPanel />);
-
-    expect(screen.getByRole('heading', { name: 'Chats' })).toBeInTheDocument();
-    expect(screen.getByText('WhatsApp')).toBeInTheDocument();
-    expect(screen.getByText('Instagram')).toBeInTheDocument();
-    expect(screen.getByText('Messenger')).toBeInTheDocument();
-    expect(screen.getByText('Website Chat')).toBeInTheDocument();
-    expect(screen.getByText(/Controle IA\/Humano/i)).toBeInTheDocument();
   });
 });

@@ -19,6 +19,7 @@ class SchemaSyncService:
                 self._sync_users_table(conn)
                 self._sync_user_settings_table(conn)
                 self._sync_subscriptions_table(conn)
+                self._sync_conversation_tables(conn)
                 self._sync_agent_conversations_table(conn)
                 self._sync_media_tables(conn)
                 return
@@ -27,6 +28,7 @@ class SchemaSyncService:
                 self._sync_users_table_sqlite(conn)
                 self._sync_user_settings_table_sqlite(conn)
                 self._sync_subscriptions_table_sqlite(conn)
+                self._sync_conversation_tables_sqlite(conn)
                 self._sync_revenue_tables_sqlite(conn)
 
     def _sync_users_table_sqlite(self, conn) -> None:
@@ -130,6 +132,18 @@ class SchemaSyncService:
         for col, definition in missing_columns.items():
             if col not in columns:
                 conn.execute(text(f"ALTER TABLE subscriptions ADD COLUMN {col} {definition}"))
+
+    def _sync_conversation_tables_sqlite(self, conn) -> None:
+        conversation_columns = self._get_table_columns_sqlite(conn, "conversations")
+        if conversation_columns and "created_at" not in conversation_columns:
+            conn.execute(text("ALTER TABLE conversations ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"))
+
+        message_columns = self._get_table_columns_sqlite(conn, "messages")
+        if message_columns:
+            if "text" not in message_columns:
+                conn.execute(text("ALTER TABLE messages ADD COLUMN text TEXT"))
+            if "created_at" not in message_columns:
+                conn.execute(text("ALTER TABLE messages ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"))
 
     def _sync_revenue_tables_sqlite(self, conn) -> None:
         reservation_columns = self._get_table_columns_sqlite(conn, "reservations")
@@ -429,6 +443,25 @@ class SchemaSyncService:
         for col, definition in missing_columns.items():
             if col not in columns:
                 conn.execute(text(f"ALTER TABLE subscriptions ADD COLUMN {col} {definition}"))
+
+    def _sync_conversation_tables(self, conn) -> None:
+        conversations_exists = conn.execute(text("select to_regclass('public.conversations')")).scalar()
+        if conversations_exists:
+            columns = self._get_table_columns(conn, "conversations")
+            if "created_at" not in columns:
+                conn.execute(text("ALTER TABLE conversations ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT now()"))
+
+        messages_exists = conn.execute(text("select to_regclass('public.messages')")).scalar()
+        if messages_exists:
+            columns = self._get_table_columns(conn, "messages")
+            if "text" not in columns:
+                conn.execute(text("ALTER TABLE messages ADD COLUMN text TEXT"))
+                if "content" in columns:
+                    conn.execute(text("UPDATE messages SET text = content WHERE text IS NULL AND content IS NOT NULL"))
+            if "content" in columns:
+                conn.execute(text("ALTER TABLE messages ALTER COLUMN content DROP NOT NULL"))
+            if "created_at" not in columns:
+                conn.execute(text("ALTER TABLE messages ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT now()"))
 
     def _sync_media_tables(self, conn) -> None:
         media_projects_exists = conn.execute(text("select to_regclass('public.media_projects')")).scalar()

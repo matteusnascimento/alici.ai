@@ -1,4 +1,8 @@
+from urllib.parse import parse_qs, urlparse
+
 from app.core.config import settings
+from app.models.integration_account import IntegrationAccount
+from app.models.user import User
 
 
 def _set_meta(monkeypatch, *, configured: bool) -> None:
@@ -52,6 +56,93 @@ def test_meta_connect_with_env_returns_authorization_url(client, auth_headers, m
     assert payload["provider"] == "instagram"
     assert payload["authorization_url"].startswith("https://www.facebook.com/v20.0/dialog/oauth?")
     assert "client_id=meta-client" in payload["authorization_url"]
+    state = parse_qs(urlparse(payload["authorization_url"]).query)["state"][0]
+
+    from app.api.routes.integrations import _parse_state
+
+    parsed = _parse_state(state, "meta")
+    assert parsed["provider"] == "instagram"
+    assert parsed["user_id"].isdigit()
+    assert parsed["company_id"].startswith("axi-")
+    assert parsed["nonce"]
+    assert int(parsed["expires_at"]) > int(parsed["created_at"])
+
+
+def test_meta_connect_production_requires_company(client, auth_headers, monkeypatch):
+    _set_meta(monkeypatch, configured=True)
+    monkeypatch.setattr(settings, "app_env", "production")
+
+    response = client.get("/api/integrations/meta/connect?provider=whatsapp", headers=auth_headers)
+
+    assert response.status_code == 422
+    assert "empresa ativa" in response.json()["detail"].lower()
+
+
+def test_meta_connect_state_uses_active_company(client, auth_headers, db_session, monkeypatch):
+    _set_meta(monkeypatch, configured=True)
+    user = db_session.query(User).filter(User.email == "ana@example.com").first()
+    user.company = "Pousada Passargada"
+    db_session.commit()
+
+    response = client.get("/api/integrations/meta/connect?provider=whatsapp", headers=auth_headers)
+
+    assert response.status_code == 200
+    state = parse_qs(urlparse(response.json()["authorization_url"]).query)["state"][0]
+
+    from app.api.routes.integrations import _parse_state
+
+    parsed = _parse_state(state, "meta")
+    assert parsed["company_id"] == "pousada-passargada"
+    assert parsed["company_name"] == "Pousada Passargada"
+
+
+def test_meta_callback_persists_tenant_metadata(client, auth_headers, db_session, monkeypatch):
+    _set_meta(monkeypatch, configured=True)
+    user = db_session.query(User).filter(User.email == "ana@example.com").first()
+    user.company = "Pousada Passargada"
+    db_session.commit()
+
+    from app.api.routes import integrations as integrations_routes
+
+    state = integrations_routes._build_state(user, "instagram", "meta")
+
+    class _FakeResponse:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class _FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def get(self, url, params=None, headers=None):
+            if url.endswith("/oauth/access_token"):
+                return _FakeResponse({"access_token": "provider-token", "expires_in": 3600})
+            if url.endswith("/me"):
+                return _FakeResponse({"id": "ig-123", "name": "Pousada Passargada IG"})
+            raise AssertionError(f"Unexpected URL: {url}")
+
+    monkeypatch.setattr(integrations_routes.httpx, "Client", _FakeClient)
+
+    response = client.get(f"/api/integrations/meta/callback?code=valid-code&state={state}", follow_redirects=False)
+
+    assert response.status_code == 303
+    account = db_session.query(IntegrationAccount).filter(IntegrationAccount.provider == "instagram").first()
+    assert account is not None
+    metadata = integrations_routes.ChannelIntegrationService(db_session)._load_json(account.metadata_json)
+    assert metadata["tenant"]["company_id"] == "pousada-passargada"
+    assert metadata["tenant"]["company_name"] == "Pousada Passargada"
 
 
 def test_meta_connect_invalid_provider_returns_400(client, auth_headers, monkeypatch):

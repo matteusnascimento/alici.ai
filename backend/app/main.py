@@ -2,6 +2,10 @@ from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
 
+from app.core.tls import configure_system_trust_store
+
+configure_system_trust_store()
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

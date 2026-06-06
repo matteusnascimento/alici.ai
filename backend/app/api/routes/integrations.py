@@ -1,7 +1,9 @@
 import base64
 import hashlib
 import hmac
+import json
 import logging
+import re
 import secrets
 import time
 from datetime import UTC, datetime, timedelta
@@ -59,6 +61,35 @@ def _sign_state(payload: str) -> str:
     return hmac.new(secret, payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+def _slugify_company(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", value.strip().lower())
+    return normalized.strip("-")[:80]
+
+
+def _active_company_context(user: User) -> dict[str, str | bool]:
+    company_name = (user.company or "").strip()
+    if not company_name:
+        if settings.app_env.lower() == "production":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Configure os dados da empresa ativa antes de conectar integrações.",
+            )
+        company_name = user.email or f"Usuario {user.id}"
+        company_id = f"axi-{user.id}"
+        return {
+            "company_id": company_id,
+            "company_name": company_name,
+            "company_configured": False,
+        }
+
+    company_id = _slugify_company(company_name) or f"axi-{user.id}"
+    return {
+        "company_id": company_id,
+        "company_name": company_name,
+        "company_configured": True,
+    }
+
+
 def _meta_scopes(provider: str) -> str:
     return (settings.meta_oauth_scopes or DEFAULT_META_OAUTH_SCOPES[provider]).strip()
 
@@ -88,18 +119,31 @@ def _raise_google_not_configured() -> None:
     )
 
 
-def _build_state(user_id: int, provider: str, family: str) -> str:
-    payload = f"user:{user_id}|provider:{provider}|family:{family}|ts:{int(time.time())}|nonce:{secrets.token_urlsafe(12)}"
-    signed = f"{payload}|sig:{_sign_state(payload)}"
+def _build_state(user: User, provider: str, family: str) -> str:
+    now = int(time.time())
+    company = _active_company_context(user)
+    payload = {
+        "user_id": str(user.id),
+        "company_id": company["company_id"],
+        "company_name": company["company_name"],
+        "company_configured": company["company_configured"],
+        "provider": provider,
+        "provider_family": family,
+        "nonce": secrets.token_urlsafe(18),
+        "created_at": now,
+        "expires_at": now + OAUTH_STATE_MAX_AGE_SECONDS,
+    }
+    payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    signed = json.dumps(
+        {"payload": payload, "sig": _sign_state(payload_json)},
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
     return base64.urlsafe_b64encode(signed.encode("utf-8")).decode("ascii")
 
 
-def _parse_state(state: str, expected_family: str) -> dict[str, str]:
-    try:
-        decoded = base64.urlsafe_b64decode(state.encode("ascii")).decode("utf-8")
-    except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state invalido.") from exc
-
+def _parse_legacy_state(decoded: str, expected_family: str) -> dict[str, str]:
     parts = dict(part.split(":", 1) for part in decoded.split("|") if ":" in part)
     signature = parts.pop("sig", None)
     payload = "|".join([part for part in decoded.split("|") if not part.startswith("sig:")])
@@ -116,8 +160,40 @@ def _parse_state(state: str, expected_family: str) -> dict[str, str]:
     return parts
 
 
+def _parse_state(state: str, expected_family: str) -> dict[str, str]:
+    try:
+        decoded = base64.urlsafe_b64decode(state.encode("ascii")).decode("utf-8")
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state invalido.") from exc
+
+    if decoded.startswith("user:"):
+        return _parse_legacy_state(decoded, expected_family)
+
+    try:
+        wrapper = json.loads(decoded)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state invalido.") from exc
+    if not isinstance(wrapper, dict) or not isinstance(wrapper.get("payload"), dict):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state invalido.")
+
+    payload = wrapper["payload"]
+    signature = str(wrapper.get("sig") or "")
+    payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    if not signature or not hmac.compare_digest(signature, _sign_state(payload_json)):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state nao confere.")
+    if str(payload.get("provider_family") or "") != expected_family:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state nao pertence a este provider.")
+    try:
+        expires_at = int(payload.get("expires_at") or "0")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state sem expiracao valida.") from exc
+    if time.time() > expires_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state expirado.")
+    return {str(key): str(value) for key, value in payload.items()}
+
+
 def _oauth_user(db: Session, state_parts: dict[str, str]) -> User:
-    raw_user = state_parts.get("user", "")
+    raw_user = state_parts.get("user_id") or state_parts.get("user", "")
     try:
         user_id = int(raw_user)
     except ValueError as exc:
@@ -126,6 +202,20 @@ def _oauth_user(db: Session, state_parts: dict[str, str]) -> User:
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario do OAuth nao encontrado.")
     return user
+
+
+def _oauth_company_metadata(user: User, state_parts: dict[str, str]) -> dict[str, str | bool]:
+    current_company = _active_company_context(user)
+    state_company_id = (state_parts.get("company_id") or "").strip()
+    state_company_name = (state_parts.get("company_name") or "").strip()
+    if state_company_id and state_company_id != current_company["company_id"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empresa ativa do OAuth nao confere.")
+    return {
+        "company_id": str(current_company["company_id"]),
+        "company_name": str(current_company["company_name"]),
+        "company_configured": bool(current_company["company_configured"]),
+        "state_company_name": state_company_name or str(current_company["company_name"]),
+    }
 
 
 def _safe_oauth_error(exc: httpx.HTTPStatusError) -> str:
@@ -176,17 +266,13 @@ def start_provider_oauth(
     client_id = settings.effective_meta_client_id.strip()
     redirect_uri = settings.effective_meta_redirect_uri.strip()
 
-    state_parts = [f"user:{current_user.id}", f"provider:{normalized}"]
-    if payload.redirect_path:
-        state_parts.append(f"return:{payload.redirect_path}")
-
     query = urlencode(
         {
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": _meta_scopes(normalized),
-            "state": "|".join(state_parts),
+            "state": _build_state(current_user, normalized, "meta"),
         }
     )
     return IntegrationOAuthStartResponse(
@@ -215,7 +301,7 @@ def connect_meta_oauth(
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": _meta_scopes(normalized),
-            "state": _build_state(current_user.id, normalized, "meta"),
+            "state": _build_state(current_user, normalized, "meta"),
         }
     )
     return IntegrationOAuthStartResponse(
@@ -244,6 +330,7 @@ def meta_oauth_callback(
     redirect_uri = settings.effective_meta_redirect_uri.strip()
 
     user = _oauth_user(db, state_parts)
+    company_metadata = _oauth_company_metadata(user, state_parts)
     try:
         with httpx.Client(timeout=15.0) as client:
             token_response = client.get(
@@ -278,6 +365,7 @@ def meta_oauth_callback(
     expires_at = datetime.now(tz=UTC) + timedelta(seconds=expires_in) if expires_in else None
     metadata = {
         "oauth_family": "meta",
+        "tenant": company_metadata,
         "scopes": [item.strip() for item in _meta_scopes(provider).split(",") if item.strip()],
         "expires_at": expires_at.isoformat() if expires_at else None,
         "connected_at": datetime.now(tz=UTC).isoformat(),
@@ -293,7 +381,12 @@ def meta_oauth_callback(
             "metadata": metadata,
         },
     )
-    logger.info("integration_connected family=meta provider=%s user_id=%s", provider, user.id)
+    logger.info(
+        "integration_connected family=meta provider=%s user_id=%s company_id=%s",
+        provider,
+        user.id,
+        company_metadata["company_id"],
+    )
     return RedirectResponse(_frontend_url("/app/integrations?connected=meta"), status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -317,7 +410,7 @@ def connect_google_oauth(
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": _google_scopes(normalized),
-            "state": _build_state(current_user.id, normalized, "google"),
+            "state": _build_state(current_user, normalized, "google"),
             "access_type": "offline",
             "prompt": "consent",
             "include_granted_scopes": "true",
@@ -349,6 +442,7 @@ def google_oauth_callback(
     redirect_uri = settings.effective_google_redirect_uri.strip()
 
     user = _oauth_user(db, state_parts)
+    company_metadata = _oauth_company_metadata(user, state_parts)
     try:
         with httpx.Client(timeout=15.0) as client:
             token_response = client.post(
@@ -385,6 +479,7 @@ def google_oauth_callback(
     expires_at = datetime.now(tz=UTC) + timedelta(seconds=expires_in) if expires_in else None
     metadata = {
         "oauth_family": "google",
+        "tenant": company_metadata,
         "scopes": [item.strip() for item in _google_scopes(provider).split(" ") if item.strip()],
         "expires_at": expires_at.isoformat() if expires_at else None,
         "connected_at": datetime.now(tz=UTC).isoformat(),
@@ -401,7 +496,12 @@ def google_oauth_callback(
             "metadata": metadata,
         },
     )
-    logger.info("integration_connected family=google provider=%s user_id=%s", provider, user.id)
+    logger.info(
+        "integration_connected family=google provider=%s user_id=%s company_id=%s",
+        provider,
+        user.id,
+        company_metadata["company_id"],
+    )
     return RedirectResponse(_frontend_url("/app/integrations?connected=google"), status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -665,7 +765,8 @@ def get_website_chat_widget_script(current_user: User = Depends(get_current_user
             detail="Website Tracker não configurado. Configure PUBLIC_BACKEND_URL, AXI_TRACKER_PUBLIC_URL e AXI_WIDGET_PUBLIC_URL.",
         )
     base_url = settings.backend_base_url
-    company_id = f"axi-{current_user.id}"
+    company = _active_company_context(current_user)
+    company_id = str(company["company_id"])
     tracker_src = _append_query(settings.axi_tracker_public_url.strip(), {"site_id": company_id})
     widget_src = settings.axi_widget_public_url.strip()
     tracker_endpoint = f"{base_url}/api/tracker/events"
