@@ -10,6 +10,7 @@ from uuid import uuid4
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.studio_asset import StudioAsset
 from app.models.user import User
 
@@ -94,6 +95,11 @@ class StudioAssetService:
         metadata: dict[str, Any] | None = None,
     ) -> StudioAsset:
         self._validate_upload(name=name, content=content, content_type=content_type)
+        if settings.storage_external_required and not settings.is_r2_configured():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Storage externo não configurado. Configure R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME e R2_PUBLIC_BASE_URL.",
+            )
         url = self._build_local_asset_url(name)
         relative = url.replace("/uploads/studio/", "")
         path = self._storage_dir() / relative

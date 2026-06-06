@@ -28,7 +28,7 @@ export function ArchivedChatsPanel({ data }: ArchivedChatsPanelProps) {
             Quando você arquivar uma conversa, ela aparecerá aqui. Você pode desarquivar a qualquer momento.
           </p>
           <Link
-            to="/app/chat"
+            to="/app/chats"
             className="mt-5 inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-500/20"
           >
             Ir para o chat

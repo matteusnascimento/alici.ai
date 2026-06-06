@@ -16,73 +16,45 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def _column_exists(table_name: str, column_name: str) -> bool:
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    if table_name not in inspector.get_table_names():
-        return False
-    return column_name in {col["name"] for col in inspector.get_columns(table_name)}
-
-
-def _table_exists(table_name: str) -> bool:
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    return table_name in inspector.get_table_names()
-
-
-def _add_column(table_name: str, column: sa.Column) -> None:
-    if not _table_exists(table_name):
-        return
-    if _column_exists(table_name, column.name):
-        return
-    op.add_column(table_name, column)
-
-
 def upgrade() -> None:
     # --- agent_channels ---
-    _add_column(
-        "agent_channels",
-        sa.Column(
-            "status",
-            sa.String(length=30),
-            nullable=False,
-            server_default=sa.text("'disconnected'"),
-        ),
-    )
-    _add_column("agent_channels", sa.Column("access_token", sa.Text(), nullable=True))
-    _add_column("agent_channels", sa.Column("refresh_token", sa.Text(), nullable=True))
-    _add_column("agent_channels", sa.Column("webhook_url", sa.String(length=512), nullable=True))
-
-    bind = op.get_bind()
-    timestamp_type = sa.DateTime(timezone=True) if bind.dialect.name != "sqlite" else sa.DateTime()
-    default_now = sa.text("now()") if bind.dialect.name != "sqlite" else sa.text("CURRENT_TIMESTAMP")
-    _add_column(
-        "agent_channels",
-        sa.Column(
-            "last_sync_at",
-            timestamp_type,
-            nullable=True,
-            server_default=default_now,
-        ),
-    )
-    _add_column("agent_channels", sa.Column("last_error", sa.Text(), nullable=True))
+    op.execute("""
+        ALTER TABLE agent_channels
+        ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'disconnected' NOT NULL;
+    """)
+    op.execute("""
+        ALTER TABLE agent_channels
+        ADD COLUMN IF NOT EXISTS access_token TEXT;
+    """)
+    op.execute("""
+        ALTER TABLE agent_channels
+        ADD COLUMN IF NOT EXISTS refresh_token TEXT;
+    """)
+    op.execute("""
+        ALTER TABLE agent_channels
+        ADD COLUMN IF NOT EXISTS webhook_url VARCHAR(512);
+    """)
+    op.execute("""
+        ALTER TABLE agent_channels
+        ADD COLUMN IF NOT EXISTS last_sync_at TIMESTAMP WITH TIME ZONE;
+    """)
+    op.execute("""
+        ALTER TABLE agent_channels
+        ADD COLUMN IF NOT EXISTS last_error TEXT;
+    """)
 
     # --- agents ---
-    _add_column("agents", sa.Column("preferred_model", sa.String(length=80), nullable=True))
+    op.execute("""
+        ALTER TABLE agents
+        ADD COLUMN IF NOT EXISTS preferred_model VARCHAR(80);
+    """)
 
 
 def downgrade() -> None:
-    if _column_exists("agent_channels", "last_error"):
-        op.drop_column("agent_channels", "last_error")
-    if _column_exists("agent_channels", "last_sync_at"):
-        op.drop_column("agent_channels", "last_sync_at")
-    if _column_exists("agent_channels", "webhook_url"):
-        op.drop_column("agent_channels", "webhook_url")
-    if _column_exists("agent_channels", "refresh_token"):
-        op.drop_column("agent_channels", "refresh_token")
-    if _column_exists("agent_channels", "access_token"):
-        op.drop_column("agent_channels", "access_token")
-    if _column_exists("agent_channels", "status"):
-        op.drop_column("agent_channels", "status")
-    if _column_exists("agents", "preferred_model"):
-        op.drop_column("agents", "preferred_model")
+    op.drop_column("agent_channels", "last_error")
+    op.drop_column("agent_channels", "last_sync_at")
+    op.drop_column("agent_channels", "webhook_url")
+    op.drop_column("agent_channels", "refresh_token")
+    op.drop_column("agent_channels", "access_token")
+    op.drop_column("agent_channels", "status")
+    op.drop_column("agents", "preferred_model")

@@ -1,8 +1,16 @@
 import { apiFetch } from './api';
 import type {
   MarketingCampaignInput,
+  MarketingCampaignList,
   MarketingCampaignResult,
-  MarketingPerformanceSummary,
+  MarketingAudience,
+  MarketingAudienceCreate,
+  MarketingCalendarEvent,
+  MarketingCalendarEventCreate,
+  MarketingDataStatus,
+  MarketingFunnel,
+  MarketingKpi,
+  MarketingOverview,
   MarketingProject,
   MarketingProjectCreate,
   MarketingProjectUpdate,
@@ -47,10 +55,73 @@ export function listProjects(): Promise<MarketingProject[]> {
   return apiFetch<MarketingProject[]>('/marketing/projects');
 }
 
+export function getMarketingOverview(): Promise<MarketingOverview> {
+  return apiFetch<MarketingOverview>('/marketing/overview');
+}
+
+export function getMarketingKpis(): Promise<MarketingKpi[]> {
+  return apiFetch<MarketingKpi[]>('/marketing/kpis');
+}
+
+export function listCampaigns(): Promise<MarketingCampaignList> {
+  return apiFetch<MarketingCampaignList>('/marketing/campaigns');
+}
+
+export function getMarketingFunnel(): Promise<MarketingFunnel> {
+  return apiFetch<MarketingFunnel>('/marketing/funnel');
+}
+
+export function listMarketingResource(resource: 'action-plans' | 'content' | 'automations' | 'reports' | 'insights') {
+  return apiFetch<MarketingDataStatus[]>(`/marketing/${resource}`);
+}
+
+export function listAudiences(): Promise<MarketingAudience[]> {
+  return apiFetch<MarketingAudience[]>('/marketing/audiences');
+}
+
+export function createAudience(data: MarketingAudienceCreate): Promise<MarketingAudience> {
+  return apiFetch<MarketingAudience>('/marketing/audiences', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function listCalendarEvents(): Promise<MarketingCalendarEvent[]> {
+  return apiFetch<MarketingCalendarEvent[]>('/marketing/calendar');
+}
+
+export function createCalendarEvent(data: MarketingCalendarEventCreate): Promise<MarketingCalendarEvent> {
+  return apiFetch<MarketingCalendarEvent>('/marketing/calendar/events', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 export function createProject(data: MarketingProjectCreate): Promise<MarketingProject> {
   return apiFetch<MarketingProject>('/marketing/projects', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export function createPlan(data: MarketingProjectCreate): Promise<MarketingProject> {
+  return apiFetch<MarketingProject>('/marketing/plans', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function createCampaign(data: MarketingProjectCreate): Promise<MarketingProject> {
+  return apiFetch<MarketingProject>('/marketing/campaigns', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function publishCampaign(id: number, channels: string[]) {
+  return apiFetch<{ id: number; status: string; message: string; missing_providers?: string[] }>(`/marketing/campaigns/${id}/publish`, {
+    method: 'POST',
+    body: JSON.stringify({ channels }),
   });
 }
 
@@ -67,17 +138,6 @@ export function updateProject(id: number, data: MarketingProjectUpdate): Promise
 
 export function deleteProject(id: number): Promise<void> {
   return apiFetch<void>(`/marketing/projects/${id}`, { method: 'DELETE' });
-}
-
-export function getMarketingPerformance(): Promise<MarketingPerformanceSummary> {
-  return apiFetch<MarketingPerformanceSummary>('/marketing/performance');
-}
-
-export function quickBriefFromIdea(idea: string, tone: string = 'premium'): Promise<MarketingProjectCreate> {
-  return apiFetch<MarketingProjectCreate>('/marketing/quick-brief', {
-    method: 'POST',
-    body: JSON.stringify({ idea, tone }),
-  });
 }
 
 export function generateCopy(projectId: number, context: string, type: string = 'social_post') {

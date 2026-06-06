@@ -10,7 +10,6 @@ const tabs = [
   { key: 'knowledge', label: 'Conhecimento' },
   { key: 'channels', label: 'Canais' },
   { key: 'test', label: 'Testes' },
-  { key: 'analytics', label: 'Resultados' },
   { key: 'settings', label: 'Configurações' },
 ];
 

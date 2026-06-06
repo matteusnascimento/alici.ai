@@ -2,6 +2,10 @@ from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
 
+from app.core.tls import configure_system_trust_store
+
+configure_system_trust_store()
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,18 +15,23 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import (
     ai,
     account,
+    admin,
     agents,
     auth,
     billing,
     chat,
+    chats,
     dashboard,
     health,
     integrations,
     marketing,
     media,
+    notifications,
+    revenue,
     settings as settings_routes,
     studio,
     subscriptions,
+    tracker,
     usage,
     users,
     webhooks,
@@ -32,6 +41,7 @@ from app.core.config import settings
 from app.core import database as db_core
 from app.services.dev_seed_service import DevSeedService
 from app.services.schema_sync_service import SchemaSyncService
+from app.middleware.rate_limit import RateLimitMiddleware
 
 
 logger = logging.getLogger(__name__)
@@ -90,22 +100,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware)
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
+app.include_router(chats.router, prefix="/api")
 app.include_router(agents.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(marketing.router, prefix="/api")
 app.include_router(media.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
+app.include_router(revenue.router, prefix="/api")
 app.include_router(settings_routes.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
 app.include_router(subscriptions.router, prefix="/api")
 app.include_router(usage.router, prefix="/api")
 app.include_router(integrations.router, prefix="/api")
 app.include_router(studio.router, prefix="/api")
+app.include_router(tracker.router, prefix="/api")
 app.include_router(webhooks.router, prefix="/api")
 app.include_router(health.router)
 

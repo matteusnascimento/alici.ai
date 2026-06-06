@@ -40,7 +40,7 @@ function iconForTool(tool: string): LucideIcon {
 
 export function StudioToolRail({ tools, activeTool, onSelect }: StudioToolRailProps) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(7,13,30,0.96),rgba(5,10,22,0.96))] p-2">
+    <div className="flex items-center gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(12,12,18,0.95),rgba(5,5,7,0.96))] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.32)] backdrop-blur-xl">
       {tools.map((tool) => (
         (() => {
           const Icon = iconForTool(tool);
@@ -53,7 +53,7 @@ export function StudioToolRail({ tools, activeTool, onSelect }: StudioToolRailPr
               onClick={() => onSelect(tool)}
               className={`group flex min-w-[92px] flex-col items-center justify-center rounded-2xl border px-3 py-2.5 text-center transition ${
                 active
-                  ? 'border-cyan-300/45 bg-cyan-300/16 text-cyan-50'
+                  ? 'border-fuchsia-300/45 bg-fuchsia-300/12 text-cyan-50 shadow-[0_0_24px_rgba(192,38,211,0.18)]'
                   : 'border-transparent text-slate-300 hover:border-white/12 hover:bg-white/[0.05] hover:text-white'
               }`}
             >

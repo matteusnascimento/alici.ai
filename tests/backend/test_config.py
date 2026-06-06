@@ -24,8 +24,6 @@ def test_settings_ignores_render_extra_env_and_accepts_aliases(monkeypatch):
     monkeypatch.setenv("R2_SECRET_ACCESS_KEY", "r2-secret")
     monkeypatch.setenv("R2_BUCKET_UPLOADS", "uploads")
     monkeypatch.setenv("R2_PUBLIC_BASE_URL", "https://cdn.example.com")
-    monkeypatch.setenv("META_APP_ID", "meta-app")
-    monkeypatch.setenv("META_GRAPH_API_VERSION", "v20.0")
     monkeypatch.setenv("PGUSER", "unused")
     monkeypatch.setenv("PGPASSWORD", "unused")
     monkeypatch.setenv("UNDECLARED_RENDER_VAR", "ignored")
@@ -39,4 +37,4 @@ def test_settings_ignores_render_extra_env_and_accepts_aliases(monkeypatch):
     assert settings.sqlalchemy_database_url == "postgresql+psycopg://user:pass@example.com:5432/db"
     assert settings.effective_r2_endpoint_url == "https://r2.example.com"
     assert settings.effective_r2_bucket_name == "uploads"
-    assert settings.meta_app_id == "meta-app"
+    assert settings.is_r2_configured() is True

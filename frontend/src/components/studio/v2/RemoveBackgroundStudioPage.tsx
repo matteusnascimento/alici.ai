@@ -10,17 +10,12 @@ import { StudioShell } from './StudioShell';
 export function RemoveBackgroundStudioPage() {
   const studio = useStudioV2({ defaultType: 'background-remove', defaultTitle: 'Remover Fundo' });
   const { pushToast } = useToast();
-  const [assetUrl, setAssetUrl] = useState('');
+  const [assetUrl, setAssetUrl] = useState('https://images.axi.local/sample-product.png');
   const [loading, setLoading] = useState(false);
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   async function handleProcess() {
-    if (!assetUrl.trim()) {
-      setStatus('Informe uma URL publica de imagem ou use o upload no editor antes de processar.');
-      pushToast('Informe uma imagem real para remover o fundo.', 'error');
-      return;
-    }
     setLoading(true);
     try {
       const response = await studioBackgroundRemove({
@@ -54,7 +49,7 @@ export function RemoveBackgroundStudioPage() {
           <div className="grid h-full gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 md:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-black/25 p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Antes</p>
-              <p className="mt-2 break-all text-xs text-slate-400">{assetUrl || 'Nenhuma imagem selecionada.'}</p>
+              <p className="mt-2 text-xs text-slate-400">{assetUrl}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/25 p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">Depois</p>
@@ -73,8 +68,8 @@ export function RemoveBackgroundStudioPage() {
       right={(
         <StudioInspectorPanel title="Parametros de recorte">
           <label className="text-xs text-slate-400">URL da imagem</label>
-          <input value={assetUrl} onChange={(event) => setAssetUrl(event.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" placeholder="https://..." />
-          <p className="text-xs text-slate-400">Use uma URL publica real ou envie a imagem pelo editor unificado. Nao usamos imagens de exemplo falsas.</p>
+          <input value={assetUrl} onChange={(event) => setAssetUrl(event.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <p className="text-xs text-slate-400">Use URL publica ou conecte o upload no fluxo de assets.</p>
         </StudioInspectorPanel>
       )}
     />

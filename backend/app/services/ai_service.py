@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.services.ai.moderation_service import ModerationService
 from app.services.ai.prompt_builder import build_prompt_for_task
 from app.services.ai.provider_service import ProviderService, get_default_chat_model
+from app.services.ai.providers.base import ProviderError
 from app.services.ai.request_logger import log_ai_request
 from app.services.ai.response_formatter import format_ai_response
 
@@ -39,7 +40,7 @@ class AIConfigurationError(AIServiceError):
     def __init__(self, message: str) -> None:
         super().__init__(
             message,
-            user_message="A integracao de IA nao esta configurada.",
+            user_message="Provider de IA não configurado.",
             status_code=503,
             code="ai_not_configured",
         )
@@ -56,17 +57,13 @@ class AIService:
         return self._provider_service.is_configured()
 
     def _ensure_provider(self) -> None:
-        if self.provider != "openai":
-            raise AIConfigurationError(f"Unsupported AI provider: {self.provider}")
-        if not settings.effective_openai_api_key:
-            raise AIConfigurationError("OPENAI_API_KEY is not configured")
         if not self._provider_service.is_configured():
             raise AIConfigurationError("AI provider is not configured")
 
     def _model_for(self, task_name: str, model: str | None = None) -> str:
         if model:
             return model
-        return settings.openai_model if task_name == "chat" else self.default_model
+        return settings.effective_openai_chat_model if task_name == "chat" and self.provider == "openai" else self.default_model
 
     @staticmethod
     def _task_from_function_name(function_name: Any | None) -> str:
@@ -88,6 +85,13 @@ class AIService:
     def _wrap_error(self, exc: Exception) -> AIServiceError:
         if isinstance(exc, AIServiceError):
             return exc
+        if isinstance(exc, ProviderError):
+            return AIServiceError(
+                str(exc),
+                user_message="Nao foi possivel executar a tarefa com IA no momento.",
+                status_code=exc.status_code,
+                code=exc.code,
+            )
         message = str(exc)
         if "OPENAI_API_KEY" in message:
             return AIConfigurationError(message)
@@ -235,7 +239,12 @@ class AIService:
                 model=self._model_for(task_name, model),
             )
             if not (raw.get("content") or "").strip():
-                raw["content"] = "No momento não foi possível gerar resposta completa. Tente novamente."
+                raise AIServiceError(
+                    "AI provider returned empty content",
+                    user_message="Nao foi possivel executar a tarefa com IA no momento.",
+                    status_code=502,
+                    code="empty_response",
+                )
             return raw
         except Exception as exc:
             raise self._wrap_error(exc) from exc
@@ -261,7 +270,12 @@ class AIService:
         )
         content = str(response.get("content") or "").strip()
         if not content:
-            return "No momento não foi possível gerar conteúdo. Tente novamente em instantes."
+            raise AIServiceError(
+                "AI provider returned empty content",
+                user_message="Nao foi possivel executar a tarefa com IA no momento.",
+                status_code=502,
+                code="empty_response",
+            )
         return content
 
     def generate_structured_output(

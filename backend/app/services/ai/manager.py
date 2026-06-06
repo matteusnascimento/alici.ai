@@ -1,4 +1,4 @@
-"""AI Manager - Centralized provider orchestration and fallback handling."""
+"""Centralized AI provider orchestration and fallback handling."""
 
 from __future__ import annotations
 
@@ -6,98 +6,95 @@ import logging
 from typing import Any
 
 from app.core.config import settings
-from app.services.ai.providers.groq_provider import GroqProvider
-from app.services.ai.providers.gemini_provider import GeminiProvider
-from app.services.ai.providers.ollama_provider import OllamaProvider
-from app.services.ai.providers.openai_provider import OpenAIProvider
+from app.services.ai import providers
+from app.services.ai.providers.base import ProviderError
 
 logger = logging.getLogger(__name__)
 
+FALLBACK_ORDER = ["groq", "gemini", "ollama", "openai"]
+
 
 class AIManager:
-    """Manages AI provider selection, fallback, and standardized responses."""
-
     def __init__(self, provider: str | None = None):
         self.preferred_provider = (provider or settings.default_ai_provider or "groq").strip().lower()
+        self.providers = self._load_providers()
         self.fallback_chain = self._get_fallback_chain()
-        self.providers = {
-            "groq": GroqProvider(),
-            "gemini": GeminiProvider(),
-            "ollama": OllamaProvider(),
-            "openai": OpenAIProvider(),
+
+    def _load_providers(self) -> dict[str, Any]:
+        loaded: dict[str, Any] = {}
+        registry = {
+            "groq": "GroqProvider",
+            "gemini": "GeminiProvider",
+            "ollama": "OllamaProvider",
+            "openai": "OpenAIProvider",
         }
+        for provider_name in FALLBACK_ORDER:
+            class_name = registry[provider_name]
+            provider_class = getattr(providers, class_name, None)
+            if provider_class is None:
+                logger.warning("ai.provider.missing provider=%s", provider_name)
+                continue
+            loaded[provider_name] = provider_class()
+        return loaded
 
     def _get_fallback_chain(self) -> list[str]:
-        """Return ordered list of providers to try (preferred first)."""
-        all_providers = ["groq", "gemini", "ollama", "openai"]
-        if self.preferred_provider in all_providers:
-            all_providers.remove(self.preferred_provider)
-            return [self.preferred_provider] + all_providers
-        return all_providers
+        order = list(FALLBACK_ORDER)
+        if self.preferred_provider in order:
+            order.remove(self.preferred_provider)
+            return [self.preferred_provider] + order
+        return order
 
-    def get_active_provider(self) -> str:
-        """Return first configured provider in fallback chain."""
-        for provider_name in self.fallback_chain:
-            provider = self.providers.get(provider_name)
-            if provider and provider.is_configured():
-                logger.debug(f"Using AI provider: {provider_name}")
-                return provider_name
-        return None
+    def configured_providers(self) -> list[str]:
+        return [name for name in self.fallback_chain if name in self.providers and self.providers[name].is_configured()]
 
-    def get_provider_instance(self, provider_name: str | None = None):
-        """Get provider instance, using preferred or first available."""
-        name = provider_name or self.get_active_provider()
-        if not name:
-            raise RuntimeError("No AI provider is configured")
-        provider = self.providers.get(name)
-        if not provider:
-            raise RuntimeError(f"Unknown AI provider: {name}")
-        return provider
+    def get_active_provider(self) -> str | None:
+        configured = self.configured_providers()
+        return configured[0] if configured else None
 
-    async def chat(
+    def chat(
         self,
-        prompt: str,
-        system_prompt: str = "",
+        *,
+        messages: list[dict[str, Any]],
         temperature: float = 0.3,
         max_tokens: int | None = None,
+        model: str | None = None,
         provider: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Send chat message using best available provider.
+        provider_names = [provider] if provider else self.fallback_chain
+        errors: list[ProviderError] = []
 
-        Returns:
-            Standard response with keys: content, model, provider, latency_ms, usage
-        """
-        provider_instance = self.get_provider_instance(provider)
-        result = await provider_instance.chat(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        result["provider"] = provider_instance.__class__.__name__.replace("Provider", "").lower()
-        return result
+        for provider_name in provider_names:
+            if not provider_name:
+                continue
+            instance = self.providers.get(provider_name)
+            if not instance or not instance.is_configured():
+                continue
+            try:
+                provider_model = model
+                if provider_name != "openai" and model and model.startswith(("gpt-", "text-", "o")):
+                    provider_model = None
+                result = instance.chat(messages=messages, model=provider_model, temperature=temperature, max_tokens=max_tokens)
+                result["provider"] = provider_name
+                result["fallback_chain"] = self.fallback_chain
+                return result
+            except ProviderError as exc:
+                errors.append(exc)
+                logger.warning(
+                    "ai.provider.failed provider=%s code=%s status_code=%s",
+                    exc.provider,
+                    exc.code,
+                    exc.status_code,
+                )
 
-    async def summarize(
-        self,
-        text: str,
-        max_length: int | None = None,
-        provider: str | None = None,
-    ) -> dict[str, Any]:
-        """Summarize text using best available provider."""
-        provider_instance = self.get_provider_instance(provider)
-        result = await provider_instance.summarize(text=text, max_length=max_length)
-        result["provider"] = provider_instance.__class__.__name__.replace("Provider", "").lower()
-        return result
+        if errors:
+            last = errors[-1]
+            raise ProviderError(str(last), provider=last.provider, status_code=last.status_code, code=last.code)
+        raise ProviderError("No AI provider is configured", provider="none", status_code=503, code="not_configured")
 
-    async def generate_code(
-        self,
-        prompt: str,
-        language: str = "python",
-        provider: str | None = None,
-    ) -> dict[str, Any]:
-        """Generate code using best available provider."""
-        provider_instance = self.get_provider_instance(provider)
-        result = await provider_instance.generate_code(prompt=prompt, language=language)
-        result["provider"] = provider_instance.__class__.__name__.replace("Provider", "").lower()
-        return result
+    def summarize(self, text: str, max_length: int | None = None, provider: str | None = None) -> dict[str, Any]:
+        prompt = f"Resuma o texto abaixo em ate {max_length or 800} caracteres:\n\n{text}"
+        return self.chat(messages=[{"role": "user", "content": prompt}], provider=provider)
+
+    def generate_code(self, prompt: str, language: str = "python", provider: str | None = None) -> dict[str, Any]:
+        messages = [{"role": "user", "content": f"Gere codigo {language} para: {prompt}"}]
+        return self.chat(messages=messages, provider=provider)

@@ -1,4 +1,8 @@
-"""Legacy local response helpers for Alici identity and small deterministic intents."""
+"""
+resposta.py
+Respostas locais, comportamentais e identidade da Alici
+Fallback via OpenAI quando local não responde
+"""
 
 from datetime import datetime
 import random
@@ -112,22 +116,22 @@ def responder_local(pergunta: str) -> str | None:
 def responder(pergunta: str) -> str:
     """
     Primeiro tenta responder localmente.
-    Se nao houver resposta local, usa a camada central de IA.
+    Se não houver resposta, envia para OpenAI.
     """
 
     resposta = responder_local(pergunta)
     if resposta:
         return resposta
 
-    # Import dinamico para evitar import circular.
+    # 🔥 Import dinâmico para evitar import circular
     try:
         from engine import responder_via_api, client
-    except Exception as exc:
-        raise RuntimeError("Camada central de IA indisponivel") from exc
+    except Exception:
+        return "Sistema temporariamente indisponível."
 
     if client:
         resposta_api = responder_via_api(pergunta)
         if resposta_api:
             return resposta_api
 
-    raise RuntimeError("Camada central de IA nao retornou resposta valida")
+    return "Desculpe, não consegui entender sua pergunta. Pode reformular?"

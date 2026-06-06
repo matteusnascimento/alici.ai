@@ -1,26 +1,24 @@
-"""Persistent upload staging for media jobs.
-
-Web and worker processes cannot rely on the same local filesystem in
-production. Uploaded media is therefore staged in Cloudflare R2 and referenced
-by URL/key in generation_jobs metadata.
-"""
+"""Safe local staging for uploaded media before background processing."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
 
 from alici_api.config import get_settings
 from alici_api.responses import Codes
-from alici_api.services.media_storage import MediaStorageError, R2MediaStorage
+
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+UPLOADS_DIR = BASE_DIR / "generated" / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass(frozen=True)
 class SavedUpload:
     path: str
-    url: str
-    key: str
     filename: str
     content_type: str
     size_bytes: int
@@ -54,65 +52,40 @@ async def save_upload_for_job(
             detail={"code": Codes.BAD_REQUEST, "message": "Tipo de arquivo nao suportado"},
         )
 
-    storage = R2MediaStorage()
-    if settings.media_storage_required and not storage.is_configured():
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": Codes.SERVICE_UNAVAILABLE,
-                "message": "Storage persistente de midia nao configurado. Configure Cloudflare R2.",
-                "missing": storage.missing_config(),
-                "charged": False,
-            },
-        )
-
+    extension = _extension_for_content_type(content_type)
+    safe_name = f"{job_id}{extension}"
+    target_path = UPLOADS_DIR / safe_name
     total = 0
-    chunks: list[bytes] = []
-    while True:
-        chunk = await upload.read(1024 * 1024)
-        if not chunk:
-            break
-        total += len(chunk)
-        if total > limit:
-            raise HTTPException(
-                status_code=413,
-                detail={
-                    "code": Codes.BAD_REQUEST,
-                    "message": f"Arquivo excede o limite de {limit} bytes",
-                    "charged": False,
-                },
-            )
-        chunks.append(chunk)
+
+    with target_path.open("wb") as output:
+        while True:
+            chunk = await upload.read(1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > limit:
+                try:
+                    target_path.unlink(missing_ok=True)
+                finally:
+                    raise HTTPException(
+                        status_code=413,
+                        detail={
+                            "code": Codes.BAD_REQUEST,
+                            "message": f"Arquivo excede o limite de {limit} bytes",
+                        },
+                    )
+            output.write(chunk)
 
     if total == 0:
+        target_path.unlink(missing_ok=True)
         raise HTTPException(
             status_code=400,
-            detail={"code": Codes.BAD_REQUEST, "message": "Arquivo vazio", "charged": False},
+            detail={"code": Codes.BAD_REQUEST, "message": "Arquivo vazio"},
         )
-
-    filename = upload.filename or f"{job_id}{_extension_for_content_type(content_type)}"
-    try:
-        stored = storage.upload_bytes(
-            content=b"".join(chunks),
-            filename=filename,
-            content_type=content_type,
-            folder=f"media/uploads/{job_id}",
-        )
-    except MediaStorageError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": Codes.SERVICE_UNAVAILABLE,
-                "message": str(exc),
-                "charged": False,
-            },
-        ) from exc
 
     return SavedUpload(
-        path=stored.url,
-        url=stored.url,
-        key=stored.key,
-        filename=filename,
+        path=str(target_path),
+        filename=upload.filename or safe_name,
         content_type=content_type,
-        size_bytes=stored.size_bytes,
+        size_bytes=total,
     )

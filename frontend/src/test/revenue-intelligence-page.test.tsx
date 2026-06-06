@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 vi.mock('../services/revenue.service', () => ({
@@ -49,19 +50,36 @@ vi.mock('../services/revenue.service', () => ({
     }),
 }));
 
+vi.mock('../hooks/useChat', () => ({
+  useChat: () => ({
+    messages: [],
+    loading: false,
+    sending: false,
+    error: null,
+    sendMessage: vi.fn(),
+  }),
+}));
+
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
 
 describe('RevenueIntelligencePage', () => {
   it('renderiza blocos principais de receita e conversao', async () => {
-    render(<RevenueIntelligencePage />);
+    render(
+      <MemoryRouter>
+        <RevenueIntelligencePage />
+      </MemoryRouter>,
+    );
 
-    expect(await screen.findByRole('heading', { name: /Financeiro e Conversao/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Reservas fechadas/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Remarketing/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Funil comercial/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Receita por canal/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Receita por agente/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Receita historica/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /7 dias/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Revenue$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Receita$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Origem das reservas/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Business Pulse/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Mapa de Origem e Demanda/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Control Room/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /AXI Assistant/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Plano de Acao/i })).toBeInTheDocument();
+    expect(screen.getByText(/Receita no periodo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Reservas/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Business Pulse/i })).toBeInTheDocument();
   });
 });

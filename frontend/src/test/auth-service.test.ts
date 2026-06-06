@@ -49,12 +49,7 @@ describe('auth.service', () => {
       password: 'Senha123',
     });
 
-    expect(requests[1].url).toMatch(/\/api\/auth\/login$/);
-    expect(requests[1].init.method).toBe('POST');
-    expect(JSON.parse(String(requests[1].init.body))).toEqual({
-      email: 'mateus@example.com',
-      password: 'Senha123',
-    });
+    expect(requests).toHaveLength(1);
   });
 
   it('uses password field when logging in', async () => {

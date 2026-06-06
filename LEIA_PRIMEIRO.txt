@@ -1,0 +1,74 @@
+📌 SOLUÇÃO RÁPIDA: Chat não responde
+
+=================================================================
+  ⚠️ PROBLEMA MAIS COMUM: OPENAI_API_KEY não configurada
+=================================================================
+
+PASSOS PARA RESOLVER:
+
+1️⃣ Edite o arquivo backend/.env:
+   
+   OPENAI_API_KEY=sk-seu-token-real
+   
+   (Obtenha em: https://platform.openai.com/account/api-keys)
+
+2️⃣ Reinicie o servidor:
+   
+   # Feche o servidor (Ctrl+C)
+   # Inicie novamente:
+   python -m uvicorn app.main:app --reload --port 8000
+
+3️⃣ Teste novamente no chat:
+   
+   "Olá, como você está?" → A IA deve responder
+
+=================================================================
+  SE NÃO FUNCIONAR:
+=================================================================
+
+Execute o script de debug:
+
+   python debug_chat.py
+
+Ele vai mostrar exatamente qual é o problema:
+   ✅ Se OPENAI_API_KEY está configurada
+   ✅ Se o serviço consegue se conectar
+   ✅ Se a API retorna resposta
+
+Se o debug passar, execute teste manual:
+
+   python test_chat_manual.py
+
+=================================================================
+  PROBLEMAS ESPECÍFICOS:
+=================================================================
+
+❌ "401 Invalid API Key"
+   → Chave está errada ou expirou
+   → Gere nova em https://platform.openai.com/account/api-keys
+
+❌ "429 Rate Limit"
+   → Você enviou muitas requisições
+   → Aguarde 1 minuto e tente novamente
+
+❌ "Timeout"
+   → Aumentar timeout em .env:
+      OPENAI_TIMEOUT_SECONDS=60
+
+❌ "No module named openai"
+   → Instale SDK:
+      pip install openai>=1.46.0
+
+=================================================================
+  VER GUIA COMPLETO:
+=================================================================
+
+Abra: TROUBLESHOOTING_CHAT.md
+
+Tem:
+  • Checklist de configuração
+  • Testes passo a passo
+  • Soluções para cada erro
+  • Como coletar logs para suporte
+
+=================================================================

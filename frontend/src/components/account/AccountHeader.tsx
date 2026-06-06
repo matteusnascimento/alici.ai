@@ -1,15 +1,13 @@
 import type { AccountProfile } from '../../types/account';
-import type { CurrentSubscription } from '../../types/billing';
 import { buildInitialsSafe } from '../../utils/dataHelpers';
 
 interface AccountHeaderProps {
   title: string;
   subtitle: string;
   profile?: AccountProfile | null;
-  subscription?: CurrentSubscription | null;
 }
 
-export function AccountHeader({ title, subtitle, profile, subscription }: AccountHeaderProps) {
+export function AccountHeader({ title, subtitle, profile }: AccountHeaderProps) {
   const initials = buildInitialsSafe(profile?.name);
   const lastLogin = profile?.last_login_at ? new Date(profile.last_login_at).toLocaleString('pt-BR') : 'Sem acesso recente';
 
@@ -39,15 +37,6 @@ export function AccountHeader({ title, subtitle, profile, subscription }: Accoun
                 {[profile?.job_title, profile?.company].filter(Boolean).join(' · ') || 'Identidade profissional em configuração'}
               </p>
             </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.24em] text-slate-400">Plano atual</p>
-              <p className="text-sm font-semibold text-white">{subscription?.plan_name ?? profile?.plan ?? 'Free'}</p>
-            </div>
-            <span className="rounded-full border border-cyan/40 bg-cyan/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan">
-              {subscription?.status ?? 'active'}
-            </span>
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">

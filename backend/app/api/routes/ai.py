@@ -50,11 +50,11 @@ def _download_public_image(image_url: str) -> bytes:
 
 @router.post("/test", response_model=IntegrationTestResponse)
 def test_ai(_: User = Depends(get_current_user)) -> IntegrationTestResponse:
-    service = AIService(provider="openai")
+    service = AIService()
     try:
         result = service.healthcheck()
         return IntegrationTestResponse(
-            provider="openai",
+            provider=service.provider,
             status=result.get("status", "error"),
             message=result.get("message", "Falha ao validar IA."),
             model=result.get("model"),
@@ -65,7 +65,7 @@ def test_ai(_: User = Depends(get_current_user)) -> IntegrationTestResponse:
         )
     except AIConfigurationError as exc:
         return IntegrationTestResponse(
-            provider="openai",
+            provider=service.provider,
             status="warning",
             message=exc.user_message,
             model=None,
@@ -76,7 +76,7 @@ def test_ai(_: User = Depends(get_current_user)) -> IntegrationTestResponse:
         )
     except AIServiceError as exc:
         return IntegrationTestResponse(
-            provider="openai",
+            provider=service.provider,
             status="error",
             message=exc.user_message,
             model=None,
@@ -93,7 +93,7 @@ def _raise_ai_http_error(exc: AIServiceError) -> None:
 
 @router.post("/playground", response_model=AIStandardResponse)
 def prompt_playground(payload: PromptPlaygroundRequest, current_user: User = Depends(get_current_user)) -> AIStandardResponse:
-    service = AIService(provider="openai")
+    service = AIService()
     context = payload.user_prompt
     if payload.history:
         history_text = "\n".join(f"{m.get('role')}: {m.get('content')}" for m in payload.history[-8:])
@@ -114,7 +114,7 @@ def prompt_playground(payload: PromptPlaygroundRequest, current_user: User = Dep
 
 @router.post("/agent-definition", response_model=AIStandardResponse)
 def generate_agent_definition(payload: AgentBuilderRequest, current_user: User = Depends(get_current_user)) -> AIStandardResponse:
-    service = AIService(provider="openai")
+    service = AIService()
     schema = {
         "type": "object",
         "properties": {
@@ -154,7 +154,7 @@ def generate_agent_definition(payload: AgentBuilderRequest, current_user: User =
 
 @router.post("/document-analysis", response_model=AIStandardResponse)
 def document_analysis(payload: DocumentAnalysisRequest, current_user: User = Depends(get_current_user)) -> AIStandardResponse:
-    service = AIService(provider="openai")
+    service = AIService()
     schema = {
         "type": "object",
         "properties": {
@@ -182,7 +182,7 @@ def document_analysis(payload: DocumentAnalysisRequest, current_user: User = Dep
 
 @router.post("/analytics-insights", response_model=AIStandardResponse)
 def analytics_insights(payload: AnalyticsInsightsRequest, current_user: User = Depends(get_current_user)) -> AIStandardResponse:
-    service = AIService(provider="openai")
+    service = AIService()
     schema = {
         "type": "object",
         "properties": {
@@ -209,7 +209,7 @@ def analytics_insights(payload: AnalyticsInsightsRequest, current_user: User = D
 
 @router.post("/platform-assistant", response_model=AIStandardResponse)
 def platform_assistant(payload: TaskTextRequest, current_user: User = Depends(get_current_user)) -> AIStandardResponse:
-    service = AIService(provider="openai")
+    service = AIService()
     try:
         result = service.run_task(
             task_name="platform_assistant",
@@ -224,7 +224,7 @@ def platform_assistant(payload: TaskTextRequest, current_user: User = Depends(ge
 
 @router.post("/workflow-builder", response_model=AIStandardResponse)
 def workflow_builder(payload: WorkflowBuilderRequest, current_user: User = Depends(get_current_user)) -> AIStandardResponse:
-    service = AIService(provider="openai")
+    service = AIService()
     schema = {
         "type": "object",
         "properties": {
@@ -254,7 +254,7 @@ def workflow_builder(payload: WorkflowBuilderRequest, current_user: User = Depen
 def image_analysis(payload: ImageAnalysisRequest, current_user: User = Depends(get_current_user)) -> AIStandardResponse:
     if not payload.image_url:
         raise HTTPException(status_code=422, detail="image_url é obrigatório no momento")
-    service = AIService(provider="openai")
+    service = AIService()
     try:
         image_bytes = _download_public_image(payload.image_url)
         result = service.analyze_image(

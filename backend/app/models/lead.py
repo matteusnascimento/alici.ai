@@ -14,6 +14,7 @@ class Lead(Base):
     email: Mapped[str] = mapped_column(String(255), index=True)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     company: Mapped[str | None] = mapped_column(String(140), nullable=True)
+    lead_identity_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
     lead_source: Mapped[str] = mapped_column(String(50), default="direct")
     stage: Mapped[str] = mapped_column(String(50), default="lead")  # lead, qualified, proposal, negotiation, closed
     value: Mapped[float | None] = mapped_column(Float(), nullable=True)

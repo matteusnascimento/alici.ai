@@ -16,8 +16,91 @@ export interface MarketingProject {
   objective: string;
   offer: string;
   tone: string;
+  channels?: string | null;
+  budget?: number | null;
+  creative_project_id?: string | null;
+  status?: string;
+  published_at?: string | null;
+  last_publish_error?: string | null;
   notes?: string | null;
   created_at: string;
+}
+
+export interface MarketingKpi {
+  key: string;
+  label: string;
+  value?: number | null;
+  variation?: number | null;
+  status: string;
+  message: string;
+}
+
+export interface MarketingOverview {
+  status: string;
+  projects_count: number;
+  kpis: MarketingKpi[];
+  message: string;
+}
+
+export interface MarketingDataStatus {
+  status: string;
+  message: string;
+}
+
+export interface MarketingAudience {
+  id: number;
+  name: string;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  ticket?: string | null;
+  source?: string | null;
+  reservations?: string | null;
+  behavior?: string | null;
+  created_at: string;
+}
+
+export type MarketingAudienceCreate = Omit<MarketingAudience, 'id' | 'created_at'>;
+
+export interface MarketingCalendarEvent {
+  id: number;
+  title: string;
+  date: string;
+  channel?: string | null;
+  status: string;
+  notes?: string | null;
+  created_at: string;
+}
+
+export type MarketingCalendarEventCreate = Omit<MarketingCalendarEvent, 'id' | 'created_at'>;
+
+export interface MarketingCampaignListItem {
+  id: number;
+  name: string;
+  objective: string;
+  audience: string;
+  status: string;
+  source: string;
+  channels?: string | null;
+  budget?: number | null;
+  last_publish_error?: string | null;
+}
+
+export interface MarketingCampaignList {
+  status: string;
+  campaigns: MarketingCampaignListItem[];
+  message: string;
+}
+
+export interface MarketingFunnel {
+  status: string;
+  stages: Array<{
+    stage: string;
+    count?: number | null;
+    conversion_rate?: number | null;
+    amount?: number | null;
+  }>;
+  message: string;
 }
 
 export interface MarketingProjectCreate {
@@ -26,6 +109,10 @@ export interface MarketingProjectCreate {
   objective: string;
   offer: string;
   tone?: string;
+  channels?: string | null;
+  budget?: number | null;
+  creative_project_id?: string | null;
+  status?: string;
   notes?: string;
 }
 
@@ -35,27 +122,11 @@ export interface MarketingProjectUpdate {
   objective?: string;
   offer?: string;
   tone?: string;
+  channels?: string | null;
+  budget?: number | null;
+  creative_project_id?: string | null;
+  status?: string;
   notes?: string;
-}
-
-export interface MarketingPerformanceSummary {
-  views: number;
-  clicks: number;
-  reservations: number;
-  open_opportunities: number;
-  pipeline_value_cents: number;
-  won_value_cents: number;
-  ads_cost_micros?: number;
-  leads: number;
-  ads_connected: boolean;
-  message?: string | null;
-  channel_counts: Record<string, number>;
-  connected_sources: Array<{
-    provider: string;
-    name?: string | null;
-    enabled: boolean;
-    status?: string | null;
-  }>;
 }
 
 export interface MarketingTemplateProfile {

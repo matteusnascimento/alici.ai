@@ -28,7 +28,6 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 load_dotenv(BASE_DIR / ".env")
-load_dotenv(BASE_DIR / "backend" / ".env", override=False)
 
 from alici_api.app import app  # noqa: E402  (ASGI export for uvicorn/gunicorn)
 from alici_api.config import get_settings  # noqa: E402

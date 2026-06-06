@@ -38,6 +38,18 @@ export interface AccountPreferences {
   theme_mode: string;
   accent_color: string;
   haptic_feedback: boolean;
+  interface_animations: boolean;
+  advanced_visual_effects: boolean;
+  compact_menus: boolean;
+  contextual_tips: boolean;
+  confirm_critical_actions: boolean;
+  open_last_module: boolean;
+  autosave_filters: boolean;
+  keyboard_shortcuts: boolean;
+  show_quick_metrics: boolean;
+  assistant_mode: string;
+  assistant_response_detail: string;
+  assistant_tone: string;
   background_conversation: boolean;
   autocomplete: boolean;
   trending: boolean;

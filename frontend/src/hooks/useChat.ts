@@ -49,12 +49,13 @@ export function useChat() {
     void loadMessages();
   }, [selectedConversationId]);
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, context?: string) {
     setSending(true);
     try {
       const response = await sendChatMessage({
         text,
         conversation_id: selectedConversationId ?? undefined,
+        context,
       });
       const assistantText = response.assistant_message?.text?.trim() || '';
       if (!assistantText) {

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ALICI - Jobs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <main class="mx-auto min-h-screen w-full max-w-5xl px-4 py-4">
+    <header class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/80 px-4 py-3">
+      <div>
+        <h1 class="text-lg font-semibold">Jobs</h1>
+        <p class="text-sm text-slate-400">Geracoes em andamento e historico recente</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/chat" class="rounded-md bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700">Chat</a>
+        <button id="refreshBtn" class="rounded-md bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400">Atualizar</button>
+      </div>
+    </header>
+
+    <section id="jobs" class="space-y-3"></section>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('access_token');
+    if (!token) window.location.href = '/';
+    const jobsEl = document.getElementById('jobs');
+
+    function badge(status) {
+      const colors = {
+        queued: 'bg-slate-700 text-slate-100',
+        processing: 'bg-cyan-500/20 text-cyan-200',
+        completed: 'bg-emerald-500/20 text-emerald-200',
+        failed: 'bg-rose-500/20 text-rose-200',
+        dead_letter: 'bg-rose-700/30 text-rose-100'
+      };
+      return colors[status] || colors.queued;
+    }
+
+    async function loadJobs() {
+      try {
+        const res = await fetch('/jobs/list', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) throw new Error('Falha ao carregar jobs');
+        const data = await res.json();
+        const jobs = data.jobs || [];
+        jobsEl.innerHTML = jobs.length ? '' : '<p class="rounded-lg border border-slate-800 bg-slate-900 p-4 text-slate-400">Nenhum job encontrado.</p>';
+        for (const job of jobs) {
+          const item = document.createElement('article');
+          item.className = 'rounded-lg border border-slate-800 bg-slate-900 p-4';
+          item.innerHTML = `
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="font-mono text-xs text-slate-400">${job.id}</p>
+                <h2 class="mt-1 text-base font-semibold">${job.job_type}</h2>
+              </div>
+              <span class="rounded-md px-2 py-1 text-xs ${badge(job.status)}">${job.status}</span>
+            </div>
+            <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
+              <div class="h-full bg-cyan-400" style="width:${job.progress || 0}%"></div>
+            </div>
+            <div class="mt-3 grid gap-2 text-sm text-slate-300 sm:grid-cols-3">
+              <span>Progresso: ${job.progress || 0}%</span>
+              <span>Custo: ${job.cost || 0}</span>
+              <span>Tentativas: ${job.attempts || 0}/${job.max_retries || 0}</span>
+            </div>
+            ${job.result_url ? `<a class="mt-3 inline-block text-cyan-300 hover:text-cyan-200" href="${job.result_url}" target="_blank">Abrir resultado</a>` : ''}
+            ${job.error_message ? `<p class="mt-3 text-sm text-rose-300">${job.error_message}</p>` : ''}
+          `;
+          jobsEl.appendChild(item);
+        }
+      } catch (err) {
+        jobsEl.innerHTML = `<p class="rounded-lg border border-rose-900 bg-rose-950/40 p-4 text-rose-200">${err.message}</p>`;
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadJobs);
+    loadJobs();
+    setInterval(loadJobs, 5000);
+  </script>
+</body>
+</html>

@@ -2,11 +2,10 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
-import { GoogleOAuthCallback } from '../components/auth/GoogleOAuthCallback';
 import { LandingPage } from '../components/landing/LandingPage';
-import { ChatPanel } from '../components/platform/ChatPanel';
-import { DashboardPanel } from '../components/platform/DashboardPanel';
 import { PlatformShell } from '../components/platform/PlatformShell';
+import { HomePage } from '../components/platform/HomePage';
+import { AdminPage } from '../components/admin/AdminPage';
 import { AccountShell } from '../components/account/AccountShell';
 import { AccountAppsPage } from '../components/account/pages/AccountAppsPage';
 import { AccountAppsActionsPage } from '../components/account/pages/AccountAppsActionsPage';
@@ -14,7 +13,6 @@ import { AccountAppsStatusPage } from '../components/account/pages/AccountAppsSt
 import { AccountChatsPage } from '../components/account/pages/AccountChatsPage';
 import { AccountDataPage } from '../components/account/pages/AccountDataPage';
 import { AccountHelpPage } from '../components/account/pages/AccountHelpPage';
-import { AccountHomePage } from '../components/account/pages/AccountHomePage';
 import { AccountLegalPage } from '../components/account/pages/AccountLegalPage';
 import { AccountNotificationsPage } from '../components/account/pages/AccountNotificationsPage';
 import { AccountPersonalizationPage } from '../components/account/pages/AccountPersonalizationPage';
@@ -35,12 +33,12 @@ import { ProjectsStudioPage } from '../components/studio/v2/ProjectsStudioPage';
 import { RemoveBackgroundStudioPage } from '../components/studio/v2/RemoveBackgroundStudioPage';
 import { StoryStudioPage } from '../components/studio/v2/StoryStudioPage';
 import { StudioHomePage } from '../components/studio/v2/StudioHomePage';
+import { StudioImportPage } from '../components/studio/v2/StudioImportPage';
 import { TemplatesStudioPage } from '../components/studio/v2/TemplatesStudioPage';
-import { UnifiedStudioEditorPage } from '../components/studio/v2/UnifiedStudioEditorPage';
+import { UnifiedEditorPage } from '../components/studio/v2/UnifiedEditorPage';
 import { VideoEditorStudioPage } from '../components/studio/v2/VideoEditorStudioPage';
 import { useAuth } from '../hooks/useAuth';
 import { AgentActionsPage } from '../components/agents/v2/AgentActionsPage';
-import { AgentAnalyticsPage } from '../components/agents/v2/AgentAnalyticsPage';
 import { AgentChannelsPage } from '../components/agents/v2/AgentChannelsPage';
 import { AgentCreatePage } from '../components/agents/v2/AgentCreatePage';
 import { AgentKnowledgePage } from '../components/agents/v2/AgentKnowledgePage';
@@ -56,37 +54,45 @@ import { AgentWorkspaceShell } from '../components/agents/v2/AgentWorkspaceShell
 import { MarketingShell } from '../components/marketing/MarketingShell';
 import { MarketingProjectsPage } from '../components/marketing/MarketingProjectsPage';
 import { MarketingProjectWorkspace } from '../components/marketing/MarketingProjectWorkspace';
+import {
+  MarketingAudiencesPage,
+  MarketingAutomationsPage,
+  MarketingCalendarPage,
+  MarketingCampaignsPage,
+  MarketingCreativesPage,
+  MarketingInsightsPage,
+  MarketingPlanningPage,
+  MarketingReportsPage,
+} from '../components/marketing/MarketingOperationsPages';
 import { IntegrationsPage } from '../components/integrations/IntegrationsPage';
+import { ChatsPage } from '../components/chats/ChatsPage';
+import { AxiAssistantPage } from '../components/platform/AxiAssistantPage';
 import { RevenueIntelligencePage } from '../components/revenue/RevenueIntelligencePage';
-import { BusinessModulePage } from '../components/modules/BusinessModulePage';
 
 import { ProtectedRoute } from './ProtectedRoute';
+
+function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (user?.role !== 'owner' && user?.role !== 'admin') {
+    return (
+      <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 p-6 text-rose-100">
+        Você não possui permissão para acessar esta área.
+      </div>
+    );
+  }
+  return children;
+}
 
 function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   if (isAuthenticated) {
-    return <Navigate replace to="/app/dashboard" />;
+    return <Navigate replace to="/app" />;
   }
   return (
-    <main className="grid min-h-screen bg-ink px-6 py-10 text-[var(--text-primary)] lg:grid-cols-[minmax(0,1fr)_520px] lg:gap-8">
-      <section className="hidden min-h-[calc(100vh-5rem)] rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan/20 via-white/[0.04] to-black/20 p-10 shadow-soft lg:flex lg:flex-col lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.35em] text-cyan">AXI Platform</p>
-          <h2 className="mt-6 max-w-xl font-display text-5xl font-bold leading-tight">Entre, conecte seus canais e deixe a IA trabalhar com seus dados reais.</h2>
-          <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
-            Login simples com email ou Google, CRM, atendimento, Studio e automações em um único cockpit.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          {['Chat omnichannel', 'AXI Studio', 'CRM com IA'].map((item) => (
-            <div key={item} className="rounded-2xl border border-white/10 bg-black/20 p-4 font-semibold text-slate-200">{item}</div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto flex w-full max-w-lg flex-col justify-center rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-soft backdrop-blur lg:mx-0">
+    <main className="flex min-h-screen items-center justify-center bg-ink px-6 py-12 text-[var(--text-primary)]">
+      <section className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-soft backdrop-blur">
         <p className="text-sm uppercase tracking-[0.3em] text-cyan">AXI Platform</p>
-        <h1 className="mt-4 font-display text-4xl font-bold">{title}</h1>
+        <h1 className="mt-4 font-display text-4xl">{title}</h1>
         <p className="mt-3 text-slate-300">{subtitle}</p>
         <div className="mt-8">{children}</div>
       </section>
@@ -115,25 +121,31 @@ export function AppRouter() {
           )}
           path="/register"
         />
-        <Route element={<GoogleOAuthCallback />} path="/auth/google/callback" />
         <Route element={<ProtectedRoute />}>
+          <Route element={<AdminOnlyRoute><Navigate replace to="/app/admin" /></AdminOnlyRoute>} path="admin" />
+          <Route element={<AdminOnlyRoute><Navigate replace to="/app/admin/billing" /></AdminOnlyRoute>} path="admin/billing" />
           <Route element={<PlatformShell />} path="/app">
-            <Route element={<Navigate replace to="/app/dashboard" />} index />
-            <Route element={<DashboardPanel />} path="dashboard" />
+            <Route element={<HomePage />} index />
+            <Route element={<Navigate replace to="/app" />} path="home" />
+            <Route element={<Navigate replace to="/app" />} path="control-room" />
+            <Route element={<Navigate replace to="/app" />} path="dashboard" />
+            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="crm" />
+            <Route element={<Navigate replace to="/app/revenue?view=business-pulse" />} path="analytics" />
             <Route element={<RevenueIntelligencePage />} path="revenue" />
-            <Route element={<ChatPanel />} path="chat" />
-            <Route path="crm">
-              <Route index element={<Navigate replace to="/app/crm/negocios" />} />
-              <Route path=":moduleId" element={<BusinessModulePage group="crm" />} />
-            </Route>
-            <Route path="cs">
-              <Route index element={<Navigate replace to="/app/cs/jornada" />} />
-              <Route path=":moduleId" element={<BusinessModulePage group="cs" />} />
-            </Route>
-            <Route path="analytics">
-              <Route index element={<Navigate replace to="/app/analytics/analises" />} />
-              <Route path=":moduleId" element={<BusinessModulePage group="analytics" />} />
-            </Route>
+            <Route element={<Navigate replace to="/app/chats" />} path="chat" />
+            <Route element={<ChatsPage />} path="chats" />
+            <Route element={<AxiAssistantPage />} path="assistant" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin" />
+            <Route element={<Navigate replace to="/app/admin" />} path="admin/companies" />
+            <Route element={<Navigate replace to="/app/admin" />} path="admin/companies/:companyId" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users/new" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/users/:userId" />
+            <Route element={<Navigate replace to="/app/admin/permissions" />} path="admin/roles" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/permissions" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/billing" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/security" />
+            <Route element={<AdminOnlyRoute><AdminPage /></AdminOnlyRoute>} path="admin/audit" />
             <Route path="agents" element={<AgentsShell />}>
               <Route index element={<AgentsMainPage />} />
               <Route path="create" element={<AgentCreatePage />} />
@@ -146,15 +158,19 @@ export function AppRouter() {
                 <Route path="actions" element={<AgentActionsPage />} />
                 <Route path="test" element={<AgentTestPage />} />
                 <Route path="logs" element={<AgentLogsPage />} />
-                <Route path="analytics" element={<AgentAnalyticsPage />} />
+                <Route path="analytics" element={<Navigate replace to="/app/revenue?view=agents" />} />
                 <Route path="settings" element={<AgentSettingsPage />} />
               </Route>
             </Route>
             <Route path="studio">
               <Route index element={<StudioHomePage />} />
-              <Route path="editor" element={<UnifiedStudioEditorPage />} />
+              <Route path="editor" element={<UnifiedEditorPage />} />
+              <Route path="editor/new" element={<UnifiedEditorPage />} />
+              <Route path="editor/:projectId" element={<UnifiedEditorPage />} />
+              <Route path="editor/design" element={<UnifiedEditorPage />} />
               <Route path="editor/video" element={<VideoEditorStudioPage />} />
               <Route path="editor/video/:projectId" element={<VideoEditorStudioPage />} />
+              <Route path="import" element={<StudioImportPage />} />
 
               <Route path="tools/photo-editor" element={<PhotoEditorStudioPage />} />
               <Route path="tools/remove-background" element={<RemoveBackgroundStudioPage />} />
@@ -189,6 +205,17 @@ export function AppRouter() {
             </Route>
             <Route path="marketing" element={<MarketingShell />}>
               <Route index element={<MarketingProjectsPage />} />
+              <Route path="planning" element={<MarketingPlanningPage />} />
+              <Route path="plans/new" element={<MarketingPlanningPage />} />
+              <Route path="campaigns" element={<MarketingCampaignsPage />} />
+              <Route path="campaigns/new" element={<MarketingPlanningPage />} />
+              <Route path="audiences" element={<MarketingAudiencesPage />} />
+              <Route path="creatives" element={<MarketingCreativesPage />} />
+              <Route path="automations" element={<MarketingAutomationsPage />} />
+              <Route path="calendar" element={<MarketingCalendarPage />} />
+              <Route path="reports" element={<MarketingReportsPage />} />
+              <Route path="insights" element={<MarketingInsightsPage />} />
+              <Route path="operations" element={<MarketingProjectsPage />} />
               <Route path="projects/:projectId" element={<MarketingProjectWorkspace />} />
             </Route>
             <Route path="integrations" element={<IntegrationsPage />} />
@@ -196,17 +223,21 @@ export function AppRouter() {
             <Route path="billing/cancel" element={<BillingCancelPage />} />
             <Route path="account" element={<AccountShell />}>
               <Route index element={<Navigate replace to="overview" />} />
-              <Route path="overview" element={<AccountHomePage />} />
+              <Route path="overview" element={<AccountProfilePage />} />
               <Route path="profile" element={<AccountProfilePage />} />
-              <Route path="personalization" element={<AccountPersonalizationPage />} />
+              <Route path="billing" element={<Navigate replace to="/app/account/overview" />} />
+              <Route path="preferences" element={<AccountPersonalizationPage />} />
+              <Route path="personalization" element={<Navigate replace to="/app/account/preferences" />} />
               <Route path="notifications" element={<AccountNotificationsPage />} />
               <Route path="applications" element={<AccountAppsPage />} />
               <Route path="applications/status" element={<AccountAppsStatusPage />} />
               <Route path="applications/actions" element={<AccountAppsActionsPage />} />
-              <Route path="data-controls" element={<AccountDataPage />} />
+              <Route path="privacy" element={<AccountDataPage />} />
+              <Route path="data-controls" element={<Navigate replace to="/app/account/privacy" />} />
               <Route path="security" element={<AccountSecurityPage />} />
+              <Route path="sessions" element={<AccountSecurityPage />} />
               <Route path="archived-chats" element={<AccountChatsPage />} />
-              <Route path="language-appearance" element={<Navigate replace to="/app/account/personalization" />} />
+              <Route path="language-appearance" element={<Navigate replace to="/app/account/preferences" />} />
               <Route path="help" element={<AccountHelpPage />} />
               <Route path="help/status" element={<AccountPlatformStatusPage />} />
               <Route path="legal" element={<AccountLegalPage />} />
@@ -214,9 +245,9 @@ export function AppRouter() {
               <Route path="apps" element={<Navigate replace to="/app/account/applications" />} />
               <Route path="apps/status" element={<Navigate replace to="/app/account/applications/status" />} />
               <Route path="apps/actions" element={<Navigate replace to="/app/account/applications/actions" />} />
-              <Route path="data" element={<Navigate replace to="/app/account/data-controls" />} />
+              <Route path="data" element={<Navigate replace to="/app/account/privacy" />} />
               <Route path="chats" element={<Navigate replace to="/app/account/archived-chats" />} />
-              <Route path="language" element={<Navigate replace to="/app/account/personalization" />} />
+              <Route path="language" element={<Navigate replace to="/app/account/preferences" />} />
             </Route>
           </Route>
         </Route>

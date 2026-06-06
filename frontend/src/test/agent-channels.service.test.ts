@@ -8,6 +8,8 @@ import {
   testAgentBoundChannel,
 } from '../services/agentsV2.service';
 
+const API_BASE = 'http://127.0.0.1:8000/api';
+
 describe('agentsV2 channels service', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -27,9 +29,9 @@ describe('agentsV2 channels service', () => {
     await listChannelIntegrationAccounts();
     await listAgentBoundChannels(42);
 
-    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/api\/integrations$/);
-    expect(String(fetchMock.mock.calls[1][0])).toMatch(/\/api\/integrations\/accounts$/);
-    expect(String(fetchMock.mock.calls[2][0])).toMatch(/\/api\/agents\/42\/channels$/);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, `${API_BASE}/integrations`, expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, `${API_BASE}/integrations/accounts`, expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(3, `${API_BASE}/agents/42/channels`, expect.any(Object));
   });
 
   it('envia payloads compativeis para connect e test', async () => {
@@ -51,8 +53,8 @@ describe('agentsV2 channels service', () => {
     const [, connectOptions] = fetchMock.mock.calls[0];
     const [, testOptions] = fetchMock.mock.calls[1];
 
-    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/api\/agents\/7\/channels\/connect$/);
-    expect(String(fetchMock.mock.calls[1][0])).toMatch(/\/api\/agents\/7\/channels\/test$/);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, `${API_BASE}/agents/7/channels/connect`, expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, `${API_BASE}/agents/7/channels/test`, expect.any(Object));
 
     expect(typeof (connectOptions as RequestInit).body).toBe('string');
     expect(JSON.parse(String((connectOptions as RequestInit).body))).toMatchObject({

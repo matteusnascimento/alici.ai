@@ -50,6 +50,15 @@ class ChatService:
         return f"{base} {specializations.get(normalized, '')}".strip()
 
     @staticmethod
+    def _with_context(instructions: str, context: str | None) -> str:
+        if not context or not context.strip():
+            return instructions
+        return (
+            f"{instructions} Contexto atual da plataforma: {context.strip()}. "
+            "Use este contexto apenas para orientar a resposta e nao exponha detalhes tecnicos."
+        )
+
+    @staticmethod
     def _build_tools_schema() -> list[dict]:
         return [tool.to_json_schema() for tool in AIToolRegistry.list_all_tools()]
 
@@ -73,7 +82,7 @@ class ChatService:
         selected_agent = payload.agent_name or agent_name
         selected_task = self._resolve_task(selected_agent)
         selected_model = get_model_for_task(selected_task)
-        selected_instructions = self._resolve_instructions(selected_agent)
+        selected_instructions = self._with_context(self._resolve_instructions(selected_agent), payload.context)
         should_use_responses_api = payload.use_responses_api if payload.use_responses_api is not None else use_responses_api
 
         # Tenta Responses API se disponível e habilitado

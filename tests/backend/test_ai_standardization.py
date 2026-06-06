@@ -25,7 +25,7 @@ def test_ai_service_fails_safely_without_key(monkeypatch):
     with pytest.raises(AIConfigurationError) as exc:
         service.generate_text(user_prompt='oi')
 
-    assert exc.value.user_message == 'A integracao de IA nao esta configurada.'
+    assert exc.value.user_message == 'Provider de IA não configurado.'
 
 
 def test_openai_integration_test_route_works(client, auth_headers, monkeypatch):

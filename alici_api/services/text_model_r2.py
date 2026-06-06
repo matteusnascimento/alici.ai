@@ -29,7 +29,10 @@ def _project_root() -> Path:
 
 
 def _build_r2_client():
-    import boto3
+    try:
+        import boto3
+    except Exception as exc:  # pragma: no cover - environment
+        raise RuntimeError("boto3 nao instalado. Instale com 'pip install boto3' para usar R2: %s" % exc)
 
     account_id = os.getenv("ALICI_R2_ACCOUNT_ID", "")
     access_key = os.getenv("ALICI_R2_ACCESS_KEY", "")
@@ -37,18 +40,23 @@ def _build_r2_client():
 
     if not account_id or not access_key or not secret_key:
         raise RuntimeError(
-            "Credenciais do R2 ausentes. Defina ALICI_R2_ACCOUNT_ID, ALICI_R2_ACCESS_KEY e ALICI_R2_SECRET_KEY"
+            "Credenciais do R2 ausentes. Defina as variaveis ALICI_R2_ACCOUNT_ID, ALICI_R2_ACCESS_KEY e ALICI_R2_SECRET_KEY"
         )
 
-    endpoint = os.getenv("ALICI_R2_ENDPOINT", f"https://{account_id}.r2.cloudflarestorage.com")
+    endpoint = os.getenv("ALICI_R2_ENDPOINT") or f"https://{account_id}.r2.cloudflarestorage.com"
 
-    return boto3.client(
-        service_name="s3",
-        endpoint_url=endpoint,
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-        region_name="auto",
-    )
+    try:
+        client = boto3.client(
+            service_name="s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name="auto",
+        )
+    except Exception as exc:
+        raise RuntimeError(f"Falha ao criar cliente R2. Verifique ALICI_R2_* e ALICI_R2_ENDPOINT: {exc}")
+
+    return client
 
 
 def _cache_dir() -> Path:
@@ -100,7 +108,13 @@ def _ensure_artifacts_local(force_download: bool = False) -> dict[str, Path]:
 
         if force_download or not local_path.exists():
             logger_text_model.info(f"Baixando artefato do R2: {remote_key}")
-            s3.download_file(bucket, remote_key, str(local_path))
+            try:
+                s3.download_file(bucket, remote_key, str(local_path))
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Erro ao baixar {remote_key} do bucket {bucket}: {exc}. "
+                    "Verifique ALICI_R2_BUCKET, ALICI_R2_MODEL_PREFIX, chaves e endpoint."
+                )
 
         local_paths[key_name] = local_path
 

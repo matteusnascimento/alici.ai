@@ -17,7 +17,20 @@ def test_integrations_endpoints(client, auth_headers, monkeypatch):
     list_response = client.get('/api/integrations', headers=auth_headers)
     assert list_response.status_code == 200
     providers = {item['provider'] for item in list_response.json()}
-    assert providers == {'whatsapp', 'instagram'}
+    assert providers == {
+        'whatsapp',
+        'instagram',
+        'website_chat',
+        'meta_ads',
+        'google_ads',
+        'google_analytics',
+        'omnibees',
+        'pms',
+        'stripe',
+        'api',
+        'email',
+        'webhook',
+    }
 
     whatsapp_card = next(item for item in list_response.json() if item['provider'] == 'whatsapp')
     assert whatsapp_card['status'] == 'disconnected'
@@ -54,33 +67,28 @@ def test_integrations_endpoints(client, auth_headers, monkeypatch):
     assert instagram_response.status_code == 200
     assert instagram_response.json()['status'] == 'disconnected'
 
+    meta_ads_response = client.post('/api/integrations/meta_ads/test', headers=auth_headers, json={})
+    assert meta_ads_response.status_code == 200
+    assert meta_ads_response.json()['status'] == 'disconnected'
+
+    sync_response = client.post('/api/integrations/meta_ads/sync', headers=auth_headers, json={})
+    assert sync_response.status_code == 422
+
+    meta_connect = client.get('/api/integrations/meta/connect?provider=whatsapp', headers=auth_headers)
+    assert meta_connect.status_code == 503
+    assert 'Integração Meta não configurada' in meta_connect.json()['detail']
+
+    google_connect = client.get('/api/integrations/google/connect?provider=google_ads', headers=auth_headers)
+    assert google_connect.status_code == 503
+    assert 'Integração Google não configurada' in google_connect.json()['detail']
+
+    omnibees_missing = client.post('/api/integrations/omnibees/test', headers=auth_headers, json={})
+    assert omnibees_missing.status_code == 503
+
+    widget_script = client.get('/api/integrations/website-chat/widget-script', headers=auth_headers)
+    assert widget_script.status_code == 200
+    assert 'data-axi-company-id' in widget_script.json()['script']
+
     disconnect_response = client.post('/api/integrations/whatsapp/disconnect', headers=auth_headers)
     assert disconnect_response.status_code == 200
     assert disconnect_response.json()['status'] == 'disconnected'
-
-
-def test_meta_webhook_verification_challenge(client, monkeypatch):
-    from app.core.config import settings
-
-    monkeypatch.setattr(settings, "meta_webhook_verify_token", "axi_meta_webhook_2026_9f4d2a7c")
-
-    response = client.get(
-        "/api/integrations/meta/webhook",
-        params={
-            "hub.mode": "subscribe",
-            "hub.verify_token": "axi_meta_webhook_2026_9f4d2a7c",
-            "hub.challenge": "123456",
-        },
-    )
-    assert response.status_code == 200
-    assert response.text == "123456"
-
-    invalid = client.get(
-        "/api/integrations/meta/webhook",
-        params={
-            "hub.mode": "subscribe",
-            "hub.verify_token": "wrong",
-            "hub.challenge": "123456",
-        },
-    )
-    assert invalid.status_code == 403

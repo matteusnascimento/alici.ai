@@ -51,7 +51,7 @@ export function ChannelProviderCard({ item, selected, isLoading, onSelect }: Cha
             <div className="text-slate-500">{item.active_bindings} vinculo(s) ativo(s)</div>
           </div>
           <span className="rounded-full border border-white/12 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-200">
-            {disabled ? 'Indisponivel' : 'Selecionar'}
+            {disabled ? 'Em breve' : 'Selecionar'}
           </span>
         </div>
       </div>

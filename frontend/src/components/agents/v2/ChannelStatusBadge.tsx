@@ -23,7 +23,7 @@ const STATUS_MAP: Record<ChannelProviderStatus, { label: string; classes: string
     classes: 'border-white/15 bg-white/8 text-slate-200',
   },
   coming_soon: {
-    label: 'Indisponivel',
+    label: 'Em breve',
     classes: 'border-white/10 bg-white/5 text-slate-400',
   },
 };

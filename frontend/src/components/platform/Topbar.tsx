@@ -1,55 +1,25 @@
-import { LogOut } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { CircleHelp, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-import { useAuth } from '../../hooks/useAuth';
-
-const titleMap: Record<string, string> = {
-  '/app/dashboard': 'Dashboard',
-  '/app/chat': 'Alici Chat',
-  '/app/crm': 'CRM',
-  '/app/cs': 'CS',
-  '/app/analytics': 'Analises',
-  '/app/agents': 'Agents',
-  '/app/studio': 'AXI Studio',
-  '/app/account': 'Conta AXI',
-};
+import { NotificationDropdown } from './NotificationDropdown';
 
 export function Topbar() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, logout } = useAuth();
-  const title = location.pathname.startsWith('/app/studio') || location.pathname.startsWith('/app/marketing')
-    ? 'AXI Studio'
-    : location.pathname.startsWith('/app/crm')
-      ? 'CRM'
-      : location.pathname.startsWith('/app/cs')
-        ? 'CS'
-        : location.pathname.startsWith('/app/analytics')
-          ? 'Analises'
-    : location.pathname.startsWith('/app/account')
-      ? 'Conta AXI'
-      : titleMap[location.pathname] || 'AXI';
-
-  function handleLogout() {
-    logout();
-    navigate('/login');
-  }
-
   return (
-    <div className="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-cyan">Plataforma AXI</p>
-        <h2 className="mt-2 font-display text-3xl text-[var(--text-primary)]">{title}</h2>
+    <header className="flex justify-end rounded-[1.5rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.72))] px-5 py-4 shadow-[0_18px_60px_rgba(0,0,0,0.26)] backdrop-blur-xl">
+      <div className="flex w-full flex-wrap items-center justify-end gap-3">
+        <label className="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-400 md:max-w-[520px]">
+          <Search size={17} />
+          <span className="flex min-w-0 flex-1 items-center gap-1 truncate">
+            <span className="shrink-0 font-semibold text-slate-200">Busca Global</span>
+            <span className="truncate">reservas, clientes, metricas...</span>
+          </span>
+          <span className="text-xs text-slate-500">Ctrl K</span>
+        </label>
+        <NotificationDropdown />
+        <Link to="/app/account/help" className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/[0.05]" aria-label="Ajuda">
+          <CircleHelp size={18} />
+        </Link>
       </div>
-      <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-ink/40 px-4 py-3 text-[var(--text-primary)]">
-        <div>
-          <p className="font-semibold">{user?.name}</p>
-          <p className="text-sm text-slate-300">Plano {user?.plan}</p>
-        </div>
-        <button className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm transition hover:border-cyan hover:text-cyan" onClick={handleLogout} type="button">
-          <LogOut size={16} /> Sair
-        </button>
-      </div>
-    </div>
+    </header>
   );
 }

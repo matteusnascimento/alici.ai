@@ -45,6 +45,19 @@ export interface RevenueOpportunityStatusItem {
   total: number;
 }
 
+export interface RevenueOriginDemandItem {
+  cidade?: string | null;
+  estado?: string | null;
+  pais?: string | null;
+  canal: string;
+  visitantes: number;
+  buscas: number;
+  cotacoes: number;
+  reservas: number;
+  receita: number;
+  conversao: number;
+}
+
 export interface RevenueIntelligenceSnapshot {
   summary: RevenueSummary;
   reservas: RevenueReservationItem[];
@@ -53,6 +66,7 @@ export interface RevenueIntelligenceSnapshot {
   receita_por_canal: RevenueBreakdownItem[];
   receita_por_agente: RevenueBreakdownItem[];
   status_oportunidades: RevenueOpportunityStatusItem[];
+  mapa_origem_demanda: RevenueOriginDemandItem[];
 }
 
 export interface RevenueSeriesPoint {
@@ -70,9 +84,9 @@ export interface RevenueSeriesResponse {
 }
 
 export function getRevenueIntelligence(days = 30): Promise<RevenueIntelligenceSnapshot> {
-  return apiFetch<RevenueIntelligenceSnapshot>(`/dashboard/revenue-intelligence?days=${days}`);
+  return apiFetch<RevenueIntelligenceSnapshot>(`/revenue/overview?days=${days}`);
 }
 
 export function getRevenueSeries(days = 30, granularity: 'daily' | 'weekly' = 'daily'): Promise<RevenueSeriesResponse> {
-  return apiFetch<RevenueSeriesResponse>(`/dashboard/revenue-series?days=${days}&granularity=${granularity}`);
+  return apiFetch<RevenueSeriesResponse>(`/revenue/series?days=${days}&granularity=${granularity}`);
 }

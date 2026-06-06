@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALICI™ - Interface Futurística Neural</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Exo+2:wght@300;400;500;600;700;800&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --neon-cyan: #00ffff;
+            --neon-blue: #0066ff;
+            --neon-pink: #ff0099;
+            --neon-purple: #9933ff;
+            --neon-green: #00ff66;
+            --neon-orange: #ff6600;
+            --neon-yellow: #ffcc00;
+            --bg-dark: #0a0a0f;
+            --bg-darker: #05050a;
+            --glass-bg: rgba(15, 15, 25, 0.85);
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #0a0a1f 50%, #000033 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(0, 102, 255, 0.15), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 153, 0.15), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.1), transparent 50%);
+            animation: bg-shift 20s ease-in-out infinite;
+            z-index: 1;
+        }
+        
+        @keyframes bg-shift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+        
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid-flow 3s linear infinite;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        @keyframes grid-flow {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: float-up 20s infinite linear;
+        }
+        
+        @keyframes float-up {
+            0% { transform: translateY(100vh) translateX(0) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) translateX(50px) scale(1.5); opacity: 0; }
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .futuristic-header {
+            text-align: center;
+            padding: 30px 0 50px;
+            position: relative;
+        }
+        
+        .alici-logo-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 30px;
+            perspective: 1000px;
+        }
+        
+        .logo-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: logo-rotate-3d 20s infinite linear;
+        }
+        
+        @keyframes logo-rotate-3d {
+            0% { transform: rotateY(0deg) rotateX(10deg); }
+            100% { transform: rotateY(360deg) rotateX(10deg); }
+        }
+        
+        .logo-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue), var(--neon-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            font-weight: 900;
+            font-family: 'Orbitron';
+            color: white;
+            box-shadow: 
+                0 0 60px var(--neon-cyan),
+                inset 0 0 40px rgba(255, 255, 255, 0.3);
+            animation: logo-glow-pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes logo-glow-pulse {
+            0%, 100% { box-shadow: 0 0 60px var(--neon-cyan), inset 0 0 40px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 100px var(--neon-pink), inset 0 0 60px rgba(255, 255, 255, 0.5); }
+        }
+        
+        .title-futuristic {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5.5rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple), var(--neon-cyan));
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-flow 5s ease infinite;
+            text-shadow: 0 0 80px rgba(0, 255, 255, 0.5);
+        }
+        
+        @keyframes gradient-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .subtitle-futuristic {
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            font-weight: 600;
+            animation: text-flicker 4s infinite;
+        }
+        
+        @keyframes text-flicker {
+            0%, 100% { opacity: 1; text-shadow: 0 0 20px var(--neon-cyan); }
+            50% { opacity: 0.8; text-shadow: 0 0 40px var(--neon-cyan), 0 0 60px var(--neon-cyan); }
+        }
+        
+        .main-interface {
+            display: grid;
+            grid-template-columns: 1fr 550px;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .chat-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        .chat-glass::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            animation: shine-sweep 6s infinite;
+        }
+        
+        @keyframes shine-sweep {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .chat-header-glass {
+            padding: 25px 30px;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(255, 0, 153, 0.2));
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .chat-title {
+            font-family: 'Orbitron';
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px var(--neon-cyan);
+        }
+        
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            animation: dot-pulse 2s infinite;
+            box-shadow: 0 0 20px var(--neon-green);
+        }
+        
+        @keyframes dot-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px var(--neon-green); }
+            50% { transform: scale(1.5); box-shadow: 0 0 40px var(--neon-green), 0 0 60px var(--neon-green); }
+        }
+        
+        .status-text {
+            color: var(--neon-green);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .messages-area {
+            height: 500px;
+            overflow-y: auto;
+            padding: 25px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            padding: 18px 25px;
+            border-radius: 20px;
+            max-width: 80%;
+            animation: message-appear 0.6s ease-out;
+            position: relative;
+        }
+        
+        @keyframes message-appear {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+            margin-left: auto;
+            box-shadow: 0 10px 30px rgba(0, 102, 255, 0.4);
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        .ai-message {
+            background: linear-gradient(135deg, rgba(153, 51, 255, 0.3), rgba(0, 255, 255, 0.2));
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.3);
+            padding-left: 80px;
+        }
+        
+        .ai-message::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            background-image: url('https://static-us-img.skywork.ai/prod/analysis/2026-01-13/3193088764620888317/2010890385144406016_9ab19eaf914ff4a0bf4d584cf3022105.jpg');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            border: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+        
+        .input-zone {
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .cyber-input {
+            flex: 1;
+            padding: 15px 25px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 15px;
+            color: white;
+            font-size: 1.1rem;
+            font-family: 'Exo 2';
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .cyber-input:focus {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            border-color: var(--neon-pink);
+        }
+        
+        .cyber-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .send-btn {
+            padding: 15px 35px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            font-family: 'Orbitron';
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.4);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .send-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .send-btn:hover::before {
+            left: 100%;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 255, 255, 0.6);
+        }
+        
+        .avatar-section {
+            position: sticky;
+            top: 20px;
+        }
+        
+        .avatar-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 255, 255, 0.2);
+        }
+        
+        .avatar-title {
+            text-align: center;
+            font-family: 'Orbitron';
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px var(--neon-cyan);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .avatar-display {
+            width: 100%;
+            height: 500px;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(0, 255, 255, 0.2), rgba(0, 0, 0, 0.9));
+            border: 3px solid var(--neon-cyan);
+            box-shadow: 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 60px rgba(0, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .avatar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.3) 50%, transparent 70%),
+                linear-gradient(-45deg, transparent 30%, rgba(255, 0, 153, 0.3) 50%, transparent 70%);
+            background-size: 400% 400%, 400% 400%;
+            animation: overlay-scan 8s infinite;
+            z-index: 2;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+        
+        @keyframes overlay-scan {
+            0%, 100% { background-position: 0% 0%, 100% 100%; }
+            50% { background-position: 100% 100%, 0% 0%; }
+        }
+        
+        .scan-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.1) 2px, rgba(0, 255, 255, 0.1) 4px);
+            animation: scan-move 4s infinite linear;
+            z-index: 3;
+            pointer-events: none;
+        }
+        
+        @keyframes scan-move {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100%); }
+        }
+        
+        .status-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(255, 0, 153, 0.2));
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            animation: indicator-glow 2s infinite;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+        
+        @keyframes indicator-glow {
+            0%, 100% { box-shadow: 0 0 20px var(--neon-cyan); }
+            50% { box-shadow: 0 0 40px var(--neon-cyan), 0 0 60px var(--neon-cyan); }
+        }
+        
+        .status-label {
+            font-family: 'Orbitron';
+            font-size: 1.2rem;
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px var(--neon-cyan);
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .control-btn {
+            padding: 18px;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(0, 255, 255, 0.1));
+            border: 2px solid var(--neon-cyan);
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            font-family: 'Exo 2';
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.4), rgba(255, 0, 153, 0.3));
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.4);
+        }
+        
+        .control-btn.active {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+            box-shadow: 0 0 30px var(--neon-cyan);
+        }
+        
+        .messages-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .messages-area::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        
+        .messages-area::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--neon-cyan), var(--neon-blue));
+            border-radius: 4px;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        
+        .messages-area::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--neon-pink), var(--neon-purple));
+        }
+        
+        .footer-cyber {
+            text-align: center;
+            padding: 40px 0;
+            margin-top: 50px;
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            font-size: 1rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-interface {
+                grid-template-columns: 1fr;
+            }
+            .avatar-section {
+                position: static;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .title-futuristic {
+                font-size: 3.5rem;
+            }
+            .messages-area {
+                height: 400px;
+            }
+            .input-container {
+                flex-direction: column;
+            }
+            .avatar-display {
+                height: 400px;
+            }
+            .ai-message::before {
+                display: none;
+            }
+            .ai-message {
+                padding-left: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="cyber-grid"></div>
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <header class="futuristic-header">
+            <div class="alici-logo-container">
+                <div class="logo-3d">
+                    <div class="logo-face">A</div>
+                </div>
+            </div>
+            <h1 class="title-futuristic">ALICI™</h1>
+            <p class="subtitle-futuristic">Interface Neural Futurística</p>
+        </header>
+        
+        <div class="main-interface">
+            <div class="chat-glass">
+                <div class="chat-header-glass">
+                    <h2 class="chat-title">Neural Chat</h2>
+                    <div class="status-bar">
+                        <div class="status-dot"></div>
+                        <span class="status-text">Sistema Online</span>
+                    </div>
+                </div>
+                
+                <div class="messages-area" id="messages">
+                    <div class="message ai-message">
+                        Olá! Eu sou a ALICI™, sua assistente de IA futurística. Meu sistema neural está online e pronto para interagir. Como posso ajudá-lo hoje?
+                    </div>
+                </div>
+                
+                <div class="input-zone">
+                    <div class="input-container">
+                        <input type="text" class="cyber-input" id="userInput" placeholder="Digite sua mensagem..." onkeypress="handleKey(event)" autocomplete="off">
+                        <button class="send-btn" onclick="sendMsg()">Enviar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="avatar-section">
+                <div class="avatar-container">
+                    <h3 class="avatar-title">ALICI Core</h3>
+                    <div class="avatar-display">
+                        <img src="https://static-us-img.skywork.ai/prod/analysis/2026-01-13/3193088764620888317/2010890385807106048_f8987f49506aafd4b7bcbb25d6126a2b.jpg" alt="ALICI" class="avatar-img">
+                        <div class="avatar-overlay"></div>
+                        <div class="scan-lines"></div>
+                    </div>
+                    <div class="status-panel">
+                        <div class="status-indicator" id="indicator"></div>
+                        <span class="status-label" id="statusLabel">Online</span>
+                    </div>
+                    <div class="control-grid">
+                        <button class="control-btn" onclick="changeState('analyze')">🔍 Analisar</button>
+                        <button class="control-btn" onclick="changeState('process')">⚡ Processar</button>
+                        <button class="control-btn" onclick="changeState('learn')">🧠 Aprender</button>
+                        <button class="control-btn" onclick="changeState('respond')">💬 Responder</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="footer-cyber">
+            ALICI™ v5.0 | Interface Neural Futurística | © 2026
+        </footer>
+    </div>
+    
+    <script>
+        function createParticles() {
+            const container = document.getElementById('particles');
+            container.innerHTML = '';
+            const colors = ['#00ffff', '#0066ff', '#ff0099', '#9933ff', '#00ff66'];
+            
+            for (let i = 0; i < 100; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.background = color;
+                particle.style.boxShadow = `0 0 10px ${color}`;
+                container.appendChild(particle);
+            }
+        }
+        
+        let currentState = 'online';
+        
+        function changeState(state) {
+            const indicator = document.getElementById('indicator');
+            const label = document.getElementById('statusLabel');
+            const buttons = document.querySelectorAll('.control-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const states = {
+                'analyze': { color: '#ff0099', label: 'Analisando', shadow: '0 0 40px #ff0099' },
+                'process': { color: '#00ff66', label: 'Processando', shadow: '0 0 40px #00ff66' },
+                'learn': { color: '#ffcc00', label: 'Aprendendo', shadow: '0 0 40px #ffcc00' },
+                'respond': { color: '#00ffff', label: 'Respondendo', shadow: '0 0 40px #00ffff' }
+            };
+            
+            if (states[state]) {
+                indicator.style.background = states[state].color;
+                indicator.style.boxShadow = states[state].shadow;
+                label.textContent = states[state].label;
+                label.style.textShadow = states[state].shadow;
+            }
+            
+            currentState = state;
+        }
+        
+        function sendMsg() {
+            const input = document.getElementById('userInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            addMessage(msg, 'user');
+            input.value = '';
+            input.focus();
+            
+            changeState('analyze');
+            
+            setTimeout(() => {
+                changeState('process');
+                
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mensagem: msg })
+                })
+                .then(res => res.ok ? res.json() : Promise.reject('Erro'))
+                .then(data => {
+                    changeState('respond');
+                    setTimeout(() => {
+                        addMessage(data.resposta, 'ai');
+                        setTimeout(() => {
+                            changeState('online');
+                            const buttons = document.querySelectorAll('.control-btn');
+                            buttons.forEach(btn => btn.classList.remove('active'));
+                        }, 2000);
+                    }, 800);
+                })
+                .catch(() => {
+                    addMessage('Sistema temporariamente indisponível...', 'ai');
+                    changeState('online');
+                });
+            }, 1500);
+        }
+        
+        function addMessage(text, sender) {
+            const container = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = `message ${sender}-message`;
+            msg.textContent = text;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMsg();
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            document.getElementById('userInput').focus();
+            
+            setTimeout(() => {
+                changeState('learn');
+                setTimeout(() => {
+                    changeState('online');
+                    const buttons = document.querySelectorAll('.control-btn');
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                }, 4000);
+            }, 2000);
+            
+            setInterval(createParticles, 40000);
+        });
+    </script>
+</body>
+</html>

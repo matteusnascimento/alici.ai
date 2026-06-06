@@ -11,8 +11,8 @@ import type {
   StudioTemplate,
   StudioTemplateCatalogItem,
   StudioToolActionResponse,
-  StudioWebImage,
   StudioVersion,
+  StudioWebImage,
 } from '../types/studioV2';
 
 export function getStudioOverview() {
@@ -238,8 +238,21 @@ export function listStudioTemplates() {
   return apiFetch<StudioTemplate[]>('/studio/templates/list');
 }
 
-export function listStudioTemplateCatalog() {
-  return apiFetch<StudioTemplateCatalogItem[]>('/studio/templates/catalog');
+export async function listStudioTemplateCatalog() {
+  const templates = await listStudioTemplates();
+  return templates.map((template): StudioTemplateCatalogItem => ({
+    id: String(template.id),
+    name: template.name,
+    category: template.category,
+    type: (template.template_data.type as StudioTemplateCatalogItem['type']) || 'social',
+    premium: template.style_tag === 'premium' || Boolean(template.template_data.premium),
+    template_json: template.template_data,
+  }));
+}
+
+export function searchStudioWebImages(query: string, limit = 12) {
+  const params = new URLSearchParams({ query, limit: String(limit) });
+  return apiFetch<StudioWebImage[]>(`/studio/web-images/search?${params.toString()}`);
 }
 
 export function applyStudioTemplate(payload: { template_id: number; project_id: number }) {
@@ -247,9 +260,4 @@ export function applyStudioTemplate(payload: { template_id: number; project_id: 
     method: 'POST',
     body: JSON.stringify(payload),
   });
-}
-
-export function searchStudioWebImages(query: string, limit = 12) {
-  const params = new URLSearchParams({ query, limit: String(limit) });
-  return apiFetch<StudioWebImage[]>(`/studio/web-images/search?${params.toString()}`);
 }

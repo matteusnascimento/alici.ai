@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -15,30 +14,23 @@ from alici_api.config import get_settings
 from alici_api.middleware.base import setup_middlewares
 from alici_api.monitoring import capture_critical_event, init_monitoring
 from alici_api.responses import Codes, error_payload
+from alici_api.services.redis_client import ping_redis
 from alici_api.routes.auth import router as auth_router
 from alici_api.routes.billing import router as billing_router
-from alici_api.routes.business import router as business_router
 from alici_api.routes.chat import router as chat_router
 from alici_api.routes.health import router as health_router
 from alici_api.routes.history import router as history_router
-from alici_api.routes.integrations import router as integrations_router
 from alici_api.routes.jobs import router as jobs_router
-from alici_api.routes.marketing import router as marketing_router
 from alici_api.routes.media import router as media_router
-from alici_api.routes.omnichannel import router as omnichannel_router
 from alici_api.routes.pages import router as pages_router
-from alici_api.routes.studio import router as studio_router
 from alici_api.routes.webhooks import router as webhooks_router
 from alici_api.services.ai import AIManager, IA_DISPONIVEL, VISAO_DISPONIVEL
 from database import criar_tabelas
 from logger import get_logger
 
 load_dotenv()
-load_dotenv("backend/.env", override=False)
 settings = get_settings()
 logger_app = get_logger("api")
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-FRONTEND_DIST = PROJECT_ROOT / "frontend" / "dist"
 
 
 def create_app() -> FastAPI:
@@ -57,22 +49,29 @@ def create_app() -> FastAPI:
 
     if os.path.isdir("static"):
         app.mount("/static", StaticFiles(directory="static"), name="static")
-    if (FRONTEND_DIST / "assets").is_dir():
-        app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="frontend_assets")
+    if os.path.isdir("generated"):
+        app.mount("/generated", StaticFiles(directory="generated"), name="generated")
+
     app.include_router(auth_router)
     app.include_router(billing_router)
-    app.include_router(business_router)
     app.include_router(chat_router)
     app.include_router(media_router)
     app.include_router(jobs_router)
-    app.include_router(marketing_router)
-    app.include_router(integrations_router)
-    app.include_router(omnichannel_router)
-    app.include_router(studio_router)
     app.include_router(webhooks_router)
     app.include_router(history_router)
     app.include_router(pages_router)
     app.include_router(health_router)
+
+    # Backwards-compatible /api prefix for frontends and external tools
+    app.include_router(auth_router, prefix="/api")
+    app.include_router(billing_router, prefix="/api")
+    app.include_router(chat_router, prefix="/api")
+    app.include_router(media_router, prefix="/api")
+    app.include_router(jobs_router, prefix="/api")
+    app.include_router(webhooks_router, prefix="/api")
+    app.include_router(history_router, prefix="/api")
+    app.include_router(pages_router, prefix="/api")
+    app.include_router(health_router, prefix="/api")
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
@@ -126,6 +125,34 @@ def create_app() -> FastAPI:
             logger_app.info("Banco de dados pronto")
         except Exception as exc:
             logger_app.warning(f"Aviso ao preparar banco: {exc}")
+
+        # Redis health: fail fast in production, warn and give local run tips in development
+        try:
+            try:
+                redis_ok = await ping_redis(settings)
+            except Exception as exc:
+                redis_ok = False
+                redis_exc = exc
+            else:
+                redis_exc = None
+
+            if not redis_ok:
+                msg = (
+                    f"Falha ao conectar ao Redis ({settings.resolved_redis_url}). "
+                    "Em desenvolvimento inicie um redis localmente: `docker run -p 6379:6379 redis:7-alpine`"
+                )
+                if settings.is_production:
+                    raise RuntimeError(msg)
+                else:
+                    logger_app.warning(msg)
+                    if redis_exc:
+                        logger_app.debug(f"Redis error: {redis_exc}")
+        except Exception as exc:
+            # If Redis check raises during production startup, abort startup.
+            if settings.is_production:
+                logger_app.exception("Redis indisponivel em producao")
+                raise
+            logger_app.warning(f"Verificacao Redis falhou: {exc}")
 
         logger_app.info(f"IA textual disponivel: {IA_DISPONIVEL}")
         logger_app.info(f"AI providers disponiveis: {AIManager().available_providers()}")

@@ -4,15 +4,13 @@ interface AgentActionsStepProps {
 }
 
 const actions = [
-  { title: 'Capturar lead', required: 'CRM opcional' },
+  { title: 'Capturar lead', required: 'Cadastro interno' },
   { title: 'Criar reserva', required: 'Agenda' },
   { title: 'Enviar orcamento', required: 'Template de proposta' },
   { title: 'Consultar disponibilidade', required: 'Calendario' },
   { title: 'Encaminhar para humano', required: 'Canal humano' },
-  { title: 'Atualizar CRM', required: 'Integracao CRM' },
   { title: 'Acionar API', required: 'Credencial API' },
   { title: 'Enviar webhook', required: 'URL webhook' },
-  { title: 'Agendar reuniao', required: 'Calendario' },
 ];
 
 export function AgentActionsStep({ enabled, onToggle }: AgentActionsStepProps) {

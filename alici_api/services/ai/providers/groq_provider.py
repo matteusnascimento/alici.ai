@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from openai import AsyncOpenAI
+import os
 
-from alici_api.config import get_settings
+from openai import AsyncOpenAI
 
 from ..base import AIResponse, BaseAIProvider
 
@@ -13,15 +13,11 @@ class GroqProvider(BaseAIProvider):
     provider_name = "groq"
 
     def __init__(self):
-        settings = get_settings()
-        if not settings.groq_api_key:
-            raise RuntimeError("GROQ_API_KEY nao configurada")
-
-        self.model_chat = settings.groq_model_chat
-        self.model_agent = settings.groq_model_agent
-        self.model_code = settings.groq_model_code
+        self.model_chat = os.getenv("GROQ_MODEL_CHAT", "llama-3.1-8b-instant")
+        self.model_agent = os.getenv("GROQ_MODEL_AGENT", "llama-3.1-8b-instant")
+        self.model_code = os.getenv("GROQ_MODEL_CODE", "qwen/qwen3-coder")
         self.client = AsyncOpenAI(
-            api_key=settings.groq_api_key.get_secret_value(),
+            api_key=os.getenv("GROQ_API_KEY"),
             base_url="https://api.groq.com/openai/v1",
         )
 

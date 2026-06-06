@@ -69,53 +69,6 @@ class BillingService:
             },
         }
 
-    def plan_list(self) -> list[dict[str, Any]]:
-        features = {
-            "free": [
-                "Chat basico com IA",
-                "20 creditos iniciais",
-                "Historico local de conversas",
-            ],
-            "pro": [
-                "1.000 creditos mensais",
-                "Chat com fallback de providers",
-                "Acesso a geracoes com custo reduzido",
-            ],
-            "ultra": [
-                "5.000 creditos mensais",
-                "Prioridade em jobs de midia",
-                "Omnichannel e automacoes avancadas",
-            ],
-            "enterprise": [
-                "25.000 creditos mensais",
-                "Suporte a operacoes multi-time",
-                "Configuracao assistida de integrações",
-            ],
-        }
-        result: list[dict[str, Any]] = []
-        for plan_id, data in self.plan_catalog().items():
-            price = data.get("price_brl")
-            monthly_price = int(price or 0)
-            result.append(
-                {
-                    "id": plan_id,
-                    "name": data["name"],
-                    "monthly_price": monthly_price,
-                    "yearly_price": None,
-                    "features": features.get(plan_id, []),
-                    "limits": [
-                        {"key": "creditos_mensais", "value": int(data.get("monthly_credits") or 0)},
-                    ],
-                    "active": True,
-                    "checkout_available": bool(data.get("price_id")) if plan_id != "free" else True,
-                    "stripe_prices": {
-                        "monthly": bool(data.get("price_id")) if plan_id != "free" else True,
-                        "yearly": False,
-                    },
-                }
-            )
-        return result
-
     def price_to_plan(self, price_id: str | None) -> str:
         for plan, data in self.plan_catalog().items():
             if data.get("price_id") and data.get("price_id") == price_id:

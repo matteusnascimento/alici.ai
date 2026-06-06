@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import type { ChannelProviderCatalogItem } from '../../../types/agentsV2';
 import { useAgentChannels } from '../../../hooks/agentsV2/useAgentChannels';
 import { CHANNEL_VISUALS } from './channelVisuals';
 import { ChannelStatusBadge } from './ChannelStatusBadge';
+import { ConnectChannelModal } from './ConnectChannelModal';
 import { ConnectedChannelCard } from './ConnectedChannelCard';
 
 function providerDescription(provider: string): string {
@@ -25,7 +26,7 @@ function sectionByProvider(provider: string): 'service' | 'advanced' {
   return 'advanced';
 }
 
-function ProviderCard({ item }: { item: ChannelProviderCatalogItem }) {
+function ProviderCard({ item, onOpen }: { item: ChannelProviderCatalogItem; onOpen: (provider: string) => void }) {
   const visual = CHANNEL_VISUALS[item.provider] ?? CHANNEL_VISUALS.api;
   const Icon = visual.icon;
 
@@ -50,12 +51,13 @@ function ProviderCard({ item }: { item: ChannelProviderCatalogItem }) {
             <p>{item.connected_accounts} conta(s) conectada(s)</p>
             <p>{item.active_bindings} canal(is) ativos</p>
           </div>
-          <Link
-            to="/app/integrations"
+          <button
+            type="button"
+            onClick={() => onOpen(item.provider)}
             className="rounded-xl border border-white/20 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:border-cyan-300/45 hover:bg-cyan-400/10"
           >
-            {item.status === 'connected' ? 'Gerenciar' : 'Conectar no hub'}
-          </Link>
+            {item.status === 'connected' ? 'Gerenciar' : 'Conectar'}
+          </button>
         </div>
       </div>
     </article>
@@ -65,8 +67,10 @@ function ProviderCard({ item }: { item: ChannelProviderCatalogItem }) {
 export function AgentChannelsPage() {
   const params = useParams();
   const agentId = Number(params.id || 0);
-  const { providers, channels, loading, error, actionLoading, disconnect, test } = useAgentChannels(agentId);
+  const { providers, accounts, channels, loading, error, actionLoading, connect, disconnect, test } = useAgentChannels(agentId);
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalProvider, setModalProvider] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   const notify = useCallback((ok: boolean, message: string) => {
@@ -85,6 +89,21 @@ export function AgentChannelsPage() {
     return { service, advanced };
   }, [providers]);
 
+  async function handleConnect(payload: {
+    provider: string;
+    integration: Record<string, unknown>;
+    endpoint: Record<string, unknown>;
+    fallback_enabled?: boolean;
+  }) {
+    try {
+      await connect(payload);
+      notify(true, 'Canal conectado com sucesso.');
+    } catch (err) {
+      notify(false, err instanceof Error ? err.message : 'Falha ao conectar canal.');
+      throw err;
+    }
+  }
+
   async function handleDisconnect(bindingId: number, provider: string) {
     try {
       await disconnect(bindingId, provider);
@@ -101,6 +120,16 @@ export function AgentChannelsPage() {
     } catch (err) {
       notify(false, err instanceof Error ? err.message : 'Falha ao testar canal.');
     }
+  }
+
+  function openConnectModal(provider: string | null = null) {
+    setModalProvider(provider);
+    setModalOpen(true);
+  }
+
+  function closeConnectModal() {
+    setModalOpen(false);
+    setModalProvider(null);
   }
 
   if (loading) {
@@ -128,12 +157,13 @@ export function AgentChannelsPage() {
             <h1 className="font-display text-3xl text-white md:text-4xl">Onde seu agente vai trabalhar?</h1>
             <p className="mt-3 text-sm leading-6 text-slate-300">Conecte canais para que seu agente atenda clientes automaticamente.</p>
           </div>
-          <Link
-            to="/app/integrations"
+          <button
+            type="button"
+            onClick={() => openConnectModal()}
             className="rounded-2xl bg-cyan px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-105"
           >
-            Abrir hub de conexoes
-          </Link>
+            Conectar canal
+          </button>
         </div>
       </section>
 
@@ -155,18 +185,18 @@ export function AgentChannelsPage() {
         <p className="text-sm text-slate-400">Escolha onde seu agente vai conversar com clientes no dia a dia.</p>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {groupedProviders.service.map((item) => (
-            <ProviderCard key={item.provider} item={item} />
+            <ProviderCard key={item.provider} item={item} onOpen={openConnectModal} />
           ))}
         </div>
       </section>
 
       {groupedProviders.advanced.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="font-display text-2xl text-white">Integracoes avancadas</h2>
-          <p className="text-sm text-slate-400">Conecte canais avancados disponiveis para este workspace.</p>
+          <h2 className="font-display text-2xl text-white">Integrações avançadas</h2>
+          <p className="text-sm text-slate-400">Conecte canais avançados disponíveis para este workspace.</p>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {groupedProviders.advanced.map((item) => (
-              <ProviderCard key={item.provider} item={item} />
+              <ProviderCard key={item.provider} item={item} onOpen={openConnectModal} />
             ))}
           </div>
         </section>
@@ -174,7 +204,7 @@ export function AgentChannelsPage() {
 
       <section className="space-y-4">
         <div>
-          <h2 className="font-display text-2xl text-white">Conexoes ja ativas</h2>
+          <h2 className="font-display text-2xl text-white">Conexões já ativas</h2>
           <p className="text-sm text-slate-400">Acompanhe status e teste seus canais conectados.</p>
         </div>
 
@@ -192,11 +222,21 @@ export function AgentChannelsPage() {
           </div>
         ) : (
           <div className="rounded-[28px] border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center text-slate-300">
-            Nenhum canal conectado ainda. Use o hub de conexoes para autorizar WhatsApp, Instagram e outros canais oficiais.
+            Nenhum canal conectado ainda. Comece por WhatsApp ou Instagram.
           </div>
         )}
       </section>
+
+      <ConnectChannelModal
+        open={modalOpen}
+        initialProvider={modalProvider}
+        providers={providers}
+        accounts={accounts}
+        channels={channels}
+        actionLoading={actionLoading}
+        onClose={closeConnectModal}
+        onConnect={handleConnect}
+      />
     </div>
   );
 }
-

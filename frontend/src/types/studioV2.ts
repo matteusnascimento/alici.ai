@@ -62,10 +62,17 @@ export interface StudioTemplateCatalogItem {
   name: string;
   category: string;
   type: 'photo' | 'video' | 'social' | 'ad';
-  thumbnail_url: string | null;
-  preview_video_url: string | null;
   premium: boolean;
   template_json: Record<string, unknown>;
+}
+
+export interface StudioWebImage {
+  id: string;
+  title: string;
+  image_url: string;
+  thumb_url: string;
+  provider: string;
+  author_name?: string | null;
 }
 
 export interface StudioExport {
@@ -128,15 +135,4 @@ export interface StudioToolActionResponse {
   project: StudioProject;
   generation: StudioGenerateResponse | null;
   message: string;
-}
-
-export interface StudioWebImage {
-  id: string;
-  provider: 'pexels' | 'unsplash';
-  title: string;
-  image_url: string;
-  thumb_url: string;
-  author_name: string | null;
-  author_url: string | null;
-  source_url: string;
 }

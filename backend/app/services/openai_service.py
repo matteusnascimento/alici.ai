@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class OpenAIService:
     def __init__(self) -> None:
         self.api_key = settings.effective_openai_api_key
-        self.default_model = settings.openai_model
+        self.default_model = settings.effective_openai_chat_model
         self.timeout_seconds = settings.openai_timeout_seconds
         self.base_url = "https://api.openai.com/v1"
         self.client = OpenAI(api_key=self.api_key, timeout=self.timeout_seconds) if self.api_key else None

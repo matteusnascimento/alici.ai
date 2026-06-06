@@ -47,6 +47,18 @@ class AccountPreferencesRead(BaseModel):
     theme_mode: str
     accent_color: str
     haptic_feedback: bool
+    interface_animations: bool
+    advanced_visual_effects: bool
+    compact_menus: bool
+    contextual_tips: bool
+    confirm_critical_actions: bool
+    open_last_module: bool
+    autosave_filters: bool
+    keyboard_shortcuts: bool
+    show_quick_metrics: bool
+    assistant_mode: str
+    assistant_response_detail: str
+    assistant_tone: str
     background_conversation: bool
     autocomplete: bool
     trending: bool
@@ -60,6 +72,18 @@ class AccountPreferencesUpdate(BaseModel):
     theme_mode: str
     accent_color: str
     haptic_feedback: bool
+    interface_animations: bool
+    advanced_visual_effects: bool
+    compact_menus: bool
+    contextual_tips: bool
+    confirm_critical_actions: bool
+    open_last_module: bool
+    autosave_filters: bool
+    keyboard_shortcuts: bool
+    show_quick_metrics: bool
+    assistant_mode: str
+    assistant_response_detail: str
+    assistant_tone: str
     background_conversation: bool
     autocomplete: bool
     trending: bool

@@ -35,10 +35,6 @@ const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; placeh
     { key: 'smtp_user', label: 'SMTP User' },
     { key: 'smtp_password', label: 'SMTP Password', type: 'password' },
   ],
-  crm: [
-    { key: 'crm_type', label: 'CRM Type', placeholder: 'hubspot | salesforce | pipedrive' },
-    { key: 'api_key', label: 'API Key', type: 'password' },
-  ],
 };
 
 const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {

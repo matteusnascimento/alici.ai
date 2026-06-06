@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RevenueSummary(BaseModel):
@@ -46,6 +46,32 @@ class RevenueOpportunityStatusItem(BaseModel):
     total: int
 
 
+class RevenueOriginDemandItem(BaseModel):
+    cidade: str | None = None
+    estado: str | None = None
+    pais: str | None = None
+    canal: str
+    visitantes: int
+    buscas: int
+    cotacoes: int
+    reservas: int
+    receita: float
+    conversao: float
+
+
+class RevenueCustomer360Item(BaseModel):
+    identity_key: str
+    nome: str | None = None
+    telefone: str | None = None
+    email: str | None = None
+    cidade: str | None = None
+    origem: str | None = None
+    reservas: int
+    receita: float
+    canais: list[str] = Field(default_factory=list)
+    fontes: list[str] = Field(default_factory=list)
+
+
 class RevenueIntelligenceSnapshot(BaseModel):
     summary: RevenueSummary
     reservas: list[RevenueReservationItem]
@@ -54,6 +80,7 @@ class RevenueIntelligenceSnapshot(BaseModel):
     receita_por_canal: list[RevenueBreakdownItem]
     receita_por_agente: list[RevenueBreakdownItem]
     status_oportunidades: list[RevenueOpportunityStatusItem]
+    mapa_origem_demanda: list[RevenueOriginDemandItem] = []
 
 
 class RevenueSeriesPoint(BaseModel):

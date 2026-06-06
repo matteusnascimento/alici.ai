@@ -10,11 +10,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-frontend/dist/
+node_modules/
 frontend/node_modules/
-frontend/*.tsbuildinfo
-frontend/*.js
-frontend/*.d.ts
 
 # IDE
 .vscode/
@@ -54,3 +51,8 @@ Thumbs.db
 artifacts/
 generated/
 backend/backend/uploads/
+backend/uploads/
+*.db-journal
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/tailwind.config.js

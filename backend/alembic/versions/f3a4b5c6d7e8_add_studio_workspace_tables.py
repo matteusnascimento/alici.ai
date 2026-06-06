@@ -7,7 +7,6 @@ Create Date: 2026-04-08 00:30:00.000000
 """
 from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
 
 revision: str = "f3a4b5c6d7e8"
@@ -16,120 +15,79 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def _table_exists(table_name: str) -> bool:
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    return table_name in inspector.get_table_names()
-
-
-def _column_exists(table_name: str, column_name: str) -> bool:
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    if table_name not in inspector.get_table_names():
-        return False
-    return column_name in {col["name"] for col in inspector.get_columns(table_name)}
-
-
-def _timestamp_column(name: str, nullable: bool = False) -> sa.Column:
-    bind = op.get_bind()
-    dialect = bind.dialect.name
-    column_type = sa.DateTime(timezone=True) if dialect != "sqlite" else sa.DateTime()
-    server_default = sa.text("now()") if dialect != "sqlite" else sa.text("CURRENT_TIMESTAMP")
-    return sa.Column(name, column_type, nullable=nullable, server_default=server_default)
-
-
-def _add_column_if_missing(table_name: str, column: sa.Column) -> None:
-    if _column_exists(table_name, column.name):
-        return
-    op.add_column(table_name, column)
-
-
-def _create_studio_projects() -> None:
-    if _table_exists("studio_projects"):
-        _add_column_if_missing("studio_projects", sa.Column("thumbnail_url", sa.String(length=500), nullable=True))
-        _add_column_if_missing("studio_projects", sa.Column("metadata_json", sa.Text(), nullable=True))
-        return
-
-    op.create_table(
-        "studio_projects",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("title", sa.String(length=180), nullable=False),
-        sa.Column("project_type", sa.String(length=60), nullable=False),
-        sa.Column("status", sa.String(length=40), nullable=False, server_default=sa.text("'draft'")),
-        sa.Column("thumbnail_url", sa.String(length=500), nullable=True),
-        sa.Column("metadata_json", sa.Text(), nullable=True),
-        _timestamp_column("created_at", nullable=False),
-        _timestamp_column("updated_at", nullable=False),
-    )
-    op.create_index("ix_studio_projects_user_id", "studio_projects", ["user_id"])
-    op.create_index("ix_studio_projects_project_type", "studio_projects", ["project_type"])
-
-
-def _create_studio_exports() -> None:
-    if _table_exists("studio_exports"):
-        _add_column_if_missing("studio_exports", sa.Column("file_name", sa.String(length=255), nullable=True))
-        _add_column_if_missing("studio_exports", sa.Column("file_type", sa.String(length=40), nullable=True))
-        return
-
-    op.create_table(
-        "studio_exports",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("project_id", sa.Integer(), sa.ForeignKey("studio_projects.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("file_name", sa.String(length=255), nullable=False),
-        sa.Column("file_type", sa.String(length=40), nullable=False),
-        sa.Column("file_url", sa.String(length=500), nullable=False),
-        _timestamp_column("created_at", nullable=False),
-    )
-    op.create_index("ix_studio_exports_user_id", "studio_exports", ["user_id"])
-    op.create_index("ix_studio_exports_project_id", "studio_exports", ["project_id"])
-
-
-def _create_brand_assets() -> None:
-    if _table_exists("brand_assets"):
-        return
-
-    op.create_table(
-        "brand_assets",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("asset_type", sa.String(length=60), nullable=False),
-        sa.Column("title", sa.String(length=180), nullable=False),
-        sa.Column("file_url", sa.String(length=500), nullable=False),
-        sa.Column("metadata_json", sa.Text(), nullable=True),
-        _timestamp_column("created_at", nullable=False),
-    )
-    op.create_index("ix_brand_assets_user_id", "brand_assets", ["user_id"])
-    op.create_index("ix_brand_assets_asset_type", "brand_assets", ["asset_type"])
-
-
-def _create_creative_generations() -> None:
-    if _table_exists("creative_generations"):
-        return
-
-    op.create_table(
-        "creative_generations",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("tool_type", sa.String(length=60), nullable=False),
-        sa.Column("prompt", sa.Text(), nullable=False),
-        sa.Column("output_json", sa.Text(), nullable=True),
-        _timestamp_column("created_at", nullable=False),
-    )
-    op.create_index("ix_creative_generations_user_id", "creative_generations", ["user_id"])
-    op.create_index("ix_creative_generations_tool_type", "creative_generations", ["tool_type"])
-
-
 def upgrade() -> None:
-    _create_studio_projects()
-    _create_studio_exports()
-    _create_brand_assets()
-    _create_creative_generations()
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_projects (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            title VARCHAR(180) NOT NULL,
+            project_type VARCHAR(60) NOT NULL,
+            status VARCHAR(40) NOT NULL DEFAULT 'draft',
+            thumbnail_url VARCHAR(500),
+            metadata_json TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+        );
+        """
+    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_studio_projects_user_id ON studio_projects (user_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_studio_projects_project_type ON studio_projects (project_type);")
+    op.execute("ALTER TABLE studio_projects ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(500);")
+    op.execute("ALTER TABLE studio_projects ADD COLUMN IF NOT EXISTS metadata_json TEXT;")
+
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS studio_exports (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            project_id INTEGER NOT NULL REFERENCES studio_projects(id) ON DELETE CASCADE,
+            file_name VARCHAR(255) NOT NULL,
+            file_type VARCHAR(40) NOT NULL,
+            file_url VARCHAR(500) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+        );
+        """
+    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_studio_exports_user_id ON studio_exports (user_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_studio_exports_project_id ON studio_exports (project_id);")
+    op.execute("ALTER TABLE studio_exports ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);")
+    op.execute("ALTER TABLE studio_exports ADD COLUMN IF NOT EXISTS file_type VARCHAR(40);")
+
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS brand_assets (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            asset_type VARCHAR(60) NOT NULL,
+            title VARCHAR(180) NOT NULL,
+            file_url VARCHAR(500) NOT NULL,
+            metadata_json TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+        );
+        """
+    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_brand_assets_user_id ON brand_assets (user_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_brand_assets_asset_type ON brand_assets (asset_type);")
+
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS creative_generations (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            tool_type VARCHAR(60) NOT NULL,
+            prompt TEXT NOT NULL,
+            output_json TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+        );
+        """
+    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_creative_generations_user_id ON creative_generations (user_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_creative_generations_tool_type ON creative_generations (tool_type);")
 
 
 def downgrade() -> None:
-    op.drop_table("creative_generations")
-    op.drop_table("brand_assets")
-    op.drop_table("studio_exports")
-    op.drop_table("studio_projects")
+    op.execute("DROP TABLE IF EXISTS creative_generations;")
+    op.execute("DROP TABLE IF EXISTS brand_assets;")
+    op.execute("DROP TABLE IF EXISTS studio_exports;")
+    op.execute("DROP TABLE IF EXISTS studio_projects;")

@@ -5,18 +5,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/auth': 'http://127.0.0.1:8000',
-      '/account': 'http://127.0.0.1:8000',
-      '/billing': 'http://127.0.0.1:8000',
-      '/business': 'http://127.0.0.1:8000',
-      '/chat': 'http://127.0.0.1:8000',
-      '/health': 'http://127.0.0.1:8000',
-      '/integrations': 'http://127.0.0.1:8000',
-      '/jobs': 'http://127.0.0.1:8000',
-      '/media': 'http://127.0.0.1:8000',
-      '/omnichannel': 'http://127.0.0.1:8000',
-      '/studio': 'http://127.0.0.1:8000',
-      '/webhooks': 'http://127.0.0.1:8000',
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
     },
   },
   build: {

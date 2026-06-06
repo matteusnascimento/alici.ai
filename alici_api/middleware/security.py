@@ -9,7 +9,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Attach conservative security headers to every response."""
+    """Attach conservative security headers to every response.
+
+    CSP still allows inline assets because the current app ships legacy Jinja2
+    templates with inline scripts/styles. Tightening that policy belongs to the
+    template modernization section.
+    """
 
     def __init__(
         self,

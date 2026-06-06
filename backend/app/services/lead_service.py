@@ -1,3 +1,6 @@
+import hashlib
+
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
@@ -20,9 +23,42 @@ class LeadService:
             )
         return lead
 
+    @staticmethod
+    def _clean_lower(value: str | None) -> str:
+        return (value or "").strip().lower()
+
+    def _identity_hash(self, lead_data: LeadCreate) -> str:
+        parts = [
+            self._clean_lower(lead_data.email),
+            self._clean_lower(lead_data.phone),
+            self._clean_lower(lead_data.company),
+            self._clean_lower(lead_data.lead_source),
+        ]
+        return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
+
+    def _find_duplicate(self, lead_data: LeadCreate, identity_hash: str) -> Lead | None:
+        conditions = [Lead.lead_identity_hash == identity_hash]
+        if lead_data.email:
+            conditions.append(Lead.email == str(lead_data.email))
+        if lead_data.phone:
+            conditions.append(Lead.phone == lead_data.phone)
+        return self.db.query(Lead).filter(or_(*conditions)).first()
+
     def create_lead(self, lead_data: LeadCreate) -> LeadRead:
         """Cria um novo lead."""
-        lead = Lead(**lead_data.model_dump())
+        identity_hash = self._identity_hash(lead_data)
+        duplicate = self._find_duplicate(lead_data, identity_hash)
+        if duplicate:
+            for field, value in lead_data.model_dump(exclude_unset=True).items():
+                if value is not None:
+                    setattr(duplicate, field, value)
+            duplicate.lead_identity_hash = identity_hash
+            self.db.commit()
+            self.db.refresh(duplicate)
+            return LeadRead.model_validate(duplicate)
+
+        payload = lead_data.model_dump(exclude={"lead_identity_hash"})
+        lead = Lead(**payload, lead_identity_hash=identity_hash)
         self.db.add(lead)
         try:
             self.db.commit()

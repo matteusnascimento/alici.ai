@@ -1,12 +1,12 @@
 export interface User {
   id: number;
   name: string;
-  nome?: string;
-  username?: string;
+  username: string;
   email: string;
-  phone?: string | null;
+  phone: string | null;
   plan: string;
-  plano?: string;
+  role?: 'owner' | 'admin' | 'member' | string;
+  permissions?: Record<string, 'none' | 'read' | 'write' | 'admin' | string>;
   created_at?: string;
 }
 

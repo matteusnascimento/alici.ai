@@ -28,10 +28,10 @@ describe('LoginForm', () => {
 
     await userEvent.type(screen.getByLabelText(/Email/i), 'ana@example.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), '123456');
-    await userEvent.click(screen.getByRole('button', { name: /Entrar com email/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Entrar/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Entrando...|Entrar com email/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Entrando...|Entrar/i })).toBeInTheDocument();
     });
   });
 
@@ -49,7 +49,7 @@ describe('LoginForm', () => {
 
     await userEvent.type(screen.getByLabelText(/Email/i), 'ana@example.com');
     await userEvent.type(screen.getByLabelText(/Senha/i), '123456');
-    await userEvent.click(screen.getByRole('button', { name: /Entrar com email/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Entrar/i }));
 
     await waitFor(() => {
       expect(screen.getByText('Chat')).toBeInTheDocument();

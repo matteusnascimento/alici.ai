@@ -1,23 +1,17 @@
 """Pydantic schemas used by the API."""
 
-from typing import Any, Literal
-
-from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class RegisterRequest(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    nome: str = Field(min_length=2, max_length=120, validation_alias=AliasChoices("nome", "name"))
+    nome: str = Field(min_length=2, max_length=120)
     email: EmailStr
-    senha: str = Field(min_length=8, max_length=72, validation_alias=AliasChoices("senha", "password"))
+    senha: str = Field(min_length=8, max_length=72)
 
 
 class LoginRequest(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     email: EmailStr
-    senha: str = Field(min_length=1, max_length=72, validation_alias=AliasChoices("senha", "password"))
+    senha: str = Field(min_length=1, max_length=72)
 
 
 class RefreshRequest(BaseModel):
@@ -46,20 +40,4 @@ class VideoRequest(BaseModel):
 
 
 class BillingCheckoutRequest(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    plano: str = Field(min_length=2, max_length=32, validation_alias=AliasChoices("plano", "plan_id", "plan"))
-    billing_cycle: str | None = Field(default="monthly", validation_alias=AliasChoices("billing_cycle", "cycle"))
-
-
-class SocialConnectRequest(BaseModel):
-    provider: Literal["whatsapp", "instagram", "messenger", "facebook", "facebook_messenger", "tiktok"]
-    external_account_id: str = Field(min_length=2, max_length=255)
-    external_account_name: str | None = Field(default=None, max_length=255)
-    access_token: str | None = Field(default=None, max_length=4096)
-    enabled: bool = True
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-class SocialConnectionToggleRequest(BaseModel):
-    enabled: bool
+    plano: str = Field(min_length=2, max_length=32)

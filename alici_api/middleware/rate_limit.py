@@ -66,7 +66,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.excluded_paths = tuple(self.settings.excluded_rate_limit_paths)
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        if not self.settings.rate_limit_enabled or self._is_excluded(request.url.path) or self._is_html_page_request(request):
+        if not self.settings.rate_limit_enabled or self._is_excluded(request.url.path):
             return await call_next(request)
 
         try:
@@ -92,22 +92,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     def _is_excluded(self, path: str) -> bool:
-        if path.startswith("/assets/") or path.startswith("/static/"):
-            return True
         for excluded in self.excluded_paths:
             if not excluded:
                 continue
             if path == excluded or path.startswith(excluded.rstrip("/") + "/"):
                 return True
         return False
-
-    def _is_html_page_request(self, request: Request) -> bool:
-        if request.method.upper() != "GET":
-            return False
-        if request.url.path not in {"/", "/login", "/register", "/chat", "/dashboard", "/jobs", "/app"} and not request.url.path.startswith("/app/"):
-            return False
-        accept = request.headers.get("accept", "")
-        return not accept or "text/html" in accept or "*/*" in accept
 
     async def _check_limits(self, request: Request) -> JSONResponse | None:
         identity = self._identity(request)

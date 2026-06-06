@@ -85,8 +85,8 @@ def test_studio_background_remove_endpoint(client, auth_headers):
         },
     )
 
-    assert response.status_code == 501
-    assert 'remove-background' in response.json()['detail']
+    assert response.status_code == 503
+    assert 'Provider Remove.bg não configurado' in response.json()['detail']
 
 
 def test_studio_ad_create_endpoint(client, auth_headers, monkeypatch):

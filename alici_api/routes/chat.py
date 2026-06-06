@@ -78,10 +78,9 @@ def _prompt_or_400(prompt: str, *, purpose: str) -> str:
         )
 
 
-def _chat_image_provider_or_503() -> tuple[str | None, str]:
+def _ensure_chat_image_or_503() -> None:
     try:
-        provider = ensure_media_provider_available("chat_image_analysis")
-        return provider.provider_name, provider.model_name
+        ensure_media_provider_available("chat_image_analysis")
     except MediaProviderUnavailableError as exc:
         raise HTTPException(
             status_code=503,
@@ -268,7 +267,7 @@ async def chat(req: ChatRequest, user=Depends(get_current_user)):
 
 @router.post("/chat/image", status_code=status.HTTP_202_ACCEPTED)
 async def chat_image(user=Depends(get_current_user), imagem: UploadFile = File(...)):
-    provider, model = _chat_image_provider_or_503()
+    _ensure_chat_image_or_503()
 
     if imagem.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
@@ -283,8 +282,8 @@ async def chat_image(user=Depends(get_current_user), imagem: UploadFile = File(.
         saved = await save_upload_for_job(imagem, job_id=job_id, allowed_types=ALLOWED_IMAGE_TYPES)
         analysis_cost = credit_service.calculate_cost(
             job_type="image",
-            provider=provider,
-            model=model,
+            provider=None,
+            model="default-image",
             resolution="1024x1024",
         )
         result = await job_service.create_paid_job(
@@ -293,8 +292,7 @@ async def chat_image(user=Depends(get_current_user), imagem: UploadFile = File(.
             job_type="chat_image_analysis",
             prompt=f"[chat-image-analysis] {saved.filename}",
             cost=analysis_cost,
-            provider=provider,
-            model=model,
+            model="default-image",
             reason="image_analysis",
             input_path=saved.path,
             metadata={
@@ -302,10 +300,7 @@ async def chat_image(user=Depends(get_current_user), imagem: UploadFile = File(.
                 "filename": saved.filename,
                 "content_type": saved.content_type,
                 "size_bytes": saved.size_bytes,
-                "input_url": saved.url,
-                "input_key": saved.key,
             },
-            charge_on_success=True,
         )
         job = result["job"]
         return success(
@@ -316,8 +311,6 @@ async def chat_image(user=Depends(get_current_user), imagem: UploadFile = File(.
             job_type=job["job_type"],
             progress=job["progress"],
             credit_cost=analysis_cost,
-            charged=False,
-            charge_on_success=True,
             credit_balance=result["credit_balance"],
             status_url=f"/jobs/{job['id']}",
         )

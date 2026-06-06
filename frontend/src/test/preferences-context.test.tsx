@@ -19,6 +19,18 @@ const initialPreferences: AccountPreferences = {
   theme_mode: 'dark',
   accent_color: 'cyan',
   haptic_feedback: false,
+  interface_animations: true,
+  advanced_visual_effects: true,
+  compact_menus: false,
+  contextual_tips: true,
+  confirm_critical_actions: true,
+  open_last_module: true,
+  autosave_filters: true,
+  keyboard_shortcuts: true,
+  show_quick_metrics: true,
+  assistant_mode: 'automatico',
+  assistant_response_detail: 'normais',
+  assistant_tone: 'profissional',
   background_conversation: true,
   autocomplete: true,
   trending: true,
@@ -29,8 +41,12 @@ const initialPreferences: AccountPreferences = {
 const updatedPreferences: AccountPreferences = {
   ...initialPreferences,
   language: 'en-US',
-  theme_mode: 'light',
-  accent_color: 'green',
+  theme_mode: 'midnight',
+  accent_color: 'gold',
+  interface_animations: false,
+  advanced_visual_effects: false,
+  compact_menus: true,
+  assistant_mode: 'executivo',
   split_mode: true,
 };
 
@@ -58,7 +74,11 @@ describe('ThemeContext preferences flow', () => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.removeAttribute('data-theme-mode');
+    document.documentElement.removeAttribute('data-theme-variant');
     document.documentElement.removeAttribute('data-accent');
+    document.documentElement.removeAttribute('data-animations');
+    document.documentElement.removeAttribute('data-visual-effects');
+    document.documentElement.removeAttribute('data-menu-density');
     document.documentElement.lang = 'pt-BR';
     document.documentElement.classList.remove('dark', 'light');
     document.documentElement.style.removeProperty('--accent-color');
@@ -85,7 +105,11 @@ describe('ThemeContext preferences flow', () => {
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme-mode')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme-variant')).toBe('dark');
     expect(document.documentElement.getAttribute('data-accent')).toBe('cyan');
+    expect(document.documentElement.getAttribute('data-animations')).toBe('on');
+    expect(document.documentElement.getAttribute('data-visual-effects')).toBe('advanced');
+    expect(document.documentElement.getAttribute('data-menu-density')).toBe('comfortable');
     expect(document.documentElement.style.getPropertyValue('--accent-rgb')).toBe('110 231 249');
     expect(document.documentElement.lang).toBe('pt-BR');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
@@ -97,14 +121,18 @@ describe('ThemeContext preferences flow', () => {
     });
 
     expect(updateAccountPreferences).toHaveBeenCalledWith(updatedPreferences);
-    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
-    expect(document.documentElement.getAttribute('data-theme-mode')).toBe('light');
-    expect(document.documentElement.getAttribute('data-accent')).toBe('green');
-    expect(document.documentElement.style.getPropertyValue('--accent-rgb')).toBe('16 185 129');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme-mode')).toBe('midnight');
+    expect(document.documentElement.getAttribute('data-theme-variant')).toBe('midnight');
+    expect(document.documentElement.getAttribute('data-accent')).toBe('gold');
+    expect(document.documentElement.getAttribute('data-animations')).toBe('off');
+    expect(document.documentElement.getAttribute('data-visual-effects')).toBe('standard');
+    expect(document.documentElement.getAttribute('data-menu-density')).toBe('compact');
+    expect(document.documentElement.style.getPropertyValue('--accent-rgb')).toBe('245 197 66');
     expect(document.documentElement.lang).toBe('en-US');
-    expect(document.documentElement.classList.contains('light')).toBe(true);
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(localStorage.getItem('axi_preferences_cache')).toContain('en-US');
-    expect(localStorage.getItem('axi_preferences_cache')).toContain('green');
+    expect(localStorage.getItem('axi_preferences_cache')).toContain('gold');
 
     unmount();
     getAccountPreferences.mockReset();
@@ -116,10 +144,10 @@ describe('ThemeContext preferences flow', () => {
     );
 
     await waitFor(() => {
-      expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     });
 
-    expect(document.documentElement.getAttribute('data-accent')).toBe('green');
+    expect(document.documentElement.getAttribute('data-accent')).toBe('gold');
     expect(document.documentElement.lang).toBe('en-US');
   });
 });

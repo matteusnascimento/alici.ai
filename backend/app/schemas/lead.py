@@ -8,6 +8,7 @@ class LeadBase(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     company: Optional[str] = None
+    lead_identity_hash: Optional[str] = None
     lead_source: str = "direct"
     stage: str = "lead"
     value: Optional[float] = None
@@ -31,6 +32,7 @@ class LeadUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    lead_identity_hash: Optional[str] = None
     lead_source: Optional[str] = None
     stage: Optional[str] = None
     value: Optional[float] = None

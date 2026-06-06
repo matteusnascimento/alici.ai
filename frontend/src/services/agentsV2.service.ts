@@ -178,6 +178,20 @@ export function disconnectChannelProvider(provider: string) {
   });
 }
 
+export function startChannelProviderOAuth(provider: string, redirectPath?: string) {
+  return apiFetch<{ provider: string; authorization_url: string }>(`/integrations/${provider}/oauth/start`, {
+    method: 'POST',
+    body: JSON.stringify({ redirect_path: redirectPath }),
+  });
+}
+
+export function startWhatsAppChannelQr(redirectPath?: string) {
+  return apiFetch<{ provider: string; qr_code_url: string; pairing_code: string; expires_at: string }>('/integrations/whatsapp/qr/start', {
+    method: 'POST',
+    body: JSON.stringify({ redirect_path: redirectPath }),
+  });
+}
+
 export function listAgentBoundChannels(agentId: number) {
   return apiFetch<AgentConnectedChannel[]>(`/agents/${agentId}/channels`);
 }

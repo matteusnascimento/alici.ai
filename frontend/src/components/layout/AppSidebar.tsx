@@ -1,33 +1,8 @@
-import {
-  BadgeDollarSign,
-  BarChart3,
-  Bot,
-  BriefcaseBusiness,
-  CalendarDays,
-  ChevronDown,
-  ChevronRight,
-  ChartColumnBig,
-  ClipboardList,
-  Contact,
-  FileText,
-  GitBranch,
-  Headphones,
-  LayoutDashboard,
-  Link2,
-  Megaphone,
-  Menu,
-  MessageSquareText,
-  Package,
-  Phone,
-  Settings2,
-  Sparkles,
-  Truck,
-  Users,
-  X,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { BadgeDollarSign, Bot, Building2, ChevronsLeft, ChevronsRight, Home, Link2, LogOut, Megaphone, Menu, MessageSquare, ShieldCheck, Sparkles, UserCircle2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+import { useAuth } from '../../hooks/useAuth';
 import { SidebarItem } from './SidebarItem';
 import { SidebarLogo } from './SidebarLogo';
 
@@ -39,144 +14,77 @@ interface AppSidebarProps {
 }
 
 const items = [
-  { label: 'Dashboard', to: '/app/dashboard', icon: LayoutDashboard },
-  { label: 'Revenue', to: '/app/revenue', icon: BadgeDollarSign },
-  { label: 'Alici Chat', to: '/app/chat', icon: Bot },
-  {
-    label: 'CRM',
-    to: '/app/crm',
-    icon: BriefcaseBusiness,
-    children: [
-      { label: 'Negócios', to: '/app/crm/negocios', icon: ChartColumnBig },
-      { label: 'Pipelines', to: '/app/crm/pipelines', icon: GitBranch },
-      { label: 'Contatos', to: '/app/crm/contatos', icon: Contact },
-      { label: 'Grupos', to: '/app/crm/grupos', icon: Users },
-      { label: 'Reuniões', to: '/app/crm/reunioes', icon: CalendarDays },
-      { label: 'Produtos', to: '/app/crm/produtos', icon: Package },
-      { label: 'Contratos', to: '/app/crm/contratos', icon: FileText },
-      { label: 'Agenda', to: '/app/crm/agenda', icon: CalendarDays },
-      { label: 'Ligações', to: '/app/crm/ligacoes', icon: Phone },
-      { label: 'Mensagens Rápidas', to: '/app/crm/mensagens-rapidas', icon: MessageSquareText },
-    ],
-  },
-  {
-    label: 'CS',
-    to: '/app/cs',
-    icon: Headphones,
-    children: [
-      { label: 'Jornada', to: '/app/cs/jornada', icon: ClipboardList },
-      { label: 'Logística', to: '/app/cs/logistica', icon: Truck },
-    ],
-  },
-  {
-    label: 'Análises',
-    to: '/app/analytics',
-    icon: BarChart3,
-    children: [
-      { label: 'Análises', to: '/app/analytics/analises', icon: BarChart3 },
-      { label: 'Receita', to: '/app/analytics/receita', icon: BadgeDollarSign },
-      { label: 'Forecast', to: '/app/analytics/forecast', icon: ChartColumnBig },
-    ],
-  },
-  { label: 'Agents', to: '/app/agents', icon: ChartColumnBig },
-  { label: 'AXI Studio', to: '/app/studio', icon: Megaphone },
-  { label: 'Marketing', to: '/app/marketing', icon: Sparkles },
-  { label: 'Integrações', to: '/app/integrations', icon: Link2 },
-  { label: 'Conta AXI', to: '/app/account', icon: Settings2 },
+  { label: 'Home', to: '/app', icon: Home, roles: ['owner', 'admin', 'gerente', 'marketing', 'atendimento', 'member'] },
+  { label: 'Revenue', to: '/app/revenue?view=business-pulse', icon: BadgeDollarSign, permission: 'revenue' },
+  { label: 'Chats', to: '/app/chats', icon: MessageSquare, roles: ['owner', 'admin', 'gerente', 'atendimento', 'member'], permission: 'chats' },
+  { label: 'AXI Assistant', to: '/app/assistant', icon: Bot, roles: ['owner', 'admin', 'gerente', 'marketing', 'atendimento', 'member'], permission: 'assistant' },
+  { label: 'Marketing', to: '/app/marketing', icon: Megaphone, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'], permission: 'marketing' },
+  { label: 'Studio', to: '/app/studio', icon: Sparkles, roles: ['owner', 'admin', 'gerente', 'marketing', 'member'], permission: 'studio' },
+  { label: 'Integrations', to: '/app/integrations', icon: Link2, roles: ['owner', 'admin', 'member'], permission: 'integrations' },
 ];
 
-type SidebarChild = NonNullable<(typeof items)[number]['children']>[number];
-type SidebarEntry = (typeof items)[number];
-
-function initialGroupState() {
-  return Object.fromEntries(
-    items.filter((item) => item.children?.length).map((item) => [item.to, true]),
-  ) as Record<string, boolean>;
-}
-
-function SidebarChildren({
-  children,
-  expanded,
-  onNavigate,
-  id,
-}: {
-  children?: SidebarChild[];
-  expanded: boolean;
-  onNavigate?: () => void;
-  id?: string;
-}) {
-  if (!children?.length || !expanded) return null;
+function SidebarFooter({ expanded }: { expanded: boolean }) {
+  const { user, logout } = useAuth();
+  const displayName = user?.name || 'Usuario AXI';
+  const companyLabel = (user as { company?: string } | null)?.company || 'Empresa nao configurada';
+  const canAdmin = user?.role === 'owner' || user?.role === 'admin';
 
   return (
-    <div id={id} className="ml-5 border-l border-white/10 pl-2">
-      {children.map((child) => {
-        const Icon = child.icon;
-        return (
-          <NavLink
-            key={child.to}
-            to={child.to}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              [
-                'mt-1 flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition',
-                isActive
-                  ? 'border border-cyan/45 bg-cyan/10 text-cyan shadow-[inset_0_0_20px_rgb(var(--accent-rgb)/0.10)]'
-                  : 'text-slate-400 hover:bg-white/[0.05] hover:text-[var(--text-primary)]',
-              ].join(' ')
-            }
-          >
-            <Icon size={15} />
-            <span className="truncate">{child.label}</span>
-          </NavLink>
-        );
-      })}
-    </div>
-  );
-}
-
-function SidebarGroup({
-  item,
-  expanded,
-  groupOpen,
-  onToggle,
-  onNavigate,
-}: {
-  item: SidebarEntry;
-  expanded: boolean;
-  groupOpen: boolean;
-  onToggle: () => void;
-  onNavigate?: () => void;
-}) {
-  const hasChildren = Boolean(item.children?.length);
-  const contentId = `sidebar-group-${item.to.replace(/[^a-z0-9]+/gi, '-')}`;
-
-  if (!expanded || !hasChildren) {
-    return (
-      <div className={expanded ? 'space-y-1' : ''}>
-        <SidebarItem expanded={expanded} icon={item.icon} label={item.label} onNavigate={onNavigate} to={item.to} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <SidebarItem className="w-full" expanded icon={item.icon} label={item.label} onNavigate={onNavigate} to={item.to} />
+    <div className={['mt-auto border-t border-white/10 pt-3', expanded ? 'space-y-2 px-0' : 'flex flex-col items-center gap-3 px-0'].join(' ')}>
+      <div className={['border border-white/10 bg-white/[0.035]', expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0'].join(' ')}>
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-cyan-400/15 text-cyan-200">
+            <Building2 strokeWidth={2.2} className="h-5 w-5 shrink-0" />
+          </span>
+          {expanded ? (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">{companyLabel}</p>
+              <p className="truncate text-xs text-slate-400">Empresa atual</p>
+            </div>
+          ) : null}
         </div>
+      </div>
+      <Link
+        to="/app/account/overview"
+        className={[
+          'block border border-violet-300/20 bg-[linear-gradient(135deg,rgba(124,58,237,0.20),rgba(255,255,255,0.04))] transition hover:border-violet-200/35',
+          expanded ? 'rounded-2xl p-3' : 'grid h-12 w-12 place-items-center rounded-full p-0',
+        ].join(' ')}
+      >
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-[linear-gradient(135deg,#7c3aed,#22d3ee)] text-white">
+            <UserCircle2 strokeWidth={2.2} className="h-5 w-5 shrink-0" />
+          </span>
+          {expanded ? (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+              <p className="truncate text-xs text-slate-400">Minha Conta</p>
+            </div>
+          ) : null}
+        </div>
+      </Link>
+      {canAdmin ? (
+        <SidebarItem expanded={expanded} label="Administracao" to="/app/admin" icon={ShieldCheck} />
+      ) : null}
+      {expanded ? (
         <button
           type="button"
-          onClick={onToggle}
-          aria-expanded={groupOpen}
-          aria-controls={contentId}
-          aria-label={`${groupOpen ? 'Recolher' : 'Expandir'} ${item.label}`}
-          title={`${groupOpen ? 'Recolher' : 'Expandir'} ${item.label}`}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-slate-300 transition hover:border-cyan/35 hover:bg-cyan/10 hover:text-cyan"
+          onClick={logout}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 hover:bg-white/[0.05] hover:text-white"
         >
-          {groupOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <LogOut strokeWidth={2.2} className="h-[18px] w-[18px] shrink-0" />
+          Sair
         </button>
-      </div>
-      <SidebarChildren id={contentId} children={item.children} expanded={groupOpen} onNavigate={onNavigate} />
+      ) : (
+        <button
+          type="button"
+          onClick={logout}
+          className="grid h-12 w-12 place-items-center rounded-full text-slate-400 hover:bg-white/[0.05] hover:text-white"
+          aria-label="Sair"
+        >
+          <LogOut strokeWidth={2.2} className="h-[18px] w-[18px] shrink-0" />
+        </button>
+      )}
     </div>
   );
 }
@@ -187,18 +95,27 @@ export function AppSidebar({
   onMobileClose,
   onDesktopExpandedChange,
 }: AppSidebarProps) {
-  const location = useLocation();
   const [hoverCapable, setHoverCapable] = useState(false);
-  const [expandedDesktop, setExpandedDesktop] = useState(false);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => initialGroupState());
-  const desktopNavRef = useRef<HTMLElement | null>(null);
+  const [expandedDesktop, setExpandedDesktop] = useState(true);
+  const { user } = useAuth();
+  const roleKey = user?.role ?? 'member';
+  const explicitPermissions = user?.permissions && Object.keys(user.permissions).length > 0 ? user.permissions : null;
+  const navigationItems = useMemo(
+    () => items.filter((item) => {
+      if (roleKey === 'owner' || roleKey === 'admin') return true;
+      if (explicitPermissions && item.permission) {
+        return explicitPermissions[item.permission] && explicitPermissions[item.permission] !== 'none';
+      }
+      return !item.roles || item.roles.includes(roleKey);
+    }),
+    [explicitPermissions, roleKey],
+  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') {
       setHoverCapable(false);
       return;
     }
-
     const query = window.matchMedia('(hover: hover) and (pointer: fine)');
     const sync = () => setHoverCapable(query.matches);
     sync();
@@ -207,20 +124,11 @@ export function AppSidebar({
   }, []);
 
   const expanded = useMemo(() => (hoverCapable ? expandedDesktop : true), [expandedDesktop, hoverCapable]);
+  const CollapseIcon = expanded ? ChevronsLeft : ChevronsRight;
 
   useEffect(() => {
     onDesktopExpandedChange?.(expanded);
   }, [expanded, onDesktopExpandedChange]);
-
-  useEffect(() => {
-    const activeGroup = items.find((item) => item.children?.some((child) => location.pathname.startsWith(child.to)));
-    if (!activeGroup) return;
-    setOpenGroups((current) => (current[activeGroup.to] ? current : { ...current, [activeGroup.to]: true }));
-  }, [location.pathname]);
-
-  function toggleGroup(groupTo: string) {
-    setOpenGroups((current) => ({ ...current, [groupTo]: !(current[groupTo] ?? true) }));
-  }
 
   return (
     <>
@@ -234,37 +142,37 @@ export function AppSidebar({
       </button>
 
       <aside
-        onWheel={(event) => {
-          if (!desktopNavRef.current) return;
-          desktopNavRef.current.scrollTop += event.deltaY;
-        }}
         onMouseEnter={() => hoverCapable && setExpandedDesktop(true)}
-        onMouseLeave={() => hoverCapable && setExpandedDesktop(false)}
+        onMouseLeave={() => undefined}
         className={[
-          'fixed left-0 top-0 z-30 hidden h-screen min-h-0 shrink-0 overflow-hidden rounded-r-[2rem] border-r border-white/10',
-          'bg-gradient-to-b from-storm/95 via-storm/85 to-ink/95 py-4 shadow-soft backdrop-blur lg:flex lg:flex-col',
+          'fixed left-0 top-0 z-30 hidden h-screen shrink-0 overflow-hidden rounded-r-[2rem] border-r border-white/10',
+          'bg-[radial-gradient(circle_at_20%_0%,rgba(192,38,211,0.22),transparent_32%),linear-gradient(180deg,rgba(8,8,12,0.97),rgba(5,5,7,0.96))] py-4 shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:flex lg:flex-col',
           'transition-[width] duration-300 ease-out',
-          expanded ? 'px-3 lg:w-[284px]' : 'px-0 lg:w-[92px]',
+          expanded ? 'px-3 lg:w-[260px]' : 'px-0 lg:w-[92px]',
         ].join(' ')}
       >
         <SidebarLogo expanded={expanded} />
-        <nav
-          ref={desktopNavRef}
-          className={[
-            'mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-3 [scrollbar-gutter:stable]',
-            expanded ? 'gap-2.5 pr-1' : 'items-center gap-4 pr-0',
-          ].join(' ')}
-        >
-          {items.map((item) => (
-            <SidebarGroup
-              key={item.to}
-              item={item}
-              expanded={expanded}
-              groupOpen={openGroups[item.to] ?? true}
-              onToggle={() => toggleGroup(item.to)}
-            />
+        <nav className={['mt-6 flex flex-1 flex-col overflow-y-auto pb-3', expanded ? 'gap-2.5 pr-1' : 'items-center gap-4 pr-0'].join(' ')}>
+          {navigationItems.map((item) => (
+            <SidebarItem key={item.to} expanded={expanded} {...item} />
           ))}
+          <button
+            type="button"
+            onClick={() => setExpandedDesktop((current) => !current)}
+            className={[
+              'mt-auto flex items-center border border-transparent bg-white/[0.03] text-sm text-slate-300 transition hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
+              expanded ? 'h-12 justify-start gap-3 rounded-2xl px-3' : 'mx-auto h-12 w-12 justify-center rounded-2xl p-0',
+            ].join(' ')}
+            aria-label={expanded ? 'Recolher sidebar' : 'Expandir sidebar'}
+            title={!expanded ? 'Expandir sidebar' : undefined}
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-ink/70 text-cyan shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+              <CollapseIcon size={18} strokeWidth={2.2} className="h-[18px] w-[18px] shrink-0" />
+            </span>
+            {expanded ? <span className="min-w-0 truncate text-sm font-medium leading-5">Recolher menu</span> : null}
+          </button>
         </nav>
+        <SidebarFooter expanded={expanded} />
       </aside>
 
       {mobileOpen ? (
@@ -273,8 +181,8 @@ export function AppSidebar({
 
       <aside
         className={[
-          'fixed bottom-0 left-0 top-0 z-50 flex w-[304px] min-h-0 flex-col rounded-r-3xl border-r border-white/10',
-          'bg-gradient-to-b from-storm via-storm/90 to-ink px-4 py-5 shadow-soft transition-transform duration-300 lg:hidden',
+          'fixed bottom-0 left-0 top-0 z-50 w-[304px] rounded-r-3xl border-r border-white/10',
+          'bg-[radial-gradient(circle_at_20%_0%,rgba(192,38,211,0.22),transparent_32%),linear-gradient(180deg,rgba(8,8,12,0.97),rgba(5,5,7,0.96))] px-4 py-5 shadow-soft transition-transform duration-300 lg:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
@@ -290,18 +198,12 @@ export function AppSidebar({
           </button>
         </div>
         <SidebarLogo expanded />
-        <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain pb-2 pr-1 [scrollbar-gutter:stable]">
-          {items.map((item) => (
-            <SidebarGroup
-              key={item.to}
-              item={item}
-              expanded
-              groupOpen={openGroups[item.to] ?? true}
-              onNavigate={onMobileClose}
-              onToggle={() => toggleGroup(item.to)}
-            />
+        <nav className="mt-5 flex max-h-[calc(100vh-310px)] flex-col gap-2.5 overflow-y-auto pb-2 pr-1">
+          {navigationItems.map((item) => (
+            <SidebarItem key={item.to} expanded onNavigate={onMobileClose} {...item} />
           ))}
         </nav>
+        <SidebarFooter expanded />
       </aside>
     </>
   );
