@@ -1,8 +1,16 @@
 import os
 import logging
 from typing import Optional
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content
+
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail, Email, To, Content
+except ImportError:
+    SendGridAPIClient = None
+    Mail = None
+    Email = None
+    To = None
+    Content = None
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +55,14 @@ class EmailService:
             return {
                 "status": "error",
                 "message": "Email nao enviado: SENDGRID_API_KEY nao configurado",
+                "to_email": to_email,
+                "subject": subject,
+            }
+
+        if SendGridAPIClient is None or Mail is None or Email is None or To is None or Content is None:
+            return {
+                "status": "error",
+                "message": "Email nao enviado: pacote sendgrid nao instalado",
                 "to_email": to_email,
                 "subject": subject,
             }
