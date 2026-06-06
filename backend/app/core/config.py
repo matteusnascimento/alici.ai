@@ -198,6 +198,8 @@ class Settings(BaseSettings):
     @classmethod
     def validate_default_ai_provider(cls, value: str) -> str:
         normalized = (value or "").strip().lower()
+        if normalized == "grok":
+            normalized = "groq"
         if normalized not in {"groq", "gemini", "ollama", "openai"}:
             raise ValueError("DEFAULT_AI_PROVIDER deve ser groq, gemini, ollama ou openai")
         return normalized
@@ -238,7 +240,7 @@ class Settings(BaseSettings):
         normalized_env = self.app_env.lower()
         normalized_secret = self.secret_key.strip().lower()
 
-        if normalized_env != "development" and (
+        if normalized_env not in {"development", "test"} and (
             normalized_secret in _INSECURE_KEYS
             or normalized_secret.startswith("change-me")
             or len(self.secret_key) < 32
@@ -248,7 +250,7 @@ class Settings(BaseSettings):
                 "Set a strong SECRET_KEY via environment variable."
             )
 
-        if normalized_env != "development" and "*" in self.cors_allowed_origins:
+        if normalized_env not in {"development", "test"} and "*" in self.cors_allowed_origins:
             raise ValueError("CORS_ALLOWED_ORIGINS cannot contain '*' outside development")
 
         if self.should_seed_dev_user and not self.dev_seed_password:
@@ -256,7 +258,7 @@ class Settings(BaseSettings):
                 "ENABLE_DEV_SEED_USER=true requires DEV_SEED_PASSWORD to be set via environment variable."
             )
 
-        if normalized_env != "development":
+        if normalized_env not in {"development", "test"}:
             object.__setattr__(self, "debug", False)
 
     @property

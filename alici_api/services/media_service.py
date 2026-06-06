@@ -8,6 +8,7 @@ ElevenLabs, Kling, Runway, Luma, etc. should live behind this module.
 
 from __future__ import annotations
 
+from alici_api.config import get_settings
 from alici_api.services.media_storage import R2MediaStorage, StoredMedia
 
 
@@ -38,6 +39,33 @@ def unavailable_message(media_type: str) -> str:
 def ensure_media_provider_available(media_type: str) -> None:
     """Block paid media work when no real provider implementation exists."""
     raise MediaProviderUnavailableError(media_type, unavailable_message(media_type))
+
+
+def available_media_providers(media_type: str) -> list[str]:
+    """Return real configured providers for paid media work.
+
+    Media generation must be persisted in external storage before it can be
+    accepted as a paid operation. This function intentionally does not expose
+    local or fake providers.
+    """
+    settings = get_settings()
+    storage_status = R2MediaStorage().status()
+    if not storage_status.get("configured"):
+        missing = ", ".join(storage_status.get("missing", []))
+        detail = f" Configuracao ausente: {missing}." if missing else ""
+        raise MediaProviderUnavailableError(
+            media_type,
+            f"Storage persistente R2 obrigatorio antes de aceitar geracao paga.{detail}",
+        )
+
+    providers: list[str] = []
+    if media_type == "image":
+        replicate_token = getattr(settings, "replicate_api_token", None)
+        if replicate_token and replicate_token.get_secret_value():
+            providers.append("replicate")
+        if getattr(settings, "openai_api_key", None):
+            providers.append("openai")
+    return providers
 
 
 def store_generated_media_bytes(

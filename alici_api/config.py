@@ -151,6 +151,7 @@ class Settings(BaseSettings):
 
     # AI providers
     default_ai_provider: Literal["groq", "gemini", "ollama", "openai"] = "groq"
+    replicate_api_token: SecretStr | None = None
     groq_api_key: SecretStr | None = None
     groq_model_chat: str = "llama-3.1-8b-instant"
     groq_model_agent: str = "llama-3.1-8b-instant"
@@ -208,6 +209,12 @@ class Settings(BaseSettings):
     @classmethod
     def parse_bool_values(cls, value):
         return _parse_bool(value)
+
+    @field_validator("default_ai_provider", mode="before")
+    @classmethod
+    def normalize_default_ai_provider(cls, value):
+        normalized = str(value or "").strip().lower()
+        return "groq" if normalized == "grok" else normalized
 
     @model_validator(mode="after")
     def validate_production_settings(self):

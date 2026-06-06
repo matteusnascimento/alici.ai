@@ -32,7 +32,7 @@ class R2MediaStorage:
     def __init__(self):
         self.settings = get_settings()
 
-    def _require_config(self) -> None:
+    def status(self) -> dict:
         missing = []
         if not self.settings.r2_endpoint_url:
             missing.append("R2_ENDPOINT_URL")
@@ -44,6 +44,10 @@ class R2MediaStorage:
             missing.append("R2_BUCKET_UPLOADS")
         if not self.settings.r2_public_base_url:
             missing.append("R2_PUBLIC_BASE_URL")
+        return {"configured": not missing, "missing": missing}
+
+    def _require_config(self) -> None:
+        missing = self.status()["missing"]
         if missing:
             raise MediaStorageError(f"Storage R2 incompleto. Configure: {', '.join(missing)}")
 
