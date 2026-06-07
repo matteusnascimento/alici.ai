@@ -1,95 +1,143 @@
-# PUSH PARA GITHUB - Instruções Finais
+# AXI — Push e Deploy Oficial
 
-O projeto está commitado e pronto para ser subido. Execute estes comandos **com suas credenciais reais do GitHub**:
+Este documento descreve o fluxo oficial atual para subir o AXI no GitHub e publicar no Render.
 
-## Passo 1: Configurar remote com seu repositório
+## Arquitetura oficial
 
-```powershell
-# Remove remote placeholder (se necessário)
-git remote remove origin
+Produção atual:
 
-# Adicione seu repositório real (escolha uma opção)
+- `frontend/` — React/Vite/TypeScript.
+- `backend/app/` — backend FastAPI oficial.
+- `backend/alembic/` — migrations oficiais.
+- `backend/scripts/render_migrate.py` — migration helper do Render.
+- `render.yaml` — blueprint oficial de deploy.
 
-# Opção A: HTTPS (recomendado para CI/CD)
-git remote add origin https://github.com/SEU_USUARIO/SEU_REPO.git
+Legado:
 
-# Opção B: SSH (se tiver chave SSH configurada)
-git remote add origin git@github.com:SEU_USUARIO/SEU_REPO.git
-```
+- `alici_api/` — backend legado/histórico.
+- `alembic/` da raiz — migrations legadas.
+- scripts antigos da raiz — compatibilidade/histórico.
 
-## Passo 2: Push para main
+Não use `uvicorn alici_api.app:app` para produção atual.
 
-```powershell
-# Criar/renomear branch para main (se necessário)
-git branch -M main
+O comando oficial de produção é:
 
-# Fazer push
-git push -u origin main
-```
-
-## Se receber erro de autenticação:
-
-**HTTPS**: Gere um Personal Access Token (PAT) em https://github.com/settings/tokens:
-- Clique "Generate new token (classic)"
-- Selecione scopes: `repo`, `write:packages`
-- Copie o token
-- Quando git pedir password, use o token como senha
-
-**SSH**: Adicione sua chave pública ao GitHub em https://github.com/settings/keys:
 ```bash
-# Gerar chave (se não tiver)
-ssh-keygen -t ed25519 -C "seu_email@exemplo.com"
-# Copiar chave pública
-type $env:USERPROFILE\.ssh\id_ed25519.pub  # Windows PowerShell
-# Colar em GitHub Settings > SSH Keys
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-## Passo 3: Verificar push bem-sucedido
+## Push para GitHub
 
-```powershell
-git log --oneline -5
-git remote -v
-# Visite https://github.com/SEU_USUARIO/SEU_REPO para confirmar
+```bash
+git status
+git add .
+git commit -m "chore: align AXI production deployment"
+git push origin main
 ```
 
-## Deploy no Render
+## Deploy oficial no Render
 
-Após push bem-sucedido:
+Preferencialmente use o Blueprint:
 
-1. Acesse https://dashboard.render.com
-2. Clique "New +" e selecione "Web Service"
-3. Conecte seu repositório GitHub
-4. Configure:
-   - **Name**: `alici-backend-web`
-   - **Root Directory**: `.` (or `backend/` se preferir)
-   - **Build Command**: `pip install -r requirements.txt && alembic upgrade head`
-   - **Start Command**: `uvicorn alici_api.app:app --host 0.0.0.0 --port $PORT`
-5. Adicione Environment Variables (Configure em Settings > Environment):
-   - `REDIS_URL`
-   - `DATABASE_URL` 
-   - `SECRET_KEY`
-   - `OPENAI_API_KEY`
-   - Demais chaves de env (copie de `.env`)
-6. Clique "Create Web Service"
+1. Acesse Render Dashboard.
+2. Clique em **New +**.
+3. Selecione **Blueprint**.
+4. Conecte o repositório `matteusnascimento/alici.ai`.
+5. Use o arquivo `render.yaml`.
+6. Configure as variáveis `sync: false`.
 
-Para workers (background jobs):
-1. Novamente "New +" > "Background Worker"
-2. Mesmo repositório
-3. **Start Command**: `arq alici_api.jobs.queue.WorkerSettings`
+O `render.yaml` usa:
 
-**Pronto! Seu projeto ALICI está em produção.** 🚀
+```yaml
+rootDir: backend
+startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
 
----
+## Variáveis obrigatórias
 
-## Checklist Final:
+```env
+APP_ENV=production
+ENV=production
+DATABASE_URL=postgresql://...
+SECRET_KEY=...
+CORS_ALLOWED_ORIGINS=https://alici-ai.onrender.com
+```
 
-- [ ] `.env` revisado (credenciais OK)
-- [ ] `git push origin main` executado com sucesso
-- [ ] Repositório visível no GitHub
-- [ ] Render conectado ao GitHub
-- [ ] Web service + workers criados no Render
-- [ ] `GET /health/ready` retorna OK após deploy
-- [ ] Teste login/chat simples funciona
-- [ ] Logs no Sentry/Papertrail aparecem
+## Variáveis por módulo
 
-**Status: ✅ PRONTO PARA CLIENTES REAIS**
+```env
+OPENAI_API_KEY=...
+GROQ_API_KEY=...
+STRIPE_SECRET_KEY=...
+STRIPE_WEBHOOK_SECRET=...
+R2_ENDPOINT_URL=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+META_APP_ID=...
+META_CLIENT_SECRET=...
+META_WEBHOOK_VERIFY_TOKEN=...
+```
+
+## Validação esperada no deploy
+
+O log correto deve conter:
+
+```text
+Context impl PostgresqlImpl.
+Build successful 🎉
+Your service is live 🎉
+```
+
+Se aparecer:
+
+```text
+Context impl SQLiteImpl.
+```
+
+o deploy não está usando o banco correto.
+
+## Health checks
+
+```text
+GET /health
+GET /api/health
+```
+
+## Checklist pós-deploy
+
+- [ ] Render terminou com `Build successful`.
+- [ ] Serviço terminou com `Your service is live`.
+- [ ] Alembic usou `PostgresqlImpl`.
+- [ ] `/health` retorna 200.
+- [ ] `/api/health` retorna 200.
+- [ ] Cadastro de cliente novo funciona.
+- [ ] Cliente novo não entra no perfil do fundador.
+- [ ] Login/logout funciona.
+- [ ] Fluxo empresa -> usuário -> integração funciona.
+- [ ] Chat/IA responde ou falha com erro claro.
+- [ ] Billing/Stripe validado em sandbox.
+- [ ] Integrações Meta/WhatsApp validadas em sandbox.
+
+## Workers
+
+Não crie worker baseado em:
+
+```bash
+arq alici_api.jobs.queue.WorkerSettings
+```
+
+sem decisão explícita de manter um serviço legado.
+
+Antes de criar workers em produção, valide se o worker pertence ao backend oficial `backend/app` ou se será tratado como serviço legado separado.
+
+## Status real
+
+O AXI está em estado:
+
+```text
+MVP avançado online / beta técnico
+```
+
+Pronto para teste controlado e validação com cliente piloto.
+
+Ainda exige hardening antes de cliente pagante em escala.
