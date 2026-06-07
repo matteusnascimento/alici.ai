@@ -69,14 +69,20 @@ def _build_column(column_name: str) -> sa.Column:
 
 
 def upgrade() -> None:
-    for column_name in PREFERENCE_COLUMN_NAMES:
-        if not _column_exists("user_settings", column_name):
-            with op.batch_alter_table("user_settings") as batch_op:
+    if not _table_exists("user_settings"):
+        return
+
+    with op.batch_alter_table("user_settings") as batch_op:
+        for column_name in PREFERENCE_COLUMN_NAMES:
+            if not _column_exists("user_settings", column_name):
                 batch_op.add_column(_build_column(column_name))
 
 
 def downgrade() -> None:
-    for column_name in reversed(PREFERENCE_COLUMN_NAMES):
-        if _column_exists("user_settings", column_name):
-            with op.batch_alter_table("user_settings") as batch_op:
+    if not _table_exists("user_settings"):
+        return
+
+    with op.batch_alter_table("user_settings") as batch_op:
+        for column_name in reversed(PREFERENCE_COLUMN_NAMES):
+            if _column_exists("user_settings", column_name):
                 batch_op.drop_column(column_name)
