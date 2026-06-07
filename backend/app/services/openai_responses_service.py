@@ -206,7 +206,7 @@ class OpenAIResponsesService:
                 output_text = str(response) if response else ""
 
             # Extrair tool calls se houver
-            tool_calls = None
+            tool_calls = []
             if hasattr(response, "tool_calls") and response.tool_calls:
                 tool_calls = [
                     {
@@ -220,7 +220,7 @@ class OpenAIResponsesService:
                 "openai_responses.success model=%s output_length=%s tool_calls=%s",
                 self.model,
                 len(output_text),
-                len(tool_calls) if tool_calls else 0,
+                len(tool_calls),
             )
 
             return OpenAIResponsesOutput(output_text=output_text.strip(), tool_calls=tool_calls)

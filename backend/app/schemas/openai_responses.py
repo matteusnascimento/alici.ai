@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AIToolParameter(BaseModel):
@@ -61,11 +61,23 @@ class OpenAIResponsesRequest(BaseModel):
     tools: list[AITool] | None = Field(default=None, description="Ferramentas disponíveis")
 
 
+class ToolCall(BaseModel):
+    """Chamada de ferramenta retornada pela IA."""
+
+    tool_name: str = Field(description="Nome da ferramenta a executar")
+    tool_args: dict[str, Any] = Field(default_factory=dict, description="Argumentos para a ferramenta")
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+
 class OpenAIResponsesOutput(BaseModel):
     """Resposta da Responses API."""
 
+    model_config = ConfigDict(protected_namespaces=())
+
     output_text: str = Field(description="Texto da resposta")
-    tool_calls: list["ToolCall"] | None = Field(default=None, description="Chamadas de ferramentas (se houver)")
+    tool_calls: list[ToolCall] = Field(default_factory=list, description="Chamadas de ferramentas (se houver)")
     conversation_id: int | None = Field(default=None, description="ID da conversa persistida (quando aplicável)")
     message_id: int | None = Field(default=None, description="ID da mensagem do assistente (quando aplicável)")
 
@@ -96,16 +108,6 @@ class AgentGenerateResponse(BaseModel):
 # ─────────────────────────────────────────────────────────────────
 # Tool Execution
 # ─────────────────────────────────────────────────────────────────
-
-
-class ToolCall(BaseModel):
-    """Chamada de ferramenta retornada pela IA."""
-
-    tool_name: str = Field(description="Nome da ferramenta a executar")
-    tool_args: dict[str, Any] = Field(default_factory=dict, description="Argumentos para a ferramenta")
-
-    def __getitem__(self, key: str) -> Any:
-        return getattr(self, key)
 
 
 class ToolExecutionRequest(BaseModel):

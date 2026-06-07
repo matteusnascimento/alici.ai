@@ -18,7 +18,6 @@ def _set_meta(monkeypatch, *, configured: bool) -> None:
     )
     monkeypatch.setattr(settings, "meta_oauth_scopes", "instagram_basic,ads_read" if configured else "")
     monkeypatch.setattr(settings, "app_secret_key", "test-app-secret" if configured else "")
-    monkeypatch.setattr(settings, "secret_key", "test-secret-key")
 
 
 def _set_google(monkeypatch, *, configured: bool) -> None:
@@ -34,7 +33,6 @@ def _set_google(monkeypatch, *, configured: bool) -> None:
     )
     monkeypatch.setattr(settings, "google_oauth_scopes", "https://www.googleapis.com/auth/adwords" if configured else "")
     monkeypatch.setattr(settings, "app_secret_key", "test-app-secret" if configured else "")
-    monkeypatch.setattr(settings, "secret_key", "test-secret-key")
 
 
 def test_meta_connect_without_env_returns_503(client, auth_headers, monkeypatch):

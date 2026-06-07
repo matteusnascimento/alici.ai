@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import time
+from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import ClassVar
 
 from alici_api.config import get_settings
 from alici_api.services.credit_service import CreditService
@@ -25,8 +27,11 @@ class AICostEstimate:
 
 
 class AIManager:
-    supported_providers = ("groq", "gemini", "ollama", "openai")
+    supported_providers = ("grok", "groq", "gemini", "ollama", "openai")
+    _provider_failure_counts: ClassVar[defaultdict[str, int]] = defaultdict(int)
+    _provider_disabled_until: ClassVar[dict[str, float]] = {}
     provider_priority = {
+        "grok": 0,
         "ollama": 0,
         "groq": 10,
         "gemini": 20,
@@ -85,7 +90,7 @@ class AIManager:
         return list(self.providers.keys())
 
     def provider_model(self, provider_name: str, operation_name: str = "chat") -> str:
-        if provider_name == "groq":
+        if provider_name in {"grok", "groq"}:
             return self.settings.groq_model_code if operation_name == "generate_code" else self.settings.groq_model_chat
         if provider_name == "gemini":
             return self.settings.gemini_model
@@ -164,6 +169,7 @@ class AIManager:
                 )
                 return response
             except Exception as exc:
+                self.__class__._provider_failure_counts[provider_name] += 1
                 logger_ai.warning(f"Provider {provider_name} falhou em {operation_name}: {exc}")
                 errors.append(f"{provider_name}: {exc}")
 

@@ -98,6 +98,7 @@ def reset_database():
     from app.services.dev_seed_service import DevSeedService
 
     # Limpa dados sem recriar schema a cada teste, reduzindo custo e lock no SQLite.
+    Base.metadata.create_all(bind=engine)
     with engine.begin() as connection:
         connection.execute(text("PRAGMA foreign_keys=OFF"))
         for table in reversed(Base.metadata.sorted_tables):

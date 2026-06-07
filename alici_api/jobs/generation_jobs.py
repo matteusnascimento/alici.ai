@@ -62,6 +62,32 @@ def _refund_job_if_needed(job: dict[str, Any], *, error_message: str | None = No
     logger_jobs.info("generation_refunded", extra={"job_id": job.get("id"), "cost": job.get("cost")})
 
 
+def _charge_job_if_needed(job: dict[str, Any]) -> None:
+    metadata = job.get("metadata") or {}
+    if not metadata.get("charge_on_success") or int(job.get("cost") or 0) <= 0:
+        return
+
+    reason = str(metadata.get("charge_reason") or "generation_success_charge")
+    job_id = str(job["id"])
+    credit_service = CreditService()
+    if credit_service.transaction_exists(job_id=job_id, reason=reason, transaction_type="spend"):
+        return
+
+    credit_service.spend_credits(
+        user_id=int(job["user_id"]),
+        amount=int(job["cost"]),
+        reason=reason,
+        provider=job.get("provider"),
+        model=job.get("model"),
+        job_id=job_id,
+        metadata={
+            "job_type": job.get("job_type"),
+            "result_url": job.get("result_url"),
+        },
+    )
+    logger_jobs.info("generation_charged", extra={"job_id": job_id, "cost": job.get("cost"), "reason": reason})
+
+
 def _media_cache_system_prompt(job: dict[str, Any]) -> str:
     metadata = job.get("metadata") or {}
     if job.get("job_type") == "image":
@@ -179,6 +205,7 @@ async def run_generation_job(ctx: dict[str, Any], job_id: str) -> dict[str, Any]
             raise RuntimeError(f"Tipo de job nao suportado: {job_type}")
 
         completed = repo.complete_job(job_id, result_url=result_url, result_payload=payload)
+        _charge_job_if_needed(completed or job)
         await _store_media_cache(completed or job, result_url=result_url, payload=payload)
         _remove_input_file(completed or job)
         logger_jobs.info("generation_job_completed", extra={"job_id": job_id, "job_type": job_type})

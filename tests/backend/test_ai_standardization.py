@@ -19,6 +19,10 @@ def test_ai_service_uses_env_defaults(monkeypatch):
 def test_ai_service_fails_safely_without_key(monkeypatch):
     monkeypatch.setattr(settings, 'default_ai_provider', 'openai', raising=False)
     monkeypatch.setattr(settings, 'openai_api_key', '', raising=False)
+    monkeypatch.setattr(settings, 'openai_api_key_rotated', '', raising=False)
+    monkeypatch.setattr(settings, 'groq_api_key', '', raising=False)
+    monkeypatch.setattr(settings, 'gemini_api_key', '', raising=False)
+    monkeypatch.setattr(settings, 'ollama_enabled', False, raising=False)
 
     service = AIService()
 

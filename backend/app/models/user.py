@@ -73,7 +73,7 @@ class User(Base):
         billing_admin_emails = {item.strip().lower() for item in settings.billing_admin_emails if item.strip()}
         if email in owner_emails:
             return "owner"
-        if settings.app_env.lower() == "development" and email == settings.dev_seed_email.strip().lower():
+        if settings.should_seed_dev_user and email == settings.dev_seed_email.strip().lower():
             return "owner"
         if email in admin_emails or email in billing_admin_emails:
             return "admin"
