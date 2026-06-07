@@ -89,6 +89,25 @@ class AIManager:
     def available_providers(self) -> list[str]:
         return list(self.providers.keys())
 
+    def provider_statuses(self, include_probe: bool = False) -> dict[str, dict[str, object]]:
+        statuses: dict[str, dict[str, object]] = {}
+        configured = set(self.available_providers())
+        for provider_name in self.supported_providers:
+            normalized = "groq" if provider_name == "grok" else provider_name
+            if provider_name == "grok" and "groq" in statuses:
+                continue
+            enabled = provider_name in configured or normalized in configured
+            status: dict[str, object] = {
+                "configured": enabled,
+                "enabled": enabled,
+                "model": self.provider_model(normalized),
+                "reason": None if enabled else f"{provider_name.upper()} provider not configured",
+            }
+            if include_probe and enabled:
+                status["probe"] = "not_implemented"
+            statuses[normalized] = status
+        return statuses
+
     def provider_model(self, provider_name: str, operation_name: str = "chat") -> str:
         if provider_name in {"grok", "groq"}:
             return self.settings.groq_model_code if operation_name == "generate_code" else self.settings.groq_model_chat

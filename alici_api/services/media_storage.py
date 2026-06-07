@@ -32,7 +32,7 @@ class R2MediaStorage:
     def __init__(self):
         self.settings = get_settings()
 
-    def status(self) -> dict:
+    def status(self, include_probe: bool = False) -> dict:
         missing = []
         if not self.settings.r2_endpoint_url:
             missing.append("R2_ENDPOINT_URL")
@@ -44,7 +44,10 @@ class R2MediaStorage:
             missing.append("R2_BUCKET_UPLOADS")
         if not self.settings.r2_public_base_url:
             missing.append("R2_PUBLIC_BASE_URL")
-        return {"configured": not missing, "missing": missing}
+        result = {"configured": not missing, "missing": missing}
+        if include_probe and result["configured"] and hasattr(self, "probe"):
+            result["probe"] = self.probe()
+        return result
 
     def _require_config(self) -> None:
         missing = self.status()["missing"]

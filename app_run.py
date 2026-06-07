@@ -144,7 +144,10 @@ def _doctor() -> None:
     for media_type in ("image", "audio", "video", "image_analysis"):
         try:
             providers = available_media_providers(media_type)
-            summary = ",".join(f"{item.provider_name}:{item.model_name}" for item in providers) or "none"
+            summary = ",".join(
+                f"{item.provider_name}:{item.model_name}" if hasattr(item, "provider_name") else str(item)
+                for item in providers
+            ) or "none"
         except MediaProviderUnavailableError as exc:
             summary = f"none;reason={exc}"
         except Exception as exc:
