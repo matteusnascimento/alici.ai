@@ -16,21 +16,34 @@ def normalize_db_url(url: str) -> str:
     return url
 
 
+def is_production() -> bool:
+    return os.getenv("APP_ENV", os.getenv("ENV", "")).strip().lower() == "production"
+
+
 def main() -> int:
     db_url = os.getenv("DATABASE_URL", "").strip()
-    if not db_url:
-        try:
-            from app.core.config import settings
-
-            db_url = settings.database_url.strip()
-        except Exception:
-            db_url = ""
 
     if not db_url:
-        print("DATABASE_URL ausente; executando upgrade padrao.", flush=True)
-        return run(["alembic", "upgrade", "head"])
+        message = (
+            "DATABASE_URL ausente. Abortando migrations para evitar fallback SQLite no deploy. "
+            "Configure DATABASE_URL no Render/Neon antes de publicar."
+        )
+        print(message, flush=True)
+        return 1 if is_production() else run(["alembic", "upgrade", "head"])
 
-    engine = create_engine(normalize_db_url(db_url), future=True)
+    normalized_db_url = normalize_db_url(db_url)
+
+    if is_production() and normalized_db_url.startswith("sqlite"):
+        print(
+            "DATABASE_URL inválida para produção: SQLite não é permitido no Render. "
+            "Configure PostgreSQL/Neon.",
+            flush=True,
+        )
+        return 1
+
+    os.environ["DATABASE_URL"] = db_url
+
+    engine = create_engine(normalized_db_url, future=True)
     inspector = inspect(engine)
 
     tables = set(inspector.get_table_names())
