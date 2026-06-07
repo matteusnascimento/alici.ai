@@ -1,5 +1,4 @@
-﻿import { type ElementType, useEffect, useMemo, useState } from 'react';
-import { Image as KonvaImage, Layer, Rect, Stage, Text } from 'react-konva';
+﻿import { type CSSProperties, type DragEvent, type ElementType, type ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   Captions,
   Download,
@@ -109,6 +108,134 @@ const trackMeta: Record<AxiStudioClip['track'], { label: string; accent: string;
 
 function LayoutIcon({ size = 20 }: { size?: string | number }) {
   return <Shapes size={size} />;
+}
+
+interface StudioDragEvent {
+  target: {
+    x: () => number;
+    y: () => number;
+  };
+}
+
+interface CanvasNodeProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  opacity?: number;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  cornerRadius?: number;
+  draggable?: boolean;
+  children?: ReactNode;
+  onClick?: () => void;
+  onTap?: () => void;
+  onDragEnd?: (event: StudioDragEvent) => void;
+}
+
+function canvasNodeStyle(props: CanvasNodeProps): CSSProperties {
+  return {
+    position: 'absolute',
+    left: props.x ?? 0,
+    top: props.y ?? 0,
+    width: props.width,
+    height: props.height,
+    opacity: props.opacity,
+    borderRadius: props.cornerRadius,
+    border: props.stroke ? `${props.strokeWidth ?? 1}px solid ${props.stroke}` : undefined,
+    cursor: props.draggable ? 'move' : 'default',
+    userSelect: 'none',
+  };
+}
+
+function emitCanvasDrag(event: DragEvent<HTMLElement>, onDragEnd?: (event: StudioDragEvent) => void) {
+  if (!onDragEnd) return;
+  const parent = event.currentTarget.parentElement?.getBoundingClientRect();
+  const x = parent ? event.clientX - parent.left : event.currentTarget.offsetLeft;
+  const y = parent ? event.clientY - parent.top : event.currentTarget.offsetTop;
+  onDragEnd({ target: { x: () => x, y: () => y } });
+}
+
+function Stage({
+  width,
+  height,
+  scaleX = 1,
+  scaleY = 1,
+  className,
+  children,
+}: {
+  width: number;
+  height: number;
+  scaleX?: number;
+  scaleY?: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={className}
+      style={{
+        position: 'relative',
+        width,
+        height,
+        transform: `scale(${scaleX}, ${scaleY})`,
+        transformOrigin: 'top left',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Layer({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+}
+
+function Rect(props: CanvasNodeProps) {
+  return (
+    <div
+      draggable={props.draggable}
+      onClick={props.onClick}
+      onDragEnd={(event) => emitCanvasDrag(event, props.onDragEnd)}
+      style={{ ...canvasNodeStyle(props), background: props.fill }}
+    />
+  );
+}
+
+function Text(props: CanvasNodeProps & { text: string; fontSize?: number; fontFamily?: string; fontStyle?: string }) {
+  return (
+    <div
+      draggable={props.draggable}
+      onClick={props.onClick}
+      onDragEnd={(event) => emitCanvasDrag(event, props.onDragEnd)}
+      style={{
+        ...canvasNodeStyle(props),
+        color: props.fill,
+        fontSize: props.fontSize,
+        fontFamily: props.fontFamily,
+        fontWeight: props.fontStyle === 'bold' ? 700 : 500,
+        display: 'flex',
+        alignItems: 'center',
+        whiteSpace: 'pre-wrap',
+      }}
+    >
+      {props.text}
+    </div>
+  );
+}
+
+function KonvaImage(props: CanvasNodeProps & { image: HTMLImageElement }) {
+  return (
+    <img
+      src={props.image.src}
+      draggable={props.draggable}
+      onClick={props.onClick}
+      onDragEnd={(event) => emitCanvasDrag(event, props.onDragEnd)}
+      style={{ ...canvasNodeStyle(props), objectFit: 'cover', display: 'block' }}
+      alt=""
+    />
+  );
 }
 
 function kindColor(kind: AxiLayerKind) {
