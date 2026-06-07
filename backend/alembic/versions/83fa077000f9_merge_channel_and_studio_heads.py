@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 
 revision: str = "83fa077000f9"
-down_revision: Union[str, tuple[str, str], None] = (
+down_revision: Union[tuple[str, str], None] = (
     "b7c8d9e0f1a2",
     "f3a4b5c6d7e8",
 )
