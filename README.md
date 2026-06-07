@@ -1,171 +1,195 @@
-# ALICI™ API
+# AXI / ALICI Platform
 
-API FastAPI da ALICI com autenticação JWT, chat com memória, histórico e endpoints multimodais.
+Plataforma SaaS AXI com backend FastAPI, frontend React/Vite, autenticação JWT, módulos de Revenue, Chats, Agents, Studio, Marketing, Integrations, Billing e Admin.
 
-## Principais ajustes aplicados
+## Arquitetura oficial
 
-- Resolução de conflitos e padronização de backend para produção.
-- Token padronizado no frontend para uma única chave: `access_token`.
-- Endpoint de refresh token: `POST /auth/refresh`.
-- Refresh token com rotação e revogação persistida em banco (`refresh_tokens`).
-- Validação de tipo JWT (`type=access` e `type=refresh`).
-- Tratamento global de exceções sem vazamento de erro interno.
-- Correlação por requisição com header `X-Request-ID`.
-- CORS configurável por ambiente via `CORS_ALLOWED_ORIGINS`.
-- Rate limiting global e por usuário/plano no chat.
-- Upload de imagem com limpeza garantida de arquivo temporário.
-- Camadas iniciais para escalabilidade: repository + service + DTOs.
+O repositório possui código histórico da Alici, mas a arquitetura oficial atual é:
 
-## Estrutura (API)
+- `backend/app`: backend FastAPI oficial usado em produção no Render.
+- `frontend`: aplicação web React/Vite oficial.
+- `backend/alembic`: migrations oficiais do banco usado pelo backend de produção.
+- `render.yaml`: blueprint oficial de deploy.
+- `alici_api`: backend legado/compatibilidade histórica. Não é o backend principal do Render.
+- `alembic/`: migrations legadas da raiz, relacionadas ao backend legado.
 
-- `alici_api/app.py`: fábrica da aplicação, middleware e handlers globais.
-- `alici_api/routes/`: rotas (`auth`, `chat`, `history`, `health`, `media`, `billing`, `pages`).
-- `alici_api/services/`: serviços de IA/mídia/autenticação.
-- `alici_api/repositories/`: acesso a dados (usuário, histórico e refresh tokens).
-- `alici_api/schemas.py`: DTOs (requests).
+> Importante: novas features de produção devem ser implementadas em `backend/app` e `frontend`. Não use `alici_api` como alvo principal sem decisão explícita de migração.
 
-## Variáveis de ambiente
+## Deploy oficial no Render
 
-### Segurança / JWT
+O deploy oficial usa `render.yaml` com:
 
-- `SECRET_KEY` (obrigatória em produção)
-- `ACCESS_TOKEN_EXPIRE_MINUTES` (default: `60`)
-- `REFRESH_TOKEN_EXPIRE_MINUTES` (default: `10080`)
-
-### CORS
-
-- `ENV` (`development` | `production`)
-- `CORS_ALLOWED_ORIGINS` (lista separada por vírgula em produção)
-
-Exemplo:
-
-`CORS_ALLOWED_ORIGINS=https://app.seudominio.com,https://admin.seudominio.com`
-
-### Rate Limit
-
-- `RATE_LIMIT_ENABLED` (`true`/`false`, default `true`)
-- `RATE_LIMIT_WINDOW_SECONDS` (default `60`)
-- `RATE_LIMIT_MAX_REQUESTS` (default `60`)
-
-### HuggingFace Hub (modelo textual)
-
-O modelo textual da ALICI é carregado do HuggingFace Space <a href="https://huggingface.co/spaces/Matteusnascimento/alici.ai">Matteusnascimento/alici.ai</a>.
-
-- `ALICI_HF_REPO_ID` (default: `Matteusnascimento/alici.ai`)
-- `ALICI_HF_REPO_TYPE` (default: `space`)
-- `ALICI_HF_SUBFOLDER` (opcional, subfolder dentro do Space)
-- `HUGGINGFACE_TOKEN` — token de acesso gerado em <a href="https://huggingface.co/settings/tokens">https://huggingface.co/settings/tokens</a> (necessário para Spaces privados ou com rate-limit)
-- `ALICI_HF_CACHE_DIR` (default: `/tmp/alici_hf_cache`)
-
-> ⚠️ **Nunca armazene o token HuggingFace no código-fonte.** Use variáveis de ambiente ou um gerenciador de segredos.
-
-Consulte `.env.example` para um modelo completo de configuração.
-
-### Redis (obrigatório em produção)
-
-- `REDIS_URL` — URL de conexão (ex: `redis://:<password>@redis-host:6379/0`).
-- `REDIS_PREFIX` — prefixo de chaves (default `alici`).
-
-Em `production` `REDIS_URL` é obrigatório; sem Redis a API não inicializa. Para desenvolvimento local use Docker:
-
-```bash
-docker run -p 6379:6379 --name alici-redis -d redis:7-alpine
+```yaml
+rootDir: backend
+startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-### Cloudflare R2 (opcional, usado para modelos/artefatos)
-
-- `ALICI_R2_ACCOUNT_ID`, `ALICI_R2_ACCESS_KEY`, `ALICI_R2_SECRET_KEY` — credenciais R2
-- `ALICI_R2_BUCKET` — bucket (ex: `alici-lake`)
-- `ALICI_R2_MODEL_PREFIX` — prefixo/pasta dos artefatos
-
-Se usar R2, instale `boto3` e verifique `ALICI_R2_ENDPOINT` quando usar contas customizadas.
-
-### Provedores de IA
-
-- `DEFAULT_AI_PROVIDER` — `groq` | `gemini` | `ollama` | `openai` (default: `groq`)
-- `GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, etc. — configure apenas os que for usar.
-
-As chaves faltantes desabilitam o provider correspondente; o app escolhe provider por ordem de fallback configurada.
-
-## Rotas essenciais
-
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/refresh`
-- `POST /auth/logout`
-- `GET /api/status` (autenticado)
-- `POST /chat` (autenticado)
-- `POST /chat/image` (autenticado)
-- `GET /history` (autenticado)
-- `DELETE /history` (autenticado)
-- `GET /health`
-
-## Execução local
-## Execução local
-
-Dependências (recomendado criar um virtualenv):
+O build compila o frontend, copia `frontend/dist` para `backend/frontend_dist`, instala dependências do backend e executa as migrations via:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # ou .venv\Scripts\activate no Windows
-pip install -r requirements.txt
+python scripts/render_migrate.py
 ```
 
-Iniciar Redis local (recomendado):
+A variável `DATABASE_URL` deve apontar para PostgreSQL/Neon. Em produção, o esperado no log é:
 
-```bash
-docker run -p 6379:6379 --name alici-redis -d redis:7-alpine
+```text
+Context impl PostgresqlImpl.
 ```
 
-Rodar a API (modo desenvolvimento):
+Nunca publique produção usando SQLite.
+
+## Variáveis obrigatórias de produção
+
+Configurações mínimas para o serviço web:
+
+```env
+APP_ENV=production
+ENV=production
+DATABASE_URL=postgresql://...
+SECRET_KEY=uma_chave_forte_com_32_ou_mais_caracteres
+CORS_ALLOWED_ORIGINS=https://alici-ai.onrender.com
+```
+
+Configurações recomendadas conforme módulos ativos:
+
+```env
+REDIS_URL=redis://...
+OPENAI_API_KEY=...
+GROQ_API_KEY=...
+STRIPE_SECRET_KEY=...
+STRIPE_WEBHOOK_SECRET=...
+R2_ENDPOINT_URL=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET_NAME=...
+R2_PUBLIC_BASE_URL=...
+META_APP_ID=...
+META_CLIENT_SECRET=...
+META_WEBHOOK_VERIFY_TOKEN=...
+```
+
+Chaves ausentes devem desabilitar providers externos com erro claro, sem derrubar o app inteiro, exceto variáveis obrigatórias como `DATABASE_URL` e `SECRET_KEY` em produção.
+
+## Execução local do backend oficial
 
 ```bash
-# Usando o backend principal (alici_api)
-uvicorn alici_api.app:app --reload --host 0.0.0.0 --port 8000
-
-# Alternativa: se você usa a pasta legacy `backend/` (Render blueprint)
 cd backend
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+alembic upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Health checks:
+Para desenvolvimento local, SQLite é permitido. Para produção, use PostgreSQL.
 
-```text
-GET /health        -> liveness
-GET /health/live   -> liveness (simple)
-GET /health/ready  -> readiness (DB + Redis + models)
-```
-
-## Deploy (Render)
-## Deploy (Render)
-
-This repo contains two deployable backends historically: `alici_api` (root) and `backend/` (legacy). The Render blueprint in `render.yaml` targets `backend/`. The `Procfile` targets `alici_api` and also defines worker processes.
-
-Recommended (simple): use `Procfile` with Render's `web` + `worker` services.
-
-Procfile example (already present):
-
-```text
-web: uvicorn alici_api.app:app --host 0.0.0.0 --port $PORT
-worker: arq alici_api.jobs.queue.WorkerSettings
-worker-high: arq alici_api.jobs.queue.HighPriorityWorkerSettings
-worker-dlq: arq alici_api.jobs.queue.DeadLetterWorkerSettings
-```
-
-Render CLI / Dashboard quick commands (web + worker):
-
-1) Using Render dashboard: create two services:
-	- Web service: start command `uvicorn alici_api.app:app --host 0.0.0.0 --port $PORT`
-	- Worker service(s): start command `arq alici_api.jobs.queue.WorkerSettings`
-
-2) Using `render.yaml` (example in repo) the web service is configured to build frontend + backend. If you prefer the root `alici_api` app, update `render.yaml` to point `rootDir: .` and `startCommand: uvicorn alici_api.app:app --host 0.0.0.0 --port $PORT`.
-
-Render deploy steps (CLI):
+## Execução local do frontend
 
 ```bash
-# from repo root
-render services create --name alici-backend --env production --branch main --repo https://github.com/your/repo.git
-# Or push commits and let render auto-deploy from branch
+cd frontend
+npm install
+npm run dev
 ```
 
-Note: ensure `REDIS_URL`, `DATABASE_URL`, and `SECRET_KEY` are set in Render environment variables antes de escalar workers.
+Build de produção:
+
+```bash
+cd frontend
+npm run typecheck
+npm run build
+```
+
+## Testes e validação
+
+Backend oficial:
+
+```bash
+cd backend
+python -m compileall app alembic
+alembic heads
+```
+
+Testes backend:
+
+```bash
+pytest tests/backend -q
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run typecheck
+npm run build
+npm run test -- --run
+```
+
+O GitHub Actions possui dois blocos:
+
+- `production-backend`: valida `backend/app`, `backend/alembic` e `tests/backend`.
+- `legacy-launch`: mantém testes históricos do `alici_api` enquanto o legado ainda existir.
+
+## Rotas essenciais
+
+Health:
+
+```text
+GET /health
+GET /api/health
+```
+
+Autenticação:
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+```
+
+Módulos principais:
+
+```text
+/api/chat
+/api/chats
+/api/agents
+/api/revenue
+/api/marketing
+/api/studio
+/api/integrations
+/api/billing
+/api/admin
+```
+
+## Módulos atuais
+
+- Landing/Home
+- Auth e Account
+- Revenue / Business Pulse
+- Chats
+- AXI Assistant
+- Agents
+- Marketing
+- Studio
+- Integrations
+- Billing / Subscriptions
+- Admin
+- Notifications
+- Tracker / Website Widget
+
+## Legado
+
+A pasta `alici_api` e arquivos antigos na raiz permanecem por compatibilidade e histórico. Antes de remover, valide dependências, testes e jobs que ainda possam referenciá-los.
+
+Arquivos/pastas legados devem ser tratados como candidatos a `legacy/`, não como alvo de novas features.
+
+## Checklist antes de cliente real
+
+- Render com `PostgresqlImpl` no Alembic.
+- Cadastro de novo cliente validado.
+- Cliente não cai no perfil pessoal do fundador.
+- Fluxo usuário -> empresa -> integração validado.
+- Login/logout validado.
+- Isolamento multiempresa validado.
+- Stripe webhook validado em ambiente real/sandbox.
+- Providers IA configurados ou falhando com erro claro.
+- Uploads/exports críticos usando storage externo quando necessário.
