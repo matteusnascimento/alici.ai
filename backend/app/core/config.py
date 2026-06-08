@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     google_oauth_redirect_uri: str = ""
 
     # Website tracker / widget
-    axi_tracker_public_url: str = "http://127.0.0.1:8000/api/tracker/script.js"
+    axi_tracker_public_url: str = "http://127.0.0.1:8000/static/axi-tracker.js"
     axi_widget_public_url: str = "http://127.0.0.1:8000/static/axi-widget.js"
     website_allowed_origins: str | list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"])
 
@@ -222,7 +222,7 @@ class Settings(BaseSettings):
         super().__init__(**data)
 
         raw_env = (self.env or "").strip()
-        if raw_env and self.app_env == "development":
+        if raw_env and self.app_env.lower() in {"development", "test"}:
             object.__setattr__(self, "app_env", raw_env)
 
         raw_database_url = (self.database_url or "").strip()
