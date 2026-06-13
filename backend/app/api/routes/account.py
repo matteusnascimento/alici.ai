@@ -11,6 +11,8 @@ from app.models.user import User
 from app.schemas.account import (
     AccountActionResponse,
     AccountArchivedChatList,
+    AccountCompanyProfileRead,
+    AccountCompanyProfileUpdate,
     AccountHelpInfo,
     AccountIntegrationRead,
     AccountIntegrationUpdate,
@@ -46,6 +48,23 @@ def account_profile_update(
     db: Session = Depends(get_db),
 ) -> AccountProfileRead:
     return AccountService(db).update_profile(current_user, payload)
+
+
+@router.get("/company-profile", response_model=AccountCompanyProfileRead)
+def account_company_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AccountCompanyProfileRead:
+    return AccountService(db).get_company_profile(current_user)
+
+
+@router.put("/company-profile", response_model=AccountCompanyProfileRead)
+def account_company_profile_update(
+    payload: AccountCompanyProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AccountCompanyProfileRead:
+    return AccountService(db).update_company_profile(current_user, payload)
 
 
 @router.post("/profile/verify-email/request", response_model=AccountVerificationChallenge)
