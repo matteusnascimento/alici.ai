@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from secrets import randbelow
+import json
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -12,6 +13,8 @@ from app.models.user import User
 from app.schemas.account import (
     AccountActionResponse,
     AccountArchivedChatList,
+    AccountCompanyProfileRead,
+    AccountCompanyProfileUpdate,
     AccountIntegrationRead,
     AccountIntegrationUpdate,
     AccountNotificationRead,
@@ -26,6 +29,9 @@ from app.schemas.account import (
     AccountSecurityChangePassword,
     AccountSecuritySummary,
 )
+
+
+_COMPANY_PROFILE_PROVIDER = "company_profile"
 
 
 class AccountService:
@@ -97,6 +103,59 @@ class AccountService:
         self.db.refresh(user)
         self.db.refresh(settings)
         return self.get_profile(user)
+
+    def get_company_profile(self, user: User) -> AccountCompanyProfileRead:
+        row = self._get_company_profile_row(user)
+        if not row or not row.config_json:
+            return AccountCompanyProfileRead(
+                exists=False,
+                company_name=user.company,
+                email=user.email,
+                phone=user.phone,
+                updated_at=user.updated_at,
+            )
+
+        try:
+            payload = json.loads(row.config_json)
+        except (TypeError, ValueError):
+            payload = {}
+
+        if not isinstance(payload, dict):
+            payload = {}
+
+        payload["exists"] = True
+        payload["updated_at"] = row.updated_at
+        return AccountCompanyProfileRead(**payload)
+
+    def update_company_profile(self, user: User, payload: AccountCompanyProfileUpdate) -> AccountCompanyProfileRead:
+        row = self._get_company_profile_row(user)
+        data = payload.model_dump(mode="json")
+        data["brand_colors"] = self._clean_string_list(data.get("brand_colors") or [])
+        data["objectives"] = self._clean_string_list(data.get("objectives") or [])
+        data["channels"] = self._clean_string_list(data.get("channels") or [])
+
+        if row:
+            row.name = payload.company_name
+            row.is_active = True
+            row.config_json = json.dumps(data, ensure_ascii=False)
+        else:
+            row = Integration(
+                user_id=user.id,
+                provider=_COMPANY_PROFILE_PROVIDER,
+                name=payload.company_name,
+                is_active=True,
+                config_json=json.dumps(data, ensure_ascii=False),
+            )
+            self.db.add(row)
+
+        user.company = payload.company_name
+        if payload.phone:
+            user.phone = payload.phone.strip()
+
+        self.db.commit()
+        self.db.refresh(row)
+        self.db.refresh(user)
+        return self.get_company_profile(user)
 
     def request_email_verification(self, user: User) -> AccountVerificationChallenge:
         if not user.email:
@@ -188,7 +247,12 @@ class AccountService:
 
     def list_integrations(self, user: User) -> list[AccountIntegrationRead]:
         self._seed_integrations(user)
-        rows = self.db.query(Integration).filter(Integration.user_id == user.id).order_by(Integration.provider.asc()).all()
+        rows = (
+            self.db.query(Integration)
+            .filter(Integration.user_id == user.id, Integration.provider != _COMPANY_PROFILE_PROVIDER)
+            .order_by(Integration.provider.asc())
+            .all()
+        )
         return [
             AccountIntegrationRead(
                 id=item.id,
@@ -202,6 +266,9 @@ class AccountService:
         ]
 
     def update_integration(self, user: User, provider: str, payload: AccountIntegrationUpdate) -> AccountIntegrationRead:
+        if provider == _COMPANY_PROFILE_PROVIDER:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Integracao nao encontrada")
+
         row = (
             self.db.query(Integration)
             .filter(Integration.user_id == user.id, Integration.provider == provider)
@@ -282,6 +349,13 @@ class AccountService:
         self.db.refresh(settings)
         return settings
 
+    def _get_company_profile_row(self, user: User) -> Integration | None:
+        return (
+            self.db.query(Integration)
+            .filter(Integration.user_id == user.id, Integration.provider == _COMPANY_PROFILE_PROVIDER)
+            .first()
+        )
+
     def _seed_integrations(self, user: User) -> None:
         defaults = [("openai", "OpenAI"), ("whatsapp", "WhatsApp"), ("instagram", "Instagram"), ("website", "Website Widget")]
         existing = {row.provider for row in self.db.query(Integration).filter(Integration.user_id == user.id).all()}
@@ -296,6 +370,14 @@ class AccountService:
 
     def _generate_code(self) -> str:
         return f"{randbelow(900000) + 100000}"
+
+    def _clean_string_list(self, values: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for item in values:
+            value = str(item).strip()
+            if value and value not in cleaned:
+                cleaned.append(value)
+        return cleaned
 
     def _validate_verification_code(
         self,
