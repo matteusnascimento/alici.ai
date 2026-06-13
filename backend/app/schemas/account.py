@@ -39,6 +39,72 @@ class AccountProfileUpdate(BaseModel):
     language: str | None = Field(default=None, max_length=20)
 
 
+class AccountCompanyProfileRead(BaseModel):
+    exists: bool = False
+    company_name: str | None = None
+    document: str | None = None
+    company_type: str | None = None
+    segment: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    website: str | None = None
+    postal_code: str | None = None
+    street: str | None = None
+    number: str | None = None
+    complement: str | None = None
+    district: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
+    instagram: str | None = None
+    facebook: str | None = None
+    tiktok: str | None = None
+    linkedin: str | None = None
+    youtube: str | None = None
+    whatsapp: str | None = None
+    google_business_profile: str | None = None
+    logo_url: str | None = None
+    brand_colors: list[str] = Field(default_factory=list)
+    short_description: str | None = None
+    slogan: str | None = None
+    tone_of_voice: str | None = None
+    objectives: list[str] = Field(default_factory=list)
+    channels: list[str] = Field(default_factory=list)
+    updated_at: datetime | None = None
+
+
+class AccountCompanyProfileUpdate(BaseModel):
+    company_name: str = Field(min_length=2, max_length=180)
+    document: str | None = Field(default=None, max_length=32)
+    company_type: str | None = Field(default=None, max_length=80)
+    segment: str | None = Field(default=None, max_length=100)
+    phone: str | None = Field(default=None, max_length=40)
+    email: EmailStr | None = None
+    website: str | None = Field(default=None, max_length=512)
+    postal_code: str | None = Field(default=None, max_length=20)
+    street: str | None = Field(default=None, max_length=180)
+    number: str | None = Field(default=None, max_length=40)
+    complement: str | None = Field(default=None, max_length=120)
+    district: str | None = Field(default=None, max_length=120)
+    city: str | None = Field(default=None, max_length=120)
+    state: str | None = Field(default=None, max_length=80)
+    country: str | None = Field(default=None, max_length=80)
+    instagram: str | None = Field(default=None, max_length=255)
+    facebook: str | None = Field(default=None, max_length=255)
+    tiktok: str | None = Field(default=None, max_length=255)
+    linkedin: str | None = Field(default=None, max_length=255)
+    youtube: str | None = Field(default=None, max_length=255)
+    whatsapp: str | None = Field(default=None, max_length=80)
+    google_business_profile: str | None = Field(default=None, max_length=512)
+    logo_url: str | None = Field(default=None, max_length=512)
+    brand_colors: list[str] = Field(default_factory=list, max_length=12)
+    short_description: str | None = Field(default=None, max_length=600)
+    slogan: str | None = Field(default=None, max_length=180)
+    tone_of_voice: str | None = Field(default=None, max_length=120)
+    objectives: list[str] = Field(default_factory=list, max_length=20)
+    channels: list[str] = Field(default_factory=list, max_length=20)
+
+
 class AccountPreferencesRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
